@@ -12080,14 +12080,7 @@ Eu sou o buffalo branco extinto`
                     <div class="tiny" data-i18n="settings.appearanceDesc">Customize how BLISS 98 looks.</div>
                   </div>
                 </div>
-                <div class="settings-block" id="settingsOsTheme">
-                  <strong data-i18n="settings.osTheme.title">Choose your OS</strong>
-                  <p style="margin:6px 0 10px 0;" data-i18n="settings.osTheme.desc">Switch between Bliss98 and BlissOS.</p>
-                  <div class="settings-actions">
-                    <button class="btn bevel" type="button" data-set-os-theme="bliss98" data-i18n="settings.osTheme.bliss98">Bliss 98</button>
-                    <button class="btn bevel" type="button" data-set-os-theme="blissos" data-i18n="settings.osTheme.blissos">BlissOS</button>
-                  </div>
-                </div>
+
                 <div class="settings-block" id="settingsThemes">
                   <strong data-i18n="settings.themes.title">Themes</strong>
                   <p style="margin:6px 0 10px 0;" data-i18n="settings.themes.desc">Select a theme to change wallpaper, title color, and dark mode.</p>
@@ -12266,6 +12259,14 @@ Eu sou o buffalo branco extinto`
                   <div>
                     <strong data-i18n="settings.systemTab">System</strong>
                     <div class="tiny" data-i18n="settings.systemDesc">System clock and visual effects.</div>
+                  </div>
+                </div>
+                <div class="settings-block" id="settingsOsTheme">
+                  <strong data-i18n="settings.osTheme.title">Choose your OS</strong>
+                  <p style="margin:6px 0 10px 0;" data-i18n="settings.osTheme.desc">Switch between Bliss98 and BlissOS.</p>
+                  <div class="settings-actions">
+                    <button class="btn bevel" type="button" data-set-os-theme="bliss98" data-i18n="settings.osTheme.bliss98">Bliss 98</button>
+                    <button class="btn bevel" type="button" data-set-os-theme="blissos" data-i18n="settings.osTheme.blissos">BlissOS</button>
                   </div>
                 </div>
                 <div class="settings-block" id="settingsClock">
@@ -13898,7 +13899,7 @@ function autoFitWindow(winEl, appId){
               </div>
               <div class="title-controls">
                 <div class="wctl bevel" title="${t('win.minimize')}" data-action="min">_</div>
-                <div class="wctl bevel" title="${t('win.maximize')}" data-action="max">[]</div>
+                <div class="wctl bevel" title="${t('win.maximize')}" data-action="max">&#x25A1;</div>
                 <div class="wctl bevel" title="${t('win.close')}" data-action="close">×</div>
               </div>
             </div>
