@@ -267,8 +267,7 @@
         --blissos-highlight-press:#1e3a6a;
         --blissos-icon-label-bg:#e6e6e2;
         --blissos-icon-label-border:#9a9a96;
-        --blissos-icon-selected-bg:rgba(60,90,140,0.2);
-        --blissos-icon-selected-border:#3a5a8c;
+
         --blissos-icon-selected-label:#9db5e3;
         --blissos-scroll-track:#d9d9d4;
         --blissos-scroll-thumb:#b6b6b0;
@@ -339,8 +338,7 @@
         --blissos-highlight-press:#1f4fb2;
         --blissos-icon-label-bg:#262a33;
         --blissos-icon-label-border:#2e3440;
-        --blissos-icon-selected-bg:rgba(43,101,217,0.25);
-        --blissos-icon-selected-border:#2b65d9;
+
         --blissos-icon-selected-label:#2b65d9;
         --blissos-scroll-track:#1e2128;
         --blissos-scroll-thumb:#2e3440;
@@ -425,12 +423,49 @@
         background:var(--blissos-accent);
         color:var(--blissos-accent-contrast);
       }
-      body[data-theme="blissos"] .settings-block#settingsBlissosAccent .btn.bevel.selected{
-        background:var(--blissos-accent);
-        color:var(--blissos-accent-contrast);
-        border-color:var(--blissos-accent-2);
-        box-shadow:inset 1px 1px 0 var(--blissos-accent-2), inset -1px -1px 0 var(--blissos-accent-2);
-      }      body[data-theme="blissos"] .window .frame{
+      /* BlissOS Accent Swatch Styling (macOS-like) */
+      body[data-theme="blissos"] .settings-block#settingsBlissosAccent .accent-swatch {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        padding: 4px; /* Space for the focus ring */
+        border: 1px solid transparent; /* Placeholder for active state border */
+        border-radius: 4px;
+        transition: all 0.15s ease;
+      }
+      body[data-theme="blissos"] .settings-block#settingsBlissosAccent .accent-swatch:hover {
+        background: var(--blissos-accent-weak);
+      }
+      body[data-theme="blissos"] .settings-block#settingsBlissosAccent .accent-swatch.active,
+      body[data-theme="blissos"] .settings-block#settingsBlissosAccent .accent-swatch:focus {
+        border-color: var(--blissos-accent);
+        box-shadow: 0 0 0 1px var(--blissos-accent), 0 0 0 3px var(--blissos-accent-weak);
+        outline: none;
+      }
+      body[data-theme="blissos"] .settings-block#settingsBlissosAccent .accent-swatch span {
+        font-size: 11px;
+        color: var(--blissos-text);
+      }
+      body[data-theme="blissos"] .settings-block#settingsBlissosAccent .color-circle {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 1px solid var(--blissos-border);
+        box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1), inset 0 0 0 2px rgba(255,255,255,0.2);
+      }
+      body[data-theme="blissos"] .settings-block#settingsBlissosAccent .color-circle.multicolor {
+        background: linear-gradient(to right, #1B7BE5, #9B4AEE, #E54DE4, #E53D3D, #E58A3D, #E5D13D, #19B34A);
+      }
+      body[data-theme="blissos"] .settings-block#settingsBlissosAccent .color-circle.blue { background: #1B7BE5; }
+      body[data-theme="blissos"] .settings-block#settingsBlissosAccent .color-circle.purple { background: #9B4AEE; }
+      body[data-theme="blissos"] .settings-block#settingsBlissosAccent .color-circle.pink { background: #E54DE4; }
+      body[data-theme="blissos"] .settings-block#settingsBlissosAccent .color-circle.red { background: #E53D3D; }
+      body[data-theme="blissos"] .settings-block#settingsBlissosAccent .color-circle.orange { background: #E58A3D; }
+      body[data-theme="blissos"] .settings-block#settingsBlissosAccent .color-circle.yellow { background: #E5D13D; }
+      body[data-theme="blissos"] .settings-block#settingsBlissosAccent .color-circle.green { background: #19B34A; }
+      body[data-theme="blissos"] .settings-block#settingsBlissosAccent .color-circle.graphite { background: #8C8C8C; }      body[data-theme="blissos"] .window .frame{
         border-radius:2px;
         background:var(--blissos-surface);
         border:1px solid var(--blissos-border);
@@ -742,12 +777,12 @@
       }
       .blissos-menu-item:active,
       .blissos-menu-brand:active{
-        background:var(--blissos-highlight-press);
-        color:var(--blissos-text-invert);
+        background:var(--blissos-accent-2); /* Use accent-2 for pressed state */
+        color:var(--blissos-accent-contrast);
       }
       .blissos-menu-brand.active{
-        background:var(--blissos-highlight);
-        color:var(--blissos-text-invert);
+        background:var(--blissos-accent); /* Use accent for active state */
+        color:var(--blissos-accent-contrast);
       }
       .blissos-menu-brand{
         font-weight:700;
@@ -1616,6 +1651,11 @@
         border:1px dotted var(--select-text);
         background:rgba(0,0,128,0.18);
         box-shadow: 0 0 0 1px rgba(0,0,0,0.15) inset;
+      }
+      body[data-theme="blissos"] .rubberband {
+        border: 1px dotted var(--selection-border);
+        background: var(--selection-bg);
+        box-shadow: none; /* Reset Win98 specific shadow */
       }
 
       /* While dragging/resizing/selecting, hard-disable selection everywhere */
@@ -7878,7 +7918,9 @@ function updateBlissOSDarkButtons(root=document){
 
 function updateBlissosAccentButtons(root=document){
   $$('[data-set-blissos-accent]', root).forEach(btn => {
-    btn.classList.toggle('pressed', btn.dataset.setBlissosAccent === state.settings.blissosAccent);
+    btn.classList.toggle('active', btn.dataset.setBlissosAccent === state.settings.blissosAccent);
+    // Remove 'pressed' class which might have been used by old button styling
+    btn.classList.remove('pressed');
   });
 }
 
@@ -8422,6 +8464,10 @@ function applyOsTheme(){
   renderIcons();
   renderTaskButtons();
   updateBlissOSActiveApp();
+
+  if(blissos){
+    applyBlissosAccent(state.settings.blissosAccent);
+  }
 }
 
 function setOsTheme(theme){
@@ -10249,6 +10295,17 @@ function installLongPress(el, getTarget){
         applyI18n();
       }
       
+      function hexToRgb(hex) {
+        if (!hex || typeof hex !== 'string' || hex.length !== 7 || hex[0] !== '#') {
+          return null;
+        }
+        const bigint = parseInt(hex.slice(1), 16);
+        const r = (bigint >> 16) & 255;
+        const g = (bigint >> 8) & 255;
+        const b = bigint & 255;
+        return { r, g, b };
+      }
+      
       function setBlissosAccent(accent){
         state.settings.blissosAccent = accent;
         localStorage.setItem(BLISSOS_ACCENT_KEY, accent);
@@ -10262,6 +10319,7 @@ function installLongPress(el, getTarget){
         const isDarkMode = state.settings.blissosDarkMode;
         const root = document.body; // Apply to body directly for BlissOS theme
       
+        // Apply BlissOS specific color variables
         for (const prop in colors) {
           if (prop.endsWith('-dark')) {
             if (isDarkMode) {
@@ -10273,8 +10331,31 @@ function installLongPress(el, getTarget){
             }
           }
         }
-        // Re-render UI elements that might need to reflect accent changes
-        // updateBlissOSActiveApp(); // Uncomment if needed later
+        
+        // Dynamically set --selection-bg and --selection-border
+        const currentAccentHex = isDarkMode
+          ? root.style.getPropertyValue('--blissos-accent') || colors['--blissos-accent-dark'] || colors['--blissos-accent']
+          : root.style.getPropertyValue('--blissos-accent') || colors['--blissos-accent'];
+        
+        const rgb = hexToRgb(currentAccentHex);
+
+        if (rgb) {
+          root.style.setProperty('--selection-bg', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`);
+          root.style.setProperty('--selection-border', currentAccentHex);
+        } else {
+          // Fallback if hexToRgb fails or accent is not properly defined
+          root.style.setProperty('--selection-bg', 'rgba(60,90,140,0.2)'); // Default blueish tint
+          root.style.setProperty('--selection-border', '#3a5a8c'); // Default blue
+        }
+
+        // Dynamically set --blissos-highlight and --blissos-highlight-press
+        root.style.setProperty('--blissos-highlight', currentAccentHex);
+        root.style.setProperty('--blissos-highlight-press', isDarkMode
+          ? colors['--blissos-accent-2-dark'] || colors['--blissos-accent-2']
+          : colors['--blissos-accent-2']);
+
+        // Update the pressed state for accent buttons in settings
+        updateBlissosAccentButtons();
       }
       function toggleLang(){
         setLang(state.lang === 'en' ? 'pt' : 'en');
@@ -12295,19 +12376,45 @@ Eu sou o buffalo branco extinto`
                 <div class="settings-block" id="settingsBlissosAccent">
                   <strong data-i18n="settings.blissosAccent.title">Accent Color</strong>
                   <p style="margin:6px 0 10px 0;" data-i18n="settings.blissosAccent.desc">Choose your BlissOS accent color.</p>
-                  <div class="settings-actions">
-                    <button class="btn bevel" type="button" data-set-blissos-accent="multicolor" data-i18n="blissosAccent.multicolor">Multicolor</button>
-                    <button class="btn bevel" type="button" data-set-blissos-accent="blue" data-i18n="blissosAccent.blue">Blue</button>
-                    <button class="btn bevel" type="button" data-set-blissos-accent="purple" data-i18n="blissosAccent.purple">Purple</button>
-                    <button class="btn bevel" type="button" data-set-blissos-accent="pink" data-i18n="blissosAccent.pink">Pink</button>
-                    <button class="btn bevel" type="button" data-set-blissos-accent="red" data-i18n="blissosAccent.red">Red</button>
-                    <button class="btn bevel" type="button" data-set-blissos-accent="orange" data-i18n="blissosAccent.orange">Orange</button>
-                    <button class="btn bevel" type="button" data-set-blissos-accent="yellow" data-i18n="blissosAccent.yellow">Yellow</button>
-                    <button class="btn bevel" type="button" data-set-blissos-accent="green" data-i18n="blissosAccent.green">Green</button>
-                    <button class="btn bevel" type="button" data-set-blissos-accent="graphite" data-i18n="blissosAccent.graphite">Graphite</button>
+                  <div class="settings-actions color-swatches">
+                    <div class="accent-swatch" data-set-blissos-accent="multicolor">
+                      <div class="color-circle multicolor"></div>
+                      <span data-i18n="blissosAccent.multicolor">Multicolor</span>
+                    </div>
+                    <div class="accent-swatch" data-set-blissos-accent="blue">
+                      <div class="color-circle blue"></div>
+                      <span data-i18n="blissosAccent.blue">Blue</span>
+                    </div>
+                    <div class="accent-swatch" data-set-blissos-accent="purple">
+                      <div class="color-circle purple"></div>
+                      <span data-i18n="blissosAccent.purple">Purple</span>
+                    </div>
+                    <div class="accent-swatch" data-set-blissos-accent="pink">
+                      <div class="color-circle pink"></div>
+                      <span data-i18n="blissosAccent.pink">Pink</span>
+                    </div>
+                    <div class="accent-swatch" data-set-blissos-accent="red">
+                      <div class="color-circle red"></div>
+                      <span data-i18n="blissosAccent.red">Red</span>
+                    </div>
+                    <div class="accent-swatch" data-set-blissos-accent="orange">
+                      <div class="color-circle orange"></div>
+                      <span data-i18n="blissosAccent.orange">Orange</span>
+                    </div>
+                    <div class="accent-swatch" data-set-blissos-accent="yellow">
+                      <div class="color-circle yellow"></div>
+                      <span data-i18n="blissosAccent.yellow">Yellow</span>
+                    </div>
+                    <div class="accent-swatch" data-set-blissos-accent="green">
+                      <div class="color-circle green"></div>
+                      <span data-i18n="blissosAccent.green">Green</span>
+                    </div>
+                    <div class="accent-swatch" data-set-blissos-accent="graphite">
+                      <div class="color-circle graphite"></div>
+                      <span data-i18n="blissosAccent.graphite">Graphite</span>
+                    </div>
                   </div>
-                </div>
-                ` : ''}
+                </div>                ` : ''}
 
                 ${isBliss98() ? `
                 <div class="settings-block" id="settingsThemes">
