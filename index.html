@@ -4080,11 +4080,7 @@ function getThemedIconHtml(item, label, size=32){
   const theme = state.settings.theme || 'bliss98';
   const iconFile = typeof item.iconFile === 'function' ? item.iconFile() : item.iconFile;
   if(theme === 'blissos'){
-    if(iconFile){
-      const blissSrc = getBlissOSAssetPath(iconFile);
-      const fallback = getBlissOSFallbackPath(blissSrc);
-      return `<img class="pixel" src="${blissSrc}" data-fallback-src="${fallback}" width="${size}" height="${size}" alt="${label}" style="display:block;" />`;
-    }
+    // Always use iconSVG for BlissOS theme for consistent styling
     return iconSVG(item.icon || 'file', 'blissos');
   }
   return iconFile
