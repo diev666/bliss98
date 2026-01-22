@@ -12271,7 +12271,7 @@ Eu sou o buffalo branco extinto`
           const grid = POEMS.map(poem => `
             <button class="poetry-item" type="button" data-poem-id="${poem.id}">
               <div class="pixel" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;">
-                <img class="pixel" src="./assets/icons/poetry2.png" width="32" height="32" alt="${poem.title}" style="display:block;" />
+                ${getThemedIconHtml({ icon: 'file', id: poem.id, iconFile: './assets/icons/poetry2.png' }, poem.title, 32)}
               </div>
               <span>${poem.title}</span>
             </button>
@@ -13785,7 +13785,7 @@ function renderIcons(){
 
         const logout = document.createElement('div');
         logout.className = 'menu-item';
-        logout.innerHTML = `<div style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;"><img class="pixel" src="./assets/icons/logout.png" width="16" height="16" alt="" style="display:block;" /></div><div>${t('menu.logoff')}</div>`;
+        logout.innerHTML = `<div style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;">${getThemedIconHtml({ icon: 'user', id: 'logout', iconFile: './assets/icons/logout.png' }, t('menu.logoff'), 16)}</div><div>${t('menu.logoff')}</div>`;
         logout.addEventListener('click', ()=>{ closeStartMenu(); doLogoff(); });
         list.appendChild(logout);
       }
