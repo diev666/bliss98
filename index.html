@@ -195,8 +195,8 @@
   body[data-theme="blissos"] .blissos-menu-brand:hover,
   body[data-theme="blissos"] .blissos-appmenu-drop .menu-item:hover,
   body[data-theme="blissos"] .blissos-apple-menu .menu-item:hover{
-    background:var(--blissos-highlight);
-    color:var(--blissos-text-invert);
+    background:var(--blissos-accent);
+    color:var(--blissos-accent-contrast);
   }
 }
 
@@ -209,8 +209,8 @@
   body[data-theme="blissos"] .blissos-menu-brand:active,
   body[data-theme="blissos"] .blissos-appmenu-drop .menu-item:active,
   body[data-theme="blissos"] .blissos-apple-menu .menu-item:active{
-    background:var(--blissos-highlight);
-    color:var(--blissos-text-invert);
+    background:var(--blissos-accent-2);
+    color:var(--blissos-accent-contrast);
   }
   /* Ensure input sliders respond immediately */
   input[type="range"]{
@@ -280,6 +280,10 @@
         --blissos-dock-item-open:#d2d2cc;
         --blissos-dock-indicator:#4a4a45;
         --blissos-shadow:#5f5f59;
+        --blissos-accent: #1B7BE5; /* Default blue for multicolor base */
+        --blissos-accent-2: #2B8BEF;
+        --blissos-accent-weak: rgba(27, 123, 229, 0.15); /* light blue with transparency */
+        --blissos-accent-contrast: #ffffff;
         --bg:var(--blissos-bg);
         --text:var(--blissos-text);
         --task:var(--blissos-surface-2);
@@ -348,6 +352,10 @@
         --blissos-dock-item-open:#1f242e;
         --blissos-dock-indicator:#a3acbc;
         --blissos-shadow:rgba(0,0,0,0.55);
+        --blissos-accent: #4F9BFA; /* Default blue for multicolor base in dark mode */
+        --blissos-accent-2: #5FAAFF;
+        --blissos-accent-weak: rgba(79, 155, 250, 0.15); /* light blue with transparency */
+        --blissos-accent-contrast: #111111;
         --bg:var(--blissos-bg);
         --text:var(--blissos-text);
         --task:var(--blissos-surface-2);
@@ -406,16 +414,23 @@
         box-shadow:inset 1px 1px 0 var(--blissos-border-hi);
       }
       body[data-theme="blissos"] .icon.selected{
-        border:1px solid var(--blissos-icon-selected-border);
-        background:var(--blissos-icon-selected-bg);
-      }
-      body[data-theme="blissos"] .icon.selected span{
-        background:var(--blissos-icon-selected-label);
+        border:1px solid var(--blissos-accent);
+        background:var(--blissos-accent-weak);
+      }      body[data-theme="blissos"] .icon.selected span{
+        background:var(--blissos-accent);
         color:var(--blissos-text);
         outline:none;
       }
-
-      body[data-theme="blissos"] .window .frame{
+      body[data-theme="blissos"] .settings-tab[aria-selected="true"]{
+        background:var(--blissos-accent);
+        color:var(--blissos-accent-contrast);
+      }
+      body[data-theme="blissos"] .settings-block#settingsBlissosAccent .btn.bevel.selected{
+        background:var(--blissos-accent);
+        color:var(--blissos-accent-contrast);
+        border-color:var(--blissos-accent-2);
+        box-shadow:inset 1px 1px 0 var(--blissos-accent-2), inset -1px -1px 0 var(--blissos-accent-2);
+      }      body[data-theme="blissos"] .window .frame{
         border-radius:2px;
         background:var(--blissos-surface);
         border:1px solid var(--blissos-border);
@@ -557,11 +572,10 @@
         border:1px solid var(--blissos-icon-label-border);
       }
       body[data-theme="blissos"] ::-webkit-scrollbar-thumb{
-        background:var(--blissos-scroll-thumb);
+        background:var(--blissos-accent);
         border:1px solid var(--blissos-border);
         box-shadow:inset 1px 1px 0 var(--blissos-border-hi), inset -1px -1px 0 var(--blissos-border-lo);
-      }
-      body[data-theme="blissos"] ::-webkit-scrollbar-button{
+      }      body[data-theme="blissos"] ::-webkit-scrollbar-button{
         display: none;
         width:0;
         height:0;      }
@@ -681,11 +695,10 @@
         cursor:pointer;
       }
       .blissos-appmenu.active{
-        background:var(--blissos-highlight);
-        border-color:var(--blissos-highlight-press);
-        color:var(--blissos-text-invert);
-      }
-      .blissos-appmenu-icon{
+        background:var(--blissos-accent);
+        border-color:var(--blissos-accent-2);
+        color:var(--blissos-accent-contrast);
+      }      .blissos-appmenu-icon{
         width:16px;
         height:16px;
         display:inline-flex;
@@ -723,8 +736,8 @@
       .blissos-menu-item:focus,
       .blissos-menu-brand:focus,
       .blissos-menu-item.active{
-        background:var(--blissos-highlight);
-        color:var(--blissos-text-invert);
+        background:var(--blissos-accent);
+        color:var(--blissos-accent-contrast);
         outline:none;
       }
       .blissos-menu-item:active,
@@ -808,10 +821,9 @@
         cursor:pointer;
       }
       .blissos-dock-item:hover{
-        background:var(--blissos-dock-item-hover);
-      }
-      .blissos-dock-item.open{
-        background:var(--blissos-dock-item-open);
+        background:var(--blissos-accent-weak);
+      }      .blissos-dock-item.open{
+        background:var(--blissos-accent-weak);
         border-top:1px solid var(--blissos-border);
         border-left:1px solid var(--blissos-border);
         border-right:1px solid var(--blissos-border-hi);
@@ -822,10 +834,9 @@
         bottom:-1px;
         width:8px;
         height:1px;
-        background:var(--blissos-dock-indicator);
+        background:var(--blissos-accent);
         opacity:0;
-      }
-      .blissos-dock-item.open .dock-indicator{
+      }      .blissos-dock-item.open .dock-indicator{
         opacity:1;
       }
 
@@ -3571,6 +3582,7 @@
           zoom: 100,
         },
         settings: {
+          blissosAccent: loadBlissosAccent(),
           scanlines: false,
           tab: 'general',
           darkMode: false,
@@ -3626,11 +3638,20 @@
         autoPlayTimer: null,
         didAutoPlayThisSession: false,
       };
+      
+      // Helper functions for OS mode detection
+      function isBlissOS(){
+        return state.settings.theme === 'blissos';
+      }
+      function isBliss98(){
+        return state.settings.theme !== 'blissos';
+      }
 
       const ICON_POS_KEY = 'bliss98_icon_positions';
       const ICON_SIZE = { w: 92, h: 88 };
       const ICON_GAP = { x: 12, y: 8 };
       const WALLPAPER_KEY = 'bliss98_wallpaper';
+      const BLISSOS_ACCENT_KEY = 'bliss98_blissos_accent';
       const ANIMATIONS_KEY = 'bliss98_animations';
       const SCANLINES_KEY = 'bliss98_scanlines';
       const CLOCK_KEY = 'bliss98_clock24';
@@ -7652,6 +7673,7 @@ function initClothesWindow(winEl){
     updateRetroGlowButtons(win);
     updateDarkModeButtons(win);
     updateBlissOSDarkButtons(win);
+    updateBlissosAccentButtons(win);
     updateClockButtons(win);
     updateOldCrtButtons(win);
     updateSoundUI(win);
@@ -7700,6 +7722,22 @@ function initClothesWindow(winEl){
         tabs[nextIdx].focus();
       }
     });
+  });
+
+  // Event listeners for BlissOS accent color buttons
+  $$('[data-set-blissos-accent]', win).forEach(btn => {
+    btn.addEventListener('click', ()=>{
+      const accent = btn.dataset.setBlissosAccent;
+      setBlissosAccent(accent);
+      // Update pressed state for accent buttons
+      $$('[data-set-blissos-accent]', win).forEach(ab => {
+        ab.classList.toggle('pressed', ab.dataset.setBlissosAccent === state.settings.blissosAccent);
+      });
+    });
+  });
+  // Initial pressed state for accent buttons
+  $$('[data-set-blissos-accent]', win).forEach(ab => {
+    ab.classList.toggle('pressed', ab.dataset.setBlissosAccent === state.settings.blissosAccent);
   });
 }
 
@@ -7838,6 +7876,12 @@ function updateBlissOSDarkButtons(root=document){
   });
 }
 
+function updateBlissosAccentButtons(root=document){
+  $$('[data-set-blissos-accent]', root).forEach(btn => {
+    btn.classList.toggle('pressed', btn.dataset.setBlissosAccent === state.settings.blissosAccent);
+  });
+}
+
 function setDarkMode(enabled, fromPreset=false){
   state.settings.darkMode = !!enabled;
   applyDarkMode();
@@ -7850,6 +7894,7 @@ function setBlissOSDarkMode(enabled){
   if(state.settings.theme !== 'blissos') return;
   state.settings.blissosDarkMode = !!enabled;
   applyDarkMode();
+  applyBlissosAccent(state.settings.blissosAccent);
   updateBlissOSDarkButtons();
   syncOsProfile();
 }
@@ -8124,6 +8169,121 @@ function loadOsTheme(){
     return 'bliss98';
   }
 }
+
+function loadBlissosAccent(){
+  try{
+    const raw = localStorage.getItem(BLISSOS_ACCENT_KEY);
+    if(raw && ['multicolor', 'blue', 'purple', 'pink', 'red', 'orange', 'yellow', 'green', 'graphite'].includes(raw)){
+      return raw;
+    }
+    return 'multicolor'; // Default accent
+  } catch {
+    return 'multicolor';
+  }
+}
+
+const BLISSOS_ACCENT_COLORS = {
+  multicolor: {
+    // Neutral blue base for multicolor
+    '--blissos-accent': '#1B7BE5',
+    '--blissos-accent-2': '#2B8BEF',
+    '--blissos-accent-weak': 'rgba(27, 123, 229, 0.15)',
+    '--blissos-accent-contrast': '#ffffff',
+    // Dark mode specific
+    '--blissos-accent-dark': '#4F9BFA',
+    '--blissos-accent-2-dark': '#5FAAFF',
+    '--blissos-accent-weak-dark': 'rgba(79, 155, 250, 0.15)',
+    '--blissos-accent-contrast-dark': '#111111',
+  },
+  blue: {
+    '--blissos-accent': '#1B7BE5',
+    '--blissos-accent-2': '#2B8BEF',
+    '--blissos-accent-weak': 'rgba(27, 123, 229, 0.15)',
+    '--blissos-accent-contrast': '#ffffff',
+    // Dark mode specific
+    '--blissos-accent-dark': '#4F9BFA',
+    '--blissos-accent-2-dark': '#5FAAFF',
+    '--blissos-accent-weak-dark': 'rgba(79, 155, 250, 0.15)',
+    '--blissos-accent-contrast-dark': '#111111',
+  },
+  purple: {
+    '--blissos-accent': '#9B4AEE',
+    '--blissos-accent-2': '#A958FF',
+    '--blissos-accent-weak': 'rgba(155, 74, 238, 0.15)',
+    '--blissos-accent-contrast': '#ffffff',
+    // Dark mode specific
+    '--blissos-accent-dark': '#BE80FA',
+    '--blissos-accent-2-dark': '#D090FF',
+    '--blissos-accent-weak-dark': 'rgba(190, 128, 250, 0.15)',
+    '--blissos-accent-contrast-dark': '#111111',
+  },
+  pink: {
+    '--blissos-accent': '#E54DE4',
+    '--blissos-accent-2': '#EF5DED',
+    '--blissos-accent-weak': 'rgba(229, 77, 228, 0.15)',
+    '--blissos-accent-contrast': '#ffffff',
+    // Dark mode specific
+    '--blissos-accent-dark': '#FA80FA',
+    '--blissos-accent-2-dark': '#FF90FF',
+    '--blissos-accent-weak-dark': 'rgba(250, 128, 250, 0.15)',
+    '--blissos-accent-contrast-dark': '#111111',
+  },
+  red: {
+    '--blissos-accent': '#E53D3D',
+    '--blissos-accent-2': '#EF4D4D',
+    '--blissos-accent-weak': 'rgba(229, 61, 61, 0.15)',
+    '--blissos-accent-contrast': '#ffffff',
+    // Dark mode specific
+    '--blissos-accent-dark': '#FA6A6A',
+    '--blissos-accent-2-dark': '#FF7A7A',
+    '--blissos-accent-weak-dark': 'rgba(250, 106, 106, 0.15)',
+    '--blissos-accent-contrast-dark': '#111111',
+  },
+  orange: {
+    '--blissos-accent': '#E58A3D',
+    '--blissos-accent-2': '#EF9A4D',
+    '--blissos-accent-weak': 'rgba(229, 138, 61, 0.15)',
+    '--blissos-accent-contrast': '#ffffff',
+    // Dark mode specific
+    '--blissos-accent-dark': '#FAAC6A',
+    '--blissos-accent-2-dark': '#FFBC7A',
+    '--blissos-accent-weak-dark': 'rgba(250, 172, 106, 0.15)',
+    '--blissos-accent-contrast-dark': '#111111',
+  },
+  yellow: {
+    '--blissos-accent': '#E5D13D',
+    '--blissos-accent-2': '#E5D84D',
+    '--blissos-accent-weak': 'rgba(229, 209, 61, 0.15)',
+    '--blissos-accent-contrast': '#111111', // Black text for yellow
+    // Dark mode specific
+    '--blissos-accent-dark': '#FAE26A',
+    '--blissos-accent-2-dark': '#FFEA7A',
+    '--blissos-accent-weak-dark': 'rgba(250, 226, 106, 0.15)',
+    '--blissos-accent-contrast-dark': '#111111',
+  },
+  green: {
+    '--blissos-accent': '#19B34A',
+    '--blissos-accent-2': '#29C35A',
+    '--blissos-accent-weak': 'rgba(25, 179, 74, 0.15)',
+    '--blissos-accent-contrast': '#ffffff',
+    // Dark mode specific
+    '--blissos-accent-dark': '#3CBF6A',
+    '--blissos-accent-2-dark': '#4CD07A',
+    '--blissos-accent-weak-dark': 'rgba(60, 191, 106, 0.15)',
+    '--blissos-accent-contrast-dark': '#ffffff',
+  },
+  graphite: {
+    '--blissos-accent': '#8C8C8C',
+    '--blissos-accent-2': '#999999',
+    '--blissos-accent-weak': 'rgba(140, 140, 140, 0.15)',
+    '--blissos-accent-contrast': '#ffffff',
+    // Dark mode specific
+    '--blissos-accent-dark': '#AFAFAF',
+    '--blissos-accent-2-dark': '#BBBBBB',
+    '--blissos-accent-weak-dark': 'rgba(175, 175, 175, 0.15)',
+    '--blissos-accent-contrast-dark': '#111111',
+  },
+};
 
 function saveOsTheme(){
   try{
@@ -9276,6 +9436,18 @@ function installLongPress(el, getTarget){
           'settings.scanlinesDesc': 'Add scanline effect to the display.',
           'settings.scanlines.on': 'On',
           'settings.scanlines.off': 'Off',
+          
+          'settings.blissosAccent.title': 'Accent Color',
+          'settings.blissosAccent.desc': 'Choose your BlissOS accent color.',
+          'blissosAccent.multicolor': 'Multicolor',
+          'blissosAccent.blue': 'Blue',
+          'blissosAccent.purple': 'Purple',
+          'blissosAccent.pink': 'Pink',
+          'blissosAccent.red': 'Red',
+          'blissosAccent.orange': 'Orange',
+          'blissosAccent.yellow': 'Yellow',
+          'blissosAccent.green': 'Green',
+          'blissosAccent.graphite': 'Graphite',
           'titlebar.defaultBlue': 'Default Blue',
           'titlebar.pinkLight': 'Light Pink',
           'titlebar.purpleDark': 'Dark Purple',
@@ -9751,6 +9923,18 @@ function installLongPress(el, getTarget){
           'settings.scanlinesDesc': 'Adicione efeito de scanlines na tela.',
           'settings.scanlines.on': 'Ligado',
           'settings.scanlines.off': 'Desligado',
+
+          'settings.blissosAccent.title': 'Cor de destaque',
+          'settings.blissosAccent.desc': 'Escolha a cor de destaque do seu BlissOS.',
+          'blissosAccent.multicolor': 'Multicolor',
+          'blissosAccent.blue': 'Azul',
+          'blissosAccent.purple': 'Roxo',
+          'blissosAccent.pink': 'Rosa',
+          'blissosAccent.red': 'Vermelho',
+          'blissosAccent.orange': 'Laranja',
+          'blissosAccent.yellow': 'Amarelo',
+          'blissosAccent.green': 'Verde',
+          'blissosAccent.graphite': 'Grafite',
           'titlebar.defaultBlue': 'Azul padrão',
           'titlebar.pinkLight': 'Rosa claro',
           'titlebar.purpleDark': 'Roxo escuro',
@@ -10037,9 +10221,9 @@ function installLongPress(el, getTarget){
         updateRetroGlowButtons(root);
         updateScanlinesButtons(root);
         updateClockButtons(root);
-        updateOldCrtButtons(root);
-        updateSoundUI(root);
-      }
+            updateOldCrtButtons(root);
+            updateSoundUI(root);
+            updateBlissosAccentButtons(root);      }
 
       function applyI18n(){
         applyI18nTo(document);
@@ -10064,7 +10248,34 @@ function installLongPress(el, getTarget){
         localStorage.setItem('bliss98_lang', state.lang);
         applyI18n();
       }
-
+      
+      function setBlissosAccent(accent){
+        state.settings.blissosAccent = accent;
+        localStorage.setItem(BLISSOS_ACCENT_KEY, accent);
+        applyBlissosAccent(accent); // This function will apply the CSS variables
+      }
+      
+      function applyBlissosAccent(accent){
+        const colors = BLISSOS_ACCENT_COLORS[accent];
+        if(!colors) return; // Should not happen
+      
+        const isDarkMode = state.settings.blissosDarkMode;
+        const root = document.body; // Apply to body directly for BlissOS theme
+      
+        for (const prop in colors) {
+          if (prop.endsWith('-dark')) {
+            if (isDarkMode) {
+              root.style.setProperty(prop.replace('-dark', ''), colors[prop]);
+            }
+          } else {
+            if (!isDarkMode) {
+              root.style.setProperty(prop, colors[prop]);
+            }
+          }
+        }
+        // Re-render UI elements that might need to reflect accent changes
+        // updateBlissOSActiveApp(); // Uncomment if needed later
+      }
       function toggleLang(){
         setLang(state.lang === 'en' ? 'pt' : 'en');
       }
@@ -12080,7 +12291,25 @@ Eu sou o buffalo branco extinto`
                     <div class="tiny" data-i18n="settings.appearanceDesc">Customize how BLISS 98 looks.</div>
                   </div>
                 </div>
+                ${isBlissOS() ? `
+                <div class="settings-block" id="settingsBlissosAccent">
+                  <strong data-i18n="settings.blissosAccent.title">Accent Color</strong>
+                  <p style="margin:6px 0 10px 0;" data-i18n="settings.blissosAccent.desc">Choose your BlissOS accent color.</p>
+                  <div class="settings-actions">
+                    <button class="btn bevel" type="button" data-set-blissos-accent="multicolor" data-i18n="blissosAccent.multicolor">Multicolor</button>
+                    <button class="btn bevel" type="button" data-set-blissos-accent="blue" data-i18n="blissosAccent.blue">Blue</button>
+                    <button class="btn bevel" type="button" data-set-blissos-accent="purple" data-i18n="blissosAccent.purple">Purple</button>
+                    <button class="btn bevel" type="button" data-set-blissos-accent="pink" data-i18n="blissosAccent.pink">Pink</button>
+                    <button class="btn bevel" type="button" data-set-blissos-accent="red" data-i18n="blissosAccent.red">Red</button>
+                    <button class="btn bevel" type="button" data-set-blissos-accent="orange" data-i18n="blissosAccent.orange">Orange</button>
+                    <button class="btn bevel" type="button" data-set-blissos-accent="yellow" data-i18n="blissosAccent.yellow">Yellow</button>
+                    <button class="btn bevel" type="button" data-set-blissos-accent="green" data-i18n="blissosAccent.green">Green</button>
+                    <button class="btn bevel" type="button" data-set-blissos-accent="graphite" data-i18n="blissosAccent.graphite">Graphite</button>
+                  </div>
+                </div>
+                ` : ''}
 
+                ${isBliss98() ? `
                 <div class="settings-block" id="settingsThemes">
                   <strong data-i18n="settings.themes.title">Themes</strong>
                   <p style="margin:6px 0 10px 0;" data-i18n="settings.themes.desc">Select a theme to change wallpaper, title color, and dark mode.</p>
@@ -12133,6 +12362,8 @@ Eu sou o buffalo branco extinto`
                     <div class="tiny"><span data-i18n="settings.themes.current">Current theme:</span> <span data-theme-current></span></div>
                   </div>
                 </div>
+                ` : ''}
+                ${isBliss98() ? `
                 <div class="settings-block" id="settingsTitlebar">
                   <strong data-i18n="settings.titlebar.title">Window Title Color</strong>
                   <p style="margin:6px 0 10px 0;" data-i18n="settings.titlebar.desc">Choose the color of the window title bars.</p>
@@ -12171,6 +12402,7 @@ Eu sou o buffalo branco extinto`
                     </button>
                   </div>
                 </div>
+                ` : ''}
                 <div class="settings-block bliss98-only" id="settingsDarkMode">
                   <strong data-i18n="settings.darkMode.title">Dark Mode</strong>
                   <p style="margin:6px 0 10px 0;" data-i18n="settings.darkMode.desc">Makes BLISS 98 darker and easier on the eyes.</p>
@@ -15245,10 +15477,13 @@ function renderBlissOSAppMenu(){
         state.trashSelection = new Set();
 
         // Apply translations immediately (default is English)
+        // Apply initial BlissOS accent color
+        if (isBlissOS()) {
+          applyBlissosAccent(state.settings.blissosAccent);
+        }
         applyI18n();
         applyOsTheme();
         updateTrashIconUI();
-
         initSfx();
         showLogin(true);
       document.addEventListener('click', (e)=>{
