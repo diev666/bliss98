@@ -466,16 +466,15 @@
         pointer-events:none;
       }
       body[data-theme="blissos"] .wctl{
-        width:12px;
-        height:12px;
+        width:18px;
+        height:18px;
         border-radius:2px;
         background:var(--blissos-surface-2);
         border:1px solid var(--blissos-border);
         box-shadow:inset 1px 1px 0 var(--blissos-border-hi), inset -1px -1px 0 var(--blissos-border-lo);
-        font-size:10px;
+        font-size:14px;
         color:var(--blissos-text);
-      }
-      body[data-theme="blissos"] .title-controls .wctl{
+      }      body[data-theme="blissos"] .title-controls .wctl{
         position:absolute;
         top:0;
       }
@@ -563,12 +562,9 @@
         box-shadow:inset 1px 1px 0 var(--blissos-border-hi), inset -1px -1px 0 var(--blissos-border-lo);
       }
       body[data-theme="blissos"] ::-webkit-scrollbar-button{
-        width:14px;
-        height:14px;
-        background:var(--blissos-scroll-button);
-        border:1px solid var(--blissos-border);
-        box-shadow:inset 1px 1px 0 var(--blissos-border-hi), inset -1px -1px 0 var(--blissos-border-lo);
-      }
+        display: none;
+        width:0;
+        height:0;      }
       body[data-theme="blissos"] ::-webkit-scrollbar-button:vertical:decrement{
         background:
           linear-gradient(135deg, transparent 48%, var(--blissos-scroll-arrow) 48% 52%, transparent 52%),
