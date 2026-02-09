@@ -3386,6 +3386,11 @@
         border:1px solid var(--panel-border);
         background:var(--panel-in);
         display:block;
+        transition:filter .15s ease, transform .15s ease;
+      }
+      .clothes-grid.preview-off .clothes-thumb{
+        filter:blur(10px) saturate(.65);
+        transform:scale(1.02);
       }
       .clothes-status{
         margin-top:10px;
@@ -3912,6 +3917,11 @@
           openNewTab: true,
           showIcons: true,
         },
+        clothes: {
+          items: [],
+          sort: 'new',
+          preview: true,
+        },
         mediaplayer: {
           selected: new Set(),
           shuffle: false,
@@ -4038,6 +4048,10 @@
       const ICON_LABELS_KEY = 'bliss98_icon_labels';
       const CLOTHES_CACHE_KEY = 'bliss98_clothes_cache';
       const CLOTHES_CACHE_TTL = 1000 * 60 * 60 * 3;
+      const CLOTHES_PROFILE_USERNAME = 'blissworldweb';
+      const CLOTHES_PROFILE_QUERY_ID = '34579740524958711';
+      const CLOTHES_PROFILE_URL = 'https://www.instagram.com/blissworldweb/';
+      const CLOTHES_SIZING_URL = 'https://www.instagram.com/direct/new/?username=blissworldweb';
       const SNAKE_HIGH_KEY = 'bliss98_snake_highscore';
       const DOPE_SKATE_HIGH_KEY = 'bliss98_dope_skate_highscore';
       const TITLEBAR_KEY = 'bliss98_titlebar_theme';
@@ -8340,36 +8354,138 @@ function parseInstagramHtml(html){
     const shortcode = match[1];
     const display = decodeInstagramUrl(match[2]);
     if(!shortcode || !display) continue;
+    const snippet = html.slice(match.index, match.index + 1600);
+    const likesMatch = snippet.match(/"edge_media_preview_like":\{"count":(\d+)/);
+    const likes = likesMatch ? Number(likesMatch[1]) : null;
     items.push({
       img: display,
-      url: `https://www.instagram.com/p/${shortcode}/`
+      url: `https://www.instagram.com/p/${shortcode}/`,
+      likes: Number.isFinite(likes) ? likes : null,
     });
   }
   return items;
 }
 
+function parseJsonFromJinaText(raw){
+  if(!raw) return null;
+  const candidates = [];
+  const markdownIdx = raw.indexOf('Markdown Content:');
+  if(markdownIdx !== -1){
+    candidates.push(raw.slice(markdownIdx + 'Markdown Content:'.length).trim());
+  }
+  const dataIdx = raw.indexOf('{"data"');
+  if(dataIdx !== -1){
+    candidates.push(raw.slice(dataIdx).trim());
+  }
+  const jsonIdx = raw.indexOf('{');
+  if(jsonIdx !== -1){
+    candidates.push(raw.slice(jsonIdx).trim());
+  }
+  for(const chunk of candidates){
+    if(!chunk) continue;
+    try{
+      return JSON.parse(chunk);
+    } catch {
+      const end = chunk.lastIndexOf('}');
+      if(end > 0){
+        try{
+          return JSON.parse(chunk.slice(0, end + 1));
+        } catch {}
+      }
+    }
+  }
+  return null;
+}
+
+function parseInstagramGraphqlResponse(payload){
+  const connection = payload && payload.data && payload.data.xdt_api__v1__feed__user_timeline_graphql_connection;
+  const edges = connection && Array.isArray(connection.edges) ? connection.edges : [];
+  const items = [];
+  for(const edge of edges){
+    const node = edge && edge.node ? edge.node : null;
+    if(!node) continue;
+    const code = node.code;
+    const postUrl = code ? `https://www.instagram.com/p/${code}/` : '';
+    const candidates = node.image_versions2 && Array.isArray(node.image_versions2.candidates)
+      ? node.image_versions2.candidates
+      : [];
+    const best = candidates.slice().sort((a, b) => (Number(b && b.width) || 0) - (Number(a && a.width) || 0))[0] || null;
+    const imageUrl = (best && best.url) || '';
+    if(!postUrl && !imageUrl) continue;
+    const likes = Number(node.like_count);
+    items.push({
+      url: postUrl || CLOTHES_PROFILE_URL,
+      img: imageUrl || './assets/icons/Clothes.png',
+      likes: Number.isFinite(likes) ? likes : null,
+    });
+    if(items.length >= 12) break;
+  }
+  return items;
+}
+
+function isClothesFallbackCache(items){
+  if(!Array.isArray(items) || !items.length) return true;
+  return items.every(item => {
+    const img = String(item && item.img ? item.img : '');
+    return !img || img.includes('/assets/icons/Clothes.png') || /(^|\/)Clothes\.png($|\?)/i.test(img);
+  });
+}
+
 function fetchClothesFromInstagram(){
-  const url = 'https://r.jina.ai/http://www.instagram.com/blissworldweb/';
+  const variables = encodeURIComponent(JSON.stringify({
+    username: CLOTHES_PROFILE_USERNAME,
+    first: 12,
+    data: {}
+  }));
+  const url = `https://r.jina.ai/http://www.instagram.com/graphql/query/?query_id=${CLOTHES_PROFILE_QUERY_ID}&variables=${variables}`;
   return fetch(url, { cache: 'no-store' })
     .then(res => res.ok ? res.text() : Promise.reject(new Error('bad')))
-    .then(html => parseInstagramHtml(html))
+    .then(raw => {
+      const payload = parseJsonFromJinaText(raw);
+      const items = parseInstagramGraphqlResponse(payload);
+      if(items.length) return items;
+      return parseInstagramHtml(raw);
+    })
     .catch(() => []);
+}
+
+function getSortedClothesItems(items){
+  const source = Array.isArray(items) ? items : [];
+  if(state.clothes.sort !== 'popular') return source.slice();
+  return source.slice().sort((a, b) => {
+    const likesA = Number.isFinite(Number(a && a.likes)) ? Number(a.likes) : -1;
+    const likesB = Number.isFinite(Number(b && b.likes)) ? Number(b.likes) : -1;
+    if(likesA !== likesB) return likesB - likesA;
+    const urlA = String((a && a.url) || '');
+    const urlB = String((b && b.url) || '');
+    return urlA.localeCompare(urlB);
+  });
 }
 
 function renderClothesItems(winEl, items){
   const grid = winEl.querySelector('#clothesGrid');
   if(!grid) return;
-  const profile = 'https://www.instagram.com/blissworldweb/';
+  const profile = CLOTHES_PROFILE_URL;
   const alt = t('clothes.thumbAlt');
   grid.innerHTML = items.map(item => {
-    const href = item.url || profile;
-    const img = item.img || './assets/icons/Clothes.png';
+    const href = escapeHTML(item.url || profile);
+    const img = escapeHTML(item.img || './assets/icons/Clothes.png');
+    const altText = escapeHTML(alt);
     return `
-      <a class="clothes-item" href="${href}" target="_blank" rel="noopener noreferrer" aria-label="${alt}">
-        <img class="clothes-thumb" src="${img}" alt="${alt}" loading="lazy" />
+      <a class="clothes-item" href="${href}" data-clothes-url="${href}" target="_blank" rel="noopener noreferrer" aria-label="${altText}">
+        <img class="clothes-thumb" src="${img}" alt="${altText}" loading="lazy" />
       </a>
     `;
   }).join('');
+}
+
+function applyClothesState(winEl){
+  const win = winEl || document.getElementById('win_clothes');
+  if(!win) return;
+  const grid = win.querySelector('#clothesGrid');
+  if(!grid) return;
+  grid.classList.toggle('preview-off', !state.clothes.preview);
+  renderClothesItems(win, getSortedClothesItems(state.clothes.items));
 }
 
 function updateClothesStatus(winEl, key){
@@ -8387,20 +8503,28 @@ function updateClothesStatus(winEl, key){
 function initClothesWindow(winEl){
   const win = winEl || document.getElementById('win_clothes');
   if(!win) return;
+  if(state.clothes.items && state.clothes.items.length){
+    applyClothesState(win);
+    updateClothesStatus(win, null);
+    if(!isClothesFallbackCache(state.clothes.items)) return;
+  }
   const cached = loadClothesCache();
   if(cached && cached.length){
-    renderClothesItems(win, cached);
+    state.clothes.items = cached.slice();
+    applyClothesState(win);
     updateClothesStatus(win, null);
-    return;
+    if(!isClothesFallbackCache(cached)) return;
   }
   updateClothesStatus(win, 'clothes.loading');
   fetchClothesFromInstagram().then(items => {
     if(items && items.length) saveClothesCache(items);
     const fallback = (items && items.length) ? items : CLOTHES_FALLBACK;
     if(fallback && fallback.length){
-      renderClothesItems(win, fallback);
+      state.clothes.items = fallback.slice();
+      applyClothesState(win);
       updateClothesStatus(win, null);
     } else {
+      state.clothes.items = [];
       renderClothesItems(win, []);
       updateClothesStatus(win, 'clothes.unavailable');
     }
@@ -11307,6 +11431,7 @@ function applyDarkMode(){
 
 function applyWindowState(winEl, appId){
   if(appId === 'music') applyMusicState(winEl);
+  if(appId === 'clothes') applyClothesState(winEl);
   if(appId === 'mediaplayer') applyMediaplayerState(winEl);
   if(appId === 'diev') applyDievState(winEl);
   if(appId === 'art') applyArtState(winEl);
@@ -12992,11 +13117,11 @@ function installLongPress(el, getTarget){
               type:'submenu',
               labelKey:'menu.clothes.sort',
               items:[
-                { labelKey:'menu.clothes.sort.new', action:'clothes:sortNew' },
-                { labelKey:'menu.clothes.sort.popular', action:'clothes:sortPopular' }
+                { labelKey:'menu.clothes.sort.new', action:'clothes:sortNew', type:'radio', checked: state.clothes.sort === 'new' },
+                { labelKey:'menu.clothes.sort.popular', action:'clothes:sortPopular', type:'radio', checked: state.clothes.sort === 'popular' }
               ]
             });
-            items.push({ labelKey:'menu.clothes.preview', action:'clothes:togglePreview', type:'checkbox', checked: false });
+            items.push({ labelKey:'menu.clothes.preview', action:'clothes:togglePreview', type:'checkbox', checked: state.clothes.preview });
           }
           if(appId === 'diev'){
             items.push({
@@ -13527,8 +13652,40 @@ function installLongPress(el, getTarget){
           return;
         }
 
-        if(action === 'clothes:openLookbook' || action === 'clothes:shop' || action === 'clothes:sizing' || action === 'clothes:viewGrid' || action === 'clothes:sortNew' || action === 'clothes:sortPopular' || action === 'clothes:togglePreview'){
-          showMessage('dialog.notAvailable.title', 'dialog.notAvailable.body');
+        if(action === 'clothes:openLookbook'){
+          openLink(CLOTHES_PROFILE_URL, 'clothes');
+          return;
+        }
+        if(action === 'clothes:shop'){
+          const topItem = getSortedClothesItems(state.clothes.items).find(item => item && item.url);
+          openLink((topItem && topItem.url) ? topItem.url : CLOTHES_PROFILE_URL, 'clothes');
+          return;
+        }
+        if(action === 'clothes:sizing'){
+          openLink(CLOTHES_SIZING_URL, 'clothes');
+          return;
+        }
+        if(action === 'clothes:viewGrid'){
+          const win = document.getElementById('win_clothes');
+          const grid = win ? win.querySelector('#clothesGrid') : null;
+          if(grid) grid.scrollIntoView({ block: 'nearest' });
+          const firstItem = grid ? grid.querySelector('.clothes-item') : null;
+          if(firstItem && typeof firstItem.focus === 'function') firstItem.focus();
+          return;
+        }
+        if(action === 'clothes:sortNew'){
+          state.clothes.sort = 'new';
+          applyClothesState();
+          return;
+        }
+        if(action === 'clothes:sortPopular'){
+          state.clothes.sort = 'popular';
+          applyClothesState();
+          return;
+        }
+        if(action === 'clothes:togglePreview'){
+          state.clothes.preview = !state.clothes.preview;
+          applyClothesState();
           return;
         }
         if(action === 'clothes:copy' || action === 'clothes:selectAll'){
