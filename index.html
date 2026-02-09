@@ -174,7 +174,7 @@
   [data-set-scanlines], [data-set-darkmode], [data-set-blissos-darkmode], [data-set-retro],
   [data-set-clock], [data-set-oldcrt], [data-set-os-theme], [data-set-titlebar],
   [data-theme-custom], [data-games-tab], [data-music-id], [data-poem-id], [data-trash-id],
-  [data-video-id], [data-trash-action], [data-modal-action], [data-menu-action], [data-txt-action], [data-folder-nav-id],
+  [data-trash-action], [data-modal-action], [data-menu-action], [data-txt-action], [data-folder-nav-id],
   [data-blissos-action], [data-blissos-open-app], [data-blissos-settings-tab],
   [data-blissos-appmenu-action], [data-blissos-appmenu-app], [data-poetry-action],
   [data-mp-action], [data-mp-pick], [data-videos-action], [data-sound-slider]{
@@ -1980,66 +1980,34 @@
       .videos-link-btn{
         text-decoration:none;
       }
-      .videos-player{
-        display:flex;
-        flex-direction:column;
-        gap:6px;
-      }
-      .videos-player-head{
-        display:flex;
-        flex-wrap:wrap;
-        align-items:center;
-        gap:8px 12px;
-        justify-content:space-between;
-      }
-      .videos-player-actions{
-        display:flex;
-        flex-wrap:wrap;
-        gap:6px;
-      }
-      .videos-embed{
-        padding:4px;
-      }
-      .videos-embed-inner{
-        position:relative;
-        width:100%;
-        padding-top:56.25%;
-        background:#000;
-      }
-      .videos-embed-inner video{
-        position:absolute;
-        inset:0;
-        width:100%;
-        height:100%;
-        border:0;
-      }
       .videos-list{
         display:grid;
-        grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));
+        grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
         gap:10px;
       }
       .videos-item{
         display:flex;
+        flex-direction:column;
         gap:8px;
-        align-items:flex-start;
-        padding:6px;
+        align-items:stretch;
+        padding:8px;
         border:1px solid transparent;
         background:var(--content-bg);
         color:var(--content-text);
         text-align:left;
         cursor:default;
       }
-      .videos-item.selected{
-        border:1px dotted var(--select-text);
-        background:var(--selection-bg);
-      }
       .videos-thumb{
-        width:96px;
-        height:54px;
+        width:100%;
+        height:auto;
+        aspect-ratio:16/9;
         flex:0 0 auto;
         border:1px solid var(--panel-border);
         background:#000;
         object-fit:cover;
+      }
+      .videos-card-player{
+        display:block;
       }
       .videos-meta{
         display:flex;
@@ -2057,14 +2025,8 @@
         opacity:.85;
       }
       @media (max-width: 520px){
-        .videos-item{
-          flex-direction:column;
-          align-items:flex-start;
-        }
-        .videos-thumb{
-          width:100%;
-          height:auto;
-          aspect-ratio:16/9;
+        .videos-list{
+          grid-template-columns:1fr;
         }
       }
       .music-grid{
@@ -11257,6 +11219,7 @@ function captureVideoThumbnail(src, seekTime = 1.2){
 }
 
 function generateLocalVideoThumbnails(items){
+  if(state && state.isMobile) return;
   const pending = (items || []).filter(item => item && item.id && item.src && !VIDEO_THUMBS.has(item.id));
   if(!pending.length) return;
   pending.forEach(item => {
@@ -11266,32 +11229,10 @@ function generateLocalVideoThumbnails(items){
       const stateItem = (state.videos.items || []).find(v => v.id === item.id);
       if(!stateItem) return;
       stateItem.thumb = thumb;
-      renderVideosList(null, state.videos.items);
+      const cardPlayer = document.querySelector(`#win_videos [data-video-card="${item.id}"] .videos-card-player`);
+      if(cardPlayer) cardPlayer.poster = thumb;
     });
   });
-}
-
-function renderVideoPlayer(winEl, videoId, opts = {}){
-  const win = winEl || document.getElementById('win_videos');
-  if(!win) return;
-  const player = win.querySelector('#videosPlayer');
-  if(!player) return;
-  const selected = (state.videos.items || []).find(it => it.id === videoId) || state.videos.items?.[0] || null;
-  if(!selected){
-    player.pause();
-    player.removeAttribute('src');
-    delete player.dataset.videoId;
-    player.load();
-    return;
-  }
-  if(opts.force || player.dataset.videoId !== selected.id){
-    player.src = selected.src;
-    player.dataset.videoId = selected.id;
-    player.load();
-  }
-  if(opts.autoplay){
-    player.play().catch(()=>{});
-  }
 }
 
 function renderVideosList(winEl, items){
@@ -11304,18 +11245,26 @@ function renderVideosList(winEl, items){
     return;
   }
   list.innerHTML = items.map(it => {
-    const selected = it.id === state.videos.selectedId;
     const meta = it.meta || '';
+    const poster = it.thumb ? ` poster="${escapeHTML(it.thumb)}"` : '';
     return `
-      <button class="videos-item bevel-in${selected ? ' selected' : ''}" type="button" data-video-id="${it.id}">
-        <img class="videos-thumb pixel" src="${it.thumb}" alt="${escapeHTML(it.title)}" />
+      <article class="videos-item bevel-in" data-video-card="${it.id}">
+        <video class="videos-thumb videos-card-player pixel" src="${it.src}" controls playsinline webkit-playsinline preload="none"${poster}></video>
         <div class="videos-meta">
           <div class="videos-title">${escapeHTML(it.title)}</div>
           <div class="videos-sub">${escapeHTML(meta)}</div>
         </div>
-      </button>
+      </article>
     `;
   }).join('');
+  const players = list.querySelectorAll('.videos-card-player');
+  players.forEach(player => {
+    player.addEventListener('play', ()=>{
+      players.forEach(other => {
+        if(other !== player) other.pause();
+      });
+    });
+  });
 }
 
 function initVideosWindow(winEl){
@@ -11324,7 +11273,6 @@ function initVideosWindow(winEl){
   state.videos.items = getLocalVideos();
   state.videos.selectedId = state.videos.items[0]?.id || null;
   renderVideosList(win, state.videos.items);
-  renderVideoPlayer(win, state.videos.selectedId, { force:true });
   generateLocalVideoThumbnails(state.videos.items);
 }
 
@@ -14774,13 +14722,6 @@ Eu sou o buffalo branco extinto`
           <div class="videos-shell">
             <div class="videos-header">
               <a class="btn bevel videos-link-btn" href="${VIDEO_CHANNEL_URL}" target="_blank" rel="noopener noreferrer" data-i18n="videos.channelLink">Watch on Youtube</a>
-            </div>
-            <div class="videos-player">
-              <div class="videos-embed bevel-in">
-                <div class="videos-embed-inner">
-                  <video id="videosPlayer" controls playsinline preload="metadata"></video>
-                </div>
-              </div>
             </div>
             <div class="videos-list" id="videosList"></div>
           </div>
@@ -19085,13 +19026,6 @@ function renderBlissOSAppMenu(){
           if(act === 'openChannel'){
             openLink(VIDEO_CHANNEL_URL, 'videos');
           }
-        }
-        const videoItem = target.closest('[data-video-id]');
-        if(videoItem && videoItem.dataset && videoItem.dataset.videoId){
-          state.videos.selectedId = videoItem.dataset.videoId;
-          renderVideoPlayer(null, state.videos.selectedId, { force:true, autoplay:true });
-          renderVideosList(null, state.videos.items);
-          return;
         }
         const musicCard = target.closest('[data-music-id]');
         if(musicCard){
