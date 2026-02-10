@@ -313,6 +313,7 @@ function renderIcons(){
               p.el.dataset.dragged = '1';
             });
           }
+          clearDockDropPreview();
           setDockDropHighlight(false);
 
           dragging = false;
@@ -428,7 +429,13 @@ function renderIcons(){
           });
           if(isBlissOS()){
             const dockTarget = getDockDropTargetAt(e.clientX, e.clientY);
-            setDockDropHighlight(!!dockTarget);
+            if(dockTarget){
+              setDockDropPreview(dockTarget.index);
+              setDockDropHighlight(true);
+            } else {
+              clearDockDropPreview();
+              setDockDropHighlight(false);
+            }
           }
 
           e.preventDefault();
@@ -2589,16 +2596,60 @@ function isPointInRect(x, y, rect){
   return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 }
 
+let dockDropPreviewEl = null;
+
 function setDockDropHighlight(active){
   const inner = getDockInnerEl();
-  if(inner) inner.classList.toggle('dock-drop-active', !!active);
+  if(!inner) return;
+  inner.classList.toggle('dock-drop-active', !!active);
+  if(!active) inner.classList.remove('dock-drop-preview');
+}
+
+function clearDockDropPreview(){
+  if(dockDropPreviewEl && dockDropPreviewEl.parentNode){
+    dockDropPreviewEl.parentNode.removeChild(dockDropPreviewEl);
+  }
+  dockDropPreviewEl = null;
+  const inner = getDockInnerEl();
+  if(inner) inner.classList.remove('dock-drop-preview');
+}
+
+function setDockDropPreview(index){
+  const inner = getDockInnerEl();
+  const mid = getDockMidEl();
+  if(!inner || !mid) return;
+  if(!dockDropPreviewEl){
+    dockDropPreviewEl = document.createElement('span');
+    dockDropPreviewEl.className = 'blissos-dock-item dock-preview-slot';
+    dockDropPreviewEl.setAttribute('aria-hidden', 'true');
+  }
+  const items = Array.from(mid.querySelectorAll('.blissos-dock-item'))
+    .filter(el =>
+      el !== dockDropPreviewEl &&
+      el.dataset.dockType !== 'trash' &&
+      !el.classList.contains('dock-dragging') &&
+      !el.classList.contains('dock-removing') &&
+      !el.classList.contains('dock-preview-slot')
+    );
+  const insertAt = clamp(index, 0, items.length);
+  if(insertAt >= items.length){
+    mid.appendChild(dockDropPreviewEl);
+  } else {
+    mid.insertBefore(dockDropPreviewEl, items[insertAt]);
+  }
+  inner.classList.add('dock-drop-preview');
 }
 
 function getDockInsertIndexFromClientX(clientX, excludeEl){
   const mid = getDockMidEl();
   if(!mid) return 0;
   const items = Array.from(mid.querySelectorAll('.blissos-dock-item'))
-    .filter(el => el !== excludeEl && el.dataset.dockType !== 'trash');
+    .filter(el =>
+      el !== excludeEl &&
+      el.dataset.dockType !== 'trash' &&
+      !el.classList.contains('dock-preview-slot') &&
+      !el.classList.contains('dock-removing')
+    );
   for(let i = 0; i < items.length; i++){
     const rect = items[i].getBoundingClientRect();
     if(clientX < rect.left + rect.width / 2) return i;
@@ -2665,6 +2716,8 @@ function addDockItemsAt(entries, index){
     changed = true;
   });
   if(changed){
+    clearDockDropPreview();
+    setDockDropHighlight(false);
     state.dockItems = ensureTrashDockItem(normal);
     saveDockItems();
     renderBlissOSDock();
@@ -2678,53 +2731,67 @@ function bindDockDrag(btn, item, midEl, innerEl){
   let dragging = false;
   let pointerId = null;
   let startX = 0;
-  let lastX = 0;
-  let indicator = null;
+  let startY = 0;
   let targetIndex = -1;
+  let ghostEl = null;
 
   const cleanup = ()=>{
-    if(indicator && indicator.parentNode) indicator.remove();
-    indicator = null;
-    if(btn) btn.classList.remove('dock-dragging');
+    if(ghostEl && ghostEl.parentNode) ghostEl.remove();
+    ghostEl = null;
+    if(btn) btn.classList.remove('dock-dragging', 'dock-removing');
     if(innerEl) innerEl.classList.remove('dock-reorder-active');
+    clearDockDropPreview();
     setDockDropHighlight(false);
+  };
+
+  const updateGhostPos = (clientX, clientY)=>{
+    if(!ghostEl) return;
+    ghostEl.style.left = clientX + 'px';
+    ghostEl.style.top = clientY + 'px';
+  };
+
+  const beginDrag = (e)=>{
+    dragging = true;
+    btn.classList.add('dock-dragging');
+    innerEl.classList.add('dock-reorder-active');
+    btn.dataset.dragged = '1';
+    const visible = Array.from(midEl.querySelectorAll('.blissos-dock-item'))
+      .filter(el => el.dataset.dockType !== 'trash' && !el.classList.contains('dock-preview-slot'));
+    const currentIndex = visible.indexOf(btn);
+    targetIndex = currentIndex >= 0 ? currentIndex : getDockInsertIndexFromClientX(e.clientX, btn);
+    setDockDropPreview(targetIndex);
+    setDockDropHighlight(true);
+
+    const rect = btn.getBoundingClientRect();
+    ghostEl = btn.cloneNode(true);
+    ghostEl.classList.add('dock-drag-ghost');
+    ghostEl.classList.remove('dock-dragging', 'dock-removing', 'open', 'minimized');
+    ghostEl.style.width = rect.width + 'px';
+    ghostEl.style.height = rect.height + 'px';
+    document.body.appendChild(ghostEl);
+    updateGhostPos(e.clientX, e.clientY);
   };
 
   const onPointerMove = (e)=>{
     if(!down || (pointerId !== null && e.pointerId !== pointerId)) return;
-    lastX = e.clientX;
     const dx = e.clientX - startX;
-    if(!dragging && Math.abs(dx) > 4){
-      dragging = true;
-      btn.classList.add('dock-dragging');
-      innerEl.classList.add('dock-reorder-active');
-      indicator = document.createElement('span');
-      indicator.className = 'dock-insert-line';
-      innerEl.appendChild(indicator);
-      btn.dataset.dragged = '1';
+    const dy = e.clientY - startY;
+    if(!dragging && (Math.abs(dx) + Math.abs(dy)) > 4){
+      beginDrag(e);
     }
     if(!dragging) return;
-    const index = getDockInsertIndexFromClientX(e.clientX, btn);
-    const items = Array.from(midEl.querySelectorAll('.blissos-dock-item'))
-      .filter(el => el !== btn && el.dataset.dockType !== 'trash');
-    const innerRect = innerEl.getBoundingClientRect();
-    let lineX = innerRect.left + 12;
-    if(items.length){
-      if(index >= items.length){
-        const lastRect = items[items.length - 1].getBoundingClientRect();
-        lineX = lastRect.right + 4;
-      } else {
-        const rect = items[index].getBoundingClientRect();
-        lineX = rect.left - 4;
-      }
+    updateGhostPos(e.clientX, e.clientY);
+    const inDock = isPointInRect(e.clientX, e.clientY, innerEl.getBoundingClientRect());
+    if(inDock){
+      btn.classList.remove('dock-removing');
+      targetIndex = getDockInsertIndexFromClientX(e.clientX, btn);
+      setDockDropPreview(targetIndex);
+      setDockDropHighlight(true);
+    } else {
+      btn.classList.add('dock-removing');
+      clearDockDropPreview();
+      setDockDropHighlight(false);
     }
-    if(indicator){
-      indicator.style.left = (lineX - innerRect.left) + 'px';
-      indicator.style.height = (innerRect.height - 12) + 'px';
-      indicator.style.top = '6px';
-    }
-    targetIndex = index;
-    setDockDropHighlight(isPointInRect(e.clientX, e.clientY, innerEl.getBoundingClientRect()));
     e.preventDefault();
   };
 
@@ -2743,8 +2810,8 @@ function bindDockDrag(btn, item, midEl, innerEl){
     const dockRect = innerEl.getBoundingClientRect();
     const inDock = isPointInRect(e.clientX, e.clientY, dockRect);
     if(!inDock){
-      removeDockItem(item.type, item.refId);
       cleanup();
+      removeDockItem(item.type, item.refId);
       pointerId = null;
       return;
     }
@@ -2760,6 +2827,7 @@ function bindDockDrag(btn, item, midEl, innerEl){
       visible.splice(insertAt, 0, moved);
       state.dockItems = ensureTrashDockItem(visible.concat(hidden));
       saveDockItems();
+      cleanup();
       renderBlissOSDock();
     } else {
       cleanup();
@@ -2774,7 +2842,7 @@ function bindDockDrag(btn, item, midEl, innerEl){
     dragging = false;
     pointerId = e.pointerId;
     startX = e.clientX;
-    lastX = e.clientX;
+    startY = e.clientY;
     targetIndex = -1;
     try{ btn.setPointerCapture(pointerId); } catch {}
     document.addEventListener('pointermove', onPointerMove);

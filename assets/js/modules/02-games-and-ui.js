@@ -5883,6 +5883,7 @@ function makeFolderItemDraggable(iconEl, winId, containerEl){
         p.el.dataset.dragged = '1';
       });
     }
+    clearDockDropPreview();
     setDockDropHighlight(false);
 
     dragging = false;
@@ -5973,7 +5974,13 @@ function makeFolderItemDraggable(iconEl, winId, containerEl){
     });
     if(isBlissOS()){
       const dockTarget = getDockDropTargetAt(e.clientX, e.clientY);
-      setDockDropHighlight(!!dockTarget);
+      if(dockTarget){
+        setDockDropPreview(dockTarget.index);
+        setDockDropHighlight(true);
+      } else {
+        clearDockDropPreview();
+        setDockDropHighlight(false);
+      }
     }
     e.preventDefault();
   };
