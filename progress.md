@@ -58,9 +58,105 @@ Original prompt (continuação): e crie esses sons dentro da pasta assets/sounds
   - Correção: referências padronizadas para `./assets/icons/Settings.png` (e conversão para `./assets/BlissOS/Settings.png` via tema).
   - Arquivos ajustados: `assets/js/modules/04-app-content.js`, `assets/js/modules/06-shell-and-windowing.js` e rebuild de `assets/js/bliss98.bundle.js`.
   - Validação: ícone carregando com dimensões válidas em Bliss98 e BlissOS, sem 404.
+- Dope Skate: melhorias de gameplay implementadas (itens 3, 4 e 7 solicitados):
+  - Spawn refatorado para padrões pré-definidos com fila de eventos, reduzindo aleatoriedade injusta e melhorando legibilidade da run.
+    - Adicionados `DOPE_SKATE_SPAWN_PATTERNS`, agendamento por padrão e processamento via `spawn.queue`.
+    - Obstáculos/rails/coletáveis agora podem nascer por eventos com offsets e lanes controladas.
+  - Sistema de trick/combo aprofundado:
+    - Novos tricks: `Laserflip`, `Inward Heelflip`, `Late Flip`.
+    - Seleção de trick agora considera contexto (direção, fase do pulo, cadeia de combo).
+    - Adicionados `Perfect Landing` e `Sketchy Landing` na conversão do combo (bônus/penalidade).
+    - Expiração de combo no ar agora aplica penalidade parcial (`Combo Drop`) em vez de zerar brutalmente.
+  - Mapeamento de gamepad corrigido para remover conflito entre tricks e ações de menu:
+    - `back` movido para botão 8 (`Select/Back`) e `close` para shoulder buttons (4/5), eliminando sobreposição com face buttons de tricks.
+- Validação pós-implementação:
+  - `node --check assets/js/modules/02-games-and-ui.js`: OK.
+  - Rebuild do bundle (`node scripts/build-js-bundle.mjs`): OK.
+  - `node --check assets/js/bliss98.bundle.js`: OK.
+  - Playwright (fluxo real: login -> Games -> Dope Skate -> start -> sequência de inputs):
+    - Sem `console.error` e sem `pageerror`.
+    - Screenshot validada em gameplay/game over: `output/dope-validate/dope-run.png`.
+    - Estado interno confirma novas mecânicas ativas:
+      - `lastPatternId` preenchido (padrões de spawn em uso),
+      - `spawn.queue` com eventos agendados,
+      - combo/multiplicador/pontuação atualizando com as novas regras.
+- Dope Skate: melhoria visual de personagem e rodas aplicada:
+  - Causa raiz identificada: sprites de board/wheels muito simples e pouca leitura visual no render final.
+  - Ajustes no renderer (`dopeSkateDrawSkater`):
+    - Personagem redesenhado com escala maior no canvas para melhor presença.
+    - Skate agora usa `assets/skate/board/board.svg` quando disponível (deck mais limpo e legível).
+    - Rodas desenhadas proceduralmente (aro/pneu/miolo/spokes) com rotação real, removendo aspecto “bugado/quebrado”.
+    - Adicionada sombra de contato no chão para separar personagem do asfalto.
+    - Variante visual por item equipado (`board=chrome`, `wheels=blue`) refletida no desenho.
+  - Ajustes de animação:
+    - Retida a `trickAnim` entre frames e aplicado movimento visual de spin/lean/bob.
+    - Lean lateral por input e inclinação em ar/grind para dar mais vida ao skater.
+  - Validação:
+    - Build e `node --check` OK.
+    - Playwright com gameplay real sem erros de console/pageerror.
+- Dope Skate: segunda rodada de correções visuais (feedback direto de alinhamento/animação):
+  - Corrigido alinhamento global:
+    - personagem reposicionado para ficar acima do deck (sem parecer “enterrado”),
+    - sombra de contato reposicionada para o chão real e mais curta/credível.
+  - Rodas corrigidas:
+    - distância entre rodas aumentada (mais próximas dos trucks),
+    - deck ajustado para proporção mais real e trucks reposicionados.
+  - Animação de manobras corrigida:
+    - board agora gira de verdade com ângulos por trick (`spinTurns`) em vez de só balanço lateral do corpo,
+    - adicionado efeito de “flip” com compressão visual do deck (`boardScaleY`) durante kick/heel/varial/hardflip etc.,
+    - corpo acompanha com bob/lean, mas o destaque principal é a rotação do board.
+  - Visual do personagem:
+    - base do sprite agora usa `assets/skate/skater/body.svg`, com escala e posicionamento reajustados para leitura melhor.
+  - Validação da rodada:
+    - `node --check` módulo + bundle: OK.
+    - Rebuild do bundle: OK.
+    - Playwright: sem `console.error`/`pageerror`; screenshot confirmou board em rotação no ar e alinhamento corrigido.
+- Dope Skate: terceira rodada de polish visual (foco em sombra física e estética do skater):
+  - Sombra de contato revisada para comportamento físico:
+    - sombra sempre ancorada no chão (não acompanha altura do skatista),
+    - sombra diminui no pulo e aumenta ao pousar (escala/alpha por altura do board em relação ao solo).
+  - Sincronia visual personagem/board:
+    - removido bob vertical contínuo durante corrida (`bodyBob` em chão = 0) para evitar sensação de “personagem flutuando”.
+  - Skater redesenhado:
+    - `assets/skate/skater/body.svg` recriado com nova silhueta/proporções,
+    - rosto com olhos/boca, braços mais naturais, torso mais estreito e pernas mais coerentes.
+  - Validação:
+    - `node --check` módulo + bundle: OK.
+    - Rebuild bundle: OK.
+    - Playwright com 3 frames (grounded/airborne/landed) sem erros de console/pageerror, confirmando comportamento da sombra.
+- Hotfix de cache visual do skater:
+  - Problema: feedback indicou que o personagem ainda aparecia igual ao antigo.
+  - Ação:
+    - novo asset dedicado `assets/skate/skater/body_v2.svg`,
+    - path de asset atualizado para `./assets/skate/skater/body_v2.svg?v=1` para forçar refresh e evitar cache/fallback antigo.
+  - Resultado:
+    - render do personagem mudou de fato em runtime (validado por screenshot Playwright em canvas).
+- Skater v3 + postura de skate + animação base:
+  - Substituído asset de corpo por nova versão:
+    - `assets/skate/skater/body_v3.svg` (base),
+    - `assets/skate/skater/body_v3_step.svg` (passo alternado para movimento no chão).
+  - `DOPE_SKATE_ASSETS.skaterBody` atualizado para `body_v3.svg?v=1` (cache bust) e novo `skaterBodyStep` adicionado.
+  - Render:
+    - personagem baixado para tocar melhor no board (`riderLift` ajustado),
+    - stance com pernas mais abertas, braços levemente levantados, rosto orientado à direita,
+    - alternância de frame no estado `push` para movimento básico do corpo.
+  - Bug fix da rodada:
+    - corrigido `ReferenceError: player is not defined` (uso de `p.onGround` no renderer).
+  - Validação:
+    - `node --check` módulo + bundle: OK.
+    - Rebuild bundle: OK.
+    - Playwright sem erros de console/pageerror e screenshots `grounded/moving/airborne` confirmando novo visual + posição.
 
 ## TODO / handoff
 - Nenhum bloqueio pendente para este pedido.
 - Ajuste adicional: todos os apps do `openApp` agora tocam `file-open` no momento da abertura (quando a janela ainda não existe).
 - Ajuste adicional: clique nas opções do menu bar do BlissOS (Apple, app menu e itens File/Edit/View/...) agora toca `tab-change`.
 - Ajuste adicional: opções de menu (`data-menu-action`) agora tocam `file-open` (ex.: `Language`), com exceções para ações que já têm SFX próprio ou fluxo de abrir/fechar janela para evitar som duplicado.
+- Dope Skate: janela agora abre maior na horizontal por padrão ao entrar no jogo.
+  - Implementado ajuste de smart-fit mínimo por view em `renderGamesWindow`:
+    - `fitMinW=1160` e `fitMinH=680` quando `state.games.view === 'dope-skate'` (desktop).
+    - limpeza desses mínimos nas demais views para não afetar hub/leaderboard.
+  - Validação Playwright (desktop 1600x1000):
+    - Games hub abriu com ~535x535.
+    - Após abrir Dope Skate, janela foi para ~1160x878 automaticamente.
+    - Sem `console.error`/`pageerror`.

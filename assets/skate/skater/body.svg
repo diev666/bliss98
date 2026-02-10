@@ -1,129 +1,64 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 96" shape-rendering="crispEdges">
-  <!-- 64x96 pixel sprite (no hat, no glasses, no skateboard). Pose: riding stance, looking right, arms slightly raised -->
+  <!-- Refined static skater body: cleaner proportions, readable face, natural arms/legs -->
 
-  <!-- Palette -->
-  <!-- outline #1b1b1b | skin #f2c7a5 | hair #2b1f1a | shirt #ffffff | logo #d11c1c -->
-  <!-- jeans #0f0f12 | jeansHi #1a1a1f | shoe #101114 | shoeW #f5f5f5 | sole #cfcfcf -->
+  <!-- Hair -->
+  <rect x="25" y="10" width="14" height="2" fill="#2a1f1b"/>
+  <rect x="23" y="12" width="18" height="2" fill="#2a1f1b"/>
+  <rect x="22" y="14" width="20" height="2" fill="#2a1f1b"/>
+  <rect x="23" y="16" width="2" height="2" fill="#2a1f1b"/>
+  <rect x="39" y="16" width="3" height="2" fill="#2a1f1b"/>
 
-  <!-- ===== HEAD (looking right) ===== -->
-  <!-- hair -->
-  <rect x="26" y="10" width="16" height="2" fill="#2b1f1a"/>
-  <rect x="24" y="12" width="20" height="2" fill="#2b1f1a"/>
-  <rect x="24" y="14" width="4" height="2" fill="#2b1f1a"/>
-  <rect x="40" y="14" width="4" height="2" fill="#2b1f1a"/>
+  <!-- Head -->
+  <rect x="23" y="16" width="18" height="14" fill="#f2c6a0"/>
+  <rect x="22" y="18" width="1" height="10" fill="#111827"/>
+  <rect x="41" y="18" width="1" height="10" fill="#111827"/>
+  <rect x="24" y="30" width="16" height="1" fill="#111827"/>
+  <rect x="30" y="21" width="2" height="2" fill="#111827"/>
+  <rect x="35" y="21" width="2" height="2" fill="#111827"/>
+  <rect x="36" y="24" width="1" height="2" fill="#deae87"/>
+  <rect x="31" y="26" width="5" height="1" fill="#9a5e45"/>
+  <rect x="22" y="22" width="1" height="4" fill="#f2c6a0"/>
 
-  <!-- face block -->
-  <rect x="26" y="14" width="16" height="2" fill="#f2c7a5"/>
-  <rect x="24" y="16" width="20" height="12" fill="#f2c7a5"/>
-  <rect x="26" y="28" width="16" height="2" fill="#f2c7a5"/>
+  <!-- Neck -->
+  <rect x="29" y="31" width="6" height="3" fill="#f2c6a0"/>
+  <rect x="29" y="34" width="6" height="1" fill="#111827"/>
 
-  <!-- ear (back) -->
-  <rect x="22" y="20" width="2" height="6" fill="#f2c7a5"/>
+  <!-- Torso (slimmer than previous version) -->
+  <rect x="22" y="35" width="20" height="22" fill="#f2f4f8"/>
+  <rect x="21" y="35" width="1" height="22" fill="#111827"/>
+  <rect x="42" y="35" width="1" height="22" fill="#111827"/>
+  <rect x="23" y="57" width="18" height="1" fill="#111827"/>
+  <rect x="22" y="38" width="20" height="2" fill="#d9dde6"/>
+  <rect x="27" y="44" width="10" height="8" fill="#f2f4f8"/>
+  <rect x="29" y="46" width="6" height="4" fill="#d91f26"/>
+  <rect x="27" y="47" width="10" height="2" fill="#d91f26"/>
 
-  <!-- eyes / nose (facing right) -->
-  <rect x="36" y="20" width="2" height="2" fill="#1b1b1b"/>
-  <rect x="40" y="22" width="2" height="2" fill="#d9a98a"/> <!-- nose highlight -->
-  <rect x="38" y="24" width="2" height="2" fill="#d9a98a"/>
+  <!-- Arms (relaxed, not broken) -->
+  <rect x="18" y="37" width="4" height="10" fill="#f2f4f8"/>
+  <rect x="17" y="37" width="1" height="12" fill="#111827"/>
+  <rect x="18" y="47" width="4" height="7" fill="#f2c6a0"/>
+  <rect x="17" y="49" width="1" height="5" fill="#111827"/>
+  <rect x="42" y="37" width="4" height="10" fill="#f2f4f8"/>
+  <rect x="46" y="37" width="1" height="12" fill="#111827"/>
+  <rect x="42" y="47" width="4" height="7" fill="#f2c6a0"/>
+  <rect x="46" y="49" width="1" height="5" fill="#111827"/>
 
-  <!-- head outline -->
-  <rect x="26" y="12" width="16" height="2" fill="#1b1b1b"/>
-  <rect x="24" y="14" width="2" height="2" fill="#1b1b1b"/>
-  <rect x="42" y="14" width="2" height="2" fill="#1b1b1b"/>
-  <rect x="22" y="16" width="2" height="14" fill="#1b1b1b"/>
-  <rect x="44" y="16" width="2" height="14" fill="#1b1b1b"/>
-  <rect x="24" y="30" width="20" height="2" fill="#1b1b1b"/>
+  <!-- Waist / hips -->
+  <rect x="24" y="58" width="16" height="4" fill="#1f2937"/>
+  <rect x="24" y="62" width="16" height="2" fill="#111827"/>
 
-  <!-- ===== NECK ===== -->
-  <rect x="30" y="32" width="8" height="4" fill="#f2c7a5"/>
-  <rect x="28" y="32" width="2" height="4" fill="#1b1b1b"/>
-  <rect x="38" y="32" width="2" height="4" fill="#1b1b1b"/>
-  <rect x="30" y="36" width="8" height="2" fill="#1b1b1b"/>
+  <!-- Legs -->
+  <rect x="24" y="64" width="7" height="18" fill="#111827"/>
+  <rect x="33" y="64" width="7" height="18" fill="#111827"/>
+  <rect x="26" y="64" width="2" height="18" fill="#0b1220"/>
+  <rect x="35" y="64" width="2" height="18" fill="#0b1220"/>
+  <rect x="31" y="66" width="2" height="16" fill="#0b0f17"/>
 
-  <!-- ===== TORSO (leaning forward a bit) ===== -->
-  <!-- shirt outline top -->
-  <rect x="22" y="38" width="26" height="2" fill="#1b1b1b"/>
-  <rect x="20" y="40" width="30" height="2" fill="#1b1b1b"/>
-
-  <!-- shirt fill -->
-  <rect x="22" y="40" width="26" height="20" fill="#ffffff"/>
-  <rect x="22" y="60" width="26" height="8" fill="#ffffff"/>
-
-  <!-- logo (red) -->
-  <rect x="32" y="46" width="8" height="2" fill="#d11c1c"/>
-  <rect x="30" y="48" width="12" height="2" fill="#d11c1c"/>
-  <rect x="30" y="50" width="12" height="2" fill="#d11c1c"/>
-  <rect x="32" y="52" width="8" height="2" fill="#d11c1c"/>
-
-  <!-- torso outline sides/bottom -->
-  <rect x="20" y="42" width="2" height="26" fill="#1b1b1b"/>
-  <rect x="48" y="42" width="2" height="26" fill="#1b1b1b"/>
-  <rect x="22" y="68" width="26" height="2" fill="#1b1b1b"/>
-
-  <!-- ===== ARMS (slightly raised) ===== -->
-  <!-- left arm (back, raised) -->
-  <rect x="16" y="42" width="6" height="4" fill="#ffffff"/>
-  <rect x="14" y="46" width="6" height="6" fill="#ffffff"/>
-  <rect x="12" y="52" width="6" height="6" fill="#f2c7a5"/> <!-- forearm/hand -->
-  <rect x="12" y="58" width="6" height="2" fill="#f2c7a5"/>
-  <!-- outline -->
-  <rect x="14" y="46" width="2" height="14" fill="#1b1b1b"/>
-  <rect x="12" y="52" width="2" height="10" fill="#1b1b1b"/>
-
-  <!-- right arm (front, raised more) -->
-  <rect x="48" y="42" width="6" height="4" fill="#ffffff"/>
-  <rect x="50" y="46" width="6" height="6" fill="#ffffff"/>
-  <rect x="52" y="52" width="6" height="8" fill="#f2c7a5"/>
-  <rect x="54" y="60" width="6" height="2" fill="#f2c7a5"/>
-  <!-- outline -->
-  <rect x="54" y="46" width="2" height="16" fill="#1b1b1b"/>
-  <rect x="58" y="52" width="2" height="10" fill="#1b1b1b"/>
-
-  <!-- ===== JEANS / HIPS ===== -->
-  <!-- belt line -->
-  <rect x="22" y="70" width="26" height="2" fill="#1b1b1b"/>
-
-  <!-- hips -->
-  <rect x="24" y="72" width="22" height="4" fill="#1a1a1f"/>
-  <rect x="24" y="76" width="22" height="2" fill="#0f0f12"/>
-
-  <!-- ===== LEGS (skate stance: front leg bent, back leg trailing) ===== -->
-  <!-- front leg (right-facing, forward) -->
-  <rect x="36" y="78" width="10" height="2" fill="#0f0f12"/>
-  <rect x="38" y="80" width="10" height="10" fill="#0f0f12"/>
-  <rect x="40" y="90" width="10" height="2" fill="#0f0f12"/>
-
-  <!-- back leg (slightly behind) -->
-  <rect x="24" y="78" width="10" height="2" fill="#0f0f12"/>
-  <rect x="22" y="80" width="10" height="10" fill="#0f0f12"/>
-  <rect x="20" y="90" width="10" height="2" fill="#0f0f12"/>
-
-  <!-- inner shadows / gap -->
-  <rect x="34" y="78" width="2" height="14" fill="#0b0b0d"/>
-
-  <!-- leg outlines -->
-  <rect x="22" y="78" width="2" height="14" fill="#1b1b1b"/>
-  <rect x="46" y="78" width="2" height="14" fill="#1b1b1b"/>
-  <rect x="20" y="80" width="2" height="12" fill="#1b1b1b"/>
-  <rect x="48" y="80" width="2" height="12" fill="#1b1b1b"/>
-
-  <!-- ===== SHOES (feet positioned like on board) ===== -->
-  <!-- back foot shoe (left/bottom, angled) -->
-  <rect x="16" y="92" width="14" height="2" fill="#101114"/>
-  <rect x="16" y="94" width="16" height="2" fill="#cfcfcf"/>
-  <rect x="18" y="93" width="8" height="1" fill="#f5f5f5"/>
-  <rect x="16" y="92" width="2" height="2" fill="#1b1b1b"/>
-  <rect x="28" y="92" width="2" height="2" fill="#1b1b1b"/>
-
-  <!-- front foot shoe (right/bottom, more forward) -->
-  <rect x="38" y="92" width="14" height="2" fill="#101114"/>
-  <rect x="38" y="94" width="16" height="2" fill="#cfcfcf"/>
-  <rect x="40" y="93" width="8" height="1" fill="#f5f5f5"/>
-  <rect x="38" y="92" width="2" height="2" fill="#1b1b1b"/>
-  <rect x="50" y="92" width="2" height="2" fill="#1b1b1b"/>
-
-  <!-- ===== EXTRA OUTLINE CLEANUP (shirt edges) ===== -->
-  <rect x="20" y="40" width="2" height="2" fill="#1b1b1b"/>
-  <rect x="48" y="40" width="2" height="2" fill="#1b1b1b"/>
-  <rect x="18" y="42" width="2" height="2" fill="#1b1b1b"/>
-  <rect x="50" y="42" width="2" height="2" fill="#1b1b1b"/>
+  <!-- Shoes -->
+  <rect x="21" y="82" width="12" height="3" fill="#14181f"/>
+  <rect x="21" y="85" width="13" height="2" fill="#9ca3af"/>
+  <rect x="23" y="84" width="6" height="1" fill="#f8fafc"/>
+  <rect x="31" y="82" width="12" height="3" fill="#14181f"/>
+  <rect x="31" y="85" width="13" height="2" fill="#9ca3af"/>
+  <rect x="33" y="84" width="6" height="1" fill="#f8fafc"/>
 </svg>
