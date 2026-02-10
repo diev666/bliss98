@@ -1,0 +1,3549 @@
+
+      function setUser(name){
+        state.user = name;
+        localStorage.setItem('bliss98_user', name);
+        $('#who').textContent = name ? name : '';
+      }
+
+      function showDesktop(){
+        $('#login').classList.add('hidden');
+        $('#desktop').classList.remove('hidden');
+        $('#username').blur();
+        themeApplying = true;
+        applyWallpaper(state.wallpaper);
+        themeApplying = false;
+        renderIcons();
+        renderStartMenu();
+        tickClock();
+      }
+      let logoffInProgress = false;
+
+      function showLogin(playBoot = false){
+        $('#desktop').classList.add('hidden');
+        $('#login').classList.remove('hidden');
+        updateMatrixEffect();
+        $('#username').focus();
+        if(playBoot && areSystemSoundsEnabled() && SFX.boot && !SFX.boot.played){
+          playSfxOnce('boot', { allowPending: true }).then((ok)=>{
+            if(!ok && !SFX.boot.played) armBootUnlock();
+          });
+        }
+      }
+
+      function doLogoff(){
+        if(logoffInProgress) return;
+        logoffInProgress = true;
+        if(state.autoPlayTimer){
+          clearTimeout(state.autoPlayTimer);
+          state.autoPlayTimer = null;
+        }
+        state.didAutoPlayThisSession = false;
+        closeStartMenu();
+        closeCtxMenu();
+        closeWindowMenu();
+        closeModal();
+        playSfxAndWait('logoff').finally(()=>{
+          showLogin(false);
+          logoffInProgress = false;
+        });
+      }
+
+function renderIcons(){
+  const grid = $('#iconGrid');
+  if(!grid) return;
+  while(grid.firstChild) grid.removeChild(grid.firstChild);
+
+  APPS.filter(app => app.showOnDesktop !== false).forEach(app => ensureFsItemForApp(app.id, { save: false }));
+  VIRTUAL_ICONS.forEach(v => ensureFsItemForApp(v.id, { save: false }));
+
+  const metrics = getGridMetrics();
+  const occupied = new Map();
+  const iconPosCache = loadIconPositions();
+  const defaultLayout = getDefaultIconLayout();
+  let fsDirty = false;
+  let iconPosDirty = false;
+
+  const orderedIds = APPS.filter(app => app.showOnDesktop !== false).map(app => app.id)
+    .concat(VIRTUAL_ICONS.map(v => v.id));
+  const orderIndex = new Map(orderedIds.map((id, idx) => [id, idx]));
+
+  const rootItems = Object.values(state.fs.items || {}).filter(isDesktopVisibleItem).sort((a, b) => {
+    const ia = orderIndex.has(a.id) ? orderIndex.get(a.id) : 1e6;
+    const ib = orderIndex.has(b.id) ? orderIndex.get(b.id) : 1e6;
+    if(ia !== ib) return ia - ib;
+    const ca = a.createdAt || 0;
+    const cb = b.createdAt || 0;
+    if(ca !== cb) return ca - cb;
+    return getFsItemLabel(a).localeCompare(getFsItemLabel(b));
+  });
+
+  const fragment = document.createDocumentFragment();
+
+  rootItems.forEach((item, idx) => {
+    const id = item.id;
+    const el = document.createElement('div');
+    el.className = 'icon';
+    el.dataset.appId = id;
+    el.dataset.itemType = item.type || 'app';
+    if(item.type === 'folder') el.dataset.folderId = id;
+
+    const basePos = (Number.isFinite(item.x) && Number.isFinite(item.y))
+      ? { x: item.x, y: item.y }
+      : (defaultLayout[id] || legacyDefaultIconPos(idx));
+    const placed = placeOnFreeCell(basePos.x, basePos.y, occupied, metrics);
+    el.style.left = placed.x + 'px';
+    el.style.top = placed.y + 'px';
+
+    if((placed.changed || !Number.isFinite(item.x) || !Number.isFinite(item.y)) && item.parentId == null){
+      upsertFsItem({ id, parentId: null, x: placed.x, y: placed.y }, { save: false, syncIconPos: true, iconPosCache });
+      fsDirty = true;
+      if(isAppLikeItem(item)) iconPosDirty = true;
+    } else if(isAppLikeItem(item) && item.parentId == null && !iconPosCache[id] && Number.isFinite(item.x) && Number.isFinite(item.y)){
+      iconPosCache[id] = { x: item.x, y: item.y };
+      iconPosDirty = true;
+    }
+
+    const label = getFsItemLabel(item);
+    const iconHtml = getFsIconHtml(item, label, 32);
+    el.innerHTML = `
+      <div class="pixel" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;">${iconHtml}</div>
+      <span>${label}</span>
+    `;
+
+    if(state.trash.has(id)) el.classList.add('trashed');
+
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      if(el.dataset.dragged === '1'){
+        el.dataset.dragged = '0';
+        return;
+      }
+      selectIcon(id);
+    });
+
+    el.addEventListener('dblclick', (e)=>{
+      e.stopPropagation();
+      if(item.type === 'folder'){
+        openFolderWindow(id, { sourceEl: el, fromDesktop: true });
+        return;
+      }
+      if(item.type === 'txt'){
+        openTxtFileWindow(id, { sourceEl: el, fromDesktop: true });
+        return;
+      }
+      openIconById(id, { sourceEl: el, fromDesktop: true });
+    });
+
+    makeIconDraggable(el);
+    el.addEventListener('contextmenu', (ev)=>{
+      ev.preventDefault();
+      ev.stopPropagation();
+      openCtxMenu(ev.clientX, ev.clientY, 'icon', id, { itemType: item.type, parentId: null });
+    });
+    installLongPress(el, ()=>({ target:'icon', appId: id, itemType: item.type, parentId: null }));
+    fragment.appendChild(el);
+  });
+
+  grid.appendChild(fragment);
+  if(iconPosDirty) saveIconPositions(iconPosCache);
+  if(fsDirty) saveDesktopFs();
+}
+      function clearIconSelectionExcept(containerEl){
+        $$('.icon.selected').forEach(el => {
+          if(!containerEl || !containerEl.contains(el)){
+            el.classList.remove('selected');
+          }
+        });
+      }
+
+      function clearAllIconSelection(){
+        state.selectedIconId = null;
+        $$('.icon.selected').forEach(el => el.classList.remove('selected'));
+      }
+
+      function selectIcon(id, containerEl){
+        if(containerEl) clearIconSelectionExcept(containerEl);
+        state.selectedIconId = id;
+        $$('.icon').forEach(i => {
+          const inScope = !containerEl || containerEl.contains(i);
+          i.classList.toggle('selected', inScope && i.dataset.appId === id);
+        });
+      }
+
+      function makeIconDraggable(iconEl){
+        let down = false;
+        let dragging = false;
+        let pointerId = null;
+        let movedToLayer = false;
+        let lastEvent = null;
+
+        let startX = 0, startY = 0;
+        let group = [];
+        let startPositions = []; // { el, id, x, y }
+
+        // group bounds + allowed delta range
+        let dxMin = 0, dxMax = 0, dyMin = 0, dyMax = 0;
+
+        const dragLayer = $('#dragLayer');
+        const onWindowBlur = ()=>{
+          endDrag(lastEvent, true);
+        };
+        const endDrag = (e, cancel)=>{
+          if(!down) return;
+          if(pointerId !== null && e && e.pointerId !== pointerId) return;
+
+          down = false;
+          if(pointerId !== null){
+            try{ iconEl.releasePointerCapture(pointerId); } catch {}
+          }
+          document.removeEventListener('pointermove', onPointerMove);
+          document.removeEventListener('pointerup', onPointerUp);
+          document.removeEventListener('pointercancel', onPointerUp);
+          window.removeEventListener('blur', onWindowBlur);
+
+          document.body.classList.remove('dragging');
+
+          if(dragging && !cancel && e){
+            const ids = startPositions.map(p => p.id);
+            const dragEls = startPositions.map(p => p.el);
+            const iconPosCache = loadIconPositions();
+            ids.forEach(id => { ensureFsItemForApp(id, { save: false }); });
+
+            if(isOverTrashWindow(e.clientX, e.clientY) || isOverTrash(e.clientX, e.clientY)){
+              restoreGroupLayer();
+              moveIconsToTrash(ids);
+            } else if(isOverGamesWindow(e.clientX, e.clientY)){
+              addToFolder('games', ids);
+              ids.forEach(id => { delete iconPosCache[id]; });
+              debounceIconSave(()=> saveIconPositions(iconPosCache));
+              restoreGroupLayer();
+              renderIcons();
+              renderGamesWindow();
+            } else {
+              const dockTarget = getDockDropTargetAt(e.clientX, e.clientY);
+              if(dockTarget){
+                restoreGroupLayer();
+                const entries = ids.map(id => {
+                  if(id === 'trash') return { type:'trash', refId:'trash' };
+                  const fsItem = getFsItem(id);
+                  if(fsItem && (fsItem.type === 'folder' || fsItem.type === 'txt')) return { type: fsItem.type, refId: id };
+                  return { type:'app', refId: id };
+                });
+                addDockItemsAt(entries, dockTarget.index);
+              } else {
+                const folderWindowTarget = getFolderWindowDropTargetAt(e.clientX, e.clientY, dragEls, ids);
+                if(folderWindowTarget){
+                  restoreGroupLayer();
+                  const preferred = getRelativeIconPosFromClient(folderWindowTarget.containerEl, e.clientX, e.clientY);
+                  let moved = false;
+                  ids.forEach(id => {
+                    if(moveItemToFolder(id, folderWindowTarget.folderId, {
+                      save: false,
+                      iconPosCache,
+                      containerEl: folderWindowTarget.containerEl,
+                      preferredPos: preferred,
+                    })){
+                      moved = true;
+                    }
+                  });
+                  saveIconPositions(iconPosCache);
+                  saveDesktopFs();
+                  renderIcons();
+                  if(moved) refreshOpenFolderWindows();
+                } else {
+                  const folderTarget = getFolderDropTargetAt(e.clientX, e.clientY, dragEls, ids);
+                  if(folderTarget){
+                    restoreGroupLayer();
+                    let moved = false;
+                    ids.forEach(id => {
+                      if(moveItemToFolder(id, folderTarget.id, { save: false, iconPosCache, preferredPos: { x: 0, y: 0 } })){
+                        moved = true;
+                      }
+                    });
+                    saveIconPositions(iconPosCache);
+                    saveDesktopFs();
+                    renderIcons();
+                    if(moved) refreshOpenFolderWindows();
+                  } else {
+                    restoreGroupLayer();
+                    const metrics = getGridMetrics();
+                    const occupied = buildOccupiedFromFs(null, ids, metrics, { visibleOnly: true });
+                    let fsDirty = false;
+                    let iconPosDirty = false;
+
+                    startPositions.forEach(p => {
+                      const dx = e.clientX - startX;
+                      const dy = e.clientY - startY;
+                      let x = p.x + dx;
+                      let y = p.y + dy;
+
+                      if(state.gridSnap){
+                        const snapped = snapToGrid(x, y);
+                        x = snapped.x;
+                        y = snapped.y;
+                      }
+
+                      const placed = placeOnFreeCell(x, y, occupied, metrics);
+                      p.el.style.left = placed.x + 'px';
+                      p.el.style.top = placed.y + 'px';
+                      p.el.style.transform = '';
+                      const current = getFsItem(p.id);
+                      const changed = !current || current.parentId != null || current.x !== placed.x || current.y !== placed.y;
+                      if(changed){
+                        upsertFsItem({ id: p.id, parentId: null, x: placed.x, y: placed.y }, { save: false, syncIconPos: true, iconPosCache });
+                        fsDirty = true;
+                        if(isAppLikeItem(current || { type: p.el.dataset.itemType })) iconPosDirty = true;
+                      }
+                      p.el.dataset.dragged = '1';
+                    });
+
+                    if(iconPosDirty) debounceIconSave(()=> saveIconPositions(iconPosCache));
+                    if(fsDirty) saveDesktopFs();
+                  }
+                }
+              }
+            }
+          } else if(dragging){
+            restoreGroupLayer();
+          }
+
+          if(dragging){
+            startPositions.forEach(p => {
+              p.el.style.transform = '';
+              p.el.dataset.dragged = '1';
+            });
+          }
+          setDockDropHighlight(false);
+
+          dragging = false;
+          pointerId = null;
+        };
+        const onPointerDown = (e)=>{
+          if($('#desktop').classList.contains('hidden')) return;
+          if(e.pointerType === 'mouse' && e.button !== 0) return;
+
+          e.stopPropagation();
+          closeStartMenu();
+          closeCtxMenu();
+
+          // If multiple icons are selected and the one we grabbed is selected, drag the whole group.
+          const gridEl = $('#iconGrid');
+          clearIconSelectionExcept(gridEl);
+          const selectedEls = gridEl ? Array.from(gridEl.querySelectorAll('.icon.selected')) : [];
+          const isSelected = iconEl.classList.contains('selected');
+          if(selectedEls.length > 1 && isSelected){
+            group = selectedEls;
+          } else {
+            // Otherwise, single-select the grabbed icon
+            selectIcon(iconEl.dataset.appId, gridEl);
+            group = [iconEl];
+          }
+
+          down = true;
+          dragging = false;
+          pointerId = e.pointerId;
+          try{ iconEl.setPointerCapture(pointerId); } catch {}
+          startX = e.clientX;
+          startY = e.clientY;
+          movedToLayer = false;
+
+          // Snapshot starting positions
+          startPositions = group.map(el => ({
+            el,
+            id: el.dataset.appId,
+            x: parseInt(el.style.left || '0', 10),
+            y: parseInt(el.style.top || '0', 10)
+          }));
+
+          // Compute bounds in desktop coordinates (relative to desktopArea)
+          const area = $('#desktopArea').getBoundingClientRect();
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          startPositions.forEach(p => {
+            minX = Math.min(minX, p.x);
+            minY = Math.min(minY, p.y);
+            maxX = Math.max(maxX, p.x + ICON_SIZE.w);
+            maxY = Math.max(maxY, p.y + ICON_SIZE.h);
+          });
+
+          // Right/bottom limits match `clampIconPos` behavior (icon right edge <= area.width - 6)
+          dxMin = -minX;
+          dxMax = (Math.floor(area.width - 6) - maxX);
+          dyMin = -minY;
+          dyMax = (Math.floor(area.height - 6) - maxY);
+
+          // Prevent accidental post-drag clicks
+          group.forEach(el => (el.dataset.dragged = '0'));
+
+          document.body.classList.add('dragging');
+          document.addEventListener('pointermove', onPointerMove);
+          document.addEventListener('pointerup', onPointerUp);
+          document.addEventListener('pointercancel', onPointerUp);
+          window.addEventListener('blur', onWindowBlur);
+
+          e.preventDefault();
+        };
+
+        const moveGroupToLayer = ()=>{
+          if(movedToLayer || !dragLayer) return;
+          dragLayer.classList.add('active');
+          group.forEach(el => {
+            dragLayer.appendChild(el);
+            el.style.zIndex = '9999';
+          });
+          movedToLayer = true;
+        };
+
+        const restoreGroupLayer = ()=>{
+          if(!movedToLayer) return;
+          const grid = $('#iconGrid');
+          group.forEach(el => {
+            grid.appendChild(el);
+            el.style.zIndex = '';
+          });
+          if(dragLayer) dragLayer.classList.remove('active');
+          movedToLayer = false;
+        };
+
+        const onPointerMove = (e)=>{
+          if(!down) return;
+          if(pointerId !== null && e.pointerId !== pointerId) return;
+          lastEvent = e;
+
+          const dxRaw = e.clientX - startX;
+          const dyRaw = e.clientY - startY;
+
+          if(!dragging && (Math.abs(dxRaw) + Math.abs(dyRaw) > 4)){
+            dragging = true;
+            moveGroupToLayer();
+          }
+          if(!dragging) return;
+
+          // Clamp movement so the whole group stays within the desktop
+          const dx = clamp(dxRaw, dxMin, dxMax);
+          const dy = clamp(dyRaw, dyMin, dyMax);
+
+          // Use transform for smooth GPU-accelerated movement during drag
+          startPositions.forEach(p => {
+            p.el.style.transform = `translate(${dx}px, ${dy}px)`;
+          });
+          if(isBlissOS()){
+            const dockTarget = getDockDropTargetAt(e.clientX, e.clientY);
+            setDockDropHighlight(!!dockTarget);
+          }
+
+          e.preventDefault();
+        };
+
+        const onPointerUp = (e)=>{
+          endDrag(e, false);
+        };
+
+        // Pointer events handle mouse + touch + pen
+        iconEl.addEventListener('pointerdown', onPointerDown);
+      }
+
+      $('#desktopArea').addEventListener('click', (e)=>{
+        // If a selection drag just happened, do not treat it as a click
+        if($('#desktopArea').dataset.selDragged === '1'){
+          $('#desktopArea').dataset.selDragged = '0';
+          return;
+        }
+        const target = getEventTargetEl(e);
+        if(target && target.closest && target.closest('.window')) return;
+        state.selectedIconId = null;
+        $$('.icon').forEach(i=>i.classList.remove('selected'));
+        closeStartMenu();
+        closeCtxMenu();
+        state.activeWindowId = null;
+        $$('.window').forEach(winEl=>{
+          winEl.dataset.active = '0';
+          const tb = winEl.querySelector('.titlebar');
+          if(tb) tb.style.filter = 'grayscale(0.35) brightness(0.9)';
+        });
+        state.activeAppId = 'bliss';
+        updateBlissOSActiveApp();
+      });
+
+      // Right-click / two-finger click on desktop
+      $('#desktopArea').addEventListener('contextmenu', (e)=>{
+        if($('#desktop').classList.contains('hidden')) return;
+        const target = getEventTargetEl(e);
+        if(target && target.closest && target.closest('.icon')) return;
+        if(target && target.closest && target.closest('.window')) return;
+        e.preventDefault();
+        openCtxMenu(e.clientX, e.clientY, 'desktop', null);
+      });
+
+      // Long-press on desktop (mobile/touch)
+      installLongPress($('#desktopArea'), ()=>({ target:'desktop', appId:null }));
+
+      // Rubber-band selection (Windows 98 style)
+      (function installRubberbandSelection(){
+        const areaEl = $('#desktopArea');
+        const rb = $('#rubberband');
+        if(!areaEl || !rb) return;
+
+        let down = false;
+        let active = false;
+        let pointerId = null;
+        let startX = 0, startY = 0;
+        let lastRect = null;
+
+        function rectFrom(aX, aY, bX, bY){
+          const x1 = Math.min(aX, bX);
+          const y1 = Math.min(aY, bY);
+          const x2 = Math.max(aX, bX);
+          const y2 = Math.max(aY, bY);
+          return { x:x1, y:y1, w:(x2-x1), h:(y2-y1) };
+        }
+
+        function intersects(r, elRect){
+          return !(elRect.right < r.x || elRect.left > (r.x + r.w) || elRect.bottom < r.y || elRect.top > (r.y + r.h));
+        }
+
+        function updateRubberband(r){
+          rb.style.left = r.x + 'px';
+          rb.style.top = r.y + 'px';
+          rb.style.width = r.w + 'px';
+          rb.style.height = r.h + 'px';
+        }
+
+        function clearRubberband(){
+          rb.classList.add('hidden');
+          rb.style.width = '0px';
+          rb.style.height = '0px';
+          lastRect = null;
+          document.body.classList.remove('dragging');
+        }
+
+        function selectByRect(r){
+          // Select icons whose bounding boxes intersect with the rubberband rect
+          const icons = $$('.icon');
+          icons.forEach(icon => {
+            const rect = icon.getBoundingClientRect();
+            const area = areaEl.getBoundingClientRect();
+            const rel = {
+              left: rect.left - area.left,
+              right: rect.right - area.left,
+              top: rect.top - area.top,
+              bottom: rect.bottom - area.top,
+            };
+            const hit = intersects(r, rel);
+            icon.classList.toggle('selected', hit);
+          });
+        }
+
+        const onPointerDown = (e)=>{
+          if($('#desktop').classList.contains('hidden')) return;
+          if(e.pointerType === 'mouse' && e.button !== 0) return;
+          const tgt = getEventTargetEl(e);
+          // Don't start a box if user is interacting with icons/windows/menus
+          if(tgt && tgt.closest && (tgt.closest('.icon') || tgt.closest('.window') || tgt.closest('#startMenu') || tgt.closest('#ctxMenu'))){
+            return;
+          }
+
+          down = true;
+          active = false;
+          pointerId = e.pointerId;
+
+          const area = areaEl.getBoundingClientRect();
+          startX = e.clientX - area.left;
+          startY = e.clientY - area.top;
+
+          try{ areaEl.setPointerCapture(pointerId); } catch {}
+        };
+
+        const onPointerMove = (e)=>{
+          if(!down) return;
+          if(pointerId !== null && e.pointerId !== pointerId) return;
+
+          const area = areaEl.getBoundingClientRect();
+          const curX = e.clientX - area.left;
+          const curY = e.clientY - area.top;
+
+          const dx = curX - startX;
+          const dy = curY - startY;
+
+          // Activate after small movement threshold
+          if(!active && (Math.abs(dx) + Math.abs(dy) > 6)){
+            active = true;
+            rb.classList.remove('hidden');
+            document.body.classList.add('dragging');
+            // Close menus
+            closeStartMenu();
+            closeCtxMenu();
+            // Clear single selection
+            state.selectedIconId = null;
+          }
+          if(!active) return;
+
+          e.preventDefault();
+
+          const r = rectFrom(startX, startY, curX, curY);
+          lastRect = r;
+          updateRubberband(r);
+          selectByRect(r);
+        };
+
+        const onPointerUp = (e)=>{
+          if(!down) return;
+          if(pointerId !== null && e.pointerId !== pointerId) return;
+
+          down = false;
+          try{ areaEl.releasePointerCapture(e.pointerId); } catch {}
+
+          if(active){
+            // Prevent click clear right after box select
+            areaEl.dataset.selDragged = '1';
+            active = false;
+            clearRubberband();
+          }
+          pointerId = null;
+        };
+
+        areaEl.addEventListener('pointerdown', onPointerDown);
+        areaEl.addEventListener('pointermove', onPointerMove);
+        areaEl.addEventListener('pointerup', onPointerUp);
+        areaEl.addEventListener('pointercancel', onPointerUp);
+      })();
+
+      function renderStartMenu(){
+        const list = $('#startList');
+        if(!list) return;
+        list.textContent = '';
+        const fragment = document.createDocumentFragment();
+        APPS.filter(app => app.showInStart !== false).forEach(app => {
+          const item = document.createElement('div');
+          item.className = 'menu-item';
+          item.innerHTML = `
+            <div style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;">${getThemedIconHtml(app, t(app.titleKey), 16)}</div>
+            <div>${t(app.titleKey)}</div>
+          `;
+          item.addEventListener('click', ()=>{ openApp(app.id); closeStartMenu(); });
+          fragment.appendChild(item);
+        });
+
+        const sep = document.createElement('div');
+        sep.className = 'menu-sep';
+        fragment.appendChild(sep);
+
+        const logout = document.createElement('div');
+        logout.className = 'menu-item';
+        logout.innerHTML = `<div style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;">${getThemedIconHtml({ icon: 'user', id: 'logout', iconFile: './assets/icons/logout.png' }, t('menu.logoff'), 16)}</div><div>${t('menu.logoff')}</div>`;
+        logout.addEventListener('click', ()=>{ closeStartMenu(); doLogoff(); });
+        fragment.appendChild(logout);
+        list.appendChild(fragment);
+      }
+
+      function openStartMenu(){
+        const menu = $('#startMenu');
+        const btn = $('#startBtn');
+        if(!menu || !btn) return;
+        if(!menu.classList.contains('hidden')) return;
+        menu.classList.remove('hidden');
+        menu.classList.remove('closing');
+        menu.classList.add('opening');
+        btn.classList.add('pressed');
+        if(!state.animations || window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+          menu.classList.remove('opening');
+          return;
+        }
+        requestAnimationFrame(()=>{
+          requestAnimationFrame(()=>{
+            menu.classList.remove('opening');
+          });
+        });
+      }
+
+      function closeStartMenu(force = false){
+        const menu = $('#startMenu');
+        const btn = $('#startBtn');
+        if(!menu || !btn) return;
+        btn.classList.remove('pressed');
+        if(menu.classList.contains('hidden')) return;
+        if(force || !state.animations || window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+          menu.classList.add('hidden');
+          menu.classList.remove('opening', 'closing');
+          return;
+        }
+        if(menu.classList.contains('closing')) return;
+        menu.classList.add('closing');
+        menu.classList.remove('opening');
+        const done = ()=>{
+          menu.classList.add('hidden');
+          menu.classList.remove('closing');
+        };
+        const onEnd = (e)=>{
+          if(e && e.target !== menu) return;
+          menu.removeEventListener('transitionend', onEnd);
+          done();
+        };
+        menu.addEventListener('transitionend', onEnd);
+        setTimeout(()=>{
+          if(menu.classList.contains('closing')){
+            menu.removeEventListener('transitionend', onEnd);
+            done();
+          }
+        }, 200);
+      }
+
+      function toggleStartMenu(){
+        const menu = $('#startMenu');
+        if(!menu) return;
+        const isOpen = !menu.classList.contains('hidden');
+        if(isOpen) closeStartMenu();
+        else openStartMenu();
+      }
+      $('#startBtn').addEventListener('click', (e)=>{ e.stopPropagation(); toggleStartMenu(); });
+
+      function defaultWindowRect(){
+        const area = $('#desktopArea').getBoundingClientRect();
+        const side = clamp(Math.round(Math.min(area.width, area.height) * 0.58), 320, 680);
+        const width = side;
+        const height = side;
+        const left = Math.round((area.width - width) / 2 + (Math.random() - 0.5) * 40);
+        const top = Math.round((area.height - height) / 2 + (Math.random() - 0.5) * 40);
+        return { left, top, width, height };
+      }
+
+      function getSavedWindowRect(appId){
+        try{
+          const raw = localStorage.getItem(`bliss98_window_${appId}`);
+          if(!raw) return null;
+          const parsed = JSON.parse(raw);
+          if(!parsed) return null;
+          const { left, top, width, height } = parsed;
+          if(!Number.isFinite(left) || !Number.isFinite(top) || !Number.isFinite(width) || !Number.isFinite(height)) return null;
+          return { left, top, width, height };
+        } catch {
+          return null;
+        }
+      }
+
+      function normalizeWindowRect(rect, area, margin = 16){
+        const maxW = Math.max(120, Math.floor(area.width - margin * 2));
+        const maxH = Math.max(110, Math.floor(area.height - margin * 2));
+        const minW = Math.min(240, maxW);
+        const minH = Math.min(200, maxH);
+        const width = clamp(rect.width, minW, maxW);
+        const height = clamp(rect.height, minH, maxH);
+        const left = clamp(rect.left, margin, Math.max(margin, area.width - width - margin));
+        const top = clamp(rect.top, margin, Math.max(margin, area.height - height - margin));
+        return { left, top, width, height };
+      }
+
+      // Auto-fit windows to their rendered content on first open (when no saved/manual size exists).
+function installAutoFitObserver(winEl, appId){
+  if(!winEl || winEl.dataset.autoFitObserver) return;
+  const content = winEl.querySelector('.content');
+  if(!content) return;
+  const w = state.windows.get(appId);
+  const observer = new MutationObserver(()=>{
+    if(winEl.classList.contains('mobile-game')) return;
+    smartFitWindow(winEl, 'tabChange');
+  });
+  observer.observe(content, { childList: true, subtree: true, characterData: true });
+  winEl.dataset.autoFitObserver = '1';
+  if(w) w.autoFitObserver = observer;
+}
+
+const SMART_WINDOW = {
+  minWidth: 260,
+  minHeight: 220,
+  ratio: 1.25,
+  margin: 16,
+  threshold: 6,
+};
+
+function getSmartFitBounds(){
+  const area = $('#desktopArea').getBoundingClientRect();
+  const margin = Math.max(SMART_WINDOW.margin, Math.min(32, Math.floor(Math.min(area.width, area.height) * 0.05)));
+  const maxWidth = Math.max(120, area.width - margin * 2);
+  const maxHeight = Math.max(110, area.height - margin * 2);
+  return { area, maxWidth, maxHeight, margin };
+}
+
+function assignWindowRect(winEl, wstate, rect){
+  wstate.left = rect.left;
+  wstate.top = rect.top;
+  wstate.width = rect.width;
+  wstate.height = rect.height;
+  winEl.style.left = rect.left + 'px';
+  winEl.style.top = rect.top + 'px';
+  winEl.style.width = rect.width + 'px';
+  winEl.style.height = rect.height + 'px';
+}
+
+function getWindowRectFromState(wstate){
+  if(!wstate) return null;
+  return { left: wstate.left, top: wstate.top, width: wstate.width, height: wstate.height };
+}
+
+function getMobileMaximizedRect(){
+  const area = $('#desktopArea').getBoundingClientRect();
+  return {
+    left: 0,
+    top: 0,
+    width: Math.max(120, Math.floor(area.width)),
+    height: Math.max(110, Math.floor(area.height)),
+  };
+}
+
+function resolveScrollOverflowForDesktopMaximize(winEl, content, rect, bounds, minW, minH){
+  if(!winEl || !content || !rect) return rect;
+  let candidate = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+  for(let pass = 0; pass < 4; pass++){
+    winEl.style.left = candidate.left + 'px';
+    winEl.style.top = candidate.top + 'px';
+    winEl.style.width = candidate.width + 'px';
+    winEl.style.height = candidate.height + 'px';
+    const overflowX = Math.max(0, Math.ceil(content.scrollWidth - content.clientWidth));
+    const overflowY = Math.max(0, Math.ceil(content.scrollHeight - content.clientHeight));
+    if(overflowX <= 1 && overflowY <= 1) break;
+    const nextWidth = clamp(candidate.width + overflowX + 2, minW, bounds.maxWidth);
+    const nextHeight = clamp(candidate.height + overflowY + 2, minH, bounds.maxHeight);
+    const next = normalizeWindowRect({
+      left: candidate.left,
+      top: candidate.top,
+      width: nextWidth,
+      height: nextHeight,
+    }, bounds.area, bounds.margin);
+    if(next.width === candidate.width && next.height === candidate.height) break;
+    candidate = next;
+  }
+  return candidate;
+}
+
+function smartFitWindow(winEl, mode = 'auto', opts = {}){
+  const appId = winEl ? getWindowId(winEl) : null;
+  const w = appId ? state.windows.get(appId) : null;
+  const onDone = (typeof opts.onDone === 'function') ? opts.onDone : null;
+  const finish = (rect)=>{
+    const out = rect || getWindowRectFromState(w);
+    if(onDone && out) onDone(out, { appId, wstate: w, mode });
+    return out;
+  };
+
+  if(!winEl || winEl.classList.contains('hidden') || !appId || !w || appId === 'mediaplayer'){
+    return Promise.resolve(finish(getWindowRectFromState(w)));
+  }
+  if(w.userSized && !['maximize','restore'].includes(mode)){
+    return Promise.resolve(finish(getWindowRectFromState(w)));
+  }
+  if(state.isMobile && w.fit && mode !== 'restore'){
+    return Promise.resolve(finish(getWindowRectFromState(w)));
+  }
+  if(winEl.classList.contains('mobile-game')){
+    return Promise.resolve(finish(getWindowRectFromState(w)));
+  }
+  if(winEl.dataset.smartFitLock === '1' && w.smartFitPromise){
+    return w.smartFitPromise.then(rect => finish(rect)).catch(()=> finish(getWindowRectFromState(w)));
+  }
+  const content = winEl.querySelector('.content');
+  if(!content){
+    return Promise.resolve(finish(getWindowRectFromState(w)));
+  }
+
+  const promise = new Promise(resolve => {
+    winEl.dataset.smartFitLock = '1';
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        const bounds = getSmartFitBounds();
+        const desktopMaximizeMode = (mode === 'maximize' && !state.isMobile);
+        const softMinW = Math.min(SMART_WINDOW.minWidth, bounds.maxWidth);
+        const softMinH = Math.min(SMART_WINDOW.minHeight, bounds.maxHeight);
+        const dataMinW = parseInt(content.dataset.fitMinW || '0', 10) || softMinW;
+        const dataMinH = parseInt(content.dataset.fitMinH || '0', 10) || softMinH;
+        const fitMinW = clamp(dataMinW, softMinW, bounds.maxWidth);
+        const fitMinH = clamp(dataMinH, softMinH, bounds.maxHeight);
+        let { targetW, targetH } = getWindowContentTargetSize(winEl, appId);
+        if(!desktopMaximizeMode){
+          ({ targetW, targetH } = applyNiceSquareish(targetW, targetH));
+        }
+        let width = Math.max(targetW, fitMinW);
+        let height = Math.max(targetH, fitMinH);
+
+        width = clamp(width, fitMinW, bounds.maxWidth);
+        height = clamp(height, fitMinH, bounds.maxHeight);
+        if(!desktopMaximizeMode){
+          const ratio = width / Math.max(1, height);
+          const inverse = 1 / SMART_WINDOW.ratio;
+          if(ratio > SMART_WINDOW.ratio){
+            width = Math.min(width, height * SMART_WINDOW.ratio);
+          } else if(ratio < inverse){
+            height = Math.min(height, width * SMART_WINDOW.ratio);
+          }
+        }
+        width = clamp(width, fitMinW, bounds.maxWidth);
+        height = clamp(height, fitMinH, bounds.maxHeight);
+
+        let normalized = normalizeWindowRect({ left: w.left, top: w.top, width, height }, bounds.area, bounds.margin);
+        const fitKey = content.dataset.fitKey || '';
+        if(fitKey){
+          if(!w.fitCache) w.fitCache = {};
+          const cached = w.fitCache[fitKey];
+          if(cached){
+            normalized.width = Math.max(normalized.width, cached.width);
+            normalized.height = Math.max(normalized.height, cached.height);
+          }
+          w.fitCache[fitKey] = { width: normalized.width, height: normalized.height };
+          normalized = normalizeWindowRect({ left: normalized.left, top: normalized.top, width: normalized.width, height: normalized.height }, bounds.area, bounds.margin);
+        }
+        if(desktopMaximizeMode){
+          normalized = resolveScrollOverflowForDesktopMaximize(winEl, content, normalized, bounds, fitMinW, fitMinH);
+        }
+        const widthDiff = Math.abs((w.width || 0) - normalized.width);
+        const heightDiff = Math.abs((w.height || 0) - normalized.height);
+        const leftDiff = Math.abs((w.left || 0) - normalized.left);
+        const topDiff = Math.abs((w.top || 0) - normalized.top);
+        if(widthDiff < SMART_WINDOW.threshold && heightDiff < SMART_WINDOW.threshold && leftDiff < SMART_WINDOW.threshold && topDiff < SMART_WINDOW.threshold){
+          delete winEl.dataset.smartFitLock;
+          resolve(finish(normalized));
+          return;
+        }
+        assignWindowRect(winEl, w, normalized);
+        w.lastSmartFit = { width: normalized.width, height: normalized.height, mode };
+        delete winEl.dataset.smartFitLock;
+        resolve(finish(normalized));
+      });
+    });
+  });
+
+  w.smartFitPromise = promise;
+  return promise;
+}
+
+function getMediaPlayerRect(){
+  const area = $('#desktopArea').getBoundingClientRect();
+  const margin = 24;
+  const maxSide = Math.max(240, Math.min(area.width - margin * 2, area.height - margin * 2));
+  const candidate = Math.min(maxSide, Math.max(320, Math.floor(maxSide * 0.65)));
+  const size = clamp(candidate, 280, 520);
+  const left = Math.round(clamp((area.width - size) / 2, margin, area.width - size - margin));
+  const top = Math.round(clamp((area.height - size) / 2, margin, area.height - size - margin));
+  return { left, top, width: size, height: size };
+}
+
+function getViewportRectForWindow(appId){
+  const w = state.windows.get(appId);
+  if(!w) return null;
+  const area = $('#desktopArea').getBoundingClientRect();
+  return {
+    left: area.left + w.left,
+    top: area.top + w.top,
+    width: w.width,
+    height: w.height,
+  };
+}
+
+function waitForSmartFitCompletion(appId){
+  const w = state.windows.get(appId);
+  if(!w) return Promise.resolve(null);
+  const fallback = getViewportRectForWindow(appId);
+  return new Promise(resolve => {
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        const latest = w.smartFitPromise || Promise.resolve(getWindowRectFromState(w));
+        Promise.resolve(latest)
+          .then(()=> resolve(getViewportRectForWindow(appId) || fallback))
+          .catch(()=> resolve(fallback));
+      });
+    });
+  });
+}
+
+let windowRelayoutRaf = null;
+function relayoutWindowsToViewport(){
+  const area = $('#desktopArea');
+  if(!area) return;
+  const bounds = getSmartFitBounds();
+  state.windows.forEach((w, appId) => {
+    if(!w) return;
+    const winEl = document.getElementById(`win_${appId}`);
+    if(!winEl || winEl.classList.contains('mobile-game')) return;
+
+    if(w.fit && !w.minimized && !winEl.classList.contains('hidden')){
+      if(state.isMobile){
+        assignWindowRect(winEl, w, getMobileMaximizedRect());
+      } else {
+        smartFitWindow(winEl, 'maximize').catch(()=>{});
+      }
+      return;
+    }
+
+    const normalized = normalizeWindowRect({
+      left: w.left,
+      top: w.top,
+      width: w.width,
+      height: w.height,
+    }, bounds.area, bounds.margin);
+    w.left = normalized.left;
+    w.top = normalized.top;
+    w.width = normalized.width;
+    w.height = normalized.height;
+    if(!winEl.classList.contains('hidden')){
+      winEl.style.left = normalized.left + 'px';
+      winEl.style.top = normalized.top + 'px';
+      winEl.style.width = normalized.width + 'px';
+      winEl.style.height = normalized.height + 'px';
+    }
+  });
+}
+
+function scheduleWindowRelayout(){
+  if(windowRelayoutRaf) return;
+  windowRelayoutRaf = requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      windowRelayoutRaf = null;
+      relayoutWindowsToViewport();
+    });
+  });
+}
+
+function revealWindowElement(winEl, wstate, opts = {}){
+  if(!winEl || !wstate) return;
+  const skipAnim = !!opts.skipAnim || !!wstate.skipAnimOpen || !state.animations || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  wstate.deferReveal = false;
+  winEl.style.visibility = 'visible';
+  if(skipAnim){
+    winEl.classList.remove('anim-open');
+    return;
+  }
+  winEl.addEventListener('animationend', ()=>{ winEl.classList.remove('anim-open'); }, { once:true });
+}
+
+function revealWindow(appId, opts = {}){
+  const winEl = document.getElementById(`win_${appId}`);
+  const wstate = state.windows.get(appId);
+  if(!winEl || !wstate) return;
+  revealWindowElement(winEl, wstate, opts);
+  if(opts.renderTasks) renderTaskButtons();
+  if(opts.focus) focusWindow(appId);
+}
+
+const appOpenAnimState = {
+  overlay: null,
+  animation: null,
+  token: 0,
+  appId: null,
+};
+
+function cancelAppOpenAnimation(opts = {}){
+  const pendingAppId = appOpenAnimState.appId;
+  if(appOpenAnimState.animation){
+    try{ appOpenAnimState.animation.cancel(); } catch {}
+  }
+  if(appOpenAnimState.overlay){
+    appOpenAnimState.overlay.remove();
+  }
+  appOpenAnimState.overlay = null;
+  appOpenAnimState.animation = null;
+  appOpenAnimState.appId = null;
+  if(opts.revealPending && pendingAppId && state.windows.has(pendingAppId)){
+    revealWindow(pendingAppId, { skipAnim: true, renderTasks: true });
+  }
+}
+
+function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
+  if(!iconEl || !targetRect){
+    if(typeof onDone === 'function') onDone();
+    return;
+  }
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduceMotion){
+    if(typeof onDone === 'function') onDone();
+    return;
+  }
+  cancelAppOpenAnimation({ revealPending: true });
+  const startRect = iconEl.getBoundingClientRect();
+  if(!startRect.width || !startRect.height){
+    if(typeof onDone === 'function') onDone();
+    return;
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'app-open-selection';
+  overlay.style.left = `${startRect.left}px`;
+  overlay.style.top = `${startRect.top}px`;
+  overlay.style.width = `${startRect.width}px`;
+  overlay.style.height = `${startRect.height}px`;
+  document.body.appendChild(overlay);
+
+  const token = ++appOpenAnimState.token;
+  appOpenAnimState.overlay = overlay;
+  appOpenAnimState.appId = appId || null;
+
+  const duration = state.isMobile ? 240 : 210;
+  const easing = 'cubic-bezier(0.2, 0.7, 0.2, 1)';
+  let animation = null;
+  try{
+    animation = overlay.animate([
+      { left: `${startRect.left}px`, top: `${startRect.top}px`, width: `${startRect.width}px`, height: `${startRect.height}px`, opacity: 0.95 },
+      { left: `${targetRect.left}px`, top: `${targetRect.top}px`, width: `${targetRect.width}px`, height: `${targetRect.height}px`, opacity: 1 }
+    ], { duration, easing, fill: 'forwards' });
+  } catch {}
+
+  const finish = ()=>{
+    if(token !== appOpenAnimState.token) return;
+    cancelAppOpenAnimation();
+    if(typeof onDone === 'function') onDone();
+  };
+
+  if(animation){
+    appOpenAnimState.animation = animation;
+    animation.addEventListener('finish', finish, { once: true });
+    animation.addEventListener('cancel', finish, { once: true });
+  } else {
+    overlay.style.transition = `all ${duration}ms ${easing}`;
+    requestAnimationFrame(()=>{
+      overlay.style.left = `${targetRect.left}px`;
+      overlay.style.top = `${targetRect.top}px`;
+      overlay.style.width = `${targetRect.width}px`;
+      overlay.style.height = `${targetRect.height}px`;
+    });
+    window.setTimeout(finish, duration + 30);
+  }
+}
+
+      function animateAppLaunch(iconEl, winEl){
+        if (!iconEl || !winEl) return;
+        // Capture the final geometry before hiding the window
+        const finalRect = winEl.getBoundingClientRect();
+        // Hide the real window until the animation finishes
+        const prevVisibility = winEl.style.visibility;
+        winEl.style.visibility = 'hidden';
+        // Starting geometry from the icon
+        const startRect = iconEl.getBoundingClientRect();
+        const ghost = document.createElement('div');
+        ghost.className = 'dock-genie-ghost';
+        const winStyle = window.getComputedStyle(winEl);
+        // Use the window's background colour for the ghost or fall back to the panel background
+        ghost.style.background = winStyle.backgroundColor || getComputedStyle(document.documentElement).getPropertyValue('--panel-bg') || '#fff';
+        ghost.style.borderRadius = winStyle.borderRadius || '4px';
+        ghost.style.left = `${startRect.left}px`;
+        ghost.style.top = `${startRect.top}px`;
+        ghost.style.width = `${startRect.width}px`;
+        ghost.style.height = `${startRect.height}px`;
+        ghost.style.transformOrigin = 'top left';
+        document.body.appendChild(ghost);
+        const dx = finalRect.left - startRect.left;
+        const dy = finalRect.top - startRect.top;
+        const scaleX = finalRect.width / startRect.width;
+        const scaleY = finalRect.height / startRect.height;
+        const duration = 280; // Snappy duration for a quick feel
+        const keyframes = [
+          { transform:'translate(0px,0px) scale(1,1)', clipPath:'inset(0% 0% 0% 0%)' },
+          { transform:`translate(${dx*0.5}px,${dy*0.5}px) scale(${(1+scaleX)/2},${(1+scaleY)/2})`, clipPath:'inset(10% 10% 10% 10%)' },
+          { transform:`translate(${dx}px,${dy}px) scale(${scaleX},${scaleY})`, clipPath:'inset(0% 0% 0% 0%)' }
+        ];
+        const anim = ghost.animate(keyframes,{ duration: duration, easing:'ease-in-out', fill:'forwards' });
+        anim.addEventListener('finish', () => {
+          ghost.remove();
+          winEl.style.visibility = prevVisibility || '';
+        });
+      }
+
+      function openApp(appId, opts = {}){
+        const app = APPS.find(a=>a.id===appId);
+        if(!app) return null;
+        const deferReveal = !!opts.deferReveal;
+
+        if(state.windows.has(appId)){
+          const w = state.windows.get(appId);
+          w.minimized = false;
+          const el = document.getElementById(`win_${appId}`);
+          if(el){
+            el.classList.remove('hidden');
+            if(el.style.visibility === 'hidden') revealWindow(appId, { skipAnim: true });
+          }
+          focusWindow(appId);
+          renderTaskButtons();
+          return el;
+        }
+
+        playSfx('fileOpen');
+
+        let rect = defaultWindowRect();
+        const area = $('#desktopArea').getBoundingClientRect();
+        const savedRect = getSavedWindowRect(appId);
+        if(appId === 'mediaplayer'){
+          rect = normalizeWindowRect(getMediaPlayerRect(), area, 16);
+        } else if(savedRect){
+          rect = normalizeWindowRect(savedRect, area, 16);
+        } else {
+          rect = normalizeWindowRect(rect, area, 16);
+        }
+        const iconFile = typeof app.iconFile === 'function' ? app.iconFile() : app.iconFile;
+        const wstate = {
+          id: appId,
+          title: t(app.titleKey),
+          titleKey: app.titleKey,
+          icon: app.icon,
+          iconFile: iconFile || null,
+          minimized: false,
+          fit: false,
+          prevRect: null,
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+          z: ++state.zTop,
+          savedRect: Boolean(savedRect),
+          userSized: appId === 'mediaplayer',
+          autoFitObserver: null,
+          lastFitKey: '',
+          lastFitW: 0,
+          lastFitH: 0,
+          fitCache: null,
+          lastSmartFit: null,
+          mediaplayerFixed: appId === 'mediaplayer',
+          deferReveal,
+          skipAnimOpen: !!opts.skipAnimOpen,
+          smartFitPromise: Promise.resolve(getWindowRectFromState({ left: rect.left, top: rect.top, width: rect.width, height: rect.height })),
+        };
+        state.windows.set(appId, wstate);
+        createWindowElement(wstate);
+        const winEl = document.getElementById(`win_${appId}`);
+        if(!deferReveal){
+          focusWindow(appId);
+          renderTaskButtons();
+        }
+        
+        // Apply launch animation if enabled
+        if(!deferReveal && winEl && state.animations && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+          const iconEl = document.querySelector(`[data-app-id="${appId}"]`) || document.querySelector(`[data-blissos-open-app="${appId}"]`);
+          animateAppLaunch(iconEl, winEl);
+        }
+        return winEl;
+      }
+
+      function closeApp(appId){
+        const w = state.windows.get(appId);
+        if(!w) return;
+        playSfx('windowClose');
+        
+        // Cleanup: wrap in try...catch to ensure window closes even if cleanup fails
+        try {
+          if(appId === 'games'){
+            snakeStop();
+            DopeSkateGame.unmount();
+            state.games.view = 'list';
+            state.games.selectedId = null;
+          }
+        } catch(err){
+          console.error('Error during game cleanup:', err);
+        }
+        if(w.txtSaveTimer){
+          clearTimeout(w.txtSaveTimer);
+          w.txtSaveTimer = null;
+        }
+        
+        state.windows.delete(appId);
+        const el = document.getElementById(`win_${appId}`);
+        
+        try {
+          if(w.autoFitObserver) w.autoFitObserver.disconnect();
+        } catch(err){
+          console.error('Error disconnecting autoFitObserver:', err);
+        }
+        
+        if(state.activeWindowId === appId) state.activeWindowId = null;
+        if(state.activeAppId === appId) state.activeAppId = 'bliss';
+        renderTaskButtons();
+        
+        if(el){
+          if(state.animations){
+            el.classList.add('anim-close');
+            el.addEventListener('animationend', ()=>{ el.remove(); }, { once:true });
+          } else {
+            el.remove();
+          }
+        }
+        updateBlissOSActiveApp();
+      }
+      function minimizeApp(appId){
+        const w = state.windows.get(appId);
+        if(!w) return;
+        playSfx('windowMinimize');
+        // BlissOS specific minimise: use genie animation to dock
+        // Use state.settings.theme rather than checking the DOM attribute, as
+        // the body may not yet have the data-theme attribute applied when
+        // this function runs. The BlissOS theme is stored in state.settings.theme.
+        if(state && state.settings && state.settings.theme === 'blissos'){
+          minimizeToDock(appId);
+          return;
+        }
+        w.minimized = true;
+        const el = document.getElementById(`win_${appId}`);
+        if(el){
+          if(shouldReduceMotion()){
+            el.classList.add('hidden');
+          } else {
+            animateWindowToTaskbar(el, appId).then(()=>{
+              if(w.minimized) el.classList.add('hidden');
+            });
+          }
+        }
+        if(state.activeWindowId === appId) state.activeWindowId = null;
+        if(state.activeAppId === appId) state.activeAppId = 'bliss';
+        renderTaskButtons();
+        updateBlissOSActiveApp();
+      }
+
+      function getWindowContentTargetSize(winEl, appId){
+  if(!winEl) return { targetW: 500, targetH: 500 };
+
+  const content = winEl.querySelector('.content');
+  if(!content) return { targetW: 500, targetH: 500 };
+
+  const frameRect = winEl.getBoundingClientRect();
+  const contentRect = content.getBoundingClientRect();
+  
+  const extraW = frameRect.width - contentRect.width;
+  const extraH = frameRect.height - contentRect.height;
+
+  let intrinsicW = 0;
+  let intrinsicH = 0;
+
+  // Check for direct child with explicit size
+  if (content.firstElementChild) {
+    const child = content.firstElementChild;
+    const style = getComputedStyle(child);
+    if (style.width !== 'auto' && style.width.endsWith('px')) {
+      intrinsicW = Math.max(intrinsicW, child.scrollWidth);
+    }
+     if (style.height !== 'auto' && style.height.endsWith('px')) {
+      intrinsicH = Math.max(intrinsicH, child.scrollHeight);
+    }
+  }
+
+  intrinsicW = Math.max(intrinsicW, content.scrollWidth);
+  intrinsicH = Math.max(intrinsicH, content.scrollHeight);
+
+  // Respect minimum dimensions from data attributes
+  const minW = parseInt(content.dataset.fitMinW || '0', 10);
+  const minH = parseInt(content.dataset.fitMinH || '0', 10);
+  
+  let targetW = Math.max(intrinsicW, minW) + extraW;
+  let targetH = Math.max(intrinsicH, minH) + extraH;
+
+  return { targetW, targetH };
+}
+
+function applyNiceSquareish(targetW, targetH, opts = {}){
+  const { maxAspect = 1.3, maxGrowth = 1.25 } = opts;
+  const aspect = targetW / targetH;
+
+  if(aspect > maxAspect){
+    const newH = Math.ceil(targetW / maxAspect);
+    if(newH <= targetH * maxGrowth){
+      targetH = newH;
+    }
+  } else if((1/aspect) > maxAspect){
+    const newW = Math.ceil(targetH / maxAspect);
+    if(newW <= targetW * maxGrowth){
+      targetW = newW;
+    }
+  }
+  return { targetW, targetH };
+}
+
+function suppressNextSyntheticClick(){
+  let cleaned = false;
+  let timerId = null;
+  const cleanup = ()=>{
+    if(cleaned) return;
+    cleaned = true;
+    document.removeEventListener('click', onClickCapture, true);
+    if(timerId){
+      clearTimeout(timerId);
+      timerId = null;
+    }
+  };
+  const onClickCapture = (e)=>{
+    cleanup();
+    e.preventDefault();
+    e.stopPropagation();
+    if(typeof e.stopImmediatePropagation === 'function'){
+      e.stopImmediatePropagation();
+    }
+  };
+  document.addEventListener('click', onClickCapture, true);
+  timerId = setTimeout(cleanup, 450);
+}
+
+function toggleFitWindow(appId) {
+  const w = state.windows.get(appId);
+  if(!w) return;
+  const winEl = document.getElementById(`win_${appId}`);
+  if(!winEl) return;
+  const btn = winEl.querySelector('.wctl[data-action="max"]');
+  const fromRect = winEl.getBoundingClientRect();
+  const allowGenie = state.settings.theme !== 'blissos' && !shouldReduceMotion();
+  const fitDuration = state.isMobile ? Math.round(TASKBAR_GENIE.duration * 0.85) : TASKBAR_GENIE.duration;
+
+  // Desktop maximize is idempotent: repeated clicks keep fitting to content and never restore old rect.
+  if(!state.isMobile){
+    w.fit = true;
+    w.prevRect = null;
+    winEl.classList.add('fit');
+    if(btn) btn.textContent = '❐';
+    smartFitWindow(winEl, 'maximize').then(()=>{
+      if(!allowGenie) return;
+      const toRect = winEl.getBoundingClientRect();
+      if(Math.abs(toRect.width - fromRect.width) > 1 || Math.abs(toRect.height - fromRect.height) > 1 || Math.abs(toRect.left - fromRect.left) > 1 || Math.abs(toRect.top - fromRect.top) > 1){
+        animateWindowRectTransition(winEl, fromRect, toRect, { duration: fitDuration });
+      }
+    });
+    return;
+  }
+
+  if(w.fit){
+    w.fit = false;
+    winEl.classList.remove('fit');
+    if(btn) btn.textContent = '□';
+    let restorePromise = null;
+    if(w.prevRect){
+      const area = $('#desktopArea').getBoundingClientRect();
+      const restored = normalizeWindowRect(w.prevRect, area, 16);
+      assignWindowRect(winEl, w, restored);
+      w.prevRect = null;
+      restorePromise = Promise.resolve(restored);
+    } else {
+      restorePromise = smartFitWindow(winEl, 'restore');
+    }
+    restorePromise.then(()=>{
+      if(!allowGenie) return;
+      const toRect = winEl.getBoundingClientRect();
+      if(Math.abs(toRect.width - fromRect.width) > 1 || Math.abs(toRect.height - fromRect.height) > 1 || Math.abs(toRect.left - fromRect.left) > 1 || Math.abs(toRect.top - fromRect.top) > 1){
+        animateWindowRectTransition(winEl, fromRect, toRect, { duration: fitDuration });
+      }
+    });
+    return;
+  }
+
+  w.prevRect = { left: w.left, top: w.top, width: w.width, height: w.height };
+  w.fit = true;
+  winEl.classList.add('fit');
+  if(btn) btn.textContent = '❐';
+  Promise.resolve().then(()=>{
+    const rect = getMobileMaximizedRect();
+    assignWindowRect(winEl, w, rect);
+    return rect;
+  }).then(()=>{
+    if(!allowGenie) return;
+    const toRect = winEl.getBoundingClientRect();
+    if(Math.abs(toRect.width - fromRect.width) > 1 || Math.abs(toRect.height - fromRect.height) > 1 || Math.abs(toRect.left - fromRect.left) > 1 || Math.abs(toRect.top - fromRect.top) > 1){
+      animateWindowRectTransition(winEl, fromRect, toRect, { duration: fitDuration });
+    }
+  });
+}
+
+
+      function focusWindow(appId) {
+        if (!state.windows.has(appId)) return;
+        const w = state.windows.get(appId);
+        const winEl = document.getElementById('win_' + appId);
+        
+        if (!winEl) return;
+
+        // CORREÇÃO DO BUG MOBILE:
+        // Só move o elemento no DOM se ele NÃO for o último.
+        // Isso impede que o navegador cancele o evento de 'click' no primeiro toque.
+        if (winEl.nextElementSibling) {
+            winEl.parentNode.appendChild(winEl);
+        }
+
+        w.z = ++state.zTop;
+        winEl.style.zIndex = w.z;
+
+        const prevActiveId = state.activeWindowId;
+        if(prevActiveId && prevActiveId !== appId){
+          const prevWin = document.getElementById('win_' + prevActiveId);
+          if(prevWin) prevWin.classList.remove('active');
+          const prevTask = document.getElementById('task_' + prevActiveId) || document.querySelector(`[data-task-id="${prevActiveId}"]`);
+          if(prevTask) prevTask.classList.remove('pressed', 'active');
+        }
+        document.querySelectorAll('.window.active').forEach(el => {
+          if(el !== winEl) el.classList.remove('active');
+        });
+        document.querySelectorAll('.task-item.active').forEach(t => t.classList.remove('active'));
+        winEl.classList.add('active');
+        
+        // Atualiza Taskbar
+        const taskItem = document.getElementById('task_' + appId) || document.querySelector(`[data-task-id="${appId}"]`);
+        document.querySelectorAll('.task-item.pressed').forEach(t => {
+          if(t !== taskItem) t.classList.remove('pressed');
+        });
+        if (taskItem) taskItem.classList.add('pressed');
+
+        state.activeWindowId = appId;
+        
+        // BlissOS: atualizar app ativo no menu bar
+        updateBlissOSActiveApp();
+        closeBlissOSAppMenu();
+      }
+
+      function createWindowElement(wstate){
+        const appId = wstate.id;
+        const el = document.createElement('div');
+        el.className = 'window';
+        if(wstate.kind) el.classList.add(`win-${wstate.kind}`);
+        el.id = `win_${appId}`;
+        el.style.left = wstate.left + 'px';
+        el.style.top = wstate.top + 'px';
+        el.style.width = wstate.width + 'px';
+        el.style.height = wstate.height + 'px';
+        el.style.zIndex = String(wstate.z);
+        el.style.visibility = 'hidden';
+        if(state.animations && !wstate.skipAnimOpen) el.classList.add('anim-open');
+
+        const bodyHTML = typeof wstate.contentHTML === 'function'
+          ? wstate.contentHTML()
+          : (CONTENT[appId] ? CONTENT[appId]() : `<h2>${wstate.title}</h2><p>Sem conteúdo.</p>`);
+        const folderPathbar = wstate.kind === 'folder' ? `<div class="folder-pathbar" data-folder-pathbar="1"></div>` : '';
+
+        el.innerHTML = `
+          <div class="frame bevel">
+            <div class="titlebar" data-drag="1">
+              <div class="title-left">
+                <span class="win-title-icon" data-win-title-icon="1" style="width:16px;height:16px;display:inline-flex;">${getThemedIconHtml(wstate, wstate.title, 16)}</span>
+                <strong>${wstate.title}</strong>
+              </div>
+              <div class="title-controls">
+                <div class="wctl bevel" title="${t('win.minimize')}" data-action="min">_</div>
+                <div class="wctl bevel" title="${t('win.maximize')}" data-action="max">&#x25A1;</div>
+                <div class="wctl bevel" title="${t('win.close')}" data-action="close">×</div>
+              </div>
+            </div>
+            ${appId === 'trash'
+              ? `<div class="trash-actions">
+                  <button class="btn bevel" type="button" data-trash-action="restore">${t('dialog.trash.restore')}</button>
+                  <button class="btn bevel" type="button" data-trash-action="restoreAll">${t('dialog.trash.restoreAll')}</button>
+                  <button class="btn bevel" type="button" data-trash-action="empty">${t('dialog.trash.emptyAction')}</button>
+                  <button class="btn bevel" type="button" data-trash-action="help">${t('menu.help.controls')}</button>
+                </div>`
+              : `<div class="menubar">
+                  <span data-menu="file" data-i18n="menubar.file">${t('menubar.file')}</span>
+                  <span data-menu="edit" data-i18n="menubar.edit">${t('menubar.edit')}</span>
+                  <span data-menu="view" data-i18n="menubar.view">${t('menubar.view')}</span>
+                  <span data-menu="help" data-i18n="menubar.help">${t('menubar.help')}</span>
+                </div>
+                <div class="menu-drop hidden"></div>`}
+            <div class="content">${bodyHTML}</div>
+            ${folderPathbar}
+            <div class="statusbar">
+              <span data-i18n="status.ready">${t('status.ready')}</span>
+              <span class="status-center" data-i18n="about.footer">${t('about.footer')}</span>
+              <span>BLISS 98</span>
+            </div>
+          </div>
+          <div class="resize" title="${t('win.resize')}"></div>
+        `;
+
+        // Make windows focus on mousedown except when clicking on a control button (min/max/close).
+        // On touch devices the first tap should trigger the action without requiring a second tap.
+        el.addEventListener('pointerdown', (e)=>{
+          const actTarget = getEventTargetEl(e);
+          // If the target element has a data-action (control buttons), defer focusing until the click handler.
+          if(actTarget && actTarget.dataset && actTarget.dataset.action) return;
+          e.stopPropagation();
+          focusWindow(appId);
+          closeStartMenu();
+        });
+        el.addEventListener('contextmenu', (e)=>{
+          e.preventDefault();
+          e.stopPropagation();
+        });
+        el.addEventListener('click', (e)=>{
+          const actTarget = getEventTargetEl(e);
+          const act = actTarget ? actTarget.dataset?.action : null;
+          if(!act) return;
+          if(el.dataset.touchActionHandled === '1'){
+            delete el.dataset.touchActionHandled;
+            return;
+          }
+          e.stopPropagation();
+          // Always bring the window to the front when clicking a control.
+          focusWindow(appId);
+          closeStartMenu();
+          if(act==='close') closeApp(appId);
+          if(act==='min') minimizeApp(appId);
+          if(act==='max') toggleFitWindow(appId);
+        });
+        el.addEventListener('pointerup', (e)=>{
+          if(e.pointerType !== 'touch') return;
+          const actTarget = getEventTargetEl(e);
+          const act = actTarget ? actTarget.dataset?.action : null;
+          if(!act) return;
+          e.preventDefault();
+          e.stopPropagation();
+          suppressNextSyntheticClick();
+          el.dataset.touchActionHandled = '1';
+          focusWindow(appId);
+          closeStartMenu();
+          if(act==='close') closeApp(appId);
+          if(act==='min') minimizeApp(appId);
+          if(act==='max') toggleFitWindow(appId);
+        });
+
+        makeDraggable(el, appId);
+        if(appId !== 'mediaplayer'){
+          makeResizable(el, appId);
+        } else {
+          const resizeHandle = el.querySelector('.resize');
+          if(resizeHandle) resizeHandle.style.display = 'none';
+        }
+
+        if(appId === 'mediaplayer') { setTimeout(mpInitInWindow, 0); }
+        if(appId === 'trash') { updateTrashIconUI(); }
+        if(appId === 'clothes') { setTimeout(()=>initClothesWindow(el), 0); }
+        if(appId === 'settings') {
+          setTimeout(()=>{
+            initSettingsTabs(el);
+            applySettingsIcons(el);
+          }, 0);
+        }
+        if(appId === 'games') { setTimeout(()=>initGamesWindow(el), 0); }
+        if(appId === 'videos') { setTimeout(()=>initVideosWindow(el), 0); }
+        if(wstate.kind === 'folder') { setTimeout(()=>renderFolderWindow(appId, wstate.folderNavId || wstate.folderId), 0); }
+        if(wstate.kind === 'txt') { setTimeout(()=>renderTxtFileWindow(appId), 0); }
+
+        $('#windows').appendChild(el);
+        applyI18nTo(el);
+        applyWindowState(el, appId);
+        
+        // Auto-fit after content + i18n, unless a saved/manual size exists.
+        let fitPromise = Promise.resolve(getWindowRectFromState(wstate));
+        if(!wstate.savedRect){
+          installAutoFitObserver(el, appId);
+          fitPromise = smartFitWindow(el, 'open');
+        }
+        wstate.smartFitPromise = fitPromise.catch(()=> getWindowRectFromState(wstate));
+        
+        if(!wstate.deferReveal){
+          revealWindowElement(el, wstate);
+        }
+        if(appId === 'trash') updateTrashIconUI();
+      }
+
+      function makeDraggable(winEl, appId){
+        const titlebar = winEl.querySelector('[data-drag="1"]');
+        if(!titlebar) return;
+
+        let dragging = false;
+        let pointerId = null;
+        let startX = 0, startY = 0, startL = 0, startT = 0;
+
+        const onPointerDown = (e)=>{
+          // Ignore non-primary mouse buttons
+          if(e.pointerType === 'mouse' && e.button !== 0) return;
+          const dragTarget = getEventTargetEl(e);
+          // Ignore clicks on window control buttons
+          if(dragTarget && dragTarget.dataset && dragTarget.dataset.action) return;
+
+          e.preventDefault();
+          dragging = true;
+          document.body.classList.add('dragging');
+          pointerId = e.pointerId;
+
+          // Focus window when starting drag
+          try{ focusWindow(appId); } catch {}
+
+          const rect = winEl.getBoundingClientRect();
+          startX = e.clientX;
+          startY = e.clientY;
+          startL = rect.left;
+          startT = rect.top;
+
+          // Capture pointer so drag continues even if the finger leaves the titlebar
+          try{ titlebar.setPointerCapture(pointerId); } catch {}
+
+          titlebar.addEventListener('pointermove', onPointerMove);
+          titlebar.addEventListener('pointerup', onPointerUp);
+          titlebar.addEventListener('pointercancel', onPointerUp);
+        };
+
+        const onPointerMove = (e)=>{
+          if(!dragging) return;
+          if(pointerId !== null && e.pointerId !== pointerId) return;
+
+          e.preventDefault();
+
+          const area = $('#desktopArea').getBoundingClientRect();
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
+
+          const newL = clamp(startL + dx - area.left, 0, area.width - 80);
+          const newT = clamp(startT + dy - area.top, 0, area.height - 60);
+
+          winEl.style.left = newL + 'px';
+          winEl.style.top = newT + 'px';
+
+          const w = state.windows.get(appId);
+          if(w){ w.left = newL; w.top = newT; }
+        };
+
+        const onPointerUp = (e)=>{
+          if(pointerId !== null && e.pointerId !== pointerId) return;
+
+          dragging = false;
+          pointerId = null;
+          document.body.classList.remove('dragging');
+
+          try{ titlebar.releasePointerCapture(e.pointerId); } catch {}
+
+          titlebar.removeEventListener('pointermove', onPointerMove);
+          titlebar.removeEventListener('pointerup', onPointerUp);
+          titlebar.removeEventListener('pointercancel', onPointerUp);
+        };
+
+        // Pointer events handle mouse + touch + pen
+        titlebar.addEventListener('pointerdown', onPointerDown);
+      }
+
+      function makeResizable(winEl, appId){
+        const handle = winEl.querySelector('.resize');
+        const EDGE = 6; // px
+        const TOUCH_EDGE = 12; // px
+
+        let resizing = false;
+        let pointerId = null;
+        let startX = 0, startY = 0;
+        let startW = 0, startH = 0;
+        let startL = 0, startT = 0;
+        let dir = '';
+
+        function getDir(clientX, clientY, edge = EDGE){
+          const r = winEl.getBoundingClientRect();
+          const left = (clientX - r.left) <= edge;
+          const right = (r.right - clientX) <= edge;
+          const top = (clientY - r.top) <= edge;
+          const bottom = (r.bottom - clientY) <= edge;
+
+          let d = '';
+          if(top) d += 'n';
+          else if(bottom) d += 's';
+          if(left) d += 'w';
+          else if(right) d += 'e';
+          return d;
+        }
+
+        function cursorFor(d){
+          if(d === 'n' || d === 's') return 'ns-resize';
+          if(d === 'e' || d === 'w') return 'ew-resize';
+          if(d === 'ne' || d === 'sw') return 'nesw-resize';
+          if(d === 'nw' || d === 'se') return 'nwse-resize';
+          return '';
+        }
+
+        function beginResize(e, resizeDir){
+          if(e.pointerType === 'mouse' && e.button !== 0) return;
+          e.preventDefault();
+
+          resizing = true;
+          pointerId = e.pointerId;
+          dir = resizeDir;
+          document.body.classList.add('dragging');
+          const w = state.windows.get(appId);
+          if(w && w.fit){
+            w.fit = false;
+            w.prevRect = null;
+            winEl.classList.remove('fit');
+            const btn = winEl.querySelector('.wctl[data-action="max"]');
+            if(btn) btn.textContent = '□';
+          }
+
+          const rect = winEl.getBoundingClientRect();
+          startX = e.clientX;
+          startY = e.clientY;
+          startW = rect.width;
+          startH = rect.height;
+          startL = rect.left;
+          startT = rect.top;
+
+          try{ winEl.setPointerCapture(pointerId); } catch {}
+
+          winEl.addEventListener('pointermove', onPointerMove);
+          winEl.addEventListener('pointerup', onPointerUp);
+          winEl.addEventListener('pointercancel', onPointerUp);
+        }
+
+        function onPointerMove(e){
+          if(!resizing) return;
+          if(pointerId !== null && e.pointerId !== pointerId) return;
+          e.preventDefault();
+
+          const area = $('#desktopArea').getBoundingClientRect();
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
+
+          const MIN_W = state.isMobile ? 240 : 280;
+          const MIN_H = state.isMobile ? 180 : 200;
+          const areaW = Math.max(0, area.width);
+          const areaH = Math.max(0, area.height);
+          const startLRel = startL - area.left;
+          const startTRel = startT - area.top;
+          const minW = Math.max(120, Math.min(MIN_W, areaW));
+          const minH = Math.max(110, Math.min(MIN_H, areaH));
+
+          let newW = startW;
+          let newH = startH;
+          let newL = startLRel;
+          let newT = startTRel;
+
+          if(dir.includes('e')){
+            const maxW = Math.max(minW, areaW - newL);
+            newW = clamp(startW + dx, minW, maxW);
+          }
+          if(dir.includes('s')){
+            const maxH = Math.max(minH, areaH - newT);
+            newH = clamp(startH + dy, minH, maxH);
+          }
+
+          if(dir.includes('w')){
+            const maxL = Math.max(0, startLRel + startW - minW);
+            newL = clamp(startLRel + dx, 0, maxL);
+            newW = startW + (startLRel - newL);
+          }
+          if(dir.includes('n')){
+            const maxT = Math.max(0, startTRel + startH - minH);
+            newT = clamp(startTRel + dy, 0, maxT);
+            newH = startH + (startTRel - newT);
+          }
+
+          newL = clamp(newL, 0, Math.max(0, areaW - minW));
+          newT = clamp(newT, 0, Math.max(0, areaH - minH));
+          newW = clamp(newW, minW, Math.max(minW, areaW - newL));
+          newH = clamp(newH, minH, Math.max(minH, areaH - newT));
+
+          winEl.style.width = newW + 'px';
+          winEl.style.height = newH + 'px';
+          winEl.style.left = newL + 'px';
+          winEl.style.top = newT + 'px';
+
+          const w = state.windows.get(appId);
+          if(w){
+            w.width = newW;
+            w.height = newH;
+            w.left = newL;
+            w.top = newT;
+          }
+        }
+
+        function onPointerUp(e){
+          if(pointerId !== null && e.pointerId !== pointerId) return;
+          resizing = false;
+          pointerId = null;
+          dir = '';
+          document.body.classList.remove('dragging');
+
+          try{ winEl.releasePointerCapture(e.pointerId); } catch {}
+
+          winEl.removeEventListener('pointermove', onPointerMove);
+          winEl.removeEventListener('pointerup', onPointerUp);
+          winEl.removeEventListener('pointercancel', onPointerUp);
+          const w = state.windows.get(appId);
+          if(w) w.userSized = true;
+        }
+
+        // Mouse hover cursor change near edges
+        winEl.addEventListener('mousemove', (e)=>{
+          if(resizing) return;
+          // don't override cursor on controls/titlebar
+          const cursorTarget = getEventTargetEl(e);
+          if(cursorTarget && cursorTarget.closest && (cursorTarget.closest('.titlebar') || cursorTarget.closest('.wctl'))) return;
+          const d = getDir(e.clientX, e.clientY);
+          const c = cursorFor(d);
+          winEl.style.cursor = c || '';
+        });
+        winEl.addEventListener('mouseleave', ()=>{
+          if(!resizing) winEl.style.cursor = '';
+        });
+
+        // Edge/corner resize start
+        winEl.addEventListener('pointerdown', (e)=>{
+          if(resizing) return;
+          // ignore titlebar drag and window control clicks
+          const cursorTarget = getEventTargetEl(e);
+          if(cursorTarget && cursorTarget.closest && (cursorTarget.closest('.titlebar') || cursorTarget.closest('.wctl'))) return;
+          const edge = e.pointerType === 'touch' ? TOUCH_EDGE : EDGE;
+          const d = getDir(e.clientX, e.clientY, edge);
+          if(!d) return;
+          beginResize(e, d);
+        });
+
+        // Keep the existing bottom-right handle resize too
+        if(handle){
+          handle.addEventListener('pointerdown', (e)=>{
+            // If we already started edge resize, ignore
+            if(resizing) return;
+            beginResize(e, 'se');
+          });
+        }
+      }
+
+      function renderTaskButtons(){
+        const host = $('#taskButtons');
+        host.innerHTML = '';
+        const wins = Array.from(state.windows.values()).sort((a,b)=>a.title.localeCompare(b.title));
+        wins.forEach(w => {
+          const b = document.createElement('div');
+          b.className = 'btn bevel task-item';
+          b.id = `task_${w.id}`;
+          b.dataset.taskId = w.id;
+          const isActive = (state.activeWindowId === w.id && !w.minimized);
+          if(isActive) b.classList.add('pressed');
+          b.style.maxWidth = '240px';
+          b.style.overflow = 'hidden';
+          b.style.whiteSpace = 'nowrap';
+          b.style.textOverflow = 'ellipsis';
+          b.innerHTML = `
+            <span style="width:16px;height:16px;display:inline-flex;">${getThemedIconHtml(w, w.title, 16)}</span>
+            <span>${w.title}</span>
+          `;
+          b.addEventListener('click', (e)=>{
+            e.stopPropagation();
+            closeStartMenu();
+            if(w.minimized){
+              restoreWindow(w.id);
+              focusWindow(w.id);
+            } else if(state.activeWindowId === w.id){
+              minimizeApp(w.id);
+            } else {
+              focusWindow(w.id);
+            }
+          });
+          host.appendChild(b);
+        });
+        renderBlissOSDock();
+      }
+
+function renderBlissOSDock(){
+  const dock = $('#blissosDock');
+  if(!dock) return;
+  const blissos = state.settings.theme === 'blissos';
+  dock.classList.toggle('hidden', !blissos);
+  if(!blissos){
+    dock.innerHTML = '';
+    return;
+  }
+        const openIds = new Set(Array.from(state.windows.values()).map(w => w.id));
+        const normalized = normalizeDockItems(state.dockItems || []);
+        const dockChanged = normalized.length !== state.dockItems.length || normalized.some((item, idx) => {
+          const cur = state.dockItems[idx];
+          return !cur || cur.id !== item.id || cur.iconPath !== item.iconPath;
+        });
+        if(dockChanged){
+          state.dockItems = normalized;
+          saveDockItems();
+        }
+        const inner = document.createElement('div');
+        inner.className = 'blissos-dock-inner';
+        inner.innerHTML = `
+          <span class="blissos-dock-cap left" aria-hidden="true"></span>
+          <span class="blissos-dock-mid"></span>
+          <span class="blissos-dock-right"></span>
+          <span class="blissos-dock-cap right" aria-hidden="true"></span>
+        `;
+        const mid = inner.querySelector('.blissos-dock-mid');
+        const right = inner.querySelector('.blissos-dock-right');
+        let normalItems = normalized.filter(item => !isTrashDockItem(item));
+        if(isMobileDock() && normalItems.length > DOCK_MOBILE_MAX_NORMAL){
+          normalItems = normalItems.slice(0, DOCK_MOBILE_MAX_NORMAL);
+        }
+        const trashItem = normalized.find(isTrashDockItem);
+        normalItems.forEach(item => {
+          const winId = getDockWindowIdForItem(item);
+          const win = winId ? state.windows.get(winId) : null;
+          const btn = document.createElement('button');
+          btn.className = 'blissos-dock-item';
+          btn.type = 'button';
+          btn.dataset.dockWinId = winId || '';
+          btn.dataset.dockType = item.type;
+          btn.dataset.refId = item.refId;
+          if(openIds.has(winId)) btn.classList.add('open');
+          if(win && win.minimized) btn.classList.add('minimized');
+          const label = getDockItemLabel(item);
+          btn.title = label;
+          btn.innerHTML = `
+            <span class="pixel" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">${getDockItemIconHtml(item, 28)}</span>
+            <span class="dock-indicator"></span>
+          `;
+          btn.addEventListener('click', (e)=>{
+            e.stopPropagation();
+            if(btn.dataset.dragged === '1'){
+              btn.dataset.dragged = '0';
+              return;
+            }
+            if(win){
+              if(win.minimized){
+                restoreWindow(winId);
+              } else if(state.activeWindowId === winId){
+                minimizeApp(winId);
+              } else {
+                focusWindow(winId);
+              }
+            } else if(item.refId){
+              openIconById(item.refId);
+            }
+          });
+          btn.addEventListener('contextmenu', (e)=>{
+            e.preventDefault();
+            e.stopPropagation();
+            openCtxMenu(e.clientX, e.clientY, 'dock', item.refId, { itemType: item.type, dockId: item.id });
+          });
+          bindDockDrag(btn, item, mid, inner);
+          mid.appendChild(btn);
+        });
+        if(trashItem && right){
+          const winId = getDockWindowIdForItem(trashItem);
+          const win = winId ? state.windows.get(winId) : null;
+          const btn = document.createElement('button');
+          btn.className = 'blissos-dock-item';
+          btn.type = 'button';
+          btn.dataset.dockWinId = winId || '';
+          btn.dataset.dockType = 'trash';
+          btn.dataset.refId = 'trash';
+          if(openIds.has(winId)) btn.classList.add('open');
+          if(win && win.minimized) btn.classList.add('minimized');
+          const label = getDockItemLabel(trashItem);
+          btn.title = label;
+          btn.innerHTML = `
+            <span class="pixel" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">${getDockItemIconHtml(trashItem, 28)}</span>
+            <span class="dock-indicator"></span>
+          `;
+          btn.addEventListener('click', (e)=>{
+            e.stopPropagation();
+            if(btn.dataset.dragged === '1'){
+              btn.dataset.dragged = '0';
+              return;
+            }
+            if(win){
+              if(win.minimized){
+                restoreWindow(winId);
+              } else if(state.activeWindowId === winId){
+                minimizeApp(winId);
+              } else {
+                focusWindow(winId);
+              }
+            } else {
+              openIconById('trash');
+            }
+          });
+          btn.addEventListener('contextmenu', (e)=>{
+            e.preventDefault();
+            e.stopPropagation();
+            openCtxMenu(e.clientX, e.clientY, 'dock', 'trash', { itemType: 'trash', dockId: trashItem.id });
+          });
+          right.appendChild(btn);
+        }
+        dock.innerHTML = '';
+        dock.appendChild(inner);
+      }
+
+function closeBlissOSMenu(){
+  const menu = $('#blissosAppleMenu');
+  const brand = document.querySelector('.blissos-menu-brand');
+  if(menu) menu.classList.add('hidden');
+  if(brand) brand.classList.remove('active');
+}
+
+function toggleBlissOSMenu(forceOpen){
+  const menu = $('#blissosAppleMenu');
+  const brand = document.querySelector('.blissos-menu-brand');
+  if(!menu) return;
+  const willOpen = typeof forceOpen === 'boolean' ? forceOpen : menu.classList.contains('hidden');
+  closeBlissOSAppMenu();
+  if(willOpen) renderBlissOSAppleMenu();
+  menu.classList.toggle('hidden', !willOpen);
+  if(brand) brand.classList.toggle('active', willOpen);
+}
+
+function renderBlissOSAppleMenu(){
+  const menu = $('#blissosAppleMenu');
+  if(!menu) return;
+  const apps = APPS.filter(app => app.id !== 'trash' && app.id !== 'settings' && app.showOnDesktop !== false);
+  const settingsTabs = [
+    { id:'general', icon:'./assets/icons/computer.png', labelKey:'settings.tab.general' },
+    { id:'language', icon:'./assets/icons/language.png', labelKey:'settings.tab.language' },
+    { id:'appearance', icon:'./assets/icons/appearance.png', labelKey:'settings.tab.appearance' },
+    { id:'sound', icon:'./assets/icons/Sound.png', labelKey:'settings.tab.sound' },
+    { id:'system', icon:'./assets/icons/computer.png', labelKey:'settings.tab.system' },
+    { id:'performance', icon:'./assets/icons/performance.png', labelKey:'settings.tab.performance' },
+  ];
+  const settingsLabel = t('blissos.menu.settings');
+  const settingsIcon = getThemedIconHtml({ icon:'settings', id:'settings', iconFile:'./assets/icons/settings.png' }, settingsLabel, 16);
+  const settingsItems = settingsTabs.map(tab => `
+    <button class="menu-item" type="button" data-blissos-settings-tab="${tab.id}">
+      <span class="menu-icon">${getThemedIconHtml({ icon:'settings', id:`settings-${tab.id}`, iconFile:tab.icon }, t(tab.labelKey), 16)}</span>
+      <span class="menu-label">${t(tab.labelKey)}</span>
+    </button>
+  `).join('');
+
+  const appItems = apps.map(app => {
+    const label = getIconLabel(app);
+    const icon = getThemedIconHtml(app, label, 16);
+    return `
+      <button class="menu-item" type="button" data-blissos-open-app="${app.id}">
+        <span class="menu-icon">${icon}</span>
+        <span class="menu-label">${label}</span>
+      </button>
+    `;
+  }).join('');
+
+  menu.innerHTML = `
+    <button class="menu-item" type="button" data-blissos-action="about">
+      <span class="menu-icon">${getThemedIconHtml({ icon:'info', id:'about', iconFile:'./assets/BlissOS/info.png' }, t('blissos.menu.about'), 16)}</span>
+      <span class="menu-label" data-i18n="blissos.menu.about">${t('blissos.menu.about')}</span>
+    </button>
+    <div class="menu-sep" role="separator"></div>
+    <div class="menu-item has-submenu" tabindex="-1">
+      <span class="menu-icon">${settingsIcon}</span>
+      <span class="menu-label">${settingsLabel}</span>
+      <span class="menu-arrow">▶</span>
+      <div class="submenu" role="menu" aria-label="${settingsLabel}">
+        ${settingsItems}
+      </div>
+    </div>
+    <div class="menu-sep" role="separator"></div>
+    ${appItems}
+    <div class="menu-sep" role="separator"></div>
+    <button class="menu-item" type="button" data-blissos-action="logoff">
+      <span class="menu-icon">${getThemedIconHtml({ icon:'user', id:'logoff', iconFile:'./assets/icons/logout.png' }, t('menu.logoff'), 16)}</span>
+      <span class="menu-label" data-i18n="menu.logoff">${t('menu.logoff')}</span>
+    </button>
+  `;
+}
+
+function getActiveAppId(){
+  const winId = state.activeWindowId;
+  if(winId && state.windows.has(winId)){
+    const w = state.windows.get(winId);
+    if(!w.minimized) return winId;
+  }
+  return 'bliss';
+}
+
+function getAppDisplay(appId){
+  if(appId === 'bliss'){
+    const iconHtml = `<img class="pixel" src="./assets/siteicon/bliss.png" data-fallback-src="./assets/siteicon/bliss.png" width="16" height="16" alt="" style="display:block;" />`;
+    return { label:'Bliss', iconHtml };
+  }
+  if(appId && state.windows.has(appId)){
+    const wstate = state.windows.get(appId);
+    if(wstate && wstate.kind === 'folder'){
+      const label = wstate.title || t('fs.newFolderName');
+      const iconHtml = getThemedIconHtml(wstate, label, 16);
+      return { label, iconHtml };
+    }
+  }
+  const app = getAppById(appId);
+  if(!app){
+    return { label: appId, iconHtml: iconSVG('file', state.settings.theme) };
+  }
+  const label = getIconLabel(app);
+  const iconHtml = getThemedIconHtml(app, label, 16);
+  return { label, iconHtml };
+}
+
+function updateBlissOSActiveApp(){
+  if(state.settings.theme !== 'blissos') return;
+  const appId = getActiveAppId();
+  const iconEl = $('#blissosAppMenuIcon');
+  const labelEl = $('#blissosAppMenuLabel');
+  const specialBtn = $('#blissosSpecialBtn');
+  if(!iconEl || !labelEl) return;
+  const { label, iconHtml } = getAppDisplay(appId);
+  iconEl.innerHTML = iconHtml;
+  labelEl.textContent = label;
+  if(specialBtn) specialBtn.style.display = (appId === 'bliss') ? 'inline-flex' : 'none';
+}
+
+function closeBlissOSAppMenu(){
+  const menu = $('#blissosAppMenuDrop');
+  if(menu) menu.classList.add('hidden');
+  const btn = $('#blissosAppMenu');
+  if(btn) btn.classList.remove('active');
+}
+
+function toggleBlissOSAppMenu(forceOpen){
+  const menu = $('#blissosAppMenuDrop');
+  const btn = $('#blissosAppMenu');
+  if(!menu || !btn) return;
+  const willOpen = typeof forceOpen === 'boolean' ? forceOpen : menu.classList.contains('hidden');
+  closeBlissOSMenu();
+  closeWindowMenu();
+  if(willOpen){
+    renderBlissOSAppMenu();
+    const first = menu.querySelector('.menu-item');
+    if(first) first.focus();
+  }
+  menu.classList.toggle('hidden', !willOpen);
+  btn.classList.toggle('active', willOpen);
+}
+
+function restoreWindow(appId){
+  const w = state.windows.get(appId);
+  if(!w || !w.minimized) return;
+  playSfx('windowRestore');
+  // BlissOS specific restore: use genie animation from dock
+  // Check state.settings.theme instead of DOM attribute for reliability
+  if(state && state.settings && state.settings.theme === 'blissos'){
+    restoreFromDock(appId);
+    return;
+  }
+  w.minimized = false;
+  const el = document.getElementById(`win_${appId}`);
+  if(el){
+    el.classList.remove('hidden');
+    animateWindowFromTaskbar(el, appId);
+  }
+  state.hiddenApps.delete(appId);
+}
+
+// ---------------------------------------------------------------------
+// Bliss98 genie helpers for taskbar minimise/restore/maximize
+
+const TASKBAR_GENIE = {
+  duration: 480,
+  easing: 'cubic-bezier(0.16, 0.74, 0.2, 1)',
+};
+const TASKBAR_MINIMIZE_GENIE = {
+  duration: 760,
+  easing: 'cubic-bezier(0.12, 0.78, 0.18, 1)',
+};
+
+function shouldReduceMotion(){
+  return !state.animations || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function getTaskbarButtonRect(appId){
+  const btn = document.getElementById(`task_${appId}`) || document.querySelector(`[data-task-id="${appId}"]`);
+  if(btn) return btn.getBoundingClientRect();
+  const taskbar = document.getElementById('taskbar');
+  if(taskbar){
+    const rect = taskbar.getBoundingClientRect();
+    return { left: rect.left + 10, top: rect.top + 6, width: 28, height: 20 };
+  }
+  const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+  return { left: 10, top: Math.max(0, vh - 30), width: 28, height: 20 };
+}
+
+function getGenieParams(fromRect, toRect){
+  const fromCx = fromRect.left + fromRect.width / 2;
+  const fromCy = fromRect.top + fromRect.height / 2;
+  const toCx = toRect.left + toRect.width / 2;
+  const toCy = toRect.top + toRect.height / 2;
+  const dx = toCx - fromCx;
+  const dy = toCy - fromCy;
+  const scaleX = clamp(toRect.width / Math.max(1, fromRect.width), 0.08, 0.4);
+  const scaleY = clamp(toRect.height / Math.max(1, fromRect.height), 0.06, 0.35);
+  const skew = clamp(dx / Math.max(1, fromRect.width) * 10, -10, 10);
+  const origin = dx < 0 ? 'bottom left' : 'bottom right';
+  return { dx, dy, scaleX, scaleY, skew, origin };
+}
+
+function buildGenieTransform(params){
+  return `translate(${params.dx}px, ${params.dy}px) scale(${params.scaleX}, ${params.scaleY}) skewY(${params.skew}deg)`;
+}
+
+function cancelWindowGenie(winEl){
+  if(winEl && typeof winEl._genieCancel === 'function'){
+    winEl._genieCancel(true);
+  }
+}
+
+function runWindowGenieTransition(winEl, opts = {}){
+  if(!winEl) return Promise.resolve();
+  cancelWindowGenie(winEl);
+  const duration = opts.duration || TASKBAR_GENIE.duration;
+  const easing = opts.easing || TASKBAR_GENIE.easing;
+  return new Promise(resolve => {
+    let done = false;
+    const finish = ()=>{
+      if(done) return;
+      done = true;
+      winEl.removeEventListener('transitionend', onEnd);
+      if(winEl._genieTimer){
+        clearTimeout(winEl._genieTimer);
+        winEl._genieTimer = null;
+      }
+      winEl._genieCancel = null;
+      winEl.style.transition = '';
+      winEl.style.transform = '';
+      winEl.style.transformOrigin = '';
+      winEl.style.opacity = '';
+      winEl.style.pointerEvents = '';
+      winEl.style.willChange = '';
+      winEl.classList.remove('genie-animating');
+      if(typeof opts.onDone === 'function') opts.onDone();
+      resolve();
+    };
+    const onEnd = (e)=>{
+      if(e && e.target !== winEl) return;
+      finish();
+    };
+    winEl._genieCancel = finish;
+    winEl.addEventListener('transitionend', onEnd);
+    winEl._genieTimer = setTimeout(finish, duration + 80);
+
+    winEl.classList.add('genie-animating');
+    winEl.style.pointerEvents = 'none';
+    winEl.style.willChange = 'transform, opacity';
+    winEl.style.transformOrigin = opts.origin || 'bottom left';
+    winEl.style.transition = 'none';
+    if(opts.from) winEl.style.transform = opts.from;
+    if(typeof opts.fromOpacity === 'number') winEl.style.opacity = String(opts.fromOpacity);
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        winEl.style.transition = `transform ${duration}ms ${easing}, opacity ${duration}ms ${easing}`;
+        if(opts.to) winEl.style.transform = opts.to;
+        if(typeof opts.toOpacity === 'number') winEl.style.opacity = String(opts.toOpacity);
+      });
+    });
+  });
+}
+
+function animateWindowToTaskbar(winEl, appId){
+  if(shouldReduceMotion()) return Promise.resolve();
+  const fromRect = winEl.getBoundingClientRect();
+  const targetRect = getTaskbarButtonRect(appId);
+  const params = getGenieParams(fromRect, targetRect);
+  const transform = buildGenieTransform(params);
+  const duration = state.isMobile
+    ? Math.round(TASKBAR_MINIMIZE_GENIE.duration * 0.9)
+    : TASKBAR_MINIMIZE_GENIE.duration;
+  return runWindowGenieTransition(winEl, {
+    from: 'translate(0px, 0px) scale(1) skewY(0deg)',
+    to: transform,
+    fromOpacity: 1,
+    toOpacity: 0.15,
+    origin: params.origin,
+    duration,
+    easing: TASKBAR_MINIMIZE_GENIE.easing,
+  });
+}
+
+function animateWindowFromTaskbar(winEl, appId){
+  if(shouldReduceMotion()) return Promise.resolve();
+  const fromRect = winEl.getBoundingClientRect();
+  const targetRect = getTaskbarButtonRect(appId);
+  const params = getGenieParams(fromRect, targetRect);
+  const transform = buildGenieTransform(params);
+  return runWindowGenieTransition(winEl, {
+    from: transform,
+    to: 'translate(0px, 0px) scale(1) skewY(0deg)',
+    fromOpacity: 0.15,
+    toOpacity: 1,
+    origin: params.origin,
+  });
+}
+
+function animateWindowRectTransition(winEl, fromRect, toRect, opts = {}){
+  if(shouldReduceMotion() || !fromRect || !toRect) return Promise.resolve();
+  if(!toRect.width || !toRect.height) return Promise.resolve();
+  const dx = fromRect.left - toRect.left;
+  const dy = fromRect.top - toRect.top;
+  const scaleX = fromRect.width / toRect.width;
+  const scaleY = fromRect.height / toRect.height;
+  if(!Number.isFinite(scaleX) || !Number.isFinite(scaleY)) return Promise.resolve();
+  const skew = clamp(dx / Math.max(1, toRect.width) * 6, -6, 6);
+  const transform = `translate(${dx}px, ${dy}px) scale(${scaleX}, ${scaleY}) skewY(${skew}deg)`;
+  return runWindowGenieTransition(winEl, {
+    from: transform,
+    to: 'translate(0px, 0px) scale(1) skewY(0deg)',
+    fromOpacity: 0.96,
+    toOpacity: 1,
+    origin: 'top left',
+    duration: opts.duration || TASKBAR_GENIE.duration,
+  });
+}
+
+// ---------------------------------------------------------------------
+// Genie animation helpers for BlissOS minimise/restore
+// These functions implement Mac-like "genie" animations to send windows
+// into the BlissOS dock and back. They are only invoked when the
+// current theme is BlissOS.
+
+function getDockItemEl(appId){
+  return document.querySelector(`#blissosDock [data-dock-win-id="${appId}"]`);
+}
+
+const DEFAULT_DOCK_ORDER = ['clothes','music','art','games','videos','about','contact','diev','settings','trash'];
+
+function isTrashDockItem(item){
+  return !!item && (item.type === 'trash' || (item.type === 'app' && item.refId === 'trash'));
+}
+
+function createTrashDockItem(){
+  return {
+    id: getDockItemKey('trash', 'trash'),
+    type: 'trash',
+    refId: 'trash',
+    pinned: 'right',
+    nonRemovable: true,
+    nonReorderable: true,
+    iconPath: getDockItemIconPath('trash', 'trash'),
+  };
+}
+
+function ensureTrashDockItem(items){
+  const list = Array.isArray(items) ? items.filter(it => !isTrashDockItem(it)) : [];
+  let trash = Array.isArray(items) ? items.find(isTrashDockItem) : null;
+  if(!trash) trash = createTrashDockItem();
+  trash = {
+    ...trash,
+    id: trash.id || getDockItemKey('trash', 'trash'),
+    type: 'trash',
+    refId: 'trash',
+    pinned: 'right',
+    nonRemovable: true,
+    nonReorderable: true,
+    iconPath: getDockItemIconPath('trash', 'trash'),
+  };
+  return list.concat(trash);
+}
+
+function getDefaultDockItems(){
+  const base = DEFAULT_DOCK_ORDER
+    .filter(id => !!getAppById(id))
+    .map(id => ({
+      id: getDockItemKey('app', id),
+      type: 'app',
+      refId: id,
+      iconPath: getDockItemIconPath('app', id),
+    }));
+  return ensureTrashDockItem(base);
+}
+
+function getDockWindowIdForItem(item){
+  if(!item) return '';
+  if(isTrashDockItem(item)) return 'trash';
+  if(item.type === 'folder') return getFolderWindowId(item.refId);
+  if(item.type === 'txt') return getTxtWindowId(item.refId);
+  return item.refId || '';
+}
+
+function getDockItemKey(type, refId){
+  return `${type}:${refId}`;
+}
+
+function getDockItemIconPath(type, refId){
+  if(type === 'trash' || refId === 'trash') return getTrashIconFile();
+  if(type === 'folder') return getFolderIconPath();
+  if(type === 'txt') return getTxtIconPath();
+  const app = getAppById(refId);
+  if(!app || !app.iconFile) return '';
+  const iconFile = typeof app.iconFile === 'function' ? app.iconFile() : app.iconFile;
+  return getIconFor(iconFile, state.settings.theme);
+}
+
+function getDockItemLabel(item){
+  if(!item) return '';
+  if(isTrashDockItem(item)){
+    const app = getAppById('trash');
+    return app ? getIconLabel(app) : 'Trash';
+  }
+  if(item.type === 'folder' || item.type === 'txt'){
+    const fsItem = getFsItem(item.refId);
+    return fsItem ? getFsItemLabel(fsItem) : '';
+  }
+  const app = getAppById(item.refId);
+  return app ? getIconLabel(app) : item.refId;
+}
+
+function getDockItemIconHtml(item, size = 28){
+  if(!item) return iconSVG('file', state.settings.theme);
+  if(isTrashDockItem(item)){
+    const label = getDockItemLabel(item);
+    const src = getTrashIconFile();
+    const fallback = isBlissOS() ? getBlissOSFallbackPath(src) : '';
+    const fbAttr = fallback ? ` data-fallback-src="${fallback}"` : '';
+    return `<img class="pixel" src="${src}"${fbAttr} width="${size}" height="${size}" alt="${label}" style="display:block;" />`;
+  }
+  if(item.type === 'folder' || item.type === 'txt'){
+    const fsItem = getFsItem(item.refId);
+    const label = getDockItemLabel(item);
+    return fsItem ? getFsIconHtml(fsItem, label, size) : iconSVG('file', state.settings.theme);
+  }
+  const app = getAppById(item.refId);
+  if(!app) return iconSVG('file', state.settings.theme);
+  const label = getDockItemLabel(item);
+  return getThemedIconHtml(app, label, size);
+}
+
+function normalizeDockItems(items){
+  const source = Array.isArray(items) ? items : [];
+  const out = [];
+  const seen = new Set();
+  let trash = null;
+  source.forEach(raw => {
+    if(!raw || !raw.type || !raw.refId) return;
+    const type = raw.type === 'trash' ? 'trash' : raw.type;
+    const refId = raw.refId || '';
+    if(type === 'trash' || refId === 'trash'){
+      if(trash) return;
+      trash = createTrashDockItem();
+      return;
+    }
+    const key = getDockItemKey(type, refId);
+    if(seen.has(key)) return;
+    if(type === 'app' && !getAppById(refId)) return;
+    if((type === 'folder' || type === 'txt')){
+      const fsItem = getFsItem(refId);
+      if(!fsItem || fsItem.type !== type || state.trash.has(refId)) return;
+    }
+    seen.add(key);
+    out.push({
+      id: raw.id || key,
+      type,
+      refId,
+      iconPath: getDockItemIconPath(type, refId),
+    });
+  });
+  return ensureTrashDockItem(trash ? out.concat(trash) : out);
+}
+
+function isDockableItem(type, refId){
+  if(type === 'trash' || refId === 'trash') return true;
+  if(type === 'folder' || type === 'txt') return true;
+  if(type === 'app') return !!getAppById(refId);
+  return false;
+}
+
+function isDockItemPresent(type, refId){
+  const key = getDockItemKey(type === 'trash' || refId === 'trash' ? 'trash' : type, refId === 'trash' ? 'trash' : refId);
+  return (state.dockItems || []).some(item => (item.id || getDockItemKey(item.type, item.refId)) === key);
+}
+
+function getDockItemsWithoutTrash(){
+  return (state.dockItems || []).filter(item => !isTrashDockItem(item));
+}
+
+function isMobileDock(){
+  return !!state.isMobile;
+}
+
+function showDockFullMessage(){
+  showMessage('dialog.dockFull.title', 'dialog.dockFull.body');
+}
+
+function addDockItem(type, refId){
+  const targetType = (type === 'trash' || refId === 'trash') ? 'trash' : type;
+  const targetRef = (refId === 'trash') ? 'trash' : refId;
+  if(!isDockableItem(targetType, targetRef)) return false;
+  if(!Array.isArray(state.dockItems)) state.dockItems = [];
+  if(isDockItemPresent(targetType, targetRef)) return false;
+  if(targetType !== 'trash' && isMobileDock()){
+    const normal = getDockItemsWithoutTrash();
+    if(normal.length >= DOCK_MOBILE_MAX_NORMAL){
+      showDockFullMessage();
+      return false;
+    }
+  }
+  if(targetType === 'trash'){
+    state.dockItems = ensureTrashDockItem(state.dockItems);
+  } else {
+    const normal = getDockItemsWithoutTrash();
+    const item = {
+      id: getDockItemKey(targetType, targetRef),
+      type: targetType,
+      refId: targetRef,
+      iconPath: getDockItemIconPath(targetType, targetRef),
+    };
+    normal.push(item);
+    state.dockItems = ensureTrashDockItem(normal);
+  }
+  saveDockItems();
+  renderBlissOSDock();
+  return true;
+}
+
+function removeDockItem(type, refId){
+  if(type === 'trash' || refId === 'trash') return false;
+  const key = getDockItemKey(type, refId);
+  const before = state.dockItems.length;
+  state.dockItems = state.dockItems.filter(item => (item.id || getDockItemKey(item.type, item.refId)) !== key);
+  if(state.dockItems.length !== before){
+    state.dockItems = ensureTrashDockItem(state.dockItems);
+    saveDockItems();
+    renderBlissOSDock();
+    return true;
+  }
+  return false;
+}
+
+function getDockInnerEl(){
+  const dock = $('#blissosDock');
+  return dock ? dock.querySelector('.blissos-dock-inner') : null;
+}
+
+function getDockMidEl(){
+  const inner = getDockInnerEl();
+  return inner ? inner.querySelector('.blissos-dock-mid') : null;
+}
+
+function isPointInRect(x, y, rect){
+  if(!rect) return false;
+  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+}
+
+function setDockDropHighlight(active){
+  const inner = getDockInnerEl();
+  if(inner) inner.classList.toggle('dock-drop-active', !!active);
+}
+
+function getDockInsertIndexFromClientX(clientX, excludeEl){
+  const mid = getDockMidEl();
+  if(!mid) return 0;
+  const items = Array.from(mid.querySelectorAll('.blissos-dock-item'))
+    .filter(el => el !== excludeEl && el.dataset.dockType !== 'trash');
+  for(let i = 0; i < items.length; i++){
+    const rect = items[i].getBoundingClientRect();
+    if(clientX < rect.left + rect.width / 2) return i;
+  }
+  return items.length;
+}
+
+function getDockDropTargetAt(x, y){
+  if(!isBlissOS()) return null;
+  const inner = getDockInnerEl();
+  if(!inner) return null;
+  const rect = inner.getBoundingClientRect();
+  if(!isPointInRect(x, y, rect)) return null;
+  const index = getDockInsertIndexFromClientX(x, null);
+  return { index, inner };
+}
+
+function addDockItemsAt(entries, index){
+  if(!Array.isArray(entries) || entries.length === 0) return false;
+  let changed = false;
+  let normal = getDockItemsWithoutTrash();
+  if(isMobileDock()){
+    const pendingKeys = new Set();
+    let pendingAdds = 0;
+    entries.forEach(entry => {
+      if(!entry) return;
+      const type = entry.type === 'trash' || entry.refId === 'trash' ? 'trash' : entry.type;
+      const refId = entry.refId === 'trash' ? 'trash' : entry.refId;
+      if(type === 'trash') return;
+      if(!isDockableItem(type, refId)) return;
+      const key = getDockItemKey(type, refId);
+      if(pendingKeys.has(key)) return;
+      if(isDockItemPresent(type, refId)) return;
+      pendingKeys.add(key);
+      pendingAdds += 1;
+    });
+    if(pendingAdds > 0 && (normal.length >= DOCK_MOBILE_MAX_NORMAL || (normal.length + pendingAdds) > DOCK_MOBILE_MAX_NORMAL)){
+      showDockFullMessage();
+      return false;
+    }
+  }
+  let insertAt = clamp(index, 0, normal.length);
+  entries.forEach(entry => {
+    if(!entry) return;
+    const type = entry.type === 'trash' || entry.refId === 'trash' ? 'trash' : entry.type;
+    const refId = entry.refId === 'trash' ? 'trash' : entry.refId;
+    if(type === 'trash'){
+      if(!isDockItemPresent('trash', 'trash')){
+        state.dockItems = ensureTrashDockItem(normal);
+        changed = true;
+      }
+      return;
+    }
+    if(isDockItemPresent(type, refId)) return;
+    if(!isDockableItem(type, refId)) return;
+    const item = {
+      id: getDockItemKey(type, refId),
+      type,
+      refId,
+      iconPath: getDockItemIconPath(type, refId),
+    };
+    normal.splice(insertAt, 0, item);
+    insertAt += 1;
+    changed = true;
+  });
+  if(changed){
+    state.dockItems = ensureTrashDockItem(normal);
+    saveDockItems();
+    renderBlissOSDock();
+  }
+  return changed;
+}
+
+function bindDockDrag(btn, item, midEl, innerEl){
+  if(!btn || !midEl || !innerEl) return;
+  let down = false;
+  let dragging = false;
+  let pointerId = null;
+  let startX = 0;
+  let lastX = 0;
+  let indicator = null;
+  let targetIndex = -1;
+
+  const cleanup = ()=>{
+    if(indicator && indicator.parentNode) indicator.remove();
+    indicator = null;
+    if(btn) btn.classList.remove('dock-dragging');
+    if(innerEl) innerEl.classList.remove('dock-reorder-active');
+    setDockDropHighlight(false);
+  };
+
+  const onPointerMove = (e)=>{
+    if(!down || (pointerId !== null && e.pointerId !== pointerId)) return;
+    lastX = e.clientX;
+    const dx = e.clientX - startX;
+    if(!dragging && Math.abs(dx) > 4){
+      dragging = true;
+      btn.classList.add('dock-dragging');
+      innerEl.classList.add('dock-reorder-active');
+      indicator = document.createElement('span');
+      indicator.className = 'dock-insert-line';
+      innerEl.appendChild(indicator);
+      btn.dataset.dragged = '1';
+    }
+    if(!dragging) return;
+    const index = getDockInsertIndexFromClientX(e.clientX, btn);
+    const items = Array.from(midEl.querySelectorAll('.blissos-dock-item'))
+      .filter(el => el !== btn && el.dataset.dockType !== 'trash');
+    const innerRect = innerEl.getBoundingClientRect();
+    let lineX = innerRect.left + 12;
+    if(items.length){
+      if(index >= items.length){
+        const lastRect = items[items.length - 1].getBoundingClientRect();
+        lineX = lastRect.right + 4;
+      } else {
+        const rect = items[index].getBoundingClientRect();
+        lineX = rect.left - 4;
+      }
+    }
+    if(indicator){
+      indicator.style.left = (lineX - innerRect.left) + 'px';
+      indicator.style.height = (innerRect.height - 12) + 'px';
+      indicator.style.top = '6px';
+    }
+    targetIndex = index;
+    setDockDropHighlight(isPointInRect(e.clientX, e.clientY, innerEl.getBoundingClientRect()));
+    e.preventDefault();
+  };
+
+  const onPointerUp = (e)=>{
+    if(!down || (pointerId !== null && e.pointerId !== pointerId)) return;
+    down = false;
+    try{ btn.releasePointerCapture(pointerId); } catch {}
+    document.removeEventListener('pointermove', onPointerMove);
+    document.removeEventListener('pointerup', onPointerUp);
+    document.removeEventListener('pointercancel', onPointerUp);
+    if(!dragging){
+      cleanup();
+      pointerId = null;
+      return;
+    }
+    const dockRect = innerEl.getBoundingClientRect();
+    const inDock = isPointInRect(e.clientX, e.clientY, dockRect);
+    if(!inDock){
+      removeDockItem(item.type, item.refId);
+      cleanup();
+      pointerId = null;
+      return;
+    }
+    const key = getDockItemKey(item.type, item.refId);
+    const normal = getDockItemsWithoutTrash();
+    const hasOverflow = isMobileDock() && normal.length > DOCK_MOBILE_MAX_NORMAL;
+    const visible = hasOverflow ? normal.slice(0, DOCK_MOBILE_MAX_NORMAL) : normal.slice();
+    const hidden = hasOverflow ? normal.slice(DOCK_MOBILE_MAX_NORMAL) : [];
+    const fromIndex = visible.findIndex(it => (it.id || getDockItemKey(it.type, it.refId)) === key);
+    if(fromIndex !== -1){
+      const moved = visible.splice(fromIndex, 1)[0];
+      const insertAt = clamp(targetIndex >= 0 ? targetIndex : fromIndex, 0, visible.length);
+      visible.splice(insertAt, 0, moved);
+      state.dockItems = ensureTrashDockItem(visible.concat(hidden));
+      saveDockItems();
+      renderBlissOSDock();
+    } else {
+      cleanup();
+    }
+    pointerId = null;
+  };
+
+  btn.addEventListener('pointerdown', (e)=>{
+    if(e.pointerType === 'mouse' && e.button !== 0) return;
+    if(isTrashDockItem(item)) return;
+    down = true;
+    dragging = false;
+    pointerId = e.pointerId;
+    startX = e.clientX;
+    lastX = e.clientX;
+    targetIndex = -1;
+    try{ btn.setPointerCapture(pointerId); } catch {}
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+    document.addEventListener('pointercancel', onPointerUp);
+  });
+}
+
+function animateGenie(ghost, fromRect, toRect, opts = {}){
+  const dx = (toRect.left + toRect.width / 2) - (fromRect.left + fromRect.width / 2);
+  const dy = (toRect.top + toRect.height / 2) - (fromRect.top + fromRect.height / 2);
+  const duration = opts.duration || 450;
+  const easing = opts.easing || 'cubic-bezier(0.45, 0.03, 0.52, 0.96)';
+
+  const forwardKeyframes = [
+    {
+      transform: 'translate(0px,0px) scale(1)',
+      clipPath: 'inset(0% 0% 0% 0% round 6px)',
+      opacity: 1
+    },
+    {
+      transform: `translate(${dx * 0.5}px, ${dy * 0.5}px) scale(0.5)`,
+      clipPath: 'polygon(0% 0%, 100% 0%, 90% 60%, 10% 60%)',
+      opacity: 0.7
+    },
+    {
+      transform: `translate(${dx}px, ${dy}px) scale(0.1)`,
+      clipPath: 'inset(45% 45% 45% 45% round 12px)',
+      opacity: 0.2
+    }
+  ];
+
+  const reverseKeyframes = [
+    {
+      transform: 'translate(0px,0px) scale(0.1)',
+      clipPath: 'inset(45% 45% 45% 45% round 12px)',
+      opacity: 0.2
+    },
+    {
+      transform: `translate(${dx * 0.5}px, ${dy * 0.5}px) scale(0.5)`,
+      clipPath: 'polygon(0% 0%, 100% 0%, 90% 60%, 10% 60%)',
+      opacity: 0.7
+    },
+    {
+      transform: `translate(${dx}px, ${dy}px) scale(1)`,
+      clipPath: 'inset(0% 0% 0% 0% round 6px)',
+      opacity: 1
+    }
+  ];
+
+  const finalKeyframes = opts.direction === 'reverse' ? reverseKeyframes : forwardKeyframes;
+  return ghost.animate(finalKeyframes, { duration, easing, fill: 'forwards' });
+}
+
+function cancelDockAnimation(appId){
+  if(!state || !state.dockAnimations) return;
+  const entry = state.dockAnimations.get(appId);
+  if(!entry) return;
+  try{ entry.anim.cancel(); } catch {}
+  if(entry.ghost && entry.ghost.remove) entry.ghost.remove();
+  state.dockAnimations.delete(appId);
+}
+
+function minimizeToDock(appId){
+  const w = state.windows.get(appId);
+  if (!w) return;
+  const el = document.getElementById(`win_${appId}`);
+  if (!el) return;
+  cancelDockAnimation(appId);
+  // Record last rect for restore
+  w.lastRect = { left: w.left, top: w.top, width: w.width, height: w.height };
+  // Determine if motion should be reduced
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || !state.animations;
+  // Mark minimized
+  w.minimized = true;
+  // Update active states
+  if (state.activeWindowId === appId) state.activeWindowId = null;
+  if (state.activeAppId === appId) state.activeAppId = 'bliss';
+  renderTaskButtons();
+  updateBlissOSActiveApp();
+  const dockItem = getDockItemEl(appId);
+  if (dockItem) dockItem.classList.add('minimized');
+  if (reduceMotion) {
+    el.classList.add('hidden');
+    return;
+  }
+  const fromRect = el.getBoundingClientRect();
+  let toRect;
+  if (dockItem) {
+    const iconRect = dockItem.getBoundingClientRect();
+    toRect = {
+      left: iconRect.left + (iconRect.width / 2) - (fromRect.width / 2),
+      top: iconRect.top + (iconRect.height / 2) - (fromRect.height / 2),
+      width: fromRect.width,
+      height: fromRect.height
+    };
+  } else {
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    toRect = {
+      left: 10,
+      top: vh - fromRect.height - 10,
+      width: fromRect.width,
+      height: fromRect.height
+    };
+  }
+  const ghost = el.cloneNode(true);
+  ghost.classList.add('dock-genie-ghost');
+  ghost.style.left = fromRect.left + 'px';
+  ghost.style.top = fromRect.top + 'px';
+  ghost.style.width = fromRect.width + 'px';
+  ghost.style.height = fromRect.height + 'px';
+  ghost.style.opacity = '1';
+  document.body.appendChild(ghost);
+  el.classList.add('hidden');
+  animateGenie(ghost, fromRect, toRect).onfinish = () => {
+    ghost.remove();
+  };
+}
+
+function restoreFromDock(appId){
+  const w = state.windows.get(appId);
+  if (!w) return;
+  if (!w.minimized) {
+    focusWindow(appId);
+    return;
+  }
+  const el = document.getElementById(`win_${appId}`);
+  if (!el) return;
+  cancelDockAnimation(appId);
+  const dockItem = getDockItemEl(appId);
+  if (dockItem) dockItem.classList.remove('minimized');
+  const last = w.lastRect || { left: w.left, top: w.top, width: w.width, height: w.height };
+  w.minimized = false;
+  w.left = last.left;
+  w.top = last.top;
+  w.width = last.width;
+  w.height = last.height;
+  el.style.left = w.left + 'px';
+  el.style.top = w.top + 'px';
+  el.style.width = w.width + 'px';
+  el.style.height = w.height + 'px';
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || !state.animations;
+  el.classList.remove('hidden');
+  if (reduceMotion) {
+    if (state && state.hiddenApps) state.hiddenApps.delete(appId);
+    focusWindow(appId);
+    return;
+  }
+  const toRect = { left: w.left, top: w.top, width: w.width, height: w.height };
+  if(!dockItem){
+    if (state && state.hiddenApps) state.hiddenApps.delete(appId);
+    focusWindow(appId);
+    return;
+  }
+  const iconRect = dockItem.getBoundingClientRect();
+  const dockCx = iconRect.left + iconRect.width / 2;
+  const dockCy = iconRect.top + iconRect.height / 2;
+  const winCx = toRect.left + toRect.width / 2;
+  const winCy = toRect.top + toRect.height / 2;
+  const dx = dockCx - winCx;
+  const dy = dockCy - winCy;
+  const scaleRaw = Math.min(iconRect.width / toRect.width, iconRect.height / toRect.height);
+  const startScale = clamp(scaleRaw, 0.08, 0.35);
+  const ghost = el.cloneNode(true);
+  ghost.classList.add('dock-genie-ghost');
+  ghost.style.left = toRect.left + 'px';
+  ghost.style.top = toRect.top + 'px';
+  ghost.style.width = toRect.width + 'px';
+  ghost.style.height = toRect.height + 'px';
+  ghost.style.opacity = '0.9';
+  ghost.style.transformOrigin = 'center center';
+  document.body.appendChild(ghost);
+  el.style.opacity = '0';
+  const anim = ghost.animate([
+    { transform: `translate(${dx}px, ${dy}px) scale(${startScale})`, opacity: 0.35 },
+    { transform: 'translate(0px, 0px) scale(1)', opacity: 1 }
+  ], {
+    duration: 320,
+    easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)',
+    fill: 'forwards'
+  });
+  state.dockAnimations.set(appId, { anim, ghost });
+  anim.onfinish = () => {
+    ghost.remove();
+    el.style.opacity = '';
+    state.dockAnimations.delete(appId);
+    if (state && state.hiddenApps) state.hiddenApps.delete(appId);
+    focusWindow(appId);
+  };
+  anim.oncancel = () => {
+    if(ghost.parentNode) ghost.remove();
+    el.style.opacity = '';
+    state.dockAnimations.delete(appId);
+  };
+}
+
+function hideAppWindows(appId){
+  const w = state.windows.get(appId);
+  if(!w || w.minimized) return;
+  state.hiddenApps.add(appId);
+  minimizeApp(appId);
+}
+
+function hideOtherApps(activeAppId){
+  state.windows.forEach((w, id)=>{
+    if(id === activeAppId) return;
+    if(!w.minimized){
+      state.hiddenApps.add(id);
+      minimizeApp(id);
+    }
+  });
+}
+
+function showHiddenApps(){
+  Array.from(state.windows.keys()).forEach(appId => {
+    restoreWindow(appId);
+  });
+  state.hiddenApps.clear();
+}
+
+function renderBlissOSAppMenu(){
+  const menu = $('#blissosAppMenuDrop');
+  if(!menu) return;
+  const activeId = getActiveAppId();
+  const activeDisplay = getAppDisplay(activeId);
+  const openApps = Array.from(state.windows.values())
+    .sort((a,b)=>b.z - a.z)
+    .map(w => w.id);
+  if(!openApps.includes('bliss')) openApps.push('bliss');
+  const uniqueApps = Array.from(new Set(openApps));
+  const hasMinimized = Array.from(state.windows.values()).some(w => w.minimized);
+  const hideDisabled = activeId === 'bliss' || !state.windows.has(activeId);
+  const hideOthersDisabled = uniqueApps.filter(id => id !== activeId && id !== 'bliss').length === 0;
+  const showAllDisabled = !hasMinimized;
+
+  const actionHtml = `
+    <button class="menu-item ${hideDisabled ? 'disabled' : ''}" type="button" data-blissos-appmenu-action="hide-app" ${hideDisabled ? 'disabled' : ''}>
+      <span class="menu-check"></span>
+      <span class="menu-icon"></span>
+      <span class="menu-label">Hide ${activeDisplay.label}</span>
+    </button>
+    <button class="menu-item ${hideOthersDisabled ? 'disabled' : ''}" type="button" data-blissos-appmenu-action="hide-others" ${hideOthersDisabled ? 'disabled' : ''}>
+      <span class="menu-check"></span>
+      <span class="menu-icon"></span>
+      <span class="menu-label">Hide Others</span>
+    </button>
+    <button class="menu-item ${showAllDisabled ? 'disabled' : ''}" type="button" data-blissos-appmenu-action="show-all" ${showAllDisabled ? 'disabled' : ''}>
+      <span class="menu-check"></span>
+      <span class="menu-icon"></span>
+      <span class="menu-label">Show All</span>
+    </button>
+  `;
+
+  const appItems = uniqueApps.map(appId => {
+    const { label, iconHtml } = getAppDisplay(appId);
+    const check = (appId === activeId) ? '✓' : '';
+    return `
+      <button class="menu-item" type="button" data-blissos-appmenu-app="${appId}">
+        <span class="menu-check">${check}</span>
+        <span class="menu-icon">${iconHtml}</span>
+        <span class="menu-label">${label}</span>
+      </button>
+    `;
+  }).join('');
+
+  menu.innerHTML = `
+    ${actionHtml}
+    <div class="menu-sep" role="separator"></div>
+    ${appItems}
+  `;
+  const btn = $('#blissosAppMenu');
+  if(btn){
+    const rect = btn.getBoundingClientRect();
+    menu.style.top = rect.bottom + 'px';
+    menu.style.right = (window.innerWidth - rect.right) + 'px';
+    menu.style.left = 'auto';
+  }
+}
+
+      function tickClock(){
+        $('#clock').textContent = getDisplayTime();
+        const blissClock = $('#blissosClock');
+        if(blissClock) blissClock.textContent = getDisplayTime();
+        setTimeout(tickClock, 1000);
+      }
+
+      function enter(){
+        const name = $('#username').value.trim();
+        if(!name){
+          showMessage('dialog.loginEmpty.title', 'dialog.loginEmpty.body');
+          $('#username').focus();
+          return;
+        }
+        state.didAutoPlayThisSession = false;
+        setUser(name);
+        showDesktop();
+        if(!state.windows.has('mediaplayer')) openApp('mediaplayer');
+        if(!state.windows.has('music')) openApp('music');
+        schedulePlayerAutoplay();
+      }
+
+      $('#enter').addEventListener('click', enter);
+      $('#username').addEventListener('keydown', (e)=>{ if(e.key==='Enter') enter(); });
+      $('#langBtn').addEventListener('click', (e)=>{ e.preventDefault(); toggleLang(); });
+
+      $('#clearProfile').addEventListener('click', ()=>{
+        localStorage.removeItem('bliss98_user');
+        $('#username').value = '';
+        $('#username').focus();
+      });
+
+      document.addEventListener('keydown', (e)=>{
+        if(e.key==='Escape'){
+          closeStartMenu();
+          closeCtxMenu();
+          closeWindowMenu();
+          closeModal();
+          closeBlissOSMenu();
+          closeBlissOSAppMenu();
+        }
+        if(snakeHandleKey(e)) return;
+        if(dopeSkateHandleKey(e)) return;
+        if(e.key === 'Enter' && state.activeWindowId === 'poetry' && state.poetry.view === 'list' && state.poetry.selectedId){
+          state.poetry.view = 'read';
+          state.poetry.currentId = state.poetry.selectedId;
+          state.poetry.readLang = state.lang;
+          renderPoetryWindow();
+        }
+        if(e.key === 'Enter' && state.activeWindowId === 'games' && state.games.view === 'list' && state.games.selectedId){
+          openGameFromHub(state.games.selectedId);
+        }
+
+        // Keyboard context menu (Shift+F10)
+        if(e.shiftKey && e.key === 'F10'){
+          if($('#desktop').classList.contains('hidden')) return;
+          e.preventDefault();
+          const area = $('#desktopArea').getBoundingClientRect();
+          openCtxMenu(area.left + area.width/2, area.top + area.height/2, 'desktop', null);
+        }
+
+        // Basic keyboard navigation inside context menu
+        const menu = $('#ctxMenu');
+        if(menu && !menu.classList.contains('hidden')){
+          const items = Array.from(menu.querySelectorAll('.ctx-item'));
+          const idx = items.indexOf(document.activeElement);
+          if(e.key === 'ArrowDown'){
+            e.preventDefault();
+            const next = items[Math.min(items.length-1, Math.max(0, idx+1))] || items[0];
+            if(next) next.focus();
+          }
+          if(e.key === 'ArrowUp'){
+            e.preventDefault();
+            const prev = items[Math.max(0, idx-1)] || items[items.length-1];
+            if(prev) prev.focus();
+          }
+        }
+
+        const appMenu = $('#blissosAppMenuDrop');
+        if(appMenu && !appMenu.classList.contains('hidden')){
+          const items = Array.from(appMenu.querySelectorAll('.menu-item:not(.disabled)'));
+          const idx = items.indexOf(document.activeElement);
+          if(e.key === 'ArrowDown'){
+            e.preventDefault();
+            const next = items[Math.min(items.length-1, Math.max(0, idx+1))] || items[0];
+            if(next) next.focus();
+          }
+          if(e.key === 'ArrowUp'){
+            e.preventDefault();
+            const prev = items[Math.max(0, idx-1)] || items[items.length-1];
+            if(prev) prev.focus();
+          }
+          if(e.key === 'Enter' && idx >= 0){
+            e.preventDefault();
+            items[idx].click();
+          }
+        }
+      });
+      document.addEventListener('keyup', (e)=>{
+        if(dopeSkateHandleKeyUp(e)) return;
+      });
+      document.addEventListener('input', (e)=>{
+        const target = getEventTargetEl(e);
+        const soundSlider = target && target.closest ? target.closest('[data-sound-slider]') : null;
+        if(soundSlider && soundSlider.dataset && soundSlider.dataset.soundSlider){
+          const val = clamp(parseFloat(soundSlider.value) / 100, 0, 1);
+          if(soundSlider.dataset.soundSlider === 'master') setMasterVolume(val);
+          if(soundSlider.dataset.soundSlider === 'system') setSystemVolume(val);
+          if(soundSlider.dataset.soundSlider === 'music') setMusicVolume(val);
+        }
+      });
+
+      function slideStripBy(strip, delta){
+        if(!strip || !Number.isFinite(delta) || delta === 0) return;
+        const max = Math.max(0, strip.scrollWidth - strip.clientWidth);
+        const start = strip.scrollLeft;
+        const target = clamp(start + delta, 0, max);
+        if(Math.abs(target - start) < 1) return;
+        const animate = state.animations && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if(!animate){
+          strip.scrollLeft = target;
+          return;
+        }
+        const duration = 220;
+        const t0 = performance.now();
+        const step = (now)=>{
+          const p = Math.min(1, (now - t0) / duration);
+          const eased = 1 - Math.pow(1 - p, 3);
+          strip.scrollLeft = Math.round(start + (target - start) * eased);
+          if(p < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }
+
+      document.addEventListener('click', (e)=>{
+        const target = getEventTargetEl(e);
+        if(!target || !target.closest){
+          closeStartMenu();
+          closeCtxMenu();
+          closeBlissOSMenu();
+          closeBlissOSAppMenu();
+          return;
+        }
+        const startArea = target.closest('#startMenu') || target.closest('#startBtn');
+        if(!startArea) closeStartMenu();
+        const ctxArea = target.closest('#ctxMenu');
+        if(!ctxArea) closeCtxMenu();
+        const inAppleMenu = target.closest('#blissosAppleMenu') || target.closest('[data-blissos-menu="apple"]');
+        if(!inAppleMenu) closeBlissOSMenu();
+        const inAppMenu = target.closest('#blissosAppMenuDrop') || target.closest('#blissosAppMenu');
+        if(!inAppMenu) closeBlissOSAppMenu();
+        const poemItem = target.closest('[data-poem-id]');
+        if(poemItem){
+          const id = poemItem.dataset.poemId;
+          if(e.detail > 1) return;
+          selectPoetryItem(id);
+          return;
+        }
+        const poemAction = target.closest('[data-poetry-action]');
+        if(poemAction && poemAction.dataset && poemAction.dataset.poetryAction){
+          if(poemAction.dataset.poetryAction === 'back'){
+            state.poetry.view = 'list';
+            state.poetry.currentId = null;
+            renderPoetryWindow();
+          }
+          if(poemAction.dataset.poetryAction === 'toggleLang'){
+            state.poetry.readLang = (state.poetry.readLang === 'en') ? 'pt' : 'en';
+            renderPoetryWindow();
+          }
+          return;
+        }
+
+        const trashItem = target.closest('[data-trash-id]');
+        if(trashItem){
+          const id = trashItem.dataset.trashId;
+          if(e.ctrlKey || e.metaKey){
+            if(state.trashSelection.has(id)) state.trashSelection.delete(id);
+            else state.trashSelection.add(id);
+          } else {
+            state.trashSelection = new Set([id]);
+          }
+          renderTrashWindow();
+          return;
+        }
+
+        const trashBtn = target.closest('[data-trash-action]');
+        if(trashBtn && trashBtn.dataset){
+          const action = trashBtn.dataset.trashAction;
+          if(action === 'help'){
+            showMessage('dialog.controls.title', 'dialog.controls.body');
+            return;
+          }
+          if(action === 'restore'){
+            const ids = state.trashSelection.size ? Array.from(state.trashSelection) : [];
+            if(ids.length){
+              restoreFromTrash(ids);
+              state.trashSelection = new Set();
+            }
+          }
+          if(action === 'restoreAll'){
+            restoreFromTrash(Array.from(state.trash));
+            state.trashSelection = new Set();
+          }
+          if(action === 'empty'){
+            emptyTrash();
+            state.trashSelection = new Set();
+          }
+          return;
+        }
+
+        const modalAction = target.closest('[data-modal-action]');
+        if(modalAction && modalAction.dataset && modalAction.dataset.modalAction){
+          const act = modalAction.dataset.modalAction;
+          if(act === 'confirm' && typeof modalState.onConfirm === 'function'){
+            const select = $('#modalSelect');
+            const input = $('#modalInput');
+            const value = input ? input.value : (select ? select.value : null);
+            modalState.onConfirm(value);
+          }
+          closeModal();
+          return;
+        }
+        if(e.target && e.target.id === 'modal'){
+          closeModal();
+          return;
+        }
+        if(e.target && e.target.id === 'modalClose'){
+          closeModal();
+          return;
+        }
+
+        const menuItem = target.closest('[data-menu-action]');
+        if(menuItem && menuItem.dataset && menuItem.dataset.menuAction){
+          e.preventDefault();
+          e.stopPropagation();
+          handleMenuAction(menuItem.dataset.menuAction);
+          closeWindowMenu();
+          return;
+        }
+        const blissItem = target.closest('[data-blissos-action]');
+        if(blissItem && blissItem.dataset && blissItem.dataset.blissosAction){
+          e.preventDefault();
+          e.stopPropagation();
+          if(blissItem.dataset.blissosAction === 'about') openApp('about');
+          if(blissItem.dataset.blissosAction === 'logoff') doLogoff();
+          closeBlissOSMenu();
+          return;
+        }
+        const blissOpenApp = target.closest('[data-blissos-open-app]');
+        if(blissOpenApp && blissOpenApp.dataset && blissOpenApp.dataset.blissosOpenApp){
+          e.preventDefault();
+          e.stopPropagation();
+          openApp(blissOpenApp.dataset.blissosOpenApp);
+          closeBlissOSMenu();
+          return;
+        }
+        const blissSettingsTab = target.closest('[data-blissos-settings-tab]');
+        if(blissSettingsTab && blissSettingsTab.dataset && blissSettingsTab.dataset.blissosSettingsTab){
+          e.preventDefault();
+          e.stopPropagation();
+          openSettingsAndTab(blissSettingsTab.dataset.blissosSettingsTab);
+          closeBlissOSMenu();
+          return;
+        }
+        const blissAppMenuBtn = target.closest('#blissosAppMenu');
+        if(blissAppMenuBtn){
+          e.preventDefault();
+          e.stopPropagation();
+          playSfx('tabChange');
+          toggleBlissOSAppMenu();
+          return;
+        }
+        const blissAppMenuAction = target.closest('[data-blissos-appmenu-action]');
+        if(blissAppMenuAction && blissAppMenuAction.dataset && blissAppMenuAction.dataset.blissosAppmenuAction){
+          e.preventDefault();
+          e.stopPropagation();
+          const action = blissAppMenuAction.dataset.blissosAppmenuAction;
+          const activeId = getActiveAppId();
+          if(action === 'hide-app') hideAppWindows(activeId);
+          if(action === 'hide-others') hideOtherApps(activeId);
+          if(action === 'show-all') showHiddenApps();
+          closeBlissOSAppMenu();
+          return;
+        }
+        const blissAppMenuApp = target.closest('[data-blissos-appmenu-app]');
+        if(blissAppMenuApp && blissAppMenuApp.dataset && blissAppMenuApp.dataset.blissosAppmenuApp){
+          e.preventDefault();
+          e.stopPropagation();
+          const appId = blissAppMenuApp.dataset.blissosAppmenuApp;
+          if(state.windows.has(appId)){
+            restoreWindow(appId);
+            focusWindow(appId);
+          } else if(appId === 'bliss'){
+            state.activeWindowId = null;
+            state.activeAppId = 'bliss';
+            $$('.window').forEach(winEl=>{
+              winEl.dataset.active = '0';
+              const tb = winEl.querySelector('.titlebar');
+              if(tb) tb.style.filter = 'grayscale(0.35) brightness(0.9)';
+            });
+            updateBlissOSActiveApp();
+          } else {
+            openApp(appId);
+          }
+          closeBlissOSAppMenu();
+          return;
+        }
+        const blissBrand = target.closest('[data-blissos-menu="apple"]');
+        if(blissBrand){
+          e.preventDefault();
+          e.stopPropagation();
+          playSfx('tabChange');
+          toggleBlissOSMenu();
+          return;
+        }
+        const blissMenuItem = target.closest('.blissos-menu-item[data-blissos-menu]');
+        if(blissMenuItem && state.settings.theme === 'blissos'){
+          e.preventDefault();
+          e.stopPropagation();
+          playSfx('tabChange');
+          const winEl = state.activeWindowId ? document.getElementById(`win_${state.activeWindowId}`) : null;
+          const menuKey = blissMenuItem.dataset.blissosMenu;
+          closeBlissOSAppMenu();
+          if(state.menuOpen && state.menuOpen.winId === getWindowId(winEl) && state.menuOpen.menuKey === menuKey){
+            closeWindowMenu();
+          } else {
+            openWindowMenu(winEl, menuKey, blissMenuItem);
+          }
+          return;
+        }
+        const menuToggle = target.closest('.menubar span[data-menu]');
+        if(menuToggle){
+          e.preventDefault();
+          e.stopPropagation();
+          const winEl = menuToggle.closest('.window');
+          const menuKey = menuToggle.dataset.menu;
+          if(state.menuOpen && state.menuOpen.winId === getWindowId(winEl) && state.menuOpen.menuKey === menuKey){
+            closeWindowMenu();
+          } else {
+            openWindowMenu(winEl, menuKey, menuToggle);
+          }
+          return;
+        }
+
+        const btn = target.closest('[data-set-lang]');
+        if(btn && btn.dataset && btn.dataset.setLang){
+          setLang(btn.dataset.setLang);
+        }
+        const wallpaperNav = target.closest('[data-wallpaper-nav]');
+        if(wallpaperNav && wallpaperNav.dataset){
+          const dir = Number(wallpaperNav.dataset.wallpaperNav);
+          const shell = wallpaperNav.closest('[data-wallpaper-slider]');
+          const strip = shell ? shell.querySelector('[data-wallpaper-strip]') : null;
+          if(strip){
+            const firstCard = strip.querySelector('.wallpaper-card');
+            let distance = Math.max(120, Math.floor(strip.clientWidth * 0.75));
+            if(firstCard){
+              const stripStyles = window.getComputedStyle(strip);
+              const gapRaw = parseFloat(stripStyles.columnGap || stripStyles.gap || '0');
+              const gap = Number.isFinite(gapRaw) ? gapRaw : 0;
+              const cardW = Math.max(0, Math.round(firstCard.getBoundingClientRect().width + gap));
+              if(cardW > 0){
+                distance = cardW * 2;
+              }
+            }
+            slideStripBy(strip, (dir < 0 ? -1 : 1) * distance);
+          }
+        }
+        const wpBtn = target.closest('[data-set-wallpaper]');
+        if(wpBtn && wpBtn.dataset && wpBtn.dataset.setWallpaper){
+          applyWallpaper(wpBtn.dataset.setWallpaper);
+        }
+        const animBtn = target.closest('[data-set-animations]');
+        if(animBtn && animBtn.dataset && animBtn.dataset.setAnimations){
+          setAnimations(animBtn.dataset.setAnimations === 'on');
+        }
+        const openAnimBtn = target.closest('[data-set-appopenanim]');
+        if(openAnimBtn && openAnimBtn.dataset && openAnimBtn.dataset.setAppopenanim){
+          setAppOpenAnim(openAnimBtn.dataset.setAppopenanim === 'on');
+        }
+        const scanBtn = target.closest('[data-set-scanlines]');
+        if(scanBtn && scanBtn.dataset && scanBtn.dataset.setScanlines){
+          setScanlines(scanBtn.dataset.setScanlines === 'on');
+        }
+        const darkBtn = target.closest('[data-set-darkmode]');
+        if(darkBtn && darkBtn.dataset && darkBtn.dataset.setDarkmode){
+          setDarkMode(darkBtn.dataset.setDarkmode === 'on');
+        }
+        const blissosDarkBtn = target.closest('[data-set-blissos-darkmode]');
+        if(blissosDarkBtn && blissosDarkBtn.dataset && blissosDarkBtn.dataset.setBlissosDarkmode){
+          setBlissOSDarkMode(blissosDarkBtn.dataset.setBlissosDarkmode === 'on');
+        }
+        const retroBtn = target.closest('[data-set-retro]');
+        if(retroBtn && retroBtn.dataset && retroBtn.dataset.setRetro){
+          setRetroGlow(retroBtn.dataset.setRetro === 'on');
+        }
+        const soundSlider = target.closest('[data-sound-slider]');
+        if(soundSlider && soundSlider.dataset && soundSlider.dataset.soundSlider){
+          const val = clamp(parseFloat(soundSlider.value) / 100, 0, 1);
+          if(soundSlider.dataset.soundSlider === 'master') setMasterVolume(val);
+          if(soundSlider.dataset.soundSlider === 'system') setSystemVolume(val);
+          if(soundSlider.dataset.soundSlider === 'music') setMusicVolume(val);
+        }
+        const systemSoundsToggle = target.closest('[data-toggle-system-sounds]');
+        if(systemSoundsToggle){
+          setSystemSoundsEnabled(!areSystemSoundsEnabled());
+        }
+        const clockBtn = target.closest('[data-set-clock]');
+        if(clockBtn && clockBtn.dataset && clockBtn.dataset.setClock){
+          setClockFormat(clockBtn.dataset.setClock === '24');
+        }
+        const crtBtn = target.closest('[data-set-oldcrt]');
+        if(crtBtn && crtBtn.dataset && crtBtn.dataset.setOldcrt){
+          setOldCrt(crtBtn.dataset.setOldcrt === 'on');
+        }
+        const osThemeBtn = target.closest('[data-set-os-theme]');
+        if(osThemeBtn && osThemeBtn.dataset && osThemeBtn.dataset.setOsTheme){
+          setOsTheme(osThemeBtn.dataset.setOsTheme);
+        }
+        const titleBtn = target.closest('[data-set-titlebar]');
+        if(titleBtn && titleBtn.dataset && titleBtn.dataset.setTitlebar){
+          setTitlebarTheme(titleBtn.dataset.setTitlebar);
+        }
+        const themeBtn = target.closest('[data-set-theme]');
+        if(themeBtn && themeBtn.dataset && themeBtn.dataset.setTheme){
+          setThemePreset(themeBtn.dataset.setTheme);
+        }
+        const themeCustomBtn = target.closest('[data-theme-custom]');
+        if(themeCustomBtn && themeCustomBtn.dataset && themeCustomBtn.dataset.themeCustom){
+          const act = themeCustomBtn.dataset.themeCustom;
+          if(act === 'save'){
+            saveCustomThemeFromState();
+          }
+          if(act === 'load'){
+            if(!themeCustomBtn.classList.contains('disabled')) applyCustomTheme();
+          }
+        }
+        const gamesTabBtn = target.closest('[data-games-tab]');
+        if(gamesTabBtn && gamesTabBtn.dataset && gamesTabBtn.dataset.gamesTab){
+          const tab = gamesTabBtn.dataset.gamesTab;
+          const nextView = (tab === 'leaderboard') ? 'leaderboard' : 'list';
+          if(state.games.view !== nextView){
+            playSfx('tabChange');
+          }
+          state.games.view = nextView;
+          renderGamesWindow();
+        }
+        const videosAction = target.closest('[data-videos-action]');
+        if(videosAction && videosAction.dataset && videosAction.dataset.videosAction){
+          const act = videosAction.dataset.videosAction;
+          if(act === 'openChannel'){
+            openLink(VIDEO_CHANNEL_URL, 'videos');
+          }
+        }
+        const musicCard = target.closest('[data-music-id]');
+        if(musicCard){
+          if(musicCard.dataset && musicCard.dataset.touchOpened === '1'){
+            delete musicCard.dataset.touchOpened;
+            return;
+          }
+          const id = musicCard.dataset.musicId;
+          if(e.ctrlKey || e.metaKey){
+            if(state.music.selected.has(id)) state.music.selected.delete(id);
+            else state.music.selected.add(id);
+          } else {
+            state.music.selected = new Set([id]);
+          }
+          applyMusicState();
+          return;
+        }
+
+        const ctxBtn = target.closest('[data-ctx-action]');
+        if(ctxBtn && ctxBtn.dataset && ctxBtn.dataset.ctxAction){
+          if(ctxBtn.disabled || ctxBtn.classList.contains('disabled')) return;
+          e.preventDefault();
+          e.stopPropagation();
+          handleCtxAction(ctxBtn.dataset.ctxAction);
+          closeCtxMenu();
+        }
+        if(!target.closest('.menu-drop') && !target.closest('.menubar') && !target.closest('#blissosMenuDrop') && !target.closest('#blissosMenubar')){
+          closeWindowMenu();
+        }
+      });
+
+      document.addEventListener('error', (e)=>{
+        const img = e.target;
+        if(!img || img.tagName !== 'IMG') return;
+        const fallback = img.dataset ? img.dataset.fallbackSrc : null;
+        if(!fallback) return;
+        if(img.dataset.failed === '1') return;
+        img.dataset.failed = '1';
+        img.src = fallback;
+      }, true);

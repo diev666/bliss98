@@ -1,0 +1,9 @@
+[
+  "01-core.js",
+  "02-games-and-ui.js",
+  "03-i18n-and-theme.js",
+  "04-app-content.js",
+  "05-media-player.js",
+  "06-shell-and-windowing.js",
+  "07-init.js"
+]
