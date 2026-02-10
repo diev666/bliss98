@@ -2073,7 +2073,7 @@ function renderBlissOSAppleMenu(){
     { id:'performance', icon:'./assets/icons/performance.png', labelKey:'settings.tab.performance' },
   ];
   const settingsLabel = t('blissos.menu.settings');
-  const settingsIcon = getThemedIconHtml({ icon:'settings', id:'settings', iconFile:'./assets/icons/settings.png' }, settingsLabel, 16);
+  const settingsIcon = getThemedIconHtml({ icon:'settings', id:'settings', iconFile:'./assets/icons/Settings.png' }, settingsLabel, 16);
   const settingsItems = settingsTabs.map(tab => `
     <button class="menu-item" type="button" data-blissos-settings-tab="${tab.id}">
       <span class="menu-icon">${getThemedIconHtml({ icon:'settings', id:`settings-${tab.id}`, iconFile:tab.icon }, t(tab.labelKey), 16)}</span>

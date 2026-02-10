@@ -10550,7 +10550,7 @@ function installLongPress(el, getTarget){
         { id:'about', titleKey:'app.about', icon:'info', iconFile:'./assets/icons/About.png' },
         { id:'contact', titleKey:'app.contact', icon:'mail', iconFile:'./assets/icons/Contact.png' },
         { id:'diev', titleKey:'app.diev', icon:'user', iconFile:'./assets/icons/DIEV.png' },
-        { id:'settings', titleKey:'app.settings', icon:'settings', iconFile:'./assets/icons/settings.png' },
+        { id:'settings', titleKey:'app.settings', icon:'settings', iconFile:'./assets/icons/Settings.png' },
       ];
 
       const MUSIC_LINKS = [
@@ -11757,7 +11757,7 @@ Eu sou o buffalo branco extinto`
               <div class="settings-panel" role="tabpanel" data-tab="system" id="settingsPanel_system">
                 <div class="settings-panel-header">
                   <div class="settings-panel-icon">
-                    <img class="pixel" src="./assets/icons/settings.png" data-settings-icon="settings.png" width="48" height="48" alt="" />
+                    <img class="pixel" src="./assets/icons/Settings.png" data-settings-icon="Settings.png" width="48" height="48" alt="" />
                   </div>
                   <div>
                     <strong data-i18n="settings.systemTab">System</strong>
@@ -14711,7 +14711,7 @@ function renderBlissOSAppleMenu(){
     { id:'performance', icon:'./assets/icons/performance.png', labelKey:'settings.tab.performance' },
   ];
   const settingsLabel = t('blissos.menu.settings');
-  const settingsIcon = getThemedIconHtml({ icon:'settings', id:'settings', iconFile:'./assets/icons/settings.png' }, settingsLabel, 16);
+  const settingsIcon = getThemedIconHtml({ icon:'settings', id:'settings', iconFile:'./assets/icons/Settings.png' }, settingsLabel, 16);
   const settingsItems = settingsTabs.map(tab => `
     <button class="menu-item" type="button" data-blissos-settings-tab="${tab.id}">
       <span class="menu-icon">${getThemedIconHtml({ icon:'settings', id:`settings-${tab.id}`, iconFile:tab.icon }, t(tab.labelKey), 16)}</span>

@@ -53,6 +53,11 @@ Original prompt (continuação): e crie esses sons dentro da pasta assets/sounds
   - Teste automatizado em browser confirmou deslocamento horizontal real (0 -> 460 -> 920).
   - Seleção de wallpaper (`matrix`) aplicada corretamente (`#desktop.wallpaper-matrix`).
   - Sem erros de console, pageerror ou respostas 4xx/5xx no fluxo validado.
+- Bug fix adicional: ícone de `Settings` não aparecendo em Bliss98/BlissOS.
+  - Causa raiz: inconsistência de case no nome do arquivo (`Settings.png` no repositório vs `settings.png` referenciado no código), que quebra em ambiente case-sensitive.
+  - Correção: referências padronizadas para `./assets/icons/Settings.png` (e conversão para `./assets/BlissOS/Settings.png` via tema).
+  - Arquivos ajustados: `assets/js/modules/04-app-content.js`, `assets/js/modules/06-shell-and-windowing.js` e rebuild de `assets/js/bliss98.bundle.js`.
+  - Validação: ícone carregando com dimensões válidas em Bliss98 e BlissOS, sem 404.
 
 ## TODO / handoff
 - Nenhum bloqueio pendente para este pedido.

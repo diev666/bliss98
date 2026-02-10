@@ -10,7 +10,7 @@
         { id:'about', titleKey:'app.about', icon:'info', iconFile:'./assets/icons/About.png' },
         { id:'contact', titleKey:'app.contact', icon:'mail', iconFile:'./assets/icons/Contact.png' },
         { id:'diev', titleKey:'app.diev', icon:'user', iconFile:'./assets/icons/DIEV.png' },
-        { id:'settings', titleKey:'app.settings', icon:'settings', iconFile:'./assets/icons/settings.png' },
+        { id:'settings', titleKey:'app.settings', icon:'settings', iconFile:'./assets/icons/Settings.png' },
       ];
 
       const MUSIC_LINKS = [
@@ -1217,7 +1217,7 @@ Eu sou o buffalo branco extinto`
               <div class="settings-panel" role="tabpanel" data-tab="system" id="settingsPanel_system">
                 <div class="settings-panel-header">
                   <div class="settings-panel-icon">
-                    <img class="pixel" src="./assets/icons/settings.png" data-settings-icon="settings.png" width="48" height="48" alt="" />
+                    <img class="pixel" src="./assets/icons/Settings.png" data-settings-icon="Settings.png" width="48" height="48" alt="" />
                   </div>
                   <div>
                     <strong data-i18n="settings.systemTab">System</strong>
@@ -1312,4 +1312,3 @@ function getDisplayTime(){
   return `${h}:${mm} ${suffix}`;
 }
       function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
-
