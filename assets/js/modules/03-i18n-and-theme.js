@@ -35,7 +35,7 @@
 
           'app.clothes': 'Clothes',
           'app.music': 'Music',
-          'app.art': 'Art',
+          'app.art': 'Artists',
           'app.games': 'Games',
           'app.videos': 'Videos',
           'app.about': 'About',
@@ -560,7 +560,7 @@
 
           'app.clothes': 'Roupas',
           'app.music': 'Música',
-          'app.art': 'Arte',
+          'app.art': 'Artists',
           'app.games': 'Jogos',
           'app.videos': 'Vídeos',
           'app.about': 'Sobre',

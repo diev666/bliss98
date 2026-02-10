@@ -534,7 +534,33 @@ Eu sou o buffalo branco extinto`
           </div>
         `,
 
-        art: () => `<h2>BLISS — ${t('app.art')}</h2><p>${t('common.soon')}</p>`,
+        art: () => `
+          <section class="artists-scene" aria-label="${t('app.art')}">
+            <div class="artists-dim" aria-hidden="true"></div>
+            <img class="artists-center-gif pixel" src="./assets/gifs/bliss.gif" alt="" />
+            <div class="artists-content">
+              <h2 class="artists-title">BLISS — ${t('app.art')}</h2>
+              <div class="artists-list">
+                <a class="artists-item" href="https://www.instagram.com/die.verson/" target="_blank" rel="noopener noreferrer">
+                  <span class="artists-name">DIEV</span>
+                  <span class="artists-role">Music, Designer, Video</span>
+                </a>
+                <a class="artists-item" href="https://www.instagram.com/yasminsaccol/" target="_blank" rel="noopener noreferrer">
+                  <span class="artists-name">Yasmin</span>
+                  <span class="artists-role">Fashion, Video</span>
+                </a>
+                <a class="artists-item" href="https://www.instagram.com/rafacamponogara/" target="_blank" rel="noopener noreferrer">
+                  <span class="artists-name">Rafa</span>
+                  <span class="artists-role">Tattoo</span>
+                </a>
+                <a class="artists-item" href="https://www.instagram.com/raffzzz_mafu/" target="_blank" rel="noopener noreferrer">
+                  <span class="artists-name">Raffz</span>
+                  <span class="artists-role">Fashion</span>
+                </a>
+              </div>
+            </div>
+          </section>
+        `,
         games: () => {
           if(state.games.view === 'dope-skate'){
             return `
