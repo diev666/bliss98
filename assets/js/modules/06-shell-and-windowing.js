@@ -1172,7 +1172,7 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
 
         let rect = defaultWindowRect();
         const area = $('#desktopArea').getBoundingClientRect();
-        const savedRect = getSavedWindowRect(appId);
+        const savedRect = appId === 'about' ? null : getSavedWindowRect(appId);
         if(appId === 'mediaplayer'){
           rect = normalizeWindowRect(getMediaPlayerRect(), area, 16);
         } else if(savedRect){
@@ -1547,6 +1547,15 @@ function toggleFitWindow(appId) {
           </div>
           <div class="resize" title="${t('win.resize')}"></div>
         `;
+
+        if(appId === 'about'){
+          const aboutContent = el.querySelector('.content');
+          if(aboutContent){
+            aboutContent.dataset.fitMinW = state.isMobile ? '280' : '360';
+            aboutContent.dataset.fitMinH = state.isMobile ? '340' : '420';
+            aboutContent.dataset.fitKey = `about-${state.isMobile ? 'mobile' : 'desktop'}`;
+          }
+        }
 
         // Make windows focus on mousedown except when clicking on a control button (min/max/close).
         // On touch devices the first tap should trigger the action without requiring a second tap.

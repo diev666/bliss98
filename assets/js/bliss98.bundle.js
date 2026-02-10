@@ -11005,15 +11005,19 @@ Eu sou o buffalo branco extinto`
 
       const CONTENT = {
         about: () => `
-          <h2>${t('about.title')}</h2>
-          <p>${t('about.p1')}</p>
-          <p>${t('about.p2')}</p>
-          <p>${t('about.p3')}</p>
-          <p>${t('about.p4')}</p>
-          <p>${t('about.p5')}</p>
-          <p>${t('about.p6')}</p>
-          <div style="display:flex; justify-content:center; margin:10px 0 6px 0;">
-            <img class="pixel" src="./assets/gifs/3Drotate.gif" alt="BLISS 3D rotate" style="display:block; width:min(100%, 280px); height:auto;" loading="lazy" />
+          <div class="about-panel">
+            <div class="about-copy">
+              <h2>${t('about.title')}</h2>
+              <p>${t('about.p1')}</p>
+              <p>${t('about.p2')}</p>
+              <p>${t('about.p3')}</p>
+              <p>${t('about.p4')}</p>
+              <p>${t('about.p5')}</p>
+              <p>${t('about.p6')}</p>
+            </div>
+            <div class="about-gif-wrap">
+              <img class="pixel about-gif" src="./assets/gifs/3Drotate.gif" alt="BLISS 3D rotate" loading="lazy" />
+            </div>
           </div>
         `,
         clothes: () => `
@@ -13843,7 +13847,7 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
 
         let rect = defaultWindowRect();
         const area = $('#desktopArea').getBoundingClientRect();
-        const savedRect = getSavedWindowRect(appId);
+        const savedRect = appId === 'about' ? null : getSavedWindowRect(appId);
         if(appId === 'mediaplayer'){
           rect = normalizeWindowRect(getMediaPlayerRect(), area, 16);
         } else if(savedRect){
@@ -14218,6 +14222,15 @@ function toggleFitWindow(appId) {
           </div>
           <div class="resize" title="${t('win.resize')}"></div>
         `;
+
+        if(appId === 'about'){
+          const aboutContent = el.querySelector('.content');
+          if(aboutContent){
+            aboutContent.dataset.fitMinW = state.isMobile ? '280' : '360';
+            aboutContent.dataset.fitMinH = state.isMobile ? '340' : '420';
+            aboutContent.dataset.fitKey = `about-${state.isMobile ? 'mobile' : 'desktop'}`;
+          }
+        }
 
         // Make windows focus on mousedown except when clicking on a control button (min/max/close).
         // On touch devices the first tap should trigger the action without requiring a second tap.

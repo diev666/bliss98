@@ -458,15 +458,19 @@ Eu sou o buffalo branco extinto`
 
       const CONTENT = {
         about: () => `
-          <h2>${t('about.title')}</h2>
-          <p>${t('about.p1')}</p>
-          <p>${t('about.p2')}</p>
-          <p>${t('about.p3')}</p>
-          <p>${t('about.p4')}</p>
-          <p>${t('about.p5')}</p>
-          <p>${t('about.p6')}</p>
-          <div style="display:flex; justify-content:center; margin:10px 0 6px 0;">
-            <img class="pixel" src="./assets/gifs/3Drotate.gif" alt="BLISS 3D rotate" style="display:block; width:min(100%, 280px); height:auto;" loading="lazy" />
+          <div class="about-panel">
+            <div class="about-copy">
+              <h2>${t('about.title')}</h2>
+              <p>${t('about.p1')}</p>
+              <p>${t('about.p2')}</p>
+              <p>${t('about.p3')}</p>
+              <p>${t('about.p4')}</p>
+              <p>${t('about.p5')}</p>
+              <p>${t('about.p6')}</p>
+            </div>
+            <div class="about-gif-wrap">
+              <img class="pixel about-gif" src="./assets/gifs/3Drotate.gif" alt="BLISS 3D rotate" loading="lazy" />
+            </div>
           </div>
         `,
         clothes: () => `
