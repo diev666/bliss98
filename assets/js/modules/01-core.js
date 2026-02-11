@@ -361,8 +361,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
       ];
 
       const VIRTUAL_ICONS = [
-        { id:'snake', titleKey:'games.snake', iconFile:'./assets/icons/snake.png' },
-        { id:'dope-skate', titleKey:'games.dopeSkate', iconFile:'./assets/icons/dope-skate.png' }
+        { id:'snake', titleKey:'games.snake', iconFile:'./assets/icons/snake.png' }
       ];
 
       function initSfx(){

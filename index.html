@@ -2010,7 +2010,7 @@
         transform:translateX(-50%);
         pointer-events:none;
       }
-      #win_games .frame{
+      :is(#win_games, #win_dope-skate) .frame{
         background:
           linear-gradient(90deg, #7a4f26, #5a3518),
           repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 2px, rgba(0,0,0,0.08) 2px 4px),
@@ -2019,11 +2019,11 @@
         box-shadow: 0 10px 24px rgba(0,0,0,0.25);
         position:relative;
       }
-      #win_games .frame.bevel{
+      :is(#win_games, #win_dope-skate) .frame.bevel{
         border:none;
         box-shadow:none;
       }
-      #win_games .frame::before{
+      :is(#win_games, #win_dope-skate) .frame::before{
         content:"";
         position:absolute;
         inset:2px;
@@ -2031,7 +2031,7 @@
         box-shadow: inset 0 0 0 2px rgba(255,255,255,0.12), inset 0 0 12px rgba(0,0,0,0.25);
         pointer-events:none;
       }
-      #win_games .titlebar{
+      :is(#win_games, #win_dope-skate) .titlebar{
         background:
           linear-gradient(90deg, #8a5a2d, #6b3f1c),
           repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0 2px, rgba(0,0,0,0.08) 2px 4px),
@@ -2039,24 +2039,24 @@
         color:#f7efe4;
         text-shadow:0 1px 0 rgba(0,0,0,0.4);
       }
-      #win_games .titlebar .wctl{
+      :is(#win_games, #win_dope-skate) .titlebar .wctl{
         background:rgba(0,0,0,0.25);
         border:1px solid rgba(255,255,255,0.18);
         color:#f7efe4;
         box-shadow:none;
       }
-      #win_games .menubar{
+      :is(#win_games, #win_dope-skate) .menubar{
         background:
           linear-gradient(90deg, #7f4d26, #5a3418),
           repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 2px, rgba(0,0,0,0.08) 2px 4px);
         color:#f7efe4;
         border-bottom:1px solid rgba(255,255,255,0.1);
       }
-      #win_games .menubar span.active{
+      :is(#win_games, #win_dope-skate) .menubar span.active{
         background:rgba(255,255,255,0.15);
         color:#f7efe4;
       }
-      #win_games .content{
+      :is(#win_games, #win_dope-skate) .content{
         background:
           radial-gradient(circle at 20% 20%, rgba(255,255,255,0.08) 0 2px, transparent 2px 6px),
           radial-gradient(circle at 80% 40%, rgba(0,0,0,0.12) 0 2px, transparent 2px 6px),
@@ -2068,17 +2068,17 @@
         box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
         padding:10px 12px 12px;
       }
-      #win_games .content[data-games-view="dope-skate"]{
+      :is(#win_games, #win_dope-skate) .content[data-games-view="dope-skate"]{
         overflow:hidden;
       }
-      #win_games .statusbar{
+      :is(#win_games, #win_dope-skate) .statusbar{
         background:
           linear-gradient(90deg, #8a5a2d, #6b3f1c),
           repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0 2px, rgba(0,0,0,0.08) 2px 4px);
         color:#f7efe4;
         border-top:1px solid rgba(255,255,255,0.12);
       }
-      #win_games .menu-drop{
+      :is(#win_games, #win_dope-skate) .menu-drop{
         background:
           radial-gradient(circle at 20% 20%, rgba(255,255,255,0.08) 0 2px, transparent 2px 6px),
           linear-gradient(180deg, #1f5a3a, #17422b);
@@ -2086,15 +2086,15 @@
         box-shadow: 0 10px 18px rgba(0,0,0,0.35);
         color:#f7efe4;
       }
-      #win_games .menu-item{
+      :is(#win_games, #win_dope-skate) .menu-item{
         color:#f7efe4;
       }
-      #win_games .menu-item:hover,
-      #win_games .menu-item:focus{
+      :is(#win_games, #win_dope-skate) .menu-item:hover,
+      :is(#win_games, #win_dope-skate) .menu-item:focus{
         background:linear-gradient(180deg, #f3d59b, #c28a3b);
         color:#2b1a0a;
       }
-      #win_games .menu-sep{
+      :is(#win_games, #win_dope-skate) .menu-sep{
         background:rgba(255,255,255,0.12);
       }
 
@@ -2584,7 +2584,7 @@
         pointer-events:auto;
         touch-action:none;
       }
-      #win_games.mobile-game .ps1-dock{
+      :is(#win_games, #win_dope-skate).mobile-game .ps1-dock{
         display:block;
       }
       .ps1-dock-body{
@@ -2802,7 +2802,7 @@
         top:50%;
         transform:translate(-50%, -50%);
       }
-      #win_games.mobile-game .content{
+      :is(#win_games, #win_dope-skate).mobile-game .content{
         padding:0;
         height:100%;
         overflow:hidden;
@@ -2813,7 +2813,7 @@
         padding-bottom:260px;
         position:relative;
       }
-      #win_games.mobile-game{
+      :is(#win_games, #win_dope-skate).mobile-game{
         position:fixed;
         inset:0;
         width:100dvw;
@@ -2821,22 +2821,22 @@
         min-height:100svh;
         z-index:2001 !important;
       }
-      #win_games.mobile-game .frame{
+      :is(#win_games, #win_dope-skate).mobile-game .frame{
         height:100%;
         display:flex;
         flex-direction:column;
       }
-      #win_games.mobile-game .skate-shell{
+      :is(#win_games, #win_dope-skate).mobile-game .skate-shell{
         height:100%;
         --skate-ui-scale: 0.85;
         padding-top:env(safe-area-inset-top);
       }
-      #win_games.mobile-game .skate-topbar{
+      :is(#win_games, #win_dope-skate).mobile-game .skate-topbar{
         transform:scale(var(--skate-ui-scale));
         transform-origin:top left;
         width:calc(100% / var(--skate-ui-scale));
       }
-      #win_games.mobile-game .skate-hud{
+      :is(#win_games, #win_dope-skate).mobile-game .skate-hud{
         position:absolute;
         left:10px;
         right:10px;
@@ -2847,10 +2847,10 @@
         z-index:4;
         pointer-events:none;
       }
-      #win_games.mobile-game .skate-balance{
+      :is(#win_games, #win_dope-skate).mobile-game .skate-balance{
         transform:none;
       }
-      #win_games.mobile-game .skate-overlay{
+      :is(#win_games, #win_dope-skate).mobile-game .skate-overlay{
         inset:0;
         transform:scale(var(--skate-ui-scale));
         transform-origin:top left;
@@ -2862,33 +2862,33 @@
         padding-top:10px;
         padding-bottom:12px;
       }
-      #win_games.mobile-game .skate-menu{
+      :is(#win_games, #win_dope-skate).mobile-game .skate-menu{
         max-height:100%;
         overflow:auto;
         -webkit-overflow-scrolling:touch;
         width:min(860px, 96%);
       }
-      #win_games.mobile-game .skate-menu-panels{
+      :is(#win_games, #win_dope-skate).mobile-game .skate-menu-panels{
         max-height:100%;
         overflow:auto;
         -webkit-overflow-scrolling:touch;
       }
-      #win_games.mobile-game .skate-panel{
+      :is(#win_games, #win_dope-skate).mobile-game .skate-panel{
         padding-bottom:16px;
       }
-      #win_games.mobile-game .skate-shop-layout{
+      :is(#win_games, #win_dope-skate).mobile-game .skate-shop-layout{
         display:flex;
         flex-direction:column;
       }
-      #win_games.mobile-game .skate-shop-preview{
+      :is(#win_games, #win_dope-skate).mobile-game .skate-shop-preview{
         min-width:0;
       }
-      #win_games.mobile-game .skate-body{
+      :is(#win_games, #win_dope-skate).mobile-game .skate-body{
         flex-direction:column;
         flex:1;
         min-height:0;
       }
-      #win_games.mobile-game .skate-screen{
+      :is(#win_games, #win_dope-skate).mobile-game .skate-screen{
         flex:0 0 auto;
         padding:4px;
         width:min(94vw, calc(100dvh - 360px));
@@ -2899,23 +2899,23 @@
         align-self:center;
         aspect-ratio:1/1;
       }
-      #win_games.mobile-game .skate-canvas-wrap{
+      :is(#win_games, #win_dope-skate).mobile-game .skate-canvas-wrap{
         min-height:auto;
         min-height:0;
       }
-      #win_games.mobile-game #skateCanvas{
+      :is(#win_games, #win_dope-skate).mobile-game #skateCanvas{
         width:100%;
         height:100%;
       }
-      #win_games.mobile-game .skate-controls{
+      :is(#win_games, #win_dope-skate).mobile-game .skate-controls{
         display:none;
       }
-      #win_games.mobile-game .snake-layout{
+      :is(#win_games, #win_dope-skate).mobile-game .snake-layout{
         flex-direction:column;
         align-items:stretch;
         height:100%;
       }
-      #win_games.mobile-game .snake-side{
+      :is(#win_games, #win_dope-skate).mobile-game .snake-side{
         width:100%;
         min-width:0;
         flex-direction:row;
@@ -2924,33 +2924,33 @@
         justify-content:center;
         padding:6px 8px;
       }
-      #win_games.mobile-game .snake-controls{
+      :is(#win_games, #win_dope-skate).mobile-game .snake-controls{
         display:none;
       }
-      #win_games.mobile-game .snake-topbar{
+      :is(#win_games, #win_dope-skate).mobile-game .snake-topbar{
         margin-bottom:6px;
       }
-      #win_games.mobile-game .snake-topbar-stats{
+      :is(#win_games, #win_dope-skate).mobile-game .snake-topbar-stats{
         width:100%;
         justify-content:flex-start;
       }
-      #win_games.mobile-game .snake-speed{
+      :is(#win_games, #win_dope-skate).mobile-game .snake-speed{
         margin-left:auto;
       }
-      #win_games .snake-controls .btn,
-      #win_games .snake-topbar .btn{
+      :is(#win_games, #win_dope-skate) .snake-controls .btn,
+      :is(#win_games, #win_dope-skate) .snake-topbar .btn{
         background:linear-gradient(180deg, #8b6337 0%, #6f4b27 100%);
         color:#f4f0e6;
         border:1px solid rgba(0,0,0,0.35);
         box-shadow:inset 0 1px 0 rgba(255,255,255,0.2);
       }
-      #win_games .snake-board,
-      #win_games .snake-board.bevel-in{
+      :is(#win_games, #win_dope-skate) .snake-board,
+      :is(#win_games, #win_dope-skate) .snake-board.bevel-in{
         border:2px solid rgba(74,48,20,0.6);
         background:linear-gradient(180deg, #8f6433 0%, #6e4a25 100%);
         box-shadow:inset 0 2px 6px rgba(0,0,0,0.2);
       }
-      #win_games.mobile-game .snake-board{
+      :is(#win_games, #win_dope-skate).mobile-game .snake-board{
         width:min(84vw, 300px);
         height:auto;
         min-width:0;
@@ -2961,7 +2961,7 @@
         align-self:center;
         aspect-ratio:1/1;
       }
-      #win_games.mobile-game .snake-board canvas{
+      :is(#win_games, #win_dope-skate).mobile-game .snake-board canvas{
         width:100%;
         height:100%;
       }
@@ -3544,14 +3544,14 @@
         max-height:100%;
         overflow:auto;
       }
-      #win_games .skate-over-box,
-      #win_games .snake-overlay-box{
+      :is(#win_games, #win_dope-skate) .skate-over-box,
+      :is(#win_games, #win_dope-skate) .snake-overlay-box{
         background:rgba(12,32,18,0.92);
         border:1px solid rgba(199,144,60,0.9);
         box-shadow:0 12px 24px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.08);
         color:#f4f0e6;
       }
-      #win_games .snake-overlay-box .btn{
+      :is(#win_games, #win_dope-skate) .snake-overlay-box .btn{
         background:linear-gradient(180deg, #8b6337 0%, #6f4b27 100%);
         color:#f4f0e6;
         border:1px solid rgba(0,0,0,0.35);

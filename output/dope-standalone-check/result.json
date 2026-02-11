@@ -1,0 +1,52 @@
+{
+  "windowsPresent": {
+    "games": true,
+    "dopeSkate": true
+  },
+  "gamesView": "list",
+  "dopeDatasetView": "dope-skate",
+  "dopeFitMinW": "1360",
+  "dopeFitMinH": "820",
+  "dopeHasHud": true,
+  "missionText": {
+    "tier": "EASY",
+    "count": "0/5"
+  },
+  "rects": {
+    "games": {
+      "x": 668,
+      "y": 250,
+      "width": 593,
+      "height": 593,
+      "top": 250,
+      "right": 1261,
+      "bottom": 843,
+      "left": 668
+    },
+    "dope": {
+      "x": 528,
+      "y": 54,
+      "width": 1360,
+      "height": 958,
+      "top": 54,
+      "right": 1888,
+      "bottom": 1012,
+      "left": 528
+    },
+    "mission": {
+      "x": 553,
+      "y": 883.75,
+      "width": 300,
+      "height": 80.25,
+      "top": 883.75,
+      "right": 853,
+      "bottom": 964,
+      "left": 553
+    }
+  },
+  "mobileGameClass": {
+    "games": false,
+    "dope": false
+  },
+  "consoleErrors": []
+}

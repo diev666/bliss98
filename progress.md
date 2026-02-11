@@ -373,3 +373,20 @@ Original prompt (continuação): e crie esses sons dentro da pasta assets/sounds
   - Validação direcionada do Dope Skate: `output/hud-clean-check/run-clean-hud.png`.
   - Métricas CSS/posicionamento confirmam HUD sem borda/fundo e missão mais compacta: `output/hud-clean-check/result.json`.
   - Sem `console.error`/`pageerror` no cenário validado.
+- Dope Skate separado em janela/app próprio (pedido de arquitetura):
+  - `dope-skate` promovido para app real em `APPS` (não exibido no desktop/start, lançado pelo hub Games).
+  - Hub `Games` agora sempre fica em `list`; ao abrir card Dope Skate, chama `openApp('dope-skate')` em vez de render embutido em `win_games`.
+  - Novo fluxo de janela: `initDopeSkateWindow()` / `renderDopeSkateWindow()` com fit próprio (`fitMinW=1360`, `fitMinH=820`, `smartFitWindow(...,'maximize')`).
+  - `DopeSkateGame` ativo quando `state.activeWindowId === 'dope-skate'` (fallback legado mantido).
+  - Botão Back no Dope Skate fecha `win_dope-skate`, reabre/foca hub `Games`.
+  - Cleanup no shell: fechar `win_dope-skate` chama `DopeSkateGame.unmount()`; fechar `win_games` não derruba Dope Skate separado.
+  - CSS de skin/mode mobile antes restrito a `#win_games` foi estendido para `#win_dope-skate` via `:is(#win_games, #win_dope-skate)`.
+- Ajustes de dados:
+  - `VIRTUAL_ICONS` removeu `dope-skate` para evitar duplicidade (agora é app real).
+  - `CONTENT['dope-skate']` reaproveita o shell de Dope Skate existente sem duplicar markup.
+- Validação:
+  - Build + checks: `node --check` módulos alterados e bundle OK.
+  - Skill client executado: `output/dope-standalone-check/client-run/shot-0.png`.
+  - E2E específico: `output/dope-standalone-check/check-standalone.mjs`.
+  - Evidências: `output/dope-standalone-check/games-hub-window.png`, `output/dope-standalone-check/dope-standalone-window.png`.
+  - Métricas `result.json`: janelas `win_games` e `win_dope-skate` coexistem, HUD presente no standalone, sem `consoleErrors`.

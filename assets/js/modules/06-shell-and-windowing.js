@@ -1233,9 +1233,13 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
         try {
           if(appId === 'games'){
             snakeStop();
-            DopeSkateGame.unmount();
+            if(state.games.view === 'dope-skate'){
+              DopeSkateGame.unmount();
+            }
             state.games.view = 'list';
             state.games.selectedId = null;
+          } else if(appId === 'dope-skate'){
+            DopeSkateGame.unmount();
           }
         } catch(err){
           console.error('Error during game cleanup:', err);
@@ -1621,6 +1625,7 @@ function toggleFitWindow(appId) {
           }, 0);
         }
         if(appId === 'games') { setTimeout(()=>initGamesWindow(el), 0); }
+        if(appId === 'dope-skate') { setTimeout(()=>initDopeSkateWindow(el), 0); }
         if(appId === 'videos') { setTimeout(()=>initVideosWindow(el), 0); }
         if(wstate.kind === 'folder') { setTimeout(()=>renderFolderWindow(appId, wstate.folderNavId || wstate.folderId), 0); }
         if(wstate.kind === 'txt') { setTimeout(()=>renderTxtFileWindow(appId), 0); }

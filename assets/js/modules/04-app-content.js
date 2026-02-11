@@ -6,6 +6,7 @@
         { id:'mediaplayer', titleKey:'app.mediaplayer', icon:'music', iconFile:'./assets/icons/BLISS%20mediaplayer.png' },
         { id:'art', titleKey:'app.art', icon:'art', iconFile:'./assets/icons/Art.png' },
         { id:'games', titleKey:'app.games', icon:'game', iconFile:'./assets/icons/Games.png' },
+        { id:'dope-skate', titleKey:'games.dopeSkate', icon:'game', iconFile:'./assets/icons/dope-skate.png', showOnDesktop:false, showInStart:false },
         { id:'videos', titleKey:'app.videos', icon:'video', iconFile:'./assets/icons/Videos.png' },
         { id:'about', titleKey:'app.about', icon:'info', iconFile:'./assets/icons/About.png' },
         { id:'contact', titleKey:'app.contact', icon:'mail', iconFile:'./assets/icons/Contact.png' },
@@ -894,6 +895,13 @@ Eu sou o buffalo branco extinto`
               </div>
             </div>
           `;
+        },
+        'dope-skate': () => {
+          const prevView = state.games.view;
+          state.games.view = 'dope-skate';
+          const html = CONTENT.games();
+          state.games.view = prevView;
+          return html;
         },
         videos: () => `
           <div class="videos-shell">

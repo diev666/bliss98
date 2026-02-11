@@ -1,6 +1,10 @@
 function renderGamesWindow(){
   const win = document.getElementById('win_games');
   if(!win) return;
+  if(state.games.view === 'dope-skate'){
+    // Dope Skate now runs as a standalone app window.
+    state.games.view = 'list';
+  }
   if(!win.dataset.ctxGuard){
     win.addEventListener('contextmenu', (e)=>{
       e.preventDefault();
@@ -13,16 +17,11 @@ function renderGamesWindow(){
   content.innerHTML = CONTENT.games();
   content.dataset.fitKey = `games:${state.games.view}`;
   content.dataset.gamesView = state.games.view;
-  if(state.games.view === 'dope-skate'){
-    content.dataset.fitMinW = state.isMobile ? '280' : '1360';
-    content.dataset.fitMinH = state.isMobile ? '280' : '820';
-  } else {
-    delete content.dataset.fitMinW;
-    delete content.dataset.fitMinH;
-  }
+  delete content.dataset.fitMinW;
+  delete content.dataset.fitMinH;
   applyI18nTo(win);
-  const mobileGameView = isMobileGameMode() && (state.games.view === 'dope-skate' || state.games.view === 'snake');
-  if(state.games.view === 'dope-skate' || state.games.view === 'snake'){
+  const mobileGameView = isMobileGameMode() && state.games.view === 'snake';
+  if(state.games.view === 'snake'){
     enterMobileFullscreen(state.games.view, win);
   } else {
     win.classList.remove('mobile-game');
@@ -70,22 +69,52 @@ function renderGamesWindow(){
     return;
   }
 
-  if(state.games.view === 'dope-skate'){
-    DopeSkateGame.mount(win);
-    mountMobileGameDock('dope-skate', win);
-  }
   if(state.games.view === 'snake'){
     initSnakeInWindow(win);
     mountMobileGameDock('snake', win);
   }
   if(!mobileGameView){
-    const fitMode = state.games.view === 'dope-skate' ? 'maximize' : 'tabChange';
-    smartFitWindow(win, fitMode);
+    smartFitWindow(win, 'tabChange');
   }
 }
 
 function initGamesWindow(){
   renderGamesWindow();
+}
+
+function renderDopeSkateWindow(){
+  const win = document.getElementById('win_dope-skate');
+  if(!win) return;
+  if(!win.dataset.ctxGuard){
+    win.addEventListener('contextmenu', (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    win.dataset.ctxGuard = '1';
+  }
+  const content = win.querySelector('.content');
+  if(!content) return;
+  content.innerHTML = CONTENT['dope-skate'] ? CONTENT['dope-skate']() : '';
+  content.dataset.fitKey = 'dope-skate:standalone';
+  content.dataset.fitMinW = state.isMobile ? '280' : '1360';
+  content.dataset.fitMinH = state.isMobile ? '280' : '820';
+  content.dataset.gamesView = 'dope-skate';
+  applyI18nTo(win);
+  const mobileGameView = isMobileGameMode();
+  if(mobileGameView){
+    enterMobileFullscreen('dope-skate', win);
+  } else {
+    win.classList.remove('mobile-game');
+  }
+  DopeSkateGame.mount(win);
+  mountMobileGameDock('dope-skate', win);
+  if(!mobileGameView){
+    smartFitWindow(win, 'maximize');
+  }
+}
+
+function initDopeSkateWindow(){
+  renderDopeSkateWindow();
 }
 
 function getFirstGameId(){
@@ -116,7 +145,8 @@ function enterMobileFullscreen(gameId, winEl){
   winEl.style.width = `${newW}px`;
   winEl.style.height = `${newH}px`;
 
-  const w = state.windows.get('games');
+  const winId = winEl.id ? winEl.id.replace(/^win_/, '') : 'games';
+  const w = state.windows.get(winId);
   if(w){
     w.left = margin;
     w.top = margin;
@@ -399,9 +429,12 @@ function openGameFromHub(id){
     return;
   }
   if(id === 'dope-skate'){
-    state.games.view = 'dope-skate';
     state.games.selectedId = 'dope-skate';
-    renderGamesWindow();
+    state.games.view = 'list';
+    if(state.windows.has('games')){
+      renderGamesWindow();
+    }
+    openApp('dope-skate');
     return;
   }
   if(getAppById(id)){
@@ -413,8 +446,16 @@ function backToGamesHub(){
   state.games.view = 'list';
   state.games.selectedId = getFirstGameId();
   snakeStop();
-  DopeSkateGame.unmount();
+  if(state.windows.has('dope-skate')){
+    closeApp('dope-skate');
+  } else {
+    DopeSkateGame.unmount();
+  }
+  if(!state.windows.has('games')){
+    openApp('games');
+  }
   renderGamesWindow();
+  focusWindow('games');
 }
 
 const SNAKE_SPEEDS = {
@@ -1735,6 +1776,8 @@ function dopeSkateLoadPreviewSprites(loadout){
 }
 
 function isDopeSkateActive(){
+  if(state.activeWindowId === 'dope-skate') return true;
+  // Legacy fallback for old embedded mode.
   return state.activeWindowId === 'games' && state.games.view === 'dope-skate';
 }
 
@@ -1814,7 +1857,7 @@ function dopeSkateIsInteractiveTarget(target){
 }
 
 function initDopeSkateInWindow(winEl){
-  const root = winEl || document.getElementById('win_games');
+  const root = winEl || document.getElementById('win_dope-skate') || document.getElementById('win_games');
   if(!root) return false;
   const canvas = root.querySelector('#skateCanvas');
   const screen = root.querySelector('#skateScreen');
@@ -1875,7 +1918,7 @@ function initDopeSkateInWindow(winEl){
     sfxToggle: root.querySelector('[data-skate-setting="sfx"]'),
     hitboxToggle: root.querySelector('[data-skate-setting="hitboxes"]'),
     shopTabs: Array.from(root.querySelectorAll('[data-skate-shop-tab]')),
-    backBtn: root.querySelector('[data-games-action="back"]'),
+    backBtn: root.querySelector('[data-games-action="back"]') || root.querySelector('[data-skate-action="back"]'),
     tabs: Array.from(root.querySelectorAll('[data-skate-tab]')),
     actionButtons: Array.from(root.querySelectorAll('[data-skate-action]')),
     resumeButtons: Array.from(root.querySelectorAll('[data-skate-action="resume"]')),
