@@ -1,0 +1,28 @@
+{
+  "winRect": {
+    "left": 32,
+    "top": 54,
+    "width": 897,
+    "height": 778
+  },
+  "contentRect": {
+    "left": 32,
+    "top": 77,
+    "width": 897,
+    "height": 732
+  },
+  "statsVisibleItems": [
+    "Score: 0",
+    "High Score: 0",
+    "Length: 3",
+    "Level: 1"
+  ],
+  "statsVisibleCount": 4,
+  "statsContainsVisibleBonusText": false,
+  "bonusDataElExists": true,
+  "bonusHidden": true,
+  "bonusTextBefore": "--",
+  "bonusTextAfter": "--",
+  "bonusStateMutationOk": false,
+  "consoleErrors": []
+}

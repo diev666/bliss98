@@ -1,0 +1,120 @@
+[
+  {
+    "viewport": {
+      "w": 1366,
+      "h": 900,
+      "tag": "desktop-900h"
+    },
+    "winRect": {
+      "left": 16,
+      "right": 816,
+      "top": 38,
+      "bottom": 848,
+      "width": 800,
+      "height": 810,
+      "centerX": 416
+    },
+    "contentRect": {
+      "left": 16,
+      "right": 816,
+      "top": 61,
+      "bottom": 825,
+      "width": 800,
+      "height": 764,
+      "centerX": 416
+    },
+    "boardRect": {
+      "left": 116,
+      "right": 716,
+      "top": 169,
+      "bottom": 769,
+      "width": 600,
+      "height": 600,
+      "centerX": 416
+    },
+    "statsRect": {
+      "left": 116,
+      "right": 738,
+      "top": 103,
+      "bottom": 161,
+      "width": 622,
+      "height": 58,
+      "centerX": 427
+    },
+    "actionRect": {
+      "left": 116,
+      "right": 716,
+      "top": 777,
+      "bottom": 801,
+      "width": 600,
+      "height": 24,
+      "centerX": 416
+    },
+    "overflowX": 0,
+    "overflowY": 0,
+    "boardCentered": true,
+    "startVisible": true,
+    "statsCount": 4,
+    "hasVisibleBonusText": false,
+    "consoleErrors": []
+  },
+  {
+    "viewport": {
+      "w": 1366,
+      "h": 1280,
+      "tag": "desktop-1280h"
+    },
+    "winRect": {
+      "left": 16,
+      "right": 816,
+      "top": 50,
+      "bottom": 1170,
+      "width": 800,
+      "height": 1120,
+      "centerX": 416
+    },
+    "contentRect": {
+      "left": 16,
+      "right": 816,
+      "top": 73,
+      "bottom": 1147,
+      "width": 800,
+      "height": 1074,
+      "centerX": 416
+    },
+    "boardRect": {
+      "left": 60,
+      "right": 772,
+      "top": 181,
+      "bottom": 893,
+      "width": 712,
+      "height": 712,
+      "centerX": 416
+    },
+    "statsRect": {
+      "left": 60,
+      "right": 794,
+      "top": 115,
+      "bottom": 173,
+      "width": 734,
+      "height": 58,
+      "centerX": 427
+    },
+    "actionRect": {
+      "left": 60,
+      "right": 772,
+      "top": 901,
+      "bottom": 925,
+      "width": 712,
+      "height": 24,
+      "centerX": 416
+    },
+    "overflowX": 0,
+    "overflowY": 0,
+    "boardCentered": true,
+    "startVisible": true,
+    "statsCount": 4,
+    "hasVisibleBonusText": false,
+    "consoleErrors": []
+  }
+]

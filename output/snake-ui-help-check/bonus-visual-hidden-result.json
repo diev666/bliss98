@@ -1,0 +1,17 @@
+{
+  "visibleStats": [
+    "Score: 0",
+    "High Score: 0",
+    "Length: 3",
+    "Level: 1"
+  ],
+  "statsCount": 4,
+  "hasVisibleBonus": false,
+  "bonusDataElExists": true,
+  "bonusRowHidden": true,
+  "statsRect": {
+    "width": 378,
+    "height": 58
+  },
+  "consoleErrors": []
+}

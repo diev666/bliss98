@@ -1,58 +1,58 @@
 {
   "content": {
-    "left": 459,
-    "right": 971,
-    "top": 215,
+    "left": 437,
+    "right": 1334,
+    "top": 77,
     "bottom": 809,
-    "width": 512,
-    "height": 594,
-    "centerX": 715,
-    "centerY": 512
+    "width": 897,
+    "height": 732,
+    "centerX": 886,
+    "centerY": 443
   },
   "header": {
-    "left": 537,
-    "right": 893,
-    "top": 225,
-    "bottom": 249,
-    "width": 356,
+    "left": 576,
+    "right": 1196,
+    "top": 87,
+    "bottom": 111,
+    "width": 620,
     "height": 24,
-    "centerX": 715,
-    "centerY": 237
+    "centerX": 886,
+    "centerY": 99
   },
   "title": {
-    "left": 692,
-    "right": 738,
-    "top": 225,
-    "bottom": 249,
+    "left": 863,
+    "right": 908,
+    "top": 87,
+    "bottom": 111,
     "width": 46,
     "height": 24,
-    "centerX": 715,
-    "centerY": 237
+    "centerX": 885,
+    "centerY": 99
   },
   "backBtn": {
-    "left": 537,
-    "right": 589,
-    "top": 225,
-    "bottom": 249,
+    "left": 576,
+    "right": 627,
+    "top": 87,
+    "bottom": 111,
     "width": 52,
     "height": 24,
-    "centerX": 563,
-    "centerY": 237
+    "centerX": 601,
+    "centerY": 99
   },
   "board": {
-    "left": 537,
-    "right": 893,
-    "top": 309,
-    "bottom": 665,
-    "width": 356,
-    "height": 356,
-    "centerX": 715,
-    "centerY": 487
+    "left": 576,
+    "right": 1216,
+    "top": 185,
+    "bottom": 825,
+    "width": 640,
+    "height": 640,
+    "centerX": 896,
+    "centerY": 505
   },
   "checks": {
     "sameLine": true,
     "backOnLeft": true,
-    "centeredBoard": true,
+    "centeredBoard": false,
     "centeredTitle": true
   },
   "consoleErrors": []

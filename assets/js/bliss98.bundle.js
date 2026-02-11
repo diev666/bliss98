@@ -12581,7 +12581,7 @@ Eu sou o buffalo branco extinto`
                     <div class="tiny"><span data-i18n="snake.highScore">High Score:</span> <strong data-snake-high>0</strong></div>
                     <div class="tiny"><span data-i18n="snake.length">Length:</span> <strong data-snake-length>3</strong></div>
                     <div class="tiny"><span data-i18n="snake.level">Level:</span> <strong data-snake-level>1</strong></div>
-                    <div class="tiny"><span data-i18n="snake.bonus">Bonus:</span> <strong data-snake-bonus>--</strong></div>
+                    <div class="tiny snake-bonus-hidden" aria-hidden="true"><span data-i18n="snake.bonus">Bonus:</span> <strong data-snake-bonus>--</strong></div>
                   </div>
                   <div class="snake-board bevel-in" id="snakeBoard">
                     <canvas id="snakeCanvas" class="pixel" width="320" height="320"></canvas>
