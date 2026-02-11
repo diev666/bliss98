@@ -467,3 +467,17 @@ Original prompt (continuação): e crie esses sons dentro da pasta assets/sounds
   - Título centralizado sem deslocar o bloco central do jogo.
   - Ajuste de alinhamento vertical via `.snake-header`/`.snake-title` para mesma altura visual do botão.
   - Validação Playwright: checks `sameLine/backOnLeft/centeredBoard/centeredTitle = true`.
+- Snake mobile UI hotfix aplicado:
+  - removido botão `Start` apenas em mobile (`.mobile-game .snake-action-row { display:none; }`);
+  - header mobile corrigido para layout em linha (`Back` no canto esquerdo e `Snake` centralizado);
+  - `.snake-main` e `.snake-board` ampliados no mobile com largura dinâmica maior e centralizada;
+  - `snakeResizeCanvas()` ajustado para usar lado quadrado baseado no espaço interno útil do board (evita compressão/distorção).
+- Validação Playwright mobile (390x844):
+  - `startHiddenOnMobile=true`
+  - `backOnLeft=true`
+  - `titleCentered=true`
+  - `sameLineHeader=true`
+  - `boardCentered=true`
+  - `boardSquare=true`, `canvasSquare=true`, `canvasFillBoard=true`
+  - sem overflow na content e sem erros de console.
+- Cache bust atualizado em `index.html`: `bliss98.bundle.js?v=20260211-snake-ui-4`.

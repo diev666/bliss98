@@ -660,9 +660,14 @@ function snakeResizeCanvas(){
   if(!snake.els || !snake.els.canvas || !snake.ctx) return;
   const board = snake.els.board;
   if(!board) return;
-  const rect = board.getBoundingClientRect();
-  const targetW = Math.max(1, Math.floor(rect.width));
-  const targetH = Math.max(1, Math.floor(rect.height));
+  const style = getComputedStyle(board);
+  const padX = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
+  const padY = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
+  const innerW = Math.max(1, board.clientWidth - padX);
+  const innerH = Math.max(1, board.clientHeight - padY);
+  const side = Math.max(1, Math.floor(Math.min(innerW, innerH)));
+  const targetW = side;
+  const targetH = side;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   if(targetW === snake.renderTargetW && targetH === snake.renderTargetH && snake.renderDpr === dpr) return;
   snake.renderScaleX = targetW / snake.baseSize;

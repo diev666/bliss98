@@ -1,0 +1,89 @@
+{
+  "header": {
+    "left": 19,
+    "right": 371,
+    "top": 35,
+    "bottom": 59,
+    "width": 352,
+    "height": 24,
+    "centerX": 195,
+    "centerY": 47
+  },
+  "title": {
+    "left": 172,
+    "right": 218,
+    "top": 35,
+    "bottom": 59,
+    "width": 46,
+    "height": 24,
+    "centerX": 195,
+    "centerY": 47
+  },
+  "back": {
+    "left": 19,
+    "right": 71,
+    "top": 35,
+    "bottom": 59,
+    "width": 52,
+    "height": 24,
+    "centerX": 45,
+    "centerY": 47
+  },
+  "main": {
+    "left": 19,
+    "right": 371,
+    "top": 35,
+    "bottom": 485,
+    "width": 352,
+    "height": 450,
+    "centerX": 195,
+    "centerY": 260
+  },
+  "board": {
+    "left": 19,
+    "right": 371,
+    "top": 133,
+    "bottom": 485,
+    "width": 352,
+    "height": 352,
+    "centerX": 195,
+    "centerY": 309
+  },
+  "canvas": {
+    "left": 27,
+    "right": 363,
+    "top": 141,
+    "bottom": 477,
+    "width": 336,
+    "height": 336,
+    "centerX": 195,
+    "centerY": 309
+  },
+  "content": {
+    "left": 19,
+    "right": 371,
+    "top": 35,
+    "bottom": 846,
+    "width": 352,
+    "height": 811,
+    "centerX": 195,
+    "centerY": 441
+  },
+  "actionDisplay": "none",
+  "checks": {
+    "startHiddenOnMobile": true,
+    "backOnLeft": true,
+    "titleCentered": true,
+    "sameLineHeader": true,
+    "boardCentered": true,
+    "boardBiggerThan300": true,
+    "boardSquare": true,
+    "canvasSquare": true,
+    "canvasFillBoard": true,
+    "noContentOverflow": true
+  },
+  "boardRatio": 1,
+  "canvasRatio": 1,
+  "fillRatio": 0.955,
+  "consoleErrors": []
+}
