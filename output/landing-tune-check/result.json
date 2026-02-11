@@ -1,0 +1,9 @@
+{
+  "checks": {
+    "comboWindow": null,
+    "perfectCase": null,
+    "oldImpossibleCase": null,
+    "sketchyCase": null
+  },
+  "errors": []
+}

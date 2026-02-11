@@ -1,0 +1,17 @@
+{
+  "desktopMetrics": {
+    "mission": {
+      "w": 408,
+      "h": 103
+    },
+    "landing": {
+      "w": 382,
+      "h": 45
+    },
+    "bliss": {
+      "w": 224,
+      "h": 28
+    }
+  },
+  "errors": []
+}

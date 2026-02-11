@@ -582,15 +582,58 @@ Eu sou o buffalo branco extinto`
                       <canvas id="skateCanvas" class="pixel" width="640" height="360"></canvas>
                     </div>
                     <div class="skate-hud" id="skateHud">
-                      <div><span data-i18n="skate.hud.score">Score</span>: <strong data-skate-score>0</strong></div>
-                      <div><span data-i18n="skate.hud.combo">Combo</span>: <strong data-skate-combo>1x</strong></div>
-                      <div class="skate-combo-list" data-skate-bliss></div>
-                      <div><span data-i18n="skate.hud.best">Best</span>: <strong data-skate-best>0</strong></div>
-                      <div><span data-i18n="skate.hud.cds">CDs</span>: <strong data-skate-cds>0</strong></div>
-                    </div>
-                    <div class="skate-balance hidden" id="skateBalance">
-                      <span class="tiny" data-i18n="skate.grind.balance">Balance</span>
-                      <div class="skate-balance-bar"><span class="skate-balance-indicator" data-skate-balance-indicator></span></div>
+                      <div class="skate-hud-zone skate-hud-tl">
+                        <div class="skate-hud-card skate-hud-card-stats">
+                          <div class="skate-hud-line">
+                            <div><span data-i18n="skate.hud.score">Score</span>: <strong data-skate-score>0</strong></div>
+                            <div><span data-i18n="skate.hud.combo">Combo</span>: <strong data-skate-combo>1x</strong></div>
+                            <div><span data-i18n="skate.hud.best">Best</span>: <strong data-skate-best>0</strong></div>
+                            <div><span data-i18n="skate.hud.cds">CDs</span>: <strong data-skate-cds>0</strong></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="skate-hud-zone skate-hud-tc">
+                        <div class="skate-hud-card skate-hud-card-combo">
+                          <div class="skate-combo-list" data-skate-combo-list></div>
+                        </div>
+                      </div>
+                      <div class="skate-hud-zone skate-hud-tr">
+                        <div class="skate-hud-card skate-hud-card-bliss">
+                          <div class="skate-bliss-strip" data-skate-bliss></div>
+                        </div>
+                        <div class="skate-balance hidden" id="skateBalance">
+                          <span class="tiny" data-i18n="skate.grind.balance">Balance</span>
+                          <div class="skate-balance-bar"><span class="skate-balance-indicator" data-skate-balance-indicator></span></div>
+                        </div>
+                      </div>
+                      <div class="skate-hud-zone skate-hud-bl">
+                        <div class="skate-mission-box skate-mission-box-primary" data-skate-mission-box>
+                          <div class="skate-mission-head-row">
+                            <span class="tiny skate-mission-head">Mission</span>
+                            <span class="tiny skate-mission-tier" data-skate-mission-tier>EASY</span>
+                          </div>
+                          <div class="skate-mission-title-row">
+                            <strong data-skate-mission-title>Hit 3 grinds</strong>
+                            <span data-skate-mission-count>0/3</span>
+                          </div>
+                          <div class="tiny skate-mission-reward" data-skate-mission-reward>Reward +2 CD | +260 pts</div>
+                          <div class="tiny skate-mission-streak" data-skate-mission-streak>Streak x0</div>
+                          <div class="skate-mission-progress"><span data-skate-mission-meter></span></div>
+                        </div>
+                      </div>
+                      <div class="skate-hud-zone skate-hud-bc">
+                        <div class="skate-hud-card skate-hud-card-decay">
+                          <div class="skate-combo-decay">
+                            <span class="tiny">Combo decay</span>
+                            <div class="skate-combo-meter"><span data-skate-combo-meter></span></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="skate-hud-zone skate-hud-br">
+                        <div class="skate-hud-card skate-hud-card-landing">
+                          <div class="skate-landing-indicator" data-skate-landing-indicator>Landing: --</div>
+                        </div>
+                      </div>
                     </div>
                     <div class="skate-overlay" id="skateMenuOverlay">
                       <div class="skate-menu">

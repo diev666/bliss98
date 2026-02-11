@@ -160,3 +160,216 @@ Original prompt (continuação): e crie esses sons dentro da pasta assets/sounds
     - Games hub abriu com ~535x535.
     - Após abrir Dope Skate, janela foi para ~1160x878 automaticamente.
     - Sem `console.error`/`pageerror`.
+- Dope Skate: ajuste de hitbox do personagem e rails (feedback de colisão/posição).
+  - Hitbox do player refinada em `dopeSkateGetPlayerHitbox`:
+    - caixa de obstáculo mais estreita e menos alta (evita colisão "fantasma" fora do corpo);
+    - caixa separada para coleta (`collect`) ligeiramente expandida para manter sensação boa de pickup.
+  - Rails ajustados em `dopeSkateSpawnRail`:
+    - comprimento padrão aumentado (`w` de 140 -> 228),
+    - altura visual aumentada (`h` de 12 -> 22),
+    - posição vertical ajustada para tocar o asfalto (base do rail no nível do chão).
+  - Grind detection refinada:
+    - contato agora usa faixa superior do rail (top bar) + footbox nos pés, reduzindo entrada de grind inconsistente.
+  - Validação Playwright:
+    - rail de teste com `h=24` ficou com `bottom=296`, mesmo `groundY=296`.
+    - sem `console.error`/`pageerror`.
+- Dope Skate: pacote de melhorias solicitado (hitbox + itens 3,4,5)
+  - Hitbox do personagem corrigida para cobrir cabeça até pés:
+    - `dopeSkateGetPlayerHitbox('obstacle')` agora ancora no pé (`footY`) e sobe até a cabeça (altura ~126 no default),
+    - largura centralizada e mais fiel ao sprite,
+    - hitbox de coleta (`collect`) continua levemente expandida para manter pickup agradável.
+  - (3) Animação corporal melhorada:
+    - adicionados estados contínuos `torsoPitch`, `armSwing`, `kneeBend`, `landingBend`,
+    - corpo reage ao board/trick/velocidade e ao balance do grind,
+    - pouso gera flexão de joelhos e recuperação suave,
+    - overlay procedural de braços para reduzir aspecto rígido/quebrado.
+  - (4) Rails mais ricos e maiores:
+    - novos tipos/presets de rail (`short`, `standard`, `long`, `double`) com variação de tamanho e geometria,
+    - spawn pattern novo `double-rail-tech`,
+    - rail com dupla barra quando `kind='double'`, suportes distribuídos e pop boost custom ao sair.
+  - (5) Feedback visual reforçado:
+    - partículas de poeira no pouso (`dust`),
+    - trilha leve de rodas no chão (`trail`),
+    - faíscas aprimoradas no grind (`spark`) com parâmetros,
+    - camera shake contextual via helper `dopeSkateAddCameraShake`.
+  - Validação:
+    - Build + `node --check` módulo e bundle: OK.
+    - Playwright: sem `console.error`/`pageerror`.
+    - Métricas de runtime conferidas: hitbox com `bottom == playerFeet` e rails com `bottom == groundY`.
+- Hotfix visual de braços do skater:
+  - Causa: overlay procedural de braços estava sendo desenhado por cima do novo sprite `body_v3`, gerando "braços extras".
+  - Correção: `dopeSkateDrawSkaterArmOverlay` agora só renderiza quando NÃO está usando `bodyAsset` (`body_v3/body_v3_step`).
+  - Arquivo: `assets/js/modules/02-games-and-ui.js`.
+  - Validação: Playwright screenshot pós-fix sem os braços bugados e sem erros de console/pageerror.
+- Dope Skate: pacote de loop/dificuldade/HUD solicitado implementado.
+  - Gameplay loop com missões curtas por run + recompensa:
+    - novo pool `DOPE_SKATE_MISSIONS` (grind, combo 5x, CDs, clean landings),
+    - estado de missão no runtime (`dopeSkate.mission`) com progresso/target,
+    - completar missão concede CD + bônus de score e troca para nova missão automaticamente.
+  - Dificuldade progressiva por tempo de run com janela de reação justa:
+    - novos perfis `DOPE_SKATE_CURVE` por dificuldade,
+    - `dopeSkateUpdateDifficultyCurve(dt)` ajusta velocidade de cruzeiro, max speed, spawnMultiplier, scoreMultiplier,
+    - `reactionWindowSec` dinâmico usado para lead distance/fair gap de spawn,
+    - spawns (obstáculos/rails/coletáveis/padrões) agora usam lead baseado em `speed * reactionWindowSec`.
+  - HUD mais legível:
+    - barra de combo decay funcional (`data-skate-combo-meter`),
+    - indicador de landing (`Perfect / OK / Sketchy / Drop / Mission`) com cores/estado,
+    - box de missão com título, progresso textual e barra.
+  - Estrutura de UI atualizada:
+    - `CONTENT.games()` (Dope Skate HUD) ganhou novos blocos e data-attrs,
+    - CSS em `index.html` atualizado para layout em coluna no HUD e estilos de landing/mission.
+  - Hooks de UI novos em `dopeSkate.els`: `landingIndicator`, `missionTitle`, `missionCount`, `missionMeter`.
+  - Validação Playwright:
+    - missão exibida e progresso atualizando,
+    - combo decay mostrando largura dinâmica,
+    - landing indicator alternando estado/texto,
+    - curva de dificuldade alterando speed/reaction com o tempo,
+    - sem `console.error`/`pageerror`.
+- Dope Skate: próximo passo concluído (mission tiers + streak rewards).
+  - Missões por tier de tempo de run:
+    - substituído pool fixo por `DOPE_SKATE_MISSION_TEMPLATES` com tiers `easy/medium/hard` e `DOPE_SKATE_MISSION_TIERS` por `runTime`.
+    - seleção de missão agora considera tier atual e evita repetir template consecutivamente.
+  - Recompensa escalando com streak:
+    - novo `missionStreak` no estado runtime,
+    - multiplicador `dopeSkateGetMissionStreakMultiplier()` aplicado em CD/score da próxima missão,
+    - streak incrementa ao completar missão e aparece no HUD/feedback.
+  - HUD expandido para tier/streak/reward:
+    - adicionados `missionTier`, `missionStreak`, `missionReward` + estilos por tier (`easy/medium/hard`) e box `data-tier`.
+    - `updateDopeSkateUI()` atualiza tier, streak e recompensa dinâmica.
+  - Validação Playwright:
+    - sequência de 3 missões confirmou aumento de recompensa por streak,
+    - simulação de `runTime=115s` promoveu missão para tier `hard` com reward maior,
+    - HUD refletiu `HARD`, `Streak x4` e reward escalado,
+    - sem `console.error`/`pageerror`.
+- Dope Skate: personalização real de skater + skin de esqueleto.
+  - Loja de skater expandida com silhuetas distintas:
+    - `Core Skater` (base),
+    - `Street Fit` (proporção/roupa diferente),
+    - `Skeleton Bones` (nova skin especial).
+  - Skin `Skeleton Bones` adicionada com preço `CD 6666`.
+  - Sistema de assets do corpo refatorado por loadout:
+    - novos assets por skin: `body_core`, `body_street`, `body_skeleton` (+ variantes `*_step`),
+    - `dopeSkateGetEquippedAssets()` e `dopeSkateGetAssetsForLoadout()` agora resolvem `skaterBody`/`skaterBodyStep` com base em `equipped.skater`,
+    - fallback retrocompatível preservado para `skaterBody` antigo.
+  - Preview da loja atualizado:
+    - render do preview passa a priorizar o SVG do corpo equipado/previewado (não apenas spritesheet PNG),
+    - visual da skin no painel da loja condiz com o que entra no gameplay.
+  - Fallback de sprites por variante endurecido:
+    - `getSkaterSpritePath`/`getBoardSpritePath`/`getWheelSpritePath` só adicionam sufixo de variante quando existir variante registrada, evitando 404 desnecessário.
+  - Novos arquivos adicionados em `assets/skate/skater/`:
+    - `body_core.svg`, `body_core_step.svg`,
+    - `body_street.svg`, `body_street_step.svg`,
+    - `body_skeleton.svg`, `body_skeleton_step.svg`.
+  - Validação:
+    - `node --check assets/js/modules/02-games-and-ui.js`: OK.
+    - `node scripts/build-js-bundle.mjs`: OK.
+    - Playwright (fluxo loja+run): card `Skeleton Bones` exibindo `CD 6666`; com loadout seedado, status `Owned/Equipped` e render do skater esqueleto no gameplay.
+    - sem `console.error`/`pageerror`.
+- Dope Skate: balanceamento de combo/landing ajustado (pedido: decay menor + perfect mais possível).
+  - Combo decay reduzido:
+    - `comboWindow` de `1.8s` para `1.1s` (agora o combo expira mais rápido).
+  - Janela de `Perfect landing` ampliada:
+    - idade máxima do trick para perfect de `0.36s` para `0.92s`,
+    - impacto máximo para perfect de `250` para `460`,
+    - limiar de `Sketchy` ajustado para `620` para manter separação justa.
+  - Constantes centralizadas em `DOPE_SKATE_COMBAT` para facilitar próximos tunings sem caçar números mágicos.
+  - Validação:
+    - build + `node --check` módulo/bundle: OK,
+    - teste Playwright focado em gameplay registrou `Perfect landing` durante sequência padrão de saltos/tricks,
+    - sem `console.error`/`pageerror`.
+- Dope Skate: HUD redistribuído em 6 zonas para ocupar melhor a tela.
+  - Estrutura do HUD refeita em seis áreas:
+    - topo esquerdo (`score/combo/best/cds`),
+    - topo meio (`combo list`),
+    - topo direito (`BLISS + balance`),
+    - base esquerda (`mission box`),
+    - base meio (`combo decay`),
+    - base direita (`landing indicator`).
+  - Render atualizado em `CONTENT.games()` mantendo os mesmos `data-*` hooks usados pelo runtime.
+  - CSS novo para grade de HUD por zona, com cards independentes e alinhamentos por canto.
+  - Responsividade:
+    - em telas pequenas/mobile, o HUD volta para pilha vertical (sem quebrar leitura),
+    - ajustes para `skate-balance` no novo fluxo.
+  - Ajuste de janela para acomodar o novo HUD:
+    - `fitMinW` do Dope Skate em desktop aumentado de `1160` para `1320`.
+  - Validação:
+    - build + `node --check` módulo/bundle: OK,
+    - Playwright desktop confirmou zonas separadas e janela em `1320x726`,
+    - Playwright mobile confirmou fallback em coluna sem erros de console/pageerror.
+- Dope Skate: ajuste de layout para evitar scroll no desktop e manter comportamento móvel.
+  - Objetivo: desktop com visual completo sem barras de rolagem no menu/shop e canvas grande/fixo; mobile com fallback adaptado.
+  - Ajustes desktop:
+    - `content` da janela `games` marca `data-games-view` por view para controle de overflow específico.
+    - Em `dope-skate` desktop: `#win_games .content[data-games-view="dope-skate"] { overflow:hidden; }`.
+    - `.skate-overlay` agora usa `overflow:hidden` no desktop.
+    - `.skate-shell`/`.skate-body`/`.skate-screen` refinados para ocupar altura total sem quebrar layout interno.
+    - `.skate-menu` ampliado (`width:min(1320px, 99%)`) e convertido para ocupar toda a altura do overlay sem scroll interno.
+    - `.skate-menu-panels` e `.skate-panel.active` estruturados para layout em coluna full-height.
+    - Shop reorganizado em grid fixo desktop (`shelves + preview`), removendo dependência de rolagem vertical.
+    - `fitMinH` do Dope Skate aumentado para `760` para acomodar menu+canvas sem corte.
+  - Ajuste de canvas:
+    - `fitSkateCanvas()` deixou de forçar escala inteira em desktop; agora usa escala contínua para preencher área disponível sem cortes.
+  - Preservação mobile:
+    - `#win_games.mobile-game .skate-overlay` continua com `overflow:auto`.
+    - `#win_games.mobile-game .skate-menu` mantém largura reduzida e scroll touch quando necessário.
+  - Validação:
+    - build + `node --check` módulo/bundle: OK.
+    - Playwright desktop:
+      - `menuOverflowY=hidden`, `overlayOverflowY=hidden`, `contentOverflowY=hidden`,
+      - screenshot confirma Shop completo sem barra vertical.
+    - Playwright mobile:
+      - `overlayOverflowY=auto`,
+      - screenshot confirma layout vertical adaptado sem regressão.
+    - sem `console.error`/`pageerror`.
+- Dope Skate: refinamento de hierarquia visual do HUD (clean pass).
+  - Objetivo: missão + landing com maior destaque; bloco BLISS menor/discreto.
+  - Implementação:
+    - adicionadas classes de peso visual por zona/card:
+      - `.skate-hud-card-stats`, `.skate-hud-card-combo`, `.skate-hud-card-bliss`,
+      - `.skate-mission-box-primary`, `.skate-hud-card-decay`, `.skate-hud-card-landing`.
+    - missão ampliada e com borda/sombra de destaque.
+    - landing convertido para card destacado com tipografia mais forte e melhor legibilidade.
+    - bliss reduzido em largura, espaçamento e tamanho de chips para não competir com missão/landing.
+    - balance com footprint reduzido para manter o topo direito leve.
+  - Validação:
+    - build + `node --check` módulo/bundle: OK,
+    - Playwright desktop/mobile sem `console.error`/`pageerror`,
+    - métricas confirmam prioridade visual (`mission` > `landing` > `bliss` em área).
+- Dope Skate UX bugfix pass iniciado para pedido atual:
+  - `renderGamesWindow`: smart-fit do Dope Skate agora força modo `maximize` no desktop (ignora estado antigo de janela manual), com mínimos ajustados para `fitMinW=1360` e `fitMinH=820`.
+  - Preview da Shop corrigido em `dopeSkateRenderPreview`:
+    - centralização do render no stage (letterbox/offset),
+    - correção visual de variações para `board=chrome` (overlay) e `wheels=blue` (paleta procedural),
+    - texto de loadout no preview agora reflete `previewLoadout` (não apenas `equipped`).
+  - CSS do shop/painéis refinado em `index.html`:
+    - coluna de preview dimensionada (`minmax(360px, 430px)`),
+    - preview panel com card próprio,
+    - stage de preview com `aspect-ratio: 16/9` e centralizado.
+  - Game Over stretch corrigido:
+    - `#skateOverOverlay` agora centraliza conteúdo,
+    - `.skate-over-box` com largura limitada e auto-height.
+  - Ajuste de visibilidade vertical no gameplay desktop:
+    - `.skate-screen` `min-height` reduzido para `520px`.
+- Validação técnica imediata pós-patch:
+  - `node --check assets/js/modules/02-games-and-ui.js`: OK.
+  - rebuild bundle: OK.
+  - `node --check assets/js/bliss98.bundle.js`: OK.
+- Validação visual+métrica da rodada (output/dope-fixes-check):
+  - `1-dope-open.png`: janela abre maior e canvas inteiro visível no desktop.
+  - `2-shop-preview.png`: preview card/layout estabilizados; canvas de preview centralizado no stage.
+  - `3-gameover.png`: game over box centralizado sem esticar verticalmente.
+  - Métricas (`output/dope-fixes-check/result.json`):
+    - `canvasBottomVisibleInScreen=true`
+    - `canvasBottomAboveStatusbar=true`
+    - `shopMetrics.centeredX=true`, `shopMetrics.centeredY=true`
+    - `overMetrics.centeredX=true`, `overMetrics.centeredY=true`, `overMetrics.stretchedTall=false`
+    - `consoleErrors=[]`
+- Dope Skate HUD clean-up (pedido atual) aplicado em `index.html`:
+  - Removidos background/borda/box-shadow dos cards e caixas do HUD (`.skate-hud-card`, missão, landing, balance e variantes).
+  - Missão compactada e deslocada horizontalmente para a esquerda: largura reduzida e alinhamento `Mission/EASY` + `título/contador` ajustados para `justify-content:flex-start` com gaps menores.
+  - Barra de streak/progresso da missão encurtada (`width: clamp(70px, 32%, 120px)` e altura menor).
+- Validação visual e técnica:
+  - Skill client executado: `output/hud-clean-check/client-run/shot-0.png`.
+  - Validação direcionada do Dope Skate: `output/hud-clean-check/run-clean-hud.png`.
+  - Métricas CSS/posicionamento confirmam HUD sem borda/fundo e missão mais compacta: `output/hud-clean-check/result.json`.
+  - Sem `console.error`/`pageerror` no cenário validado.

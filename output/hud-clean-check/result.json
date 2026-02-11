@@ -1,0 +1,96 @@
+{
+  "hudCardStyle": {
+    "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+    "backgroundColor": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(245, 247, 251)",
+    "borderWidth": "0px",
+    "borderStyle": "none",
+    "borderColor": "rgb(245, 247, 251)",
+    "borderRadius": "0px",
+    "width": "420px",
+    "padding": "0px",
+    "boxShadow": "none"
+  },
+  "missionBoxStyle": {
+    "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+    "backgroundColor": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(245, 247, 251)",
+    "borderWidth": "0px",
+    "borderStyle": "none",
+    "borderColor": "rgb(245, 247, 251)",
+    "borderRadius": "0px",
+    "width": "300px",
+    "padding": "0px",
+    "boxShadow": "none"
+  },
+  "landingStyle": {
+    "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+    "backgroundColor": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(213, 223, 235)",
+    "borderWidth": "0px",
+    "borderStyle": "none",
+    "borderColor": "rgb(213, 223, 235)",
+    "borderRadius": "0px",
+    "width": "360px",
+    "padding": "2px 0px",
+    "boxShadow": "none"
+  },
+  "comboItemStyle": null,
+  "missionProgressStyle": {
+    "background": "rgba(255, 255, 255, 0.1) none repeat scroll 0% 0% / auto padding-box border-box",
+    "backgroundColor": "rgba(255, 255, 255, 0.1)",
+    "border": "0px none rgb(245, 247, 251)",
+    "borderWidth": "0px",
+    "borderStyle": "none",
+    "borderColor": "rgb(245, 247, 251)",
+    "borderRadius": "999px",
+    "width": "96px",
+    "padding": "0px",
+    "boxShadow": "none"
+  },
+  "missionRects": {
+    "box": {
+      "x": 553,
+      "y": 883.75,
+      "width": 300,
+      "height": 80.25,
+      "left": 553,
+      "right": 853,
+      "top": 883.75,
+      "bottom": 964
+    },
+    "tier": {
+      "x": 600.34375,
+      "y": 883.75,
+      "width": 31.875,
+      "height": 14,
+      "left": 600.34375,
+      "right": 632.21875,
+      "top": 883.75,
+      "bottom": 897.75
+    },
+    "count": {
+      "x": 680.78125,
+      "y": 903.75,
+      "width": 17.796875,
+      "height": 15,
+      "left": 680.78125,
+      "right": 698.578125,
+      "top": 903.75,
+      "bottom": 918.75
+    },
+    "progress": {
+      "x": 553,
+      "y": 959,
+      "width": 96,
+      "height": 5,
+      "left": 553,
+      "right": 649,
+      "top": 959,
+      "bottom": 964
+    }
+  },
+  "missionTierText": "EASY",
+  "missionCountText": "0/5",
+  "consoleErrors": []
+}

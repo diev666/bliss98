@@ -1,0 +1,12 @@
+{
+  "skeletonExists": 1,
+  "skeletonText": "Skater: Skeleton Bones\nCD 6666\nBuy CD 6666",
+  "equipState": {
+    "equippedSkater": null,
+    "ownedSkaters": [],
+    "wallet": null,
+    "bodySrc": "http://127.0.0.1:4173/assets/skate/skater/body_core.svg?v=1",
+    "bodyStepSrc": "http://127.0.0.1:4173/assets/skate/skater/body_core_step.svg?v=1"
+  },
+  "errors": []
+}

@@ -12,9 +12,10 @@ function renderGamesWindow(){
   if(!content) return;
   content.innerHTML = CONTENT.games();
   content.dataset.fitKey = `games:${state.games.view}`;
+  content.dataset.gamesView = state.games.view;
   if(state.games.view === 'dope-skate'){
-    content.dataset.fitMinW = state.isMobile ? '280' : '1160';
-    content.dataset.fitMinH = state.isMobile ? '280' : '680';
+    content.dataset.fitMinW = state.isMobile ? '280' : '1360';
+    content.dataset.fitMinH = state.isMobile ? '280' : '820';
   } else {
     delete content.dataset.fitMinW;
     delete content.dataset.fitMinH;
@@ -77,7 +78,10 @@ function renderGamesWindow(){
     initSnakeInWindow(win);
     mountMobileGameDock('snake', win);
   }
-  if(!mobileGameView) smartFitWindow(win, 'tabChange');
+  if(!mobileGameView){
+    const fitMode = state.games.view === 'dope-skate' ? 'maximize' : 'tabChange';
+    smartFitWindow(win, fitMode);
+  }
 }
 
 function initGamesWindow(){
@@ -981,8 +985,15 @@ const DOPE_SKATE_ASSETS = {
   sky: './assets/skate/sky/sky.svg',
   city: './assets/skate/background/city.svg',
   ground: './assets/skate/ground/ground.svg',
-  skaterBody: './assets/skate/skater/body_v3.svg?v=1',
-  skaterBodyStep: './assets/skate/skater/body_v3_step.svg?v=1',
+  skaterBodyCore: './assets/skate/skater/body_core.svg?v=1',
+  skaterBodyCoreStep: './assets/skate/skater/body_core_step.svg?v=1',
+  skaterBodyStreet: './assets/skate/skater/body_street.svg?v=1',
+  skaterBodyStreetStep: './assets/skate/skater/body_street_step.svg?v=1',
+  skaterBodySkeleton: './assets/skate/skater/body_skeleton.svg?v=1',
+  skaterBodySkeletonStep: './assets/skate/skater/body_skeleton_step.svg?v=1',
+  // Backward-compatible fallback keys.
+  skaterBody: './assets/skate/skater/body_core.svg?v=1',
+  skaterBodyStep: './assets/skate/skater/body_core_step.svg?v=1',
   deck: './assets/skate/board/board.svg',
   hat: './assets/skate/hat/hat.svg',
   vodka: './assets/skate/obstacles/vodka.svg',
@@ -1024,6 +1035,11 @@ const DOPE_SKATE_SPRITES = {
 };
 
 const DOPE_SKATE_SPRITE_VERSION = '3';
+const DOPE_SKATE_SPRITE_VARIANTS = {
+  skater: new Set([]),
+  board: new Set([]),
+  wheels: new Set([]),
+};
 
 const DOPE_SKATE_DATA_KEY = 'bliss98_dope_skate_data';
 
@@ -1051,6 +1067,64 @@ const DOPE_SKATE_DIFFICULTY = {
   medium: { speed: 1.0, spawn: 1.0, score: 1.0 },
   hard: { speed: 1.2, spawn: 0.8, score: 1.35 },
 };
+
+const DOPE_SKATE_CURVE = {
+  easy: { rampSeconds: 96, speedGain: 104, maxGain: 156, spawnTighten: 0.2, reactionBase: 1.58, reactionMin: 1.22 },
+  medium: { rampSeconds: 84, speedGain: 122, maxGain: 176, spawnTighten: 0.28, reactionBase: 1.42, reactionMin: 1.06 },
+  hard: { rampSeconds: 72, speedGain: 142, maxGain: 196, spawnTighten: 0.35, reactionBase: 1.28, reactionMin: 0.94 },
+};
+
+const DOPE_SKATE_COMBAT = {
+  comboWindowSec: 1.1,
+  perfectLandingMaxAgeSec: 0.92,
+  perfectLandingMaxImpact: 460,
+  sketchyLandingMinImpact: 620,
+};
+
+const DOPE_SKATE_MISSION_TIERS = [
+  { key: 'easy', minRunTime: 0 },
+  { key: 'medium', minRunTime: 45 },
+  { key: 'hard', minRunTime: 100 },
+];
+
+const DOPE_SKATE_MISSION_TEMPLATES = [
+  {
+    id: 'grind-chain',
+    type: 'grindCount',
+    tiers: {
+      easy: { label: 'Hit 3 grinds', target: 3, rewardCd: 2, rewardScore: 260 },
+      medium: { label: 'Hit 5 grinds', target: 5, rewardCd: 3, rewardScore: 360 },
+      hard: { label: 'Hit 7 grinds', target: 7, rewardCd: 4, rewardScore: 460 },
+    },
+  },
+  {
+    id: 'combo-builder',
+    type: 'comboMultiplier',
+    tiers: {
+      easy: { label: 'Land a 5x combo', target: 5, rewardCd: 3, rewardScore: 340 },
+      medium: { label: 'Land a 7x combo', target: 7, rewardCd: 4, rewardScore: 470 },
+      hard: { label: 'Land a 9x combo', target: 9, rewardCd: 5, rewardScore: 620 },
+    },
+  },
+  {
+    id: 'cd-crate',
+    type: 'cdCollect',
+    tiers: {
+      easy: { label: 'Collect 4 CDs', target: 4, rewardCd: 2, rewardScore: 230 },
+      medium: { label: 'Collect 6 CDs', target: 6, rewardCd: 3, rewardScore: 330 },
+      hard: { label: 'Collect 8 CDs', target: 8, rewardCd: 4, rewardScore: 430 },
+    },
+  },
+  {
+    id: 'clean-landing',
+    type: 'cleanLanding',
+    tiers: {
+      easy: { label: 'Land 2 clean combos', target: 2, rewardCd: 2, rewardScore: 300 },
+      medium: { label: 'Land 3 clean combos', target: 3, rewardCd: 3, rewardScore: 410 },
+      hard: { label: 'Land 4 clean combos', target: 4, rewardCd: 4, rewardScore: 540 },
+    },
+  },
+];
 
 const DOPE_SKATE_SPAWN_PATTERNS = [
   {
@@ -1081,7 +1155,7 @@ const DOPE_SKATE_SPAWN_PATTERNS = [
     length: 540,
     events: [
       { offset: 0, type: 'obstacle', obstacleKey: 'cone', lane: 0 },
-      { offset: 230, type: 'rail' },
+      { offset: 230, type: 'rail', kind: 'short' },
       { offset: 360, type: 'cd', lane: 'mid' },
     ],
   },
@@ -1103,8 +1177,19 @@ const DOPE_SKATE_SPAWN_PATTERNS = [
     length: 620,
     events: [
       { offset: 0, type: 'obstacle', obstacleKey: 'cone', lane: 0 },
-      { offset: 250, type: 'rail' },
+      { offset: 250, type: 'rail', kind: 'long' },
       { offset: 420, type: 'bliss', lane: 'high' },
+    ],
+  },
+  {
+    id: 'double-rail-tech',
+    minSpeed: 260,
+    maxSpeed: 999,
+    length: 760,
+    events: [
+      { offset: 120, type: 'rail', kind: 'double' },
+      { offset: 290, type: 'cd', lane: 'mid' },
+      { offset: 430, type: 'rail', kind: 'short' },
     ],
   },
   {
@@ -1133,8 +1218,9 @@ const DOPE_SKATE_SHOP = {
     { id:'sunset', name:'Sunset Haze', cost: 140, asset:'sky' },
   ],
   skater: [
-    { id:'core', name:'Core Skater', cost: 0, asset:'body' },
-    { id:'street', name:'Street Fit', cost: 220, asset:'body' },
+    { id:'core', name:'Core Skater', cost: 0, bodyAsset:'skaterBodyCore', stepAsset:'skaterBodyCoreStep' },
+    { id:'street', name:'Street Fit', cost: 220, bodyAsset:'skaterBodyStreet', stepAsset:'skaterBodyStreetStep' },
+    { id:'skeleton', name:'Skeleton Bones', cost: 6666, bodyAsset:'skaterBodySkeleton', stepAsset:'skaterBodySkeletonStep' },
   ],
   hat: [
     { id:'none', name:'No Cap', cost: 0, asset:null },
@@ -1173,7 +1259,9 @@ let dopeSkate = {
   lastRailDist: 0,
   lastObstacleLane: 0,
   speed: 240,
+  baseSpeed: 240,
   maxSpeed: 420,
+  baseMaxSpeed: 420,
   accel: 8,
   gravity: 1500,
   jumpVel: -420,
@@ -1194,7 +1282,7 @@ let dopeSkate = {
     active: false,
     lastLandingQuality: '',
   },
-  comboWindow: 1.8,
+  comboWindow: DOPE_SKATE_COMBAT.comboWindowSec,
   running: false,
   paused: false,
   gameOver: false,
@@ -1246,7 +1334,16 @@ let dopeSkate = {
   preview: null,
   difficulty: 'medium',
   spawnMultiplier: 1,
+  baseSpawnMultiplier: 1,
   scoreMultiplier: 1,
+  baseScoreMultiplier: 1,
+  runTime: 0,
+  reactionWindowSec: 1.35,
+  runPace: 0,
+  mission: null,
+  missionCompleted: 0,
+  missionStreak: 0,
+  landingFeedback: { state: '', text: '', timer: 0 },
   renderScaleX: 1,
   renderScaleY: 1,
   menuPanel: 'play',
@@ -1383,8 +1480,141 @@ function dopeSkateApplySettings(){
   const settings = dopeSkateGetDifficultySettings();
   const difficulty = dopeSkate.data && dopeSkate.data.settings ? dopeSkate.data.settings.difficulty : 'medium';
   dopeSkate.difficulty = difficulty;
+  dopeSkate.baseSpawnMultiplier = settings.spawn;
+  dopeSkate.baseScoreMultiplier = settings.score;
   dopeSkate.spawnMultiplier = settings.spawn;
   dopeSkate.scoreMultiplier = settings.score;
+}
+
+function dopeSkateGetCurveProfile(){
+  return DOPE_SKATE_CURVE[dopeSkate.difficulty] || DOPE_SKATE_CURVE.medium;
+}
+
+function dopeSkateGetReactionWindowSeconds(){
+  const profile = dopeSkateGetCurveProfile();
+  const eased = 1 - Math.pow(1 - dopeSkate.runPace, 2);
+  return clamp(profile.reactionBase - (profile.reactionBase - profile.reactionMin) * eased, profile.reactionMin, profile.reactionBase);
+}
+
+function dopeSkateGetSpawnLeadOffset(base = 24, jitter = 0){
+  const reaction = Math.max(0.85, dopeSkate.reactionWindowSec || dopeSkateGetReactionWindowSeconds());
+  const randomJitter = jitter > 0 ? (Math.random() * jitter) : 0;
+  return Math.round(Math.max(56, dopeSkate.speed * reaction + base + randomJitter));
+}
+
+function dopeSkateUpdateDifficultyCurve(dt){
+  dopeSkate.runTime += dt;
+  const profile = dopeSkateGetCurveProfile();
+  const raw = clamp(dopeSkate.runTime / profile.rampSeconds, 0, 1);
+  const eased = 1 - Math.pow(1 - raw, 2);
+  dopeSkate.runPace = eased;
+  dopeSkate.reactionWindowSec = dopeSkateGetReactionWindowSeconds();
+  dopeSkate.spawnMultiplier = clamp(dopeSkate.baseSpawnMultiplier * (1 - profile.spawnTighten * eased), 0.72, 1.7);
+  dopeSkate.scoreMultiplier = dopeSkate.baseScoreMultiplier * (1 + 0.2 * eased);
+
+  const targetCruise = dopeSkate.baseSpeed + profile.speedGain * eased;
+  const targetMax = dopeSkate.baseMaxSpeed + profile.maxGain * eased;
+  dopeSkate.maxSpeed = targetMax;
+  const accelBoost = dopeSkate.accel * (1 + 0.28 * eased);
+  if(dopeSkate.speed < targetCruise){
+    dopeSkate.speed = Math.min(targetCruise, dopeSkate.speed + accelBoost * dt * 1.2);
+  } else {
+    dopeSkate.speed = Math.min(dopeSkate.maxSpeed, dopeSkate.speed + accelBoost * dt);
+  }
+}
+
+function dopeSkateGetMissionTierKey(runTime = dopeSkate.runTime){
+  let tier = 'easy';
+  DOPE_SKATE_MISSION_TIERS.forEach(step => {
+    if(runTime >= step.minRunTime) tier = step.key;
+  });
+  return tier;
+}
+
+function dopeSkateGetMissionStreakMultiplier(streak = dopeSkate.missionStreak){
+  const safeStreak = Math.max(0, streak || 0);
+  return 1 + Math.min(0.72, safeStreak * 0.12);
+}
+
+function dopeSkateChooseMission(excludeTemplateId = ''){
+  const tier = dopeSkateGetMissionTierKey();
+  const pool = DOPE_SKATE_MISSION_TEMPLATES.filter(m => m.tiers && m.tiers[tier]);
+  const filtered = pool.filter(m => m.id !== excludeTemplateId);
+  const source = filtered.length ? filtered : pool;
+  if(!source.length) return null;
+  const pick = source[Math.floor(Math.random() * source.length)];
+  const cfg = pick.tiers[tier];
+  const rewardMult = dopeSkateGetMissionStreakMultiplier();
+  const rewardCd = Math.max(1, Math.round((cfg.rewardCd || 1) * rewardMult));
+  const rewardScore = Math.max(80, Math.round((cfg.rewardScore || 120) * rewardMult));
+  return {
+    id: `${pick.id}-${tier}`,
+    templateId: pick.id,
+    tier,
+    label: cfg.label,
+    type: pick.type,
+    target: cfg.target,
+    rewardCd,
+    rewardScore,
+    rewardMult,
+    progress: 0,
+    completed: false,
+  };
+}
+
+function dopeSkateAssignMission(excludeTemplateId = ''){
+  dopeSkate.mission = dopeSkateChooseMission(excludeTemplateId);
+}
+
+function dopeSkateSetLandingFeedback(stateLabel, text, duration = 0.9){
+  dopeSkate.landingFeedback.state = stateLabel || '';
+  dopeSkate.landingFeedback.text = text || '';
+  dopeSkate.landingFeedback.timer = Math.max(0, duration || 0);
+}
+
+function dopeSkateUpdateLandingFeedback(dt){
+  if(!dopeSkate.landingFeedback) return;
+  if(dopeSkate.landingFeedback.timer > 0){
+    dopeSkate.landingFeedback.timer = Math.max(0, dopeSkate.landingFeedback.timer - dt);
+    if(dopeSkate.landingFeedback.timer === 0){
+      dopeSkate.landingFeedback.state = '';
+      dopeSkate.landingFeedback.text = '';
+    }
+  }
+}
+
+function dopeSkateMissionProgress(type, amount = 1, value = 0){
+  const m = dopeSkate.mission;
+  if(!m || m.completed) return;
+  if(type === 'grindCount' && m.type === 'grindCount'){
+    m.progress += amount;
+  }
+  if(type === 'cdCollect' && m.type === 'cdCollect'){
+    m.progress += amount;
+  }
+  if(type === 'cleanLanding' && m.type === 'cleanLanding'){
+    m.progress += amount;
+  }
+  if(type === 'comboMultiplier' && m.type === 'comboMultiplier'){
+    m.progress = Math.max(m.progress, value);
+  }
+
+  if(m.progress >= m.target){
+    m.completed = true;
+    const rewardCd = m.rewardCd || 0;
+    const rewardScore = m.rewardScore || 0;
+    dopeSkate.cds += rewardCd;
+    dopeSkate.comboBank += rewardScore;
+    dopeSkate.scoreTotal = dopeSkate.scoreBase + dopeSkate.comboBank;
+    dopeSkate.missionCompleted += 1;
+    dopeSkate.missionStreak += 1;
+    dopeSkateSpawnTrickText(`Mission +${rewardCd} CD`);
+    dopeSkateSpawnTrickText(`+${rewardScore} pts`);
+    dopeSkateSpawnTrickText(`Streak x${dopeSkate.missionStreak}`);
+    dopeSkateSetLandingFeedback('mission', `Mission clear +${rewardCd} CD (x${dopeSkate.missionStreak})`, 1.25);
+    dopeSkateAddCameraShake(1.3);
+    dopeSkateAssignMission(m.templateId || m.id);
+  }
 }
 
 function dopeSkateIsSfxEnabled(){
@@ -1392,18 +1622,28 @@ function dopeSkateIsSfxEnabled(){
   return !!dopeSkate.data.settings.sfx;
 }
 
+function dopeSkateGetSpriteVariantSuffix(category, equippedId, fallbackId){
+  if(!equippedId || equippedId === fallbackId) return '';
+  const variants = DOPE_SKATE_SPRITE_VARIANTS[category];
+  if(!variants || !variants.has(equippedId)) return '';
+  return `_${equippedId}`;
+}
+
 function getSkaterSpritePath(animName, equipped){
-  const variant = equipped && equipped.skater && equipped.skater !== 'core' ? `_${equipped.skater}` : '';
+  const skaterId = equipped && equipped.skater ? equipped.skater : 'core';
+  const variant = dopeSkateGetSpriteVariantSuffix('skater', skaterId, 'core');
   return `./assets/games/dope-skate/skater/${DOPE_SKATE_SPRITES.skater.animations[animName].file}${variant}.png?v=${DOPE_SKATE_SPRITE_VERSION}`;
 }
 
 function getBoardSpritePath(equipped){
-  const variant = equipped && equipped.board && equipped.board !== 'classic' ? `_${equipped.board}` : '';
+  const boardId = equipped && equipped.board ? equipped.board : 'classic';
+  const variant = dopeSkateGetSpriteVariantSuffix('board', boardId, 'classic');
   return `./assets/games/dope-skate/board/${DOPE_SKATE_SPRITES.board.animations.grip.file}${variant}.png?v=${DOPE_SKATE_SPRITE_VERSION}`;
 }
 
 function getWheelSpritePath(equipped){
-  const variant = equipped && equipped.wheels && equipped.wheels !== 'black' ? `_${equipped.wheels}` : '';
+  const wheelId = equipped && equipped.wheels ? equipped.wheels : 'black';
+  const variant = dopeSkateGetSpriteVariantSuffix('wheels', wheelId, 'black');
   return `./assets/games/dope-skate/wheels/${DOPE_SKATE_SPRITES.wheels.animations.default.file}${variant}.png?v=${DOPE_SKATE_SPRITE_VERSION}`;
 }
 
@@ -1546,11 +1786,6 @@ function fitSkateCanvas(){
   const scale = Math.min(rect.width / dopeSkate.width, rect.height / dopeSkate.height);
   let targetW = Math.max(1, Math.floor(dopeSkate.width * scale));
   let targetH = Math.max(1, Math.floor(dopeSkate.height * scale));
-  if(scale >= 1){
-    const intScale = Math.max(1, Math.floor(scale));
-    targetW = Math.max(1, Math.floor(dopeSkate.width * intScale));
-    targetH = Math.max(1, Math.floor(dopeSkate.height * intScale));
-  }
   if(!Number.isFinite(targetW) || !Number.isFinite(targetH)) return;
   if(targetW === 0 || targetH === 0) return;
 
@@ -1611,6 +1846,14 @@ function initDopeSkateInWindow(winEl){
     combo: root.querySelector('[data-skate-combo]'),
     comboList: root.querySelector('[data-skate-combo-list]'),
     comboMeter: root.querySelector('[data-skate-combo-meter]'),
+    landingIndicator: root.querySelector('[data-skate-landing-indicator]'),
+    missionBox: root.querySelector('[data-skate-mission-box]'),
+    missionTitle: root.querySelector('[data-skate-mission-title]'),
+    missionCount: root.querySelector('[data-skate-mission-count]'),
+    missionMeter: root.querySelector('[data-skate-mission-meter]'),
+    missionTier: root.querySelector('[data-skate-mission-tier]'),
+    missionStreak: root.querySelector('[data-skate-mission-streak]'),
+    missionReward: root.querySelector('[data-skate-mission-reward]'),
     overScore: root.querySelector('[data-skate-over-score]'),
     overBase: root.querySelector('[data-skate-over-base]'),
     overCombo: root.querySelector('[data-skate-over-combo]'),
@@ -1809,6 +2052,11 @@ function dopeSkateResetWorld(){
     boardScaleY: 1,
     bodyLean: 0,
     bodyBob: 0,
+    torsoPitch: 0,
+    armSwing: 0,
+    kneeBend: 0,
+    landingBend: 0,
+    trailTimer: 0,
     squash: 0,
     trickAnim: null,
   };
@@ -1827,8 +2075,10 @@ function dopeSkateResetWorld(){
   dopeSkate.lastRailDist = 0;
   dopeSkate.lastObstacleLane = 0;
   // Difficulty tuning: speed/spawn/score multipliers live in DOPE_SKATE_DIFFICULTY.
-  dopeSkate.speed = 240 * diff.speed;
-  dopeSkate.maxSpeed = 420 * diff.speed;
+  dopeSkate.baseSpeed = 240 * diff.speed;
+  dopeSkate.baseMaxSpeed = 420 * diff.speed;
+  dopeSkate.speed = dopeSkate.baseSpeed;
+  dopeSkate.maxSpeed = dopeSkate.baseMaxSpeed;
   dopeSkate.scoreBase = 0;
   dopeSkate.comboBank = 0;
   dopeSkate.scoreTotal = 0;
@@ -1857,6 +2107,13 @@ function dopeSkateResetWorld(){
   dopeSkate.lastComboHtml = '';
   dopeSkate.lastBlissKey = '';
   dopeSkate.time = 0;
+  dopeSkate.runTime = 0;
+  dopeSkate.runPace = 0;
+  dopeSkate.reactionWindowSec = dopeSkateGetReactionWindowSeconds();
+  dopeSkate.missionCompleted = 0;
+  dopeSkate.missionStreak = 0;
+  dopeSkateAssignMission();
+  dopeSkate.landingFeedback = { state: '', text: '', timer: 0 };
 }
 
 function dopeSkateStartRun(){
@@ -2158,6 +2415,11 @@ function dopeSkateUpdate(dt){
 
   if(player.justLanded){
     dopeSkateResolveCombo(dopeSkateEvaluateLanding(landingImpactVy));
+    const impact = Math.abs(landingImpactVy || 0);
+    const footY = player.y + player.h;
+    dopeSkateSpawnLandingDust(player.x + player.w / 2, footY + 2, impact);
+    player.landingBend = Math.max(player.landingBend || 0, Math.min(1, 0.2 + impact / 520));
+    dopeSkateAddCameraShake(Math.min(2.4, 0.35 + impact / 310));
   }
 
   dopeSkateTryJump();
@@ -2165,7 +2427,7 @@ function dopeSkateUpdate(dt){
     dopeSkateApplyComboPenalty();
   }
 
-  dopeSkate.speed = Math.min(dopeSkate.maxSpeed, dopeSkate.speed + dopeSkate.accel * dt);
+  dopeSkateUpdateDifficultyCurve(dt);
   dopeSkate.distance += dopeSkate.speed * dt;
   dopeSkate.scoreBase = Math.max(dopeSkate.scoreBase, Math.floor((dopeSkate.distance / 7) * dopeSkate.scoreMultiplier));
   dopeSkate.scoreTotal = dopeSkate.scoreBase + dopeSkate.comboBank;
@@ -2182,6 +2444,7 @@ function dopeSkateUpdate(dt){
   dopeSkateCheckCollisions();
   dopeSkateUpdateParticles(dt);
   dopeSkateUpdateAnimations(dt);
+  dopeSkateUpdateLandingFeedback(dt);
   dopeSkate.cameraShake = Math.max(0, dopeSkate.cameraShake - dt * 20);
 
   dopeSkateUpdateOffsets(dt);
@@ -2205,9 +2468,9 @@ function dopeSkateHandleSpawns(){
   }
 
   if(dopeSkate.distance >= dopeSkate.spawn.nextLetterDist){
-    const aheadDist = dopeSkate.distance + 170 * dopeSkate.spawnMultiplier;
+    const aheadDist = dopeSkate.distance + dopeSkate.speed * dopeSkate.reactionWindowSec * 0.95;
     dopeSkateEnqueueSpawn(aheadDist, 'bliss', { lane: 'high' });
-    dopeSkate.spawn.nextLetterDist += (820 + Math.random() * 620) * dopeSkate.spawnMultiplier;
+    dopeSkate.spawn.nextLetterDist += Math.max(420, (740 + Math.random() * 560) * dopeSkate.spawnMultiplier);
   }
 
   dopeSkateProcessSpawnQueue();
@@ -2224,12 +2487,14 @@ function dopeSkatePickSpawnPattern(){
 
 function dopeSkateScheduleSpawnPattern(pattern){
   if(!pattern) return;
-  const base = Math.max(dopeSkate.distance + 120, dopeSkate.spawn.nextPatternDist);
+  const safetyLead = Math.max(130, dopeSkate.speed * dopeSkate.reactionWindowSec * 0.64);
+  const base = Math.max(dopeSkate.distance + safetyLead, dopeSkate.spawn.nextPatternDist);
   pattern.events.forEach(event => {
     const offset = Math.max(0, event.offset || 0) * dopeSkate.spawnMultiplier;
     dopeSkateEnqueueSpawn(base + offset, event.type, event);
   });
-  const patternLength = Math.max(260, pattern.length * dopeSkate.spawnMultiplier);
+  const fairGap = Math.max(260, dopeSkate.speed * dopeSkate.reactionWindowSec * 0.92);
+  const patternLength = Math.max(fairGap, pattern.length * dopeSkate.spawnMultiplier);
   dopeSkate.spawn.nextPatternDist = base + patternLength;
   dopeSkate.spawn.lastPatternId = pattern.id;
 }
@@ -2270,7 +2535,7 @@ function dopeSkateSpawnObstacle(options = {}){
     : types[Math.floor(Math.random() * types.length)];
   const lanes = [0, -6];
   const lane = Number.isFinite(options.lane) ? options.lane : lanes[Math.floor(Math.random() * lanes.length)];
-  const spawnOffset = Number.isFinite(options.spawnOffset) ? options.spawnOffset : 40;
+  const spawnOffset = Number.isFinite(options.spawnOffset) ? options.spawnOffset : dopeSkateGetSpawnLeadOffset(32, 18);
   dopeSkate.lastObstacleLane = lane;
   dopeSkate.obstacles.push({
     type: pick.key,
@@ -2284,15 +2549,39 @@ function dopeSkateSpawnObstacle(options = {}){
 
 function dopeSkateSpawnRail(options = {}){
   const groundY = dopeSkate.height - dopeSkate.groundHeight;
-  const spawnOffset = Number.isFinite(options.spawnOffset) ? options.spawnOffset : 120;
-  const w = Number.isFinite(options.w) ? options.w : 140;
-  const h = Number.isFinite(options.h) ? options.h : 12;
-  const yOffset = Number.isFinite(options.yOffset) ? options.yOffset : -90;
+  const spawnOffset = Number.isFinite(options.spawnOffset) ? options.spawnOffset : dopeSkateGetSpawnLeadOffset(74, 28);
+  const presets = {
+    short: { minW: 186, maxW: 238, h: 20, topOffset: 6, topH: 6, lowerTopOffset: null, popBoost: 108 },
+    standard: { minW: 220, maxW: 300, h: 22, topOffset: 7, topH: 7, lowerTopOffset: null, popBoost: 116 },
+    long: { minW: 292, maxW: 372, h: 24, topOffset: 7, topH: 7, lowerTopOffset: null, popBoost: 126 },
+    double: { minW: 246, maxW: 326, h: 26, topOffset: 6, topH: 6, lowerTopOffset: 14, popBoost: 120 },
+  };
+  const pickPreset = ()=>{
+    if(options.kind && presets[options.kind]) return { kind: options.kind, ...presets[options.kind] };
+    const weighted = ['standard', 'standard', 'long', 'short', 'double'];
+    const kind = weighted[Math.floor(Math.random() * weighted.length)];
+    return { kind, ...presets[kind] };
+  };
+  const preset = pickPreset();
+  const w = Number.isFinite(options.w)
+    ? options.w
+    : Math.round(preset.minW + Math.random() * (preset.maxW - preset.minW));
+  const h = Number.isFinite(options.h) ? options.h : preset.h;
+  const yOffset = Number.isFinite(options.yOffset) ? options.yOffset : -h;
+  const topOffset = Number.isFinite(options.topOffset) ? options.topOffset : preset.topOffset;
+  const topH = Number.isFinite(options.topH) ? options.topH : preset.topH;
+  const lowerTopOffset = Number.isFinite(options.lowerTopOffset) ? options.lowerTopOffset : preset.lowerTopOffset;
+  const popBoost = Number.isFinite(options.popBoost) ? options.popBoost : preset.popBoost;
   dopeSkate.rails.push({
+    kind: preset.kind,
     w,
     h,
     x: dopeSkate.width + spawnOffset,
     y: groundY + yOffset,
+    topOffset,
+    topH,
+    lowerTopOffset,
+    popBoost,
   });
   dopeSkate.lastRailDist = dopeSkate.distance;
 }
@@ -2311,7 +2600,7 @@ function dopeSkateGetCollectibleLaneY(lane, groundY){
 
 function dopeSkateSpawnCollectible(type, options = {}){
   const groundY = dopeSkate.height - dopeSkate.groundHeight;
-  const spawnOffset = Number.isFinite(options.spawnOffset) ? options.spawnOffset : 60;
+  const spawnOffset = Number.isFinite(options.spawnOffset) ? options.spawnOffset : dopeSkateGetSpawnLeadOffset(54, 24);
   const laneY = dopeSkateGetCollectibleLaneY(options.lane, groundY);
   if(type === 'cd'){
     dopeSkate.collectibles.push({
@@ -2384,15 +2673,7 @@ function dopeSkateDraw(){
     }
   });
 
-  dopeSkate.rails.forEach(rail => {
-    const img = dopeSkate.assets ? dopeSkate.assets.rail : null;
-    if(img){
-      ctx.drawImage(img, rail.x, rail.y, rail.w, rail.h);
-    } else {
-      ctx.fillStyle = '#b0b0b0';
-      ctx.fillRect(rail.x, rail.y, rail.w, rail.h);
-    }
-  });
+  dopeSkate.rails.forEach(rail => dopeSkateDrawRail(rail));
 
   dopeSkate.collectibles.forEach(item => {
     if(item.type === 'cd'){
@@ -2599,11 +2880,15 @@ function dopeSkateDrawSkater(){
   ctx.restore();
 
   // Skater
+  const kneeBend = Math.max(0, Math.min(1, p.kneeBend || 0));
+  const armSwing = Math.max(-0.8, Math.min(0.8, p.armSwing || 0));
+  const torsoPitch = Math.max(-0.36, Math.min(0.36, p.torsoPitch || 0));
+  let usedBodyAsset = false;
   ctx.save();
-  ctx.translate(skaterX + skaterPivotX, skaterY + skaterPivotY + (p.bodyBob || 0));
-  ctx.rotate(p.bodyLean);
-  const squash = 1 - p.squash * 0.3;
-  ctx.scale(1 + p.squash * 0.2, squash);
+  ctx.translate(skaterX + skaterPivotX, skaterY + skaterPivotY + (p.bodyBob || 0) + kneeBend * 7);
+  ctx.rotate((p.bodyLean || 0) + torsoPitch * 0.35);
+  const squash = (1 - p.squash * 0.3) * (1 - kneeBend * 0.18);
+  ctx.scale(1 + p.squash * 0.2 + kneeBend * 0.08, squash);
   let bodyAsset = assets.skaterBody || null;
   if(
     bodyAsset &&
@@ -2617,6 +2902,7 @@ function dopeSkateDrawSkater(){
   }
   if(bodyAsset){
     ctx.drawImage(bodyAsset, -skaterPivotX, -skaterPivotY, skaterDrawW, skaterDrawH);
+    usedBodyAsset = true;
   }
   const skaterSheet = sprites.skater && (sprites.skater[animState] || sprites.skater.idle);
   const fallbackSheet = dopeSkate.lastSkaterSheet || skaterSheet;
@@ -2640,6 +2926,41 @@ function dopeSkateDrawSkater(){
     ctx.drawImage(assets.hat, -14, -12, 32, 18);
     ctx.restore();
   }
+  if(!usedBodyAsset){
+    dopeSkateDrawSkaterArmOverlay(ctx, armSwing, kneeBend);
+  }
+  ctx.restore();
+}
+
+function dopeSkateDrawSkaterArmOverlay(ctx, swing, kneeBend){
+  const shoulderY = -70 + kneeBend * 3;
+  const elbowY = -48 + kneeBend * 2;
+  const handY = -30 + kneeBend * 2;
+  const leftShoulderX = -22;
+  const rightShoulderX = 22;
+  const leftElbowX = -26 + swing * 8;
+  const rightElbowX = 26 - swing * 8;
+  const leftHandX = -23 + swing * 12;
+  const rightHandX = 23 - swing * 12;
+
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#1f2733';
+  ctx.lineWidth = 2.3;
+  ctx.beginPath();
+  ctx.moveTo(leftShoulderX, shoulderY);
+  ctx.lineTo(leftElbowX, elbowY);
+  ctx.lineTo(leftHandX, handY);
+  ctx.moveTo(rightShoulderX, shoulderY);
+  ctx.lineTo(rightElbowX, elbowY);
+  ctx.lineTo(rightHandX, handY);
+  ctx.stroke();
+
+  ctx.fillStyle = '#e5b89a';
+  ctx.beginPath();
+  ctx.arc(leftHandX, handY, 1.9, 0, Math.PI * 2);
+  ctx.arc(rightHandX, handY, 1.9, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 
@@ -2751,6 +3072,47 @@ function updateDopeSkateUI(){
     const elapsed = Math.max(0, dopeSkate.time - dopeSkate.lastTrickAt);
     const ratio = dopeSkate.combo.active ? Math.max(0, 1 - elapsed / dopeSkate.comboWindow) : 0;
     dopeSkate.els.comboMeter.style.width = `${Math.floor(ratio * 100)}%`;
+  }
+  if(dopeSkate.els.landingIndicator){
+    const fb = dopeSkate.landingFeedback || { state: '', text: '', timer: 0 };
+    const hasFeedback = fb.timer > 0 && fb.text;
+    dopeSkate.els.landingIndicator.dataset.state = hasFeedback ? fb.state : 'idle';
+    dopeSkate.els.landingIndicator.textContent = hasFeedback ? fb.text : 'Landing: --';
+  }
+  if(dopeSkate.mission){
+    const m = dopeSkate.mission;
+    const progress = Math.min(m.target, Math.max(0, m.progress || 0));
+    const tierLabel = (m.tier || 'easy').toUpperCase();
+    if(dopeSkate.els.missionTitle){
+      dopeSkate.els.missionTitle.textContent = m.label;
+    }
+    if(dopeSkate.els.missionCount){
+      dopeSkate.els.missionCount.textContent = `${progress}/${m.target}`;
+    }
+    if(dopeSkate.els.missionTier){
+      dopeSkate.els.missionTier.textContent = tierLabel;
+    }
+    if(dopeSkate.els.missionStreak){
+      dopeSkate.els.missionStreak.textContent = `Streak x${dopeSkate.missionStreak || 0}`;
+    }
+    if(dopeSkate.els.missionReward){
+      dopeSkate.els.missionReward.textContent = `Reward +${m.rewardCd} CD | +${m.rewardScore} pts`;
+    }
+    if(dopeSkate.els.missionBox){
+      dopeSkate.els.missionBox.dataset.tier = m.tier || 'easy';
+    }
+    if(dopeSkate.els.missionMeter){
+      const ratio = m.target > 0 ? (progress / m.target) : 0;
+      dopeSkate.els.missionMeter.style.width = `${Math.floor(ratio * 100)}%`;
+    }
+  } else {
+    if(dopeSkate.els.missionTitle) dopeSkate.els.missionTitle.textContent = '—';
+    if(dopeSkate.els.missionCount) dopeSkate.els.missionCount.textContent = '0/0';
+    if(dopeSkate.els.missionTier) dopeSkate.els.missionTier.textContent = '—';
+    if(dopeSkate.els.missionStreak) dopeSkate.els.missionStreak.textContent = 'Streak x0';
+    if(dopeSkate.els.missionReward) dopeSkate.els.missionReward.textContent = 'Reward —';
+    if(dopeSkate.els.missionBox) dopeSkate.els.missionBox.dataset.tier = 'easy';
+    if(dopeSkate.els.missionMeter) dopeSkate.els.missionMeter.style.width = '0%';
   }
   dopeSkateRenderComboList();
   dopeSkateRenderBlissHUD();
@@ -2869,23 +3231,37 @@ function dopeSkateUpdateAnimations(dt){
   if(!player) return;
   player.wheelAngle += dopeSkate.speed * dt * 0.08;
   player.squash = Math.max(0, player.squash - dt * 2.8);
+  player.landingBend = Math.max(0, (player.landingBend || 0) - dt * 2.5);
   player.bodyLean = 0;
   player.bodyBob = 0;
+  player.torsoPitch = 0;
+  player.armSwing = 0;
+  player.kneeBend = Math.max(0, Math.min(1, player.landingBend || 0));
   player.boardSpin = 0;
   player.boardAngle = 0;
   player.boardScaleY = 1;
   const lateralLean = dopeSkate.inputs.left ? -0.12 : (dopeSkate.inputs.right ? 0.12 : 0);
   player.bodyLean += lateralLean;
+  player.armSwing += lateralLean * 1.6;
   if(player.onGround && dopeSkate.running){
     player.bodyBob = 0;
+    const sway = Math.sin(dopeSkate.time * 7.2) * 0.015;
+    player.bodyLean += sway;
+    player.armSwing += Math.sin(dopeSkate.time * 11.5) * 0.12;
   }
   if(!player.onGround){
     player.boardAngle += Math.max(-0.22, Math.min(0.22, player.vy / 920));
     player.bodyLean += Math.max(-0.16, Math.min(0.16, player.vy / 1600));
+    player.armSwing += Math.max(-0.25, Math.min(0.25, player.vy / 900));
+    if(player.vy > 80){
+      player.kneeBend = Math.max(player.kneeBend, Math.min(0.35, (player.vy - 80) / 500));
+    }
   }
   if(player.mode === 'grind' && player.grind){
     player.bodyLean += (player.grind.balance - 0.5) * 0.36;
     player.boardAngle += (player.grind.balance - 0.5) * 0.2;
+    player.armSwing += (player.grind.balance - 0.5) * 1.15;
+    player.kneeBend = Math.max(player.kneeBend, 0.2);
   }
   if(player.trickAnim){
     player.trickAnim.t += dt;
@@ -2907,11 +3283,29 @@ function dopeSkateUpdateAnimations(dt){
     player.boardAngle += arc * cfg.pitch;
     player.bodyBob -= arc * 6.8;
     player.bodyLean += cfg.spinTurns * 0.08;
+    player.torsoPitch += arc * cfg.pitch * 0.9;
+    player.armSwing += Math.sin(progress * Math.PI * 2) * 0.3;
+    player.kneeBend = Math.max(player.kneeBend, arc * 0.16);
     if(cfg.flip){
       player.boardScaleY = Math.max(0.2, Math.abs(Math.cos(progress * Math.PI * 2)));
       player.bodyLean += Math.sin(progress * Math.PI * 2) * 0.08;
     }
     if(progress >= 1) player.trickAnim = null;
+  }
+  player.torsoPitch += player.boardAngle * 0.7;
+  player.bodyLean += player.torsoPitch * 0.2;
+  player.armSwing += player.torsoPitch * 0.9;
+
+  if(player.onGround && dopeSkate.running && player.mode !== 'grind'){
+    player.trailTimer = Math.max(0, (player.trailTimer || 0) - dt);
+    if(player.trailTimer <= 0){
+      const footY = player.y + player.h;
+      dopeSkateSpawnWheelTrail(player.x + 10, footY - 6);
+      dopeSkateSpawnWheelTrail(player.x + player.w - 10, footY - 6);
+      player.trailTimer = 0.045;
+    }
+  } else {
+    player.trailTimer = 0;
   }
 
   // Sprite animation state machine (visual only)
@@ -3007,10 +3401,13 @@ function dopeSkateEvaluateLanding(impactVy){
   }
   const impact = Math.abs(impactVy || 0);
   const trickAge = Math.max(0, dopeSkate.time - dopeSkate.lastTrickAt);
-  if(trickAge <= 0.36 && impact <= 250){
+  if(
+    trickAge <= DOPE_SKATE_COMBAT.perfectLandingMaxAgeSec &&
+    impact <= DOPE_SKATE_COMBAT.perfectLandingMaxImpact
+  ){
     return { label: 'perfect', multiplier: 1.25 };
   }
-  if(impact >= 480){
+  if(impact >= DOPE_SKATE_COMBAT.sketchyLandingMinImpact){
     return { label: 'sketchy', multiplier: 0.72 };
   }
   return { label: 'clean', multiplier: 1 };
@@ -3033,22 +3430,31 @@ function dopeSkateApplyComboPenalty(){
   dopeSkate.lastTrickAt = dopeSkate.time;
   dopeSkate.combo.lastLandingQuality = 'drop';
   dopeSkateSpawnTrickText('Combo Drop');
+  dopeSkateSetLandingFeedback('drop', 'Combo dropped', 0.72);
   dopeSkate.cameraShake = Math.max(dopeSkate.cameraShake, 2);
 }
 
 function dopeSkateResolveCombo(landing = null){
   if(dopeSkate.combo.points <= 0) return;
+  const achievedMultiplier = dopeSkate.combo.multiplier;
   const landingMultiplier = landing && Number.isFinite(landing.multiplier) ? landing.multiplier : 1;
   const bonus = Math.floor(dopeSkate.combo.points * dopeSkate.combo.multiplier * landingMultiplier * dopeSkate.scoreMultiplier);
   dopeSkate.comboBank += bonus;
   dopeSkate.combo.lastLandingQuality = landing && landing.label ? landing.label : '';
   if(dopeSkate.combo.lastLandingQuality === 'perfect'){
     dopeSkateSpawnTrickText('Perfect Landing');
+    dopeSkateSetLandingFeedback('perfect', 'Perfect landing', 0.9);
+    dopeSkateMissionProgress('cleanLanding', 1);
     dopeSkate.cameraShake = Math.max(dopeSkate.cameraShake, 3);
     dopeSkatePlaySound('collect');
   } else if(dopeSkate.combo.lastLandingQuality === 'sketchy'){
     dopeSkateSpawnTrickText('Sketchy Landing');
+    dopeSkateSetLandingFeedback('sketchy', 'Sketchy landing', 0.95);
+  } else {
+    dopeSkateSetLandingFeedback('ok', 'OK landing', 0.82);
+    dopeSkateMissionProgress('cleanLanding', 1);
   }
+  dopeSkateMissionProgress('comboMultiplier', 1, achievedMultiplier);
   dopeSkate.combo.points = 0;
   dopeSkate.combo.tricks = [];
   dopeSkate.combo.unique.clear();
@@ -3099,7 +3505,7 @@ function dopeSkateHasBlissComplete(){
 }
 
 function dopeSkateCheckCollisions(){
-  const playerBox = dopeSkateGetPlayerHitbox();
+  const playerBox = dopeSkateGetPlayerHitbox('obstacle');
   for(const ob of dopeSkate.obstacles){
     if(dopeSkateRectHit(playerBox, ob)){
       dopeSkatePlaySound('crash');
@@ -3110,17 +3516,27 @@ function dopeSkateCheckCollisions(){
 
   for(const rail of dopeSkate.rails){
     if(dopeSkate.player.mode !== 'grind' && dopeSkate.player.vy > 80){
-      const railBox = { x: rail.x, y: rail.y, w: rail.w, h: rail.h };
-      const footBox = { x: playerBox.x, y: playerBox.y + playerBox.h - 6, w: playerBox.w, h: 8 };
-      if(dopeSkateRectHit(footBox, railBox)){
-        dopeSkateStartGrind(rail);
+      const railTopBox = dopeSkateGetRailTopBox(rail, 0);
+      const lowerRailTopBox = rail.lowerTopOffset != null ? dopeSkateGetRailTopBox(rail, 1) : null;
+      const p = dopeSkate.player;
+      const footBox = {
+        x: p.x + 8,
+        y: p.y + p.h - 12,
+        w: Math.max(16, p.w - 16),
+        h: 12,
+      };
+      const hitPrimary = dopeSkateRectHit(footBox, railTopBox);
+      const hitLower = lowerRailTopBox ? dopeSkateRectHit(footBox, lowerRailTopBox) : false;
+      if(hitPrimary || hitLower){
+        dopeSkateStartGrind(rail, hitLower ? lowerRailTopBox : railTopBox);
         break;
       }
     }
   }
 
+  const pickupBox = dopeSkateGetPlayerHitbox('collect');
   for(const item of dopeSkate.collectibles){
-    if(dopeSkateRectHit(playerBox, item)){
+    if(dopeSkateRectHit(pickupBox, item)){
       dopeSkateCollect(item);
       item.collected = true;
     }
@@ -3128,21 +3544,25 @@ function dopeSkateCheckCollisions(){
   dopeSkate.collectibles = dopeSkate.collectibles.filter(item => !item.collected);
 }
 
-function dopeSkateStartGrind(rail){
+function dopeSkateStartGrind(rail, contactBox = null){
   const player = dopeSkate.player;
   if(!player) return;
+  const surface = contactBox || dopeSkateGetRailTopBox(rail, 0);
   player.mode = 'grind';
   player.onGround = false;
   player.vy = 0;
   player.grind = {
     rail,
+    surfaceY: surface.y + surface.h,
     balance: 0.5,
     drift: Math.random() > 0.5 ? 1 : -1,
     trick: dopeSkatePickGrindTrick(),
   };
   player.grind.rate = player.grind.trick.rate;
   dopeSkateAddCustomTrick(player.grind.trick.id, player.grind.trick.name, player.grind.trick.points);
-  dopeSkate.cameraShake = Math.max(dopeSkate.cameraShake, 5);
+  dopeSkateMissionProgress('grindCount', 1);
+  dopeSkateSpawnSpark(player.x + 16, surface.y + 1, { count: 7, spreadX: 18, spreadY: 8, speed: 145 });
+  dopeSkateAddCameraShake(2.2);
   dopeSkatePlaySound('grind');
 }
 
@@ -3156,7 +3576,10 @@ function dopeSkateUpdateGrind(dt){
   const player = dopeSkate.player;
   if(!player || !player.grind) return;
   const rail = player.grind.rail;
-  player.y = rail.y - player.h + 10;
+  const surfaceY = Number.isFinite(player.grind.surfaceY)
+    ? player.grind.surfaceY
+    : (dopeSkateGetRailTopBox(rail, 0).y + dopeSkateGetRailTopBox(rail, 0).h);
+  player.y = surfaceY - player.h + 4;
   player.x = 130;
 
   const balanceSpeed = 0.55;
@@ -3167,7 +3590,9 @@ function dopeSkateUpdateGrind(dt){
 
   dopeSkate.combo.active = true;
   dopeSkate.combo.points += Math.floor(player.grind.rate * dt);
-  dopeSkateSpawnSpark(rail.x + 30, rail.y + 6);
+  if(Math.random() < 0.86){
+    dopeSkateSpawnSpark(rail.x + 32, surfaceY - 2, { count: 2, spreadX: 10, spreadY: 5, speed: 92 });
+  }
 
   if(player.grind.balance < 0 || player.grind.balance > 1){
     dopeSkatePlaySound('crash');
@@ -3178,13 +3603,17 @@ function dopeSkateUpdateGrind(dt){
   if(rail.x + rail.w < player.x + 12){
     player.mode = 'air';
     player.grind = null;
-    player.vy = 140;
+    player.vy = -(rail.popBoost || 118);
+    player.boardAngle -= 0.12;
+    player.landingBend = Math.max(player.landingBend || 0, 0.22);
+    dopeSkateAddCameraShake(1.15);
   }
 }
 
 function dopeSkateCollect(item){
   if(item.type === 'cd'){
     dopeSkate.cds += 1;
+    dopeSkateMissionProgress('cdCollect', 1);
     dopeSkateSpawnCollectFx(item.x + item.w / 2, item.y + item.h / 2);
     dopeSkatePlaySound('collect');
     return;
@@ -3201,14 +3630,93 @@ function dopeSkateCollect(item){
   }
 }
 
-function dopeSkateGetPlayerHitbox(){
+function dopeSkateGetPlayerHitbox(type = 'obstacle'){
   const p = dopeSkate.player;
-  return {
-    x: p.x + 2,
-    y: p.y - 28,
-    w: p.w - 4,
-    h: p.h + 26,
+  const footY = p.y + p.h;
+  const width = Math.max(24, Math.round(p.w * 0.86));
+  const height = Math.max(100, Math.round(p.h + 68));
+  const base = {
+    x: p.x + Math.round((p.w - width) * 0.5),
+    y: Math.round(footY - height),
+    w: width,
+    h: height,
   };
+  if(type === 'collect'){
+    return {
+      x: base.x - 4,
+      y: base.y - 4,
+      w: base.w + 8,
+      h: base.h + 8,
+    };
+  }
+  return {
+    x: base.x,
+    y: base.y,
+    w: base.w,
+    h: base.h,
+  };
+}
+
+function dopeSkateGetRailTopBox(rail, row = 0){
+  const topOffset = (row === 1 && rail && rail.lowerTopOffset != null)
+    ? rail.lowerTopOffset
+    : (Number.isFinite(rail && rail.topOffset) ? rail.topOffset : Math.max(4, Math.round((rail && rail.h ? rail.h : 20) * 0.34)));
+  const topH = Number.isFinite(rail && rail.topH) ? rail.topH : Math.max(4, Math.round((rail && rail.h ? rail.h : 20) * 0.3));
+  return {
+    x: rail.x + 4,
+    y: rail.y + topOffset,
+    w: Math.max(16, rail.w - 8),
+    h: topH,
+  };
+}
+
+function dopeSkateDrawRail(rail){
+  const ctx = dopeSkate.ctx;
+  if(!ctx || !rail) return;
+  const top = dopeSkateGetRailTopBox(rail, 0);
+  const lower = rail.lowerTopOffset != null ? dopeSkateGetRailTopBox(rail, 1) : null;
+  const supportTop = lower ? (lower.y + lower.h) : (top.y + top.h);
+  const supportBottom = rail.y + rail.h;
+  const supportH = Math.max(6, supportBottom - supportTop);
+
+  const drawBar = (bar, alpha = 1)=>{
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#d8e6f7';
+    ctx.fillRect(bar.x, bar.y, bar.w, bar.h);
+    ctx.fillStyle = '#8ea5be';
+    ctx.fillRect(bar.x, bar.y + Math.max(1, Math.floor(bar.h * 0.55)), bar.w, Math.max(1, Math.ceil(bar.h * 0.45)));
+    ctx.strokeStyle = 'rgba(237,245,255,0.85)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(bar.x + 0.5, bar.y + 0.5);
+    ctx.lineTo(bar.x + bar.w - 0.5, bar.y + 0.5);
+    ctx.stroke();
+    ctx.restore();
+  };
+
+  drawBar(top, 1);
+  if(lower){
+    drawBar(lower, 0.95);
+  }
+
+  const supportCount = Math.max(2, Math.round(rail.w / 92));
+  for(let i = 0; i < supportCount; i += 1){
+    const t = supportCount === 1 ? 0.5 : (i / (supportCount - 1));
+    const x = Math.round(rail.x + 12 + (rail.w - 24) * t);
+    ctx.fillStyle = '#8a8f97';
+    ctx.fillRect(x - 2, supportTop, 4, supportH);
+    ctx.fillStyle = '#6b7078';
+    ctx.fillRect(x - 2, supportTop + supportH - 2, 4, 2);
+  }
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.24)';
+  ctx.fillRect(rail.x + 4, supportBottom, Math.max(12, rail.w - 8), 2);
+}
+
+function dopeSkateAddCameraShake(amount){
+  if(!Number.isFinite(amount) || amount <= 0) return;
+  dopeSkate.cameraShake = Math.max(dopeSkate.cameraShake, amount);
 }
 
 function dopeSkateRectHit(a, b){
@@ -3261,13 +3769,60 @@ function dopeSkateUpdateBalanceUI(){
 }
 
 function dopeSkateSpawnSpark(x, y){
-  if(dopeSkate.particles.length > 80) return;
+  let opts = {};
+  if(typeof arguments[2] === 'object' && arguments[2]){
+    opts = arguments[2];
+  }
+  const count = Number.isFinite(opts.count) ? Math.max(1, Math.floor(opts.count)) : 3;
+  const spreadX = Number.isFinite(opts.spreadX) ? opts.spreadX : 12;
+  const spreadY = Number.isFinite(opts.spreadY) ? opts.spreadY : 6;
+  const speed = Number.isFinite(opts.speed) ? opts.speed : 105;
+  if(dopeSkate.particles.length > 180) return;
+  for(let i = 0; i < count; i += 1){
+    const life = 0.16 + Math.random() * 0.26;
+    dopeSkate.particles.push({
+      type: 'spark',
+      x: x + (Math.random() - 0.5) * spreadX,
+      y: y + (Math.random() - 0.5) * spreadY,
+      vx: -speed * 0.4 + Math.random() * speed,
+      vy: -speed * (0.45 + Math.random() * 0.35),
+      life,
+      size: 1 + Math.random() * 1.8,
+    });
+  }
+}
+
+function dopeSkateSpawnLandingDust(x, y, impact = 220){
+  if(dopeSkate.particles.length > 220) return;
+  const count = Math.max(5, Math.min(12, Math.round(impact / 80)));
+  const spread = 8 + Math.min(22, impact / 40);
+  for(let i = 0; i < count; i += 1){
+    const side = (i % 2 === 0) ? -1 : 1;
+    const speed = 40 + Math.random() * (80 + impact * 0.1);
+    dopeSkate.particles.push({
+      type: 'dust',
+      x: x + (Math.random() - 0.5) * spread,
+      y: y + Math.random() * 2,
+      vx: side * speed * (0.45 + Math.random() * 0.45),
+      vy: -18 - Math.random() * 26,
+      life: 0.28 + Math.random() * 0.24,
+      size: 2 + Math.random() * 3.5,
+      alpha: 0.35 + Math.random() * 0.3,
+    });
+  }
+}
+
+function dopeSkateSpawnWheelTrail(x, y){
+  if(dopeSkate.particles.length > 240) return;
   dopeSkate.particles.push({
+    type: 'trail',
     x,
     y,
-    vx: -40 + Math.random() * 80,
-    vy: -60 + Math.random() * 40,
-    life: 0.35 + Math.random() * 0.2,
+    vx: -24 - Math.random() * 42,
+    vy: -4 + Math.random() * 8,
+    life: 0.12 + Math.random() * 0.14,
+    size: 1.4 + Math.random() * 1.8,
+    alpha: 0.18 + Math.random() * 0.16,
   });
 }
 
@@ -3289,6 +3844,24 @@ function dopeSkateUpdateParticles(dt){
     p.life -= dt;
     p.x += p.vx * dt;
     p.y += p.vy * dt;
+    if(p.type === 'spark'){
+      p.vx *= Math.max(0, 1 - dt * 1.9);
+      p.vy += 260 * dt;
+      p.size = Math.max(0.6, p.size - dt * 2.6);
+      return;
+    }
+    if(p.type === 'dust'){
+      p.vx *= Math.max(0, 1 - dt * 3.2);
+      p.vy += 110 * dt;
+      p.size = Math.max(0.8, p.size - dt * 1.2);
+      return;
+    }
+    if(p.type === 'trail'){
+      p.vx *= Math.max(0, 1 - dt * 6);
+      p.vy += 36 * dt;
+      p.size = Math.max(0.6, p.size - dt * 3.8);
+      return;
+    }
     p.vy += 220 * dt;
   });
   dopeSkate.particles = dopeSkate.particles.filter(p => p.life > 0);
@@ -3296,19 +3869,45 @@ function dopeSkateUpdateParticles(dt){
 
 function dopeSkateDrawParticles(){
   const ctx = dopeSkate.ctx;
+  const textParticles = [];
   dopeSkate.particles.forEach(p => {
     if(p.type === 'text'){
-      ctx.fillStyle = '#f8fffd';
-      ctx.font = '12px "Segoe UI", Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.globalAlpha = Math.max(0, Math.min(1, p.life));
-      ctx.fillText(p.text, p.x, p.y);
-      ctx.globalAlpha = 1;
+      textParticles.push(p);
+      return;
+    }
+    if(p.type === 'spark'){
+      const alpha = Math.max(0, Math.min(1, p.life / 0.35));
+      ctx.fillStyle = `rgba(255, 214, 126, ${alpha.toFixed(3)})`;
+      ctx.fillRect(p.x, p.y, p.size || 1.5, p.size || 1.5);
+      return;
+    }
+    if(p.type === 'dust'){
+      const alpha = Math.max(0, Math.min(1, (p.alpha || 0.35) * (p.life / 0.5)));
+      const size = p.size || 2;
+      ctx.fillStyle = `rgba(96, 104, 112, ${alpha.toFixed(3)})`;
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, size * 0.8, size * 0.45, 0, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+    if(p.type === 'trail'){
+      const alpha = Math.max(0, Math.min(1, (p.alpha || 0.2) * (p.life / 0.24)));
+      const size = p.size || 1.8;
+      ctx.fillStyle = `rgba(34, 38, 44, ${alpha.toFixed(3)})`;
+      ctx.fillRect(p.x, p.y, size, Math.max(1, size * 0.68));
       return;
     }
     ctx.fillStyle = '#ffd27d';
     ctx.fillRect(p.x, p.y, 2, 2);
+  });
+  textParticles.forEach(p => {
+    ctx.fillStyle = '#f8fffd';
+    ctx.font = '12px "Segoe UI", Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.globalAlpha = Math.max(0, Math.min(1, p.life));
+    ctx.fillText(p.text, p.x, p.y);
+    ctx.globalAlpha = 1;
   });
 }
 
@@ -3334,12 +3933,15 @@ function dopeSkateGetEquippedAssets(){
   }
   const assets = dopeSkate.assets || {};
   const eq = (dopeSkate.data && dopeSkate.data.equipped) ? dopeSkate.data.equipped : {};
+  const skaterItem = DOPE_SKATE_SHOP.skater.find(item => item.id === eq.skater) || DOPE_SKATE_SHOP.skater[0];
+  const skaterBody = assets[skaterItem && skaterItem.bodyAsset ? skaterItem.bodyAsset : 'skaterBodyCore'] || assets.skaterBody || null;
+  const skaterBodyStep = assets[skaterItem && skaterItem.stepAsset ? skaterItem.stepAsset : 'skaterBodyCoreStep'] || skaterBody || assets.skaterBodyStep || null;
   const equipped = {
     sky: assets[DOPE_SKATE_SHOP.sky.find(item => item.id === eq.sky)?.asset || 'sky'],
     background: assets[DOPE_SKATE_SHOP.background.find(item => item.id === eq.background)?.asset || 'city'],
     ground: assets[DOPE_SKATE_SHOP.ground.find(item => item.id === eq.ground)?.asset || 'ground'],
-    skaterBody: assets.skaterBody || null,
-    skaterBodyStep: assets.skaterBodyStep || null,
+    skaterBody,
+    skaterBodyStep,
     deck: assets.deck || null,
     hat: eq.hat === 'none' ? null : assets[DOPE_SKATE_SHOP.hat.find(item => item.id === eq.hat)?.asset || 'hat'],
   };
@@ -3359,12 +3961,16 @@ function dopeSkateGetAssetsForLoadout(loadout){
     const item = (DOPE_SKATE_SHOP[cat] || []).find(entry => entry.id === id);
     return assets[item ? item.asset : fallbackKey];
   };
+  const skaterId = loadout && loadout.skater ? loadout.skater : 'core';
+  const skaterItem = DOPE_SKATE_SHOP.skater.find(entry => entry.id === skaterId) || DOPE_SKATE_SHOP.skater[0];
+  const skaterBody = assets[skaterItem && skaterItem.bodyAsset ? skaterItem.bodyAsset : 'skaterBodyCore'] || assets.skaterBody || null;
+  const skaterBodyStep = assets[skaterItem && skaterItem.stepAsset ? skaterItem.stepAsset : 'skaterBodyCoreStep'] || skaterBody || assets.skaterBodyStep || null;
   return {
     sky: getAsset('sky', 'sky'),
     background: getAsset('background', 'city'),
     ground: getAsset('ground', 'ground'),
-    skaterBody: assets.skaterBody || null,
-    skaterBodyStep: assets.skaterBodyStep || null,
+    skaterBody,
+    skaterBodyStep,
     deck: assets.deck || null,
     skater: getSkaterSpritePath('idle', loadout || {}),
     hat: getAsset('hat', 'hat'),
@@ -3521,9 +4127,12 @@ function dopeSkateRenderPreview(loadout){
 
   const baseW = 320;
   const baseH = 180;
-  const scale = Math.min(viewW / baseW, viewH / baseH);
-  ctx.setTransform(scale, 0, 0, scale, 0, 0);
-  ctx.clearRect(0, 0, baseW, baseH);
+  const scale = Math.max(0.01, Math.min(viewW / baseW, viewH / baseH));
+  const offsetX = Math.floor((viewW - baseW * scale) * 0.5);
+  const offsetY = Math.floor((viewH - baseH * scale) * 0.5);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, viewW, viewH);
+  ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY);
 
   if(assets.sky){
     ctx.drawImage(assets.sky, 0, 0, baseW, baseH);
@@ -3546,13 +4155,18 @@ function dopeSkateRenderPreview(loadout){
 
   const boardDrawW = Math.round(DOPE_SKATE_SPRITES.board.frameW * 0.7);
   const boardDrawH = Math.round(DOPE_SKATE_SPRITES.board.frameH * 0.7);
-  const wheelDrawW = Math.round(DOPE_SKATE_SPRITES.wheels.frameW * 1);
-  const wheelDrawH = Math.round(DOPE_SKATE_SPRITES.wheels.frameH * 1);
+  const wheelRadius = 6;
   const footY = groundY + 2;
   const boardX = Math.round(baseW / 2 - boardDrawW / 2);
   const boardY = Math.round(footY - 10);
-  const wheelInset = boardDrawW * 0.28;
-  const wheelOffsetY = boardY + boardDrawH + Math.round(wheelDrawH * 0.2);
+  const wheelInset = boardDrawW * 0.22;
+  const wheelOffsetY = boardY + boardDrawH + wheelRadius - 1;
+  const boardId = effectiveLoadout && effectiveLoadout.board ? effectiveLoadout.board : 'classic';
+  const wheelsId = effectiveLoadout && effectiveLoadout.wheels ? effectiveLoadout.wheels : 'black';
+  const boardOverlay = boardId === 'chrome' ? 'rgba(182, 197, 218, 0.4)' : '';
+  const wheelPalette = wheelsId === 'blue'
+    ? { tire: '#102033', inner: '#2f8cff', core: '#dbe5ff', spoke: '#89b8ff' }
+    : { tire: '#15171b', inner: '#4f555f', core: '#d0d8e5', spoke: '#a8b0bd' };
 
   const drawSheetFrame = (sheet, frame, x, y, w, h)=>{
     if(!sheet || !sheet.img) return false;
@@ -3567,15 +4181,19 @@ function dopeSkateRenderPreview(loadout){
     ctx.fillStyle = '#2a2a2a';
     ctx.fillRect(boardX, boardY, boardDrawW, boardDrawH);
   }
+  if(boardOverlay){
+    ctx.fillStyle = boardOverlay;
+    ctx.fillRect(boardX, boardY, boardDrawW, boardDrawH);
+  }
   const wheelPositions = [
     boardX + wheelInset,
     boardX + boardDrawW - wheelInset,
   ];
   wheelPositions.forEach(wx => {
-    if(!drawSheetFrame(previewSprites && previewSprites.wheels, 0, Math.round(wx - wheelDrawW / 2), wheelOffsetY, wheelDrawW, wheelDrawH)){
-      ctx.fillStyle = '#ddd';
-      ctx.fillRect(Math.round(wx - wheelDrawW / 2), wheelOffsetY, wheelDrawW, wheelDrawH);
-    }
+    ctx.save();
+    ctx.translate(Math.round(wx), wheelOffsetY);
+    dopeSkateDrawWheel(ctx, wheelRadius, 0, wheelPalette);
+    ctx.restore();
   });
 
   const skaterFrameW = DOPE_SKATE_SPRITES.skater.frameW;
@@ -3583,7 +4201,9 @@ function dopeSkateRenderPreview(loadout){
   const skaterX = Math.round(baseW / 2 - skaterFrameW / 2);
   const skaterY = Math.round(footY - skaterFrameH + 6);
   const skaterSheet = previewSprites && (previewSprites.skater || null);
-  if(!drawSheetFrame(skaterSheet, 0, skaterX, skaterY, skaterFrameW, skaterFrameH)){
+  if(assets.skaterBody){
+    ctx.drawImage(assets.skaterBody, skaterX, skaterY, skaterFrameW, skaterFrameH);
+  } else if(!drawSheetFrame(skaterSheet, 0, skaterX, skaterY, skaterFrameW, skaterFrameH)){
     ctx.fillStyle = '#3c4a5a';
     ctx.fillRect(skaterX + 18, skaterY + 30, 28, 52);
   }
@@ -3591,10 +4211,13 @@ function dopeSkateRenderPreview(loadout){
     ctx.drawImage(assets.hat, skaterX + 18, skaterY + 2, 28, 16);
   }
   if(dopeSkate.els.equippedList && dopeSkate.data){
-    dopeSkate.els.equippedList.textContent = Object.entries(dopeSkate.data.equipped).map(([cat, id]) => {
+    const shownLoadout = { ...dopeSkate.data.equipped, ...(effectiveLoadout || {}) };
+    const order = ['ground', 'background', 'sky', 'skater', 'hat', 'board', 'wheels'];
+    dopeSkate.els.equippedList.textContent = order.map(cat => {
+      const id = shownLoadout[cat];
       const item = (DOPE_SKATE_SHOP[cat] || []).find(entry => entry.id === id);
       const label = cat.charAt(0).toUpperCase() + cat.slice(1);
-      return `${label}: ${item ? item.name : id}`;
+      return `${label}: ${item ? item.name : (id || '-')}`;
     }).join(' • ');
   }
 }

@@ -1,0 +1,101 @@
+{
+  "openMetrics": {
+    "content": {
+      "x": 400,
+      "y": 77,
+      "width": 1360,
+      "height": 856,
+      "top": 77,
+      "right": 1760,
+      "bottom": 933,
+      "left": 400
+    },
+    "screen": {
+      "x": 412,
+      "y": 142,
+      "width": 1336,
+      "height": 779,
+      "top": 142,
+      "right": 1748,
+      "bottom": 921,
+      "left": 412
+    },
+    "canvas": {
+      "x": 429.5,
+      "y": 165,
+      "width": 1301,
+      "height": 733,
+      "top": 165,
+      "right": 1730.5,
+      "bottom": 898,
+      "left": 429.5
+    },
+    "statusbar": {
+      "x": 400,
+      "y": 933,
+      "width": 1360,
+      "height": 23,
+      "top": 933,
+      "right": 1760,
+      "bottom": 956,
+      "left": 400
+    },
+    "canvasBottomVisibleInScreen": true,
+    "canvasBottomAboveStatusbar": true,
+    "contentOverflowY": "hidden",
+    "fitMinW": "1360",
+    "fitMinH": "820"
+  },
+  "shopMetrics": {
+    "stage": {
+      "x": 1297,
+      "y": 352,
+      "width": 414,
+      "height": 233.75,
+      "top": 352,
+      "right": 1711,
+      "bottom": 585.75,
+      "left": 1297
+    },
+    "previewCanvas": {
+      "x": 1298,
+      "y": 353,
+      "width": 412,
+      "height": 231.75,
+      "top": 353,
+      "right": 1710,
+      "bottom": 584.75,
+      "left": 1298
+    },
+    "centeredX": true,
+    "centeredY": true,
+    "statusText": "Use equipped",
+    "equippedText": "Ground: Classic Asphalt • Background: City Lights • Sky: Clean Sky • Skater: Core Skater • Hat: Red Cap • Board: Classic Deck • Wheels: Black Wheels"
+  },
+  "overMetrics": {
+    "overlay": {
+      "x": 419,
+      "y": 149,
+      "width": 1322,
+      "height": 765,
+      "top": 149,
+      "right": 1741,
+      "bottom": 914,
+      "left": 419
+    },
+    "box": {
+      "x": 881,
+      "y": 403,
+      "width": 398,
+      "height": 257,
+      "top": 403,
+      "right": 1279,
+      "bottom": 660,
+      "left": 881
+    },
+    "centeredX": true,
+    "centeredY": true,
+    "stretchedTall": false
+  },
+  "consoleErrors": []
+}
