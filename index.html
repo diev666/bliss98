@@ -2630,10 +2630,25 @@
         margin:0 auto;
         width:min(92vw, 520px);
         height:190px;
+        --ps1-shell-top:#ece7dd;
+        --ps1-shell-bottom:#c8c0b2;
+        --ps1-btn-top:#faf8f3;
+        --ps1-btn-bottom:#ddd4c5;
+        --ps1-btn-border:rgba(0,0,0,0.26);
+        --ps1-btn-shadow:0 5px 10px rgba(0,0,0,0.16), inset 0 2px 5px rgba(255,255,255,0.62);
+        --ps1-btn-pressed-shadow:inset 0 3px 6px rgba(0,0,0,0.25), inset 0 -1px 2px rgba(255,255,255,0.2);
         border-radius:120px 120px 90px 90px;
-        background:linear-gradient(180deg, #e8e3d8 0%, #c9c2b4 100%);
+        background:linear-gradient(180deg, var(--ps1-shell-top) 0%, var(--ps1-shell-bottom) 100%);
         box-shadow:inset 0 6px 12px rgba(255,255,255,0.6), inset 0 -8px 12px rgba(0,0,0,0.18);
         border:1px solid rgba(0,0,0,0.08);
+      }
+      .ps1-pressable{
+        transition:filter 0.08s ease, box-shadow 0.08s ease, transform 0.08s ease;
+        -webkit-tap-highlight-color:transparent;
+      }
+      .ps1-pressable:focus-visible{
+        outline:2px solid rgba(43,120,255,0.45);
+        outline-offset:2px;
       }
       .ps1-brand{
         position:absolute;
@@ -2649,55 +2664,129 @@
         position:absolute;
         left:28px;
         bottom:22px;
-        width:112px;
-        height:112px;
+        width:120px;
+        height:120px;
         display:flex;
         align-items:center;
         justify-content:center;
         touch-action:none;
+      }
+      .ps1-dpad-cross{
+        position:absolute;
+        inset:12px;
+        border-radius:14px;
+        border:2px solid var(--ps1-btn-border);
+        background:linear-gradient(180deg, var(--ps1-btn-top) 0%, var(--ps1-btn-bottom) 100%);
+        box-shadow:var(--ps1-btn-shadow);
+        clip-path:polygon(34% 0,66% 0,66% 34%,100% 34%,100% 66%,66% 66%,66% 100%,34% 100%,34% 66%,0 66%,0 34%,34% 34%);
+        pointer-events:none;
+      }
+      .ps1-dpad-cross::after{
+        content:'';
+        position:absolute;
+        left:50%;
+        top:50%;
+        width:22px;
+        height:22px;
+        border-radius:6px;
+        transform:translate(-50%, -50%);
+        border:1px solid rgba(0,0,0,0.22);
+        background:linear-gradient(180deg, #f7f3ea 0%, #cfc6b8 100%);
+        box-shadow:inset 0 1px 2px rgba(255,255,255,0.6);
+      }
+      .ps1-icon{
+        width:20px;
+        height:20px;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        pointer-events:none;
+      }
+      .ps1-icon svg{
+        width:100%;
+        height:100%;
+        display:block;
+        transform-origin:50% 50%;
+      }
+      .ps1-icon-stroke{
+        fill:none;
+        stroke:currentColor;
+        stroke-width:2.2;
+        stroke-linecap:round;
+        stroke-linejoin:round;
+        vector-effect:non-scaling-stroke;
       }
       .ps1-dpad-corner{
         position:absolute;
-        font-size:14px;
-        color:rgba(0,0,0,0.22);
-        text-shadow:0 1px 0 rgba(255,255,255,0.2);
+        color:rgba(66,57,45,0.82);
         pointer-events:auto;
         user-select:none;
-        border:0;
-        background:transparent;
+        border:1px solid rgba(0,0,0,0.14);
+        background:linear-gradient(180deg, rgba(250,248,243,0.95) 0%, rgba(224,214,200,0.92) 100%);
         padding:0;
         width:24px;
         height:24px;
+        border-radius:999px;
         display:flex;
         align-items:center;
         justify-content:center;
         touch-action:none;
-        -webkit-tap-highlight-color:transparent;
+        box-shadow:0 2px 6px rgba(0,0,0,0.14);
+        z-index:3;
       }
-      .ps1-dpad-corner.ne{ top:10px; right:10px; }
-      .ps1-dpad-corner.se{ bottom:10px; right:10px; }
-      .ps1-dpad-corner.sw{ bottom:10px; left:10px; }
-      .ps1-dpad-corner.nw{ top:10px; left:10px; }
+      .ps1-dpad-corner.ne{ top:2px; right:2px; }
+      .ps1-dpad-corner.se{ bottom:2px; right:2px; }
+      .ps1-dpad-corner.sw{ bottom:2px; left:2px; }
+      .ps1-dpad-corner.nw{ top:2px; left:2px; }
+      .ps1-dpad-corner.ne .ps1-icon-arrow svg{ transform:rotate(45deg); }
+      .ps1-dpad-corner.se .ps1-icon-arrow svg{ transform:rotate(135deg); }
+      .ps1-dpad-corner.sw .ps1-icon-arrow svg{ transform:rotate(-135deg); }
+      .ps1-dpad-corner.nw .ps1-icon-arrow svg{ transform:rotate(-45deg); }
       .ps1-dpad-btn{
         position:absolute;
-        width:34px;
-        height:34px;
-        border-radius:8px;
-        border:2px solid rgba(0,0,0,0.2);
-        background:linear-gradient(180deg, #dfd8cb 0%, #bdb4a6 100%);
+        width:42px;
+        height:42px;
+        border-radius:10px;
+        border:0;
+        background:transparent;
         color:#4b4339;
-        font-size:16px;
+        font-size:18px;
         font-weight:700;
         display:flex;
         align-items:center;
         justify-content:center;
-        box-shadow:inset 0 2px 6px rgba(255,255,255,0.4);
         touch-action:none;
+        z-index:2;
       }
-      .ps1-dpad-btn.up{ top:0; }
-      .ps1-dpad-btn.down{ bottom:0; }
-      .ps1-dpad-btn.left{ left:0; }
-      .ps1-dpad-btn.right{ right:0; }
+      .ps1-dpad-btn::before{
+        content:'';
+        position:absolute;
+        inset:2px;
+        border-radius:10px;
+        border:1px solid rgba(0,0,0,0.16);
+        background:linear-gradient(180deg, rgba(250,248,243,0.95) 0%, rgba(219,207,191,0.95) 100%);
+        box-shadow:var(--ps1-btn-shadow);
+        opacity:0;
+        transform:translateY(0);
+        transition:opacity 0.08s ease, transform 0.08s ease, box-shadow 0.08s ease;
+      }
+      .ps1-dpad-btn .ps1-icon{
+        position:relative;
+        z-index:1;
+      }
+      .ps1-dpad-btn.up{ top:4px; left:50%; transform:translateX(-50%); }
+      .ps1-dpad-btn.down{ bottom:4px; left:50%; transform:translateX(-50%); }
+      .ps1-dpad-btn.left{ left:4px; top:50%; transform:translateY(-50%); }
+      .ps1-dpad-btn.right{ right:4px; top:50%; transform:translateY(-50%); }
+      .ps1-dpad-btn.down .ps1-icon-arrow svg{ transform:rotate(180deg); }
+      .ps1-dpad-btn.left .ps1-icon-arrow svg{ transform:rotate(-90deg); }
+      .ps1-dpad-btn.right .ps1-icon-arrow svg{ transform:rotate(90deg); }
+      .ps1-dpad-btn:active::before,
+      .ps1-dpad-btn.is-pressed::before{
+        opacity:1;
+        transform:translateY(1px);
+        box-shadow:var(--ps1-btn-pressed-shadow);
+      }
       .ps1-stick{
         position:absolute;
         left:26px;
@@ -2730,18 +2819,22 @@
       }
       .ps1-face-btn{
         position:absolute;
-        width:54px;
-        height:54px;
+        width:56px;
+        height:56px;
         border-radius:50%;
-        border:2px solid rgba(0,0,0,0.2);
-        background:rgba(245,245,245,0.85);
-        font-size:22px;
+        border:2px solid var(--ps1-btn-border);
+        background:radial-gradient(circle at 32% 28%, #ffffff 0%, #f7f4ed 44%, #ddd3c4 100%);
+        font-size:0;
         font-weight:700;
         display:flex;
         align-items:center;
         justify-content:center;
-        box-shadow:0 6px 12px rgba(0,0,0,0.2);
+        box-shadow:0 6px 12px rgba(0,0,0,0.2), inset 0 2px 5px rgba(255,255,255,0.7);
         touch-action:none;
+      }
+      .ps1-face-btn .ps1-icon{
+        width:26px;
+        height:26px;
       }
       .ps1-face-btn.triangle{ color:#2bb14f; left:48px; top:0; }
       .ps1-face-btn.circle{ color:#d63b5a; right:0; top:48px; }
@@ -2766,13 +2859,13 @@
         min-width:72px;
         height:28px;
         border-radius:999px;
-        border:1px solid rgba(0,0,0,0.25);
-        background:linear-gradient(180deg, #f2ede4 0%, #cfc7b9 100%);
+        border:1px solid var(--ps1-btn-border);
+        background:linear-gradient(180deg, var(--ps1-btn-top) 0%, var(--ps1-btn-bottom) 100%);
         font-size:11px;
         letter-spacing:1px;
         color:#6a6258;
         text-transform:uppercase;
-        box-shadow:inset 0 3px 6px rgba(255,255,255,0.6);
+        box-shadow:var(--ps1-btn-shadow);
         touch-action:none;
       }
       .ps1-analog-led-rect{
@@ -2797,15 +2890,27 @@
         min-width:64px;
         height:28px;
         border-radius:999px;
-        border:1px solid rgba(0,0,0,0.2);
-        background:linear-gradient(180deg, #f2ede4 0%, #cfc7b9 100%);
+        border:1px solid var(--ps1-btn-border);
+        background:linear-gradient(180deg, var(--ps1-btn-top) 0%, var(--ps1-btn-bottom) 100%);
         font-size:11px;
         letter-spacing:1px;
         color:#6a6258;
         text-transform:uppercase;
-        box-shadow:inset 0 3px 6px rgba(255,255,255,0.6);
+        box-shadow:var(--ps1-btn-shadow);
         touch-action:none;
         pointer-events:auto;
+      }
+      .ps1-face-btn.ps1-pressable:active,
+      .ps1-face-btn.ps1-pressable.is-pressed,
+      .ps1-analog-btn.ps1-pressable:active,
+      .ps1-analog-btn.ps1-pressable.is-pressed,
+      .ps1-center-btn.ps1-pressable:active,
+      .ps1-center-btn.ps1-pressable.is-pressed,
+      .ps1-dpad-corner.ps1-pressable:active,
+      .ps1-dpad-corner.ps1-pressable.is-pressed{
+        transform:translateY(1px);
+        box-shadow:var(--ps1-btn-pressed-shadow);
+        filter:brightness(0.94);
       }
       .ps1-center-btn.select{
         position:absolute;

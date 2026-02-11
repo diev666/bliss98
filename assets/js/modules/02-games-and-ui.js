@@ -183,6 +183,14 @@ function armMobileFullscreen(targetEl){
   targetEl.addEventListener('pointerdown', handler, { once:true });
 }
 
+const PS1_SVG_ICONS = {
+  arrow: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="ps1-icon-stroke" d="M12 4v16M6 10l6-6 6 6"/></svg>`,
+  triangle: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="ps1-icon-stroke" d="M12 4 20 19H4Z"/></svg>`,
+  circle: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle class="ps1-icon-stroke" cx="12" cy="12" r="8"/></svg>`,
+  cross: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="ps1-icon-stroke" d="M6 6l12 12M18 6 6 18"/></svg>`,
+  square: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect class="ps1-icon-stroke" x="6" y="6" width="12" height="12" rx="1.5"/></svg>`,
+};
+
 function mountMobileGameDock(gameId, winEl){
   if(!winEl) return;
   const mobile = isMobileGameMode();
@@ -202,31 +210,32 @@ function mountMobileGameDock(gameId, winEl){
       <div class="ps1-dock-body">
         <div class="ps1-brand">BLISS</div>
         <div class="ps1-dpad" data-mobile-dpad>
-          <button class="ps1-dpad-corner ne" type="button" data-mobile-action="ne" aria-label="Up-right">↗</button>
-          <button class="ps1-dpad-corner se" type="button" data-mobile-action="se" aria-label="Down-right">↘</button>
-          <button class="ps1-dpad-corner sw" type="button" data-mobile-action="sw" aria-label="Down-left">↙</button>
-          <button class="ps1-dpad-corner nw" type="button" data-mobile-action="nw" aria-label="Up-left">↖</button>
-          <button class="ps1-dpad-btn up" type="button" data-mobile-action="up">▲</button>
-          <button class="ps1-dpad-btn down" type="button" data-mobile-action="down">▼</button>
-          <button class="ps1-dpad-btn left" type="button" data-mobile-action="left">◀</button>
-          <button class="ps1-dpad-btn right" type="button" data-mobile-action="right">▶</button>
+          <div class="ps1-dpad-cross" aria-hidden="true"></div>
+          <button class="ps1-dpad-corner ne ps1-pressable" type="button" data-mobile-action="ne" aria-label="Up-right"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
+          <button class="ps1-dpad-corner se ps1-pressable" type="button" data-mobile-action="se" aria-label="Down-right"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
+          <button class="ps1-dpad-corner sw ps1-pressable" type="button" data-mobile-action="sw" aria-label="Down-left"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
+          <button class="ps1-dpad-corner nw ps1-pressable" type="button" data-mobile-action="nw" aria-label="Up-left"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
+          <button class="ps1-dpad-btn up ps1-pressable" type="button" data-mobile-action="up" aria-label="Up"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
+          <button class="ps1-dpad-btn down ps1-pressable" type="button" data-mobile-action="down" aria-label="Down"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
+          <button class="ps1-dpad-btn left ps1-pressable" type="button" data-mobile-action="left" aria-label="Left"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
+          <button class="ps1-dpad-btn right ps1-pressable" type="button" data-mobile-action="right" aria-label="Right"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
         </div>
         <div class="ps1-stick" data-mobile-stick="left" aria-label="Joystick">
           <div class="ps1-stick-knob"></div>
         </div>
         <div class="ps1-face">
-          <button class="ps1-face-btn triangle" type="button" data-mobile-action="trick2" aria-label="Trick 2">△</button>
-          <button class="ps1-face-btn circle" type="button" data-mobile-action="trick3" aria-label="Trick 3">○</button>
-          <button class="ps1-face-btn cross" type="button" data-mobile-action="jump" aria-label="Jump">✕</button>
-          <button class="ps1-face-btn square" type="button" data-mobile-action="trick1" aria-label="Trick 1">□</button>
+          <button class="ps1-face-btn triangle ps1-pressable" type="button" data-mobile-action="trick2" aria-label="Trick 2"><span class="ps1-icon ps1-icon-shape">${PS1_SVG_ICONS.triangle}</span></button>
+          <button class="ps1-face-btn circle ps1-pressable" type="button" data-mobile-action="trick3" aria-label="Trick 3"><span class="ps1-icon ps1-icon-shape">${PS1_SVG_ICONS.circle}</span></button>
+          <button class="ps1-face-btn cross ps1-pressable" type="button" data-mobile-action="jump" aria-label="Jump"><span class="ps1-icon ps1-icon-shape">${PS1_SVG_ICONS.cross}</span></button>
+          <button class="ps1-face-btn square ps1-pressable" type="button" data-mobile-action="trick1" aria-label="Trick 1"><span class="ps1-icon ps1-icon-shape">${PS1_SVG_ICONS.square}</span></button>
         </div>
         <div class="ps1-analog">
-          <button class="ps1-analog-btn" type="button" data-mobile-action="analog">ANALOG</button>
+          <button class="ps1-analog-btn ps1-pressable" type="button" data-mobile-action="analog">ANALOG</button>
           <span class="ps1-analog-led-rect"></span>
         </div>
         <div class="ps1-center">
-          <button class="ps1-center-btn select" type="button" data-mobile-action="select">Select</button>
-          <button class="ps1-center-btn start" type="button" data-mobile-action="start">Start</button>
+          <button class="ps1-center-btn select ps1-pressable" type="button" data-mobile-action="select">SELECT</button>
+          <button class="ps1-center-btn start ps1-pressable" type="button" data-mobile-action="start">START</button>
         </div>
       </div>
     `;
@@ -248,6 +257,26 @@ function bindMobileOverlay(gameId, overlay){
   }
 
   overlay.dataset.mode = state.mobileControlsMode;
+  overlay.querySelectorAll('button[data-mobile-action]').forEach(btn => {
+    let pointerId = null;
+    const clearPress = ()=>{
+      pointerId = null;
+      btn.classList.remove('is-pressed');
+    };
+    btn.addEventListener('pointerdown', (e)=>{
+      if(e.pointerType === 'mouse' && e.button !== 0) return;
+      pointerId = e.pointerId;
+      btn.classList.add('is-pressed');
+      try{ btn.setPointerCapture(pointerId); } catch {}
+    });
+    btn.addEventListener('pointerup', (e)=>{
+      if(pointerId !== null && e.pointerId !== pointerId) return;
+      clearPress();
+    });
+    btn.addEventListener('pointercancel', clearPress);
+    btn.addEventListener('lostpointercapture', clearPress);
+  });
+
   const stick = overlay.querySelector('[data-mobile-stick="left"]');
   if(stick){
     const knob = stick.querySelector('.ps1-stick-knob');

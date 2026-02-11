@@ -488,3 +488,25 @@ Original prompt (continuação): e crie esses sons dentro da pasta assets/sounds
   - `statsMatchBoardWidth=true`, `statsMatchBoardCenter=true`, `headerHasTopGap=true`.
 - Cache bust atualizado para garantir reload em celular:
   - `bliss98.bundle.js?v=20260211-snake-ui-5`.
+- Controle mobile PS1 (pedido atual): melhorias visuais 1,2,3,4 implementadas.
+  - (1) Estado pressionado real:
+    - nova classe `.ps1-pressable` com efeito de afundar (`translateY`), escurecimento e sombra interna em `:active` e `.is-pressed`.
+    - JS adiciona/remoção de `.is-pressed` por `pointerdown/up/cancel/lostpointercapture` em todos os botões `data-mobile-action`.
+  - (2) Ícones Unicode substituídos por SVG:
+    - D-pad e face buttons agora usam SVG inline (`arrow`, `triangle`, `circle`, `cross`, `square`) via `PS1_SVG_ICONS`.
+  - (3) D-pad com peça em cruz única:
+    - adicionado elemento decorativo `.ps1-dpad-cross` com `clip-path` em formato de cruz.
+    - botões direcionais reposicionados sobre a cruz para leitura mais “DualShock/PS1”.
+  - (4) Contraste melhor dos botões de ação:
+    - nova paleta de botões (`--ps1-btn-top/bottom`, `--ps1-btn-border`) e sombras mais definidas em `.ps1-face-btn`, `.ps1-analog-btn`, `.ps1-center-btn`.
+- Arquivos alterados:
+  - `assets/js/modules/02-games-and-ui.js`
+  - `index.html`
+  - rebuild de `assets/js/bliss98.bundle.js`
+- Validação:
+  - `node --check assets/js/modules/02-games-and-ui.js`: OK
+  - build bundle `node scripts/build-js-bundle.mjs`: OK
+  - `node --check assets/js/bliss98.bundle.js`: OK
+  - validação visual Playwright mobile:
+    - `output/mobile-ps1-visual-check/dope-ps1-after.png`
+    - `output/mobile-ps1-visual-check/dope-ps1-dock.png`
