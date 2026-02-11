@@ -462,3 +462,8 @@ Original prompt (continuação): e crie esses sons dentro da pasta assets/sounds
   - `.content[data-games-view="snake"]` agora centraliza o bloco inteiro (topbar, título, stats, board e botão).
   - `.snake-main` ajustado de `336px` para `356px` para casar com largura real do board (356px com borda/padding), eliminando desalinhamento de ~10px.
   - Validação Playwright: `deltaBoard=0`, `deltaStats=0`, `deltaBtn=0` em `output/snake-ui-help-check/snake-centered-result.json`.
+- Snake header refinado conforme UX/design:
+  - `Back` movido para a mesma linha do título `Snake`, alinhado à esquerda do header.
+  - Título centralizado sem deslocar o bloco central do jogo.
+  - Ajuste de alinhamento vertical via `.snake-header`/`.snake-title` para mesma altura visual do botão.
+  - Validação Playwright: checks `sameLine/backOnLeft/centeredBoard/centeredTitle = true`.

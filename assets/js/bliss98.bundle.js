@@ -12568,12 +12568,14 @@ Eu sou o buffalo branco extinto`
           }
           if(state.games.view === 'snake'){
             return `
-              <div class="snake-topbar">
-                <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
-              </div>
-              <h2>${t('games.snake')}</h2>
               <div class="snake-layout">
                 <div class="snake-main">
+                  <div class="snake-header">
+                    <div class="snake-topbar">
+                      <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                    </div>
+                    <h2 class="snake-title">${t('games.snake')}</h2>
+                  </div>
                   <div class="bevel-in snake-board-stats">
                     <div class="tiny"><span data-i18n="snake.score">Score:</span> <strong data-snake-score>0</strong></div>
                     <div class="tiny"><span data-i18n="snake.highScore">High Score:</span> <strong data-snake-high>0</strong></div>

@@ -1,0 +1,59 @@
+{
+  "content": {
+    "left": 459,
+    "right": 971,
+    "top": 215,
+    "bottom": 809,
+    "width": 512,
+    "height": 594,
+    "centerX": 715,
+    "centerY": 512
+  },
+  "header": {
+    "left": 537,
+    "right": 893,
+    "top": 225,
+    "bottom": 249,
+    "width": 356,
+    "height": 24,
+    "centerX": 715,
+    "centerY": 237
+  },
+  "title": {
+    "left": 692,
+    "right": 738,
+    "top": 225,
+    "bottom": 249,
+    "width": 46,
+    "height": 24,
+    "centerX": 715,
+    "centerY": 237
+  },
+  "backBtn": {
+    "left": 537,
+    "right": 589,
+    "top": 225,
+    "bottom": 249,
+    "width": 52,
+    "height": 24,
+    "centerX": 563,
+    "centerY": 237
+  },
+  "board": {
+    "left": 537,
+    "right": 893,
+    "top": 309,
+    "bottom": 665,
+    "width": 356,
+    "height": 356,
+    "centerX": 715,
+    "centerY": 487
+  },
+  "checks": {
+    "sameLine": true,
+    "backOnLeft": true,
+    "centeredBoard": true,
+    "centeredTitle": true
+  },
+  "consoleErrors": []
+}

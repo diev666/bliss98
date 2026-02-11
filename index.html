@@ -2450,8 +2450,25 @@
         display:flex;
         align-items:center;
         gap:8px;
-        flex-wrap:wrap;
-        margin-bottom:10px;
+        flex-wrap:nowrap;
+        margin-bottom:0;
+      }
+      .snake-header{
+        display:grid;
+        grid-template-columns:1fr auto 1fr;
+        align-items:center;
+        width:100%;
+        min-height:24px;
+      }
+      .snake-header .snake-topbar{
+        justify-self:start;
+      }
+      .snake-header .snake-title{
+        margin:0;
+        grid-column:2;
+        text-align:center;
+        line-height:24px;
+        align-self:center;
       }
       :is(#win_games, #win_dope-skate):not(.mobile-game) .content[data-games-view="snake"]{
         display:flex;
@@ -2460,13 +2477,6 @@
       }
       :is(#win_games, #win_dope-skate):not(.mobile-game) .content[data-games-view="snake"] .snake-layout{
         justify-content:center;
-      }
-      :is(#win_games, #win_dope-skate):not(.mobile-game) .content[data-games-view="snake"] .snake-topbar{
-        width:100%;
-        justify-content:center;
-      }
-      :is(#win_games, #win_dope-skate):not(.mobile-game) .content[data-games-view="snake"] > h2{
-        text-align:center;
       }
       .snake-board-stats{
         display:flex;
@@ -2941,6 +2951,14 @@
       }
       :is(#win_games, #win_dope-skate).mobile-game .snake-topbar{
         margin-bottom:6px;
+      }
+      :is(#win_games, #win_dope-skate).mobile-game .snake-header{
+        grid-template-columns:1fr;
+        justify-items:center;
+        row-gap:6px;
+      }
+      :is(#win_games, #win_dope-skate).mobile-game .snake-header .snake-topbar{
+        justify-self:center;
       }
       :is(#win_games, #win_dope-skate).mobile-game .snake-board-stats{
         width:100%;
