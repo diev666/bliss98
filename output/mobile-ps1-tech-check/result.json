@@ -1,0 +1,20 @@
+{
+  "checks": {
+    "hasDock": true,
+    "analogLabel": "ANALOG",
+    "analogAriaLabel": "Toggle analog mode",
+    "analogPressedStateAttr": "true",
+    "selectLabel": "SELECT",
+    "startLabel": "START",
+    "upAria": "Up",
+    "upAriaKey": "aria.mobile.controls.up",
+    "leftBefore": false,
+    "leftPressedAfterDown": true,
+    "modeAfterToggle": "analog",
+    "leftPressedAfterModeToggle": false,
+    "analogPressedAfterModeToggle": false,
+    "startPressedBeforeBlur": true,
+    "startPressedAfterBlur": false
+  },
+  "consoleErrors": []
+}

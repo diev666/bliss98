@@ -1328,9 +1328,50 @@ function getFirstGameId(){
 const MOBILE_GAME_DEBUG = new URLSearchParams(window.location.search).get('mobile') === '1';
 const MOBILE_GAME_MQ = window.matchMedia('(max-width: 520px)');
 const MOBILE_GAME_COARSE = window.matchMedia('(pointer: coarse)');
+const MOBILE_TOUCH_PRIORITY_WINDOW_MS = 320;
+const mobileOverlayResetters = new Set();
+let mobileOverlayCleanupBound = false;
+const mobileTouchPointers = new Set();
+let mobileTouchPriorityUntil = 0;
 
 function isMobileGameMode(){
   return MOBILE_GAME_DEBUG || MOBILE_GAME_MQ.matches || MOBILE_GAME_COARSE.matches;
+}
+
+function markMobileTouchPointerDown(pointerId, pointerType){
+  if(!Number.isFinite(pointerId)) return;
+  if(pointerType !== 'touch' && pointerType !== 'pen') return;
+  mobileTouchPointers.add(pointerId);
+  mobileTouchPriorityUntil = performance.now() + MOBILE_TOUCH_PRIORITY_WINDOW_MS;
+}
+
+function markMobileTouchPointerUp(pointerId){
+  if(!Number.isFinite(pointerId)) return;
+  if(mobileTouchPointers.delete(pointerId)){
+    mobileTouchPriorityUntil = performance.now() + MOBILE_TOUCH_PRIORITY_WINDOW_MS;
+  }
+}
+
+function isMobileTouchPriorityActive(){
+  return mobileTouchPointers.size > 0 || performance.now() < mobileTouchPriorityUntil;
+}
+
+function registerMobileOverlayResetter(fn){
+  if(typeof fn !== 'function') return;
+  mobileOverlayResetters.add(fn);
+  if(mobileOverlayCleanupBound) return;
+  mobileOverlayCleanupBound = true;
+  const flush = ()=>{
+    mobileOverlayResetters.forEach(resetFn => {
+      try{ resetFn(); } catch {}
+    });
+    mobileTouchPointers.clear();
+    mobileTouchPriorityUntil = 0;
+  };
+  window.addEventListener('blur', flush);
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState !== 'visible') flush();
+  });
 }
 
 function enterMobileFullscreen(gameId, winEl){
@@ -1376,11 +1417,11 @@ function armMobileFullscreen(targetEl){
 }
 
 const PS1_SVG_ICONS = {
-  arrow: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="ps1-icon-stroke" d="M12 4v16M6 10l6-6 6 6"/></svg>`,
-  triangle: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="ps1-icon-stroke" d="M12 4 20 19H4Z"/></svg>`,
-  circle: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle class="ps1-icon-stroke" cx="12" cy="12" r="8"/></svg>`,
-  cross: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="ps1-icon-stroke" d="M6 6l12 12M18 6 6 18"/></svg>`,
-  square: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect class="ps1-icon-stroke" x="6" y="6" width="12" height="12" rx="1.5"/></svg>`,
+  arrow: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 6 18.4 14.5H5.6Z" fill="currentColor"/></svg>`,
+  triangle: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4 20 19H4Z" fill="none" stroke="#2fb35a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`,
+  circle: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="7.9" fill="none" stroke="#d93f5f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`,
+  cross: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5" fill="none" stroke="#2b78ff" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`,
+  square: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6.2" y="6.2" width="11.6" height="11.6" rx="1.5" fill="none" stroke="#7c4fd2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`,
 };
 
 function mountMobileGameDock(gameId, winEl){
@@ -1403,36 +1444,39 @@ function mountMobileGameDock(gameId, winEl){
         <div class="ps1-brand">BLISS</div>
         <div class="ps1-dpad" data-mobile-dpad>
           <div class="ps1-dpad-cross" aria-hidden="true"></div>
-          <button class="ps1-dpad-corner ne ps1-pressable" type="button" data-mobile-action="ne" aria-label="Up-right"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
-          <button class="ps1-dpad-corner se ps1-pressable" type="button" data-mobile-action="se" aria-label="Down-right"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
-          <button class="ps1-dpad-corner sw ps1-pressable" type="button" data-mobile-action="sw" aria-label="Down-left"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
-          <button class="ps1-dpad-corner nw ps1-pressable" type="button" data-mobile-action="nw" aria-label="Up-left"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
-          <button class="ps1-dpad-btn up ps1-pressable" type="button" data-mobile-action="up" aria-label="Up"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
-          <button class="ps1-dpad-btn down ps1-pressable" type="button" data-mobile-action="down" aria-label="Down"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
-          <button class="ps1-dpad-btn left ps1-pressable" type="button" data-mobile-action="left" aria-label="Left"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
-          <button class="ps1-dpad-btn right ps1-pressable" type="button" data-mobile-action="right" aria-label="Right"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
+          <button class="ps1-dpad-corner ne ps1-pressable" type="button" data-mobile-action="ne" data-i18n-aria="aria.mobile.controls.upRight" aria-label="${t('aria.mobile.controls.upRight')}"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
+          <button class="ps1-dpad-corner se ps1-pressable" type="button" data-mobile-action="se" data-i18n-aria="aria.mobile.controls.downRight" aria-label="${t('aria.mobile.controls.downRight')}"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
+          <button class="ps1-dpad-corner sw ps1-pressable" type="button" data-mobile-action="sw" data-i18n-aria="aria.mobile.controls.downLeft" aria-label="${t('aria.mobile.controls.downLeft')}"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
+          <button class="ps1-dpad-corner nw ps1-pressable" type="button" data-mobile-action="nw" data-i18n-aria="aria.mobile.controls.upLeft" aria-label="${t('aria.mobile.controls.upLeft')}"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
+          <button class="ps1-dpad-btn up ps1-pressable" type="button" data-mobile-action="up" data-i18n-aria="aria.mobile.controls.up" aria-label="${t('aria.mobile.controls.up')}"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
+          <button class="ps1-dpad-btn down ps1-pressable" type="button" data-mobile-action="down" data-i18n-aria="aria.mobile.controls.down" aria-label="${t('aria.mobile.controls.down')}"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
+          <button class="ps1-dpad-btn left ps1-pressable" type="button" data-mobile-action="left" data-i18n-aria="aria.mobile.controls.left" aria-label="${t('aria.mobile.controls.left')}"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
+          <button class="ps1-dpad-btn right ps1-pressable" type="button" data-mobile-action="right" data-i18n-aria="aria.mobile.controls.right" aria-label="${t('aria.mobile.controls.right')}"><span class="ps1-icon ps1-icon-arrow">${PS1_SVG_ICONS.arrow}</span></button>
         </div>
-        <div class="ps1-stick" data-mobile-stick="left" aria-label="Joystick">
+        <div class="ps1-stick" data-mobile-stick="left" data-i18n-aria="aria.mobile.controls.joystick" aria-label="${t('aria.mobile.controls.joystick')}">
           <div class="ps1-stick-knob"></div>
         </div>
         <div class="ps1-face">
-          <button class="ps1-face-btn triangle ps1-pressable" type="button" data-mobile-action="trick2" aria-label="Trick 2"><span class="ps1-icon ps1-icon-shape">${PS1_SVG_ICONS.triangle}</span></button>
-          <button class="ps1-face-btn circle ps1-pressable" type="button" data-mobile-action="trick3" aria-label="Trick 3"><span class="ps1-icon ps1-icon-shape">${PS1_SVG_ICONS.circle}</span></button>
-          <button class="ps1-face-btn cross ps1-pressable" type="button" data-mobile-action="jump" aria-label="Jump"><span class="ps1-icon ps1-icon-shape">${PS1_SVG_ICONS.cross}</span></button>
-          <button class="ps1-face-btn square ps1-pressable" type="button" data-mobile-action="trick1" aria-label="Trick 1"><span class="ps1-icon ps1-icon-shape">${PS1_SVG_ICONS.square}</span></button>
+          <button class="ps1-face-btn triangle ps1-pressable" type="button" data-mobile-action="trick2" data-i18n-aria="skate.action.trick2" aria-label="${t('skate.action.trick2')}"><span class="ps1-icon ps1-icon-shape">${PS1_SVG_ICONS.triangle}</span></button>
+          <button class="ps1-face-btn circle ps1-pressable" type="button" data-mobile-action="trick3" data-i18n-aria="skate.action.trick3" aria-label="${t('skate.action.trick3')}"><span class="ps1-icon ps1-icon-shape">${PS1_SVG_ICONS.circle}</span></button>
+          <button class="ps1-face-btn cross ps1-pressable" type="button" data-mobile-action="jump" data-i18n-aria="skate.action.jump" aria-label="${t('skate.action.jump')}"><span class="ps1-icon ps1-icon-shape">${PS1_SVG_ICONS.cross}</span></button>
+          <button class="ps1-face-btn square ps1-pressable" type="button" data-mobile-action="trick1" data-i18n-aria="skate.action.trick1" aria-label="${t('skate.action.trick1')}"><span class="ps1-icon ps1-icon-shape">${PS1_SVG_ICONS.square}</span></button>
         </div>
         <div class="ps1-analog">
-          <button class="ps1-analog-btn ps1-pressable" type="button" data-mobile-action="analog">ANALOG</button>
+          <button class="ps1-analog-btn ps1-pressable" type="button" data-mobile-action="analog" data-i18n="mobile.controls.analog" data-i18n-aria="aria.mobile.controls.analog" aria-label="${t('aria.mobile.controls.analog')}" aria-pressed="${state.mobileControlsMode === 'analog' ? 'true' : 'false'}">${t('mobile.controls.analog')}</button>
           <span class="ps1-analog-led-rect"></span>
         </div>
         <div class="ps1-center">
-          <button class="ps1-center-btn select ps1-pressable" type="button" data-mobile-action="select">SELECT</button>
-          <button class="ps1-center-btn start ps1-pressable" type="button" data-mobile-action="start">START</button>
+          <button class="ps1-center-btn select ps1-pressable" type="button" data-mobile-action="select" data-i18n="mobile.controls.select" data-i18n-aria="aria.mobile.controls.select" aria-label="${t('aria.mobile.controls.select')}">${t('mobile.controls.select')}</button>
+          <button class="ps1-center-btn start ps1-pressable" type="button" data-mobile-action="start" data-i18n="mobile.controls.start" data-i18n-aria="aria.mobile.controls.start" aria-label="${t('aria.mobile.controls.start')}">${t('mobile.controls.start')}</button>
         </div>
       </div>
     `;
     container.appendChild(dock);
   }
+  applyI18nTo(dock);
+  const analogBtn = dock.querySelector('.ps1-analog-btn');
+  if(analogBtn) analogBtn.setAttribute('aria-pressed', state.mobileControlsMode === 'analog' ? 'true' : 'false');
   armMobileFullscreen(container);
   if(dock.dataset.bound !== '1'){
     bindMobileOverlay(gameId, dock);
@@ -1441,32 +1485,108 @@ function mountMobileGameDock(gameId, winEl){
 }
 
 function bindMobileOverlay(gameId, overlay){
+  const pointerActions = new Map();
+  const pointerOwners = new Map();
+  let resetStickInput = ()=>{};
+
+  function countAction(action){
+    let total = 0;
+    pointerActions.forEach(active => {
+      if(active === action) total += 1;
+    });
+    return total;
+  }
+
+  function syncDopeSkateMobileHoldState(){
+    if(gameId !== 'dope-skate') return;
+    const leftHeld = state.mobileControlsMode === 'dpad' && countAction('left') > 0;
+    const rightHeld = state.mobileControlsMode === 'dpad' && countAction('right') > 0;
+    const jumpHeld = countAction('jump') > 0;
+    dopeSkate.inputs.left = leftHeld;
+    dopeSkate.inputs.right = rightHeld;
+    dopeSkate.jumpHeld = jumpHeld;
+  }
+
+  function setButtonPressedVisual(btn){
+    if(btn) btn.classList.add('is-pressed');
+  }
+
+  function clearButtonPressedVisual(btn, releasedPointerId = null){
+    if(!btn) return;
+    const stillPressed = Array.from(pointerOwners.entries()).some(([pid, owner])=>{
+      if(releasedPointerId !== null && pid === releasedPointerId) return false;
+      return owner === btn;
+    });
+    if(!stillPressed) btn.classList.remove('is-pressed');
+  }
+
+  function clearPointerState(pointerId, { releaseCapture = true } = {}){
+    if(!Number.isFinite(pointerId)) return;
+    const owner = pointerOwners.get(pointerId) || null;
+    pointerOwners.delete(pointerId);
+    pointerActions.delete(pointerId);
+    clearButtonPressedVisual(owner, pointerId);
+    markMobileTouchPointerUp(pointerId);
+    if(owner && releaseCapture){
+      try{ owner.releasePointerCapture(pointerId); } catch {}
+    }
+    syncDopeSkateMobileHoldState();
+  }
+
+  function resetMobileInputs(){
+    const entries = Array.from(pointerOwners.entries());
+    entries.forEach(([pointerId, owner])=>{
+      if(owner){
+        owner.classList.remove('is-pressed');
+        try{ owner.releasePointerCapture(pointerId); } catch {}
+      }
+      markMobileTouchPointerUp(pointerId);
+    });
+    pointerOwners.clear();
+    pointerActions.clear();
+    resetStickInput();
+    if(gameId === 'dope-skate'){
+      dopeSkate.inputs.left = false;
+      dopeSkate.inputs.right = false;
+      dopeSkate.jumpHeld = false;
+    }
+  }
+
+  registerMobileOverlayResetter(resetMobileInputs);
+
   function setMobileControlsMode(mode){
     const next = (mode === 'analog') ? 'analog' : 'dpad';
     state.mobileControlsMode = next;
     saveMobileControlsMode(next);
-    $$('.ps1-dock').forEach(dock => { dock.dataset.mode = next; });
+    $$('.ps1-dock').forEach(dock => {
+      dock.dataset.mode = next;
+      const analogBtn = dock.querySelector('.ps1-analog-btn');
+      if(analogBtn) analogBtn.setAttribute('aria-pressed', next === 'analog' ? 'true' : 'false');
+    });
+    resetMobileInputs();
   }
 
   overlay.dataset.mode = state.mobileControlsMode;
   overlay.querySelectorAll('button[data-mobile-action]').forEach(btn => {
-    let pointerId = null;
-    const clearPress = ()=>{
-      pointerId = null;
-      btn.classList.remove('is-pressed');
-    };
     btn.addEventListener('pointerdown', (e)=>{
       if(e.pointerType === 'mouse' && e.button !== 0) return;
-      pointerId = e.pointerId;
-      btn.classList.add('is-pressed');
+      const pointerId = e.pointerId;
+      pointerActions.set(pointerId, btn.dataset.mobileAction || '');
+      pointerOwners.set(pointerId, btn);
+      setButtonPressedVisual(btn);
+      markMobileTouchPointerDown(pointerId, e.pointerType);
       try{ btn.setPointerCapture(pointerId); } catch {}
+      syncDopeSkateMobileHoldState();
     });
     btn.addEventListener('pointerup', (e)=>{
-      if(pointerId !== null && e.pointerId !== pointerId) return;
-      clearPress();
+      clearPointerState(e.pointerId);
     });
-    btn.addEventListener('pointercancel', clearPress);
-    btn.addEventListener('lostpointercapture', clearPress);
+    btn.addEventListener('pointercancel', (e)=>{
+      clearPointerState(e.pointerId);
+    });
+    btn.addEventListener('lostpointercapture', (e)=>{
+      clearPointerState(e.pointerId, { releaseCapture:false });
+    });
   });
 
   const stick = overlay.querySelector('[data-mobile-stick="left"]');
@@ -1508,12 +1628,16 @@ function bindMobileOverlay(gameId, overlay){
         dopeSkate.inputs.right = false;
       }
     };
+    resetStickInput = resetStick;
 
     stick.addEventListener('pointerdown', (e)=>{
       if(e.pointerType === 'mouse' && e.button !== 0) return;
       e.preventDefault();
       e.stopPropagation();
       pointerId = e.pointerId;
+      pointerActions.set(pointerId, 'analog-stick');
+      pointerOwners.set(pointerId, stick);
+      markMobileTouchPointerDown(pointerId, e.pointerType);
       const rect = stick.getBoundingClientRect();
       center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
       stick.setPointerCapture(pointerId);
@@ -1529,13 +1653,23 @@ function bindMobileOverlay(gameId, overlay){
 
     const endPointer = (e)=>{
       if(pointerId === null || e.pointerId !== pointerId) return;
+      const releasedId = pointerId;
       pointerId = null;
       e.stopPropagation();
       resetStick();
+      clearPointerState(releasedId, { releaseCapture:false });
       try{ stick.releasePointerCapture(e.pointerId); } catch {}
     };
     stick.addEventListener('pointerup', endPointer);
     stick.addEventListener('pointercancel', endPointer);
+    stick.addEventListener('lostpointercapture', (e)=>{
+      if(pointerId !== null && e.pointerId === pointerId){
+        const releasedId = pointerId;
+        pointerId = null;
+        resetStick();
+        clearPointerState(releasedId, { releaseCapture:false });
+      }
+    });
   }
 
   const dpad = overlay.querySelector('[data-mobile-dpad]');
@@ -1560,22 +1694,6 @@ function bindMobileOverlay(gameId, overlay){
             if(action === 'right') dopeSkateMenuNavigate(1, 0);
             return;
           }
-          if(action === 'left') dopeSkate.inputs.left = true;
-          if(action === 'right') dopeSkate.inputs.right = true;
-        }
-      });
-      btn.addEventListener('pointerup', (e)=>{
-        if(gameId === 'dope-skate'){
-          const action = btn.dataset.mobileAction;
-          if(action === 'left') dopeSkate.inputs.left = false;
-          if(action === 'right') dopeSkate.inputs.right = false;
-        }
-      });
-      btn.addEventListener('pointercancel', (e)=>{
-        if(gameId === 'dope-skate'){
-          const action = btn.dataset.mobileAction;
-          if(action === 'left') dopeSkate.inputs.left = false;
-          if(action === 'right') dopeSkate.inputs.right = false;
         }
       });
     });
@@ -1600,10 +1718,7 @@ function bindMobileOverlay(gameId, overlay){
           if(action === 'select') dopeSkateMenuBack();
           return;
         }
-        if(action === 'jump'){
-          dopeSkate.jumpHeld = true;
-          dopeSkateRegisterJump();
-        }
+        if(action === 'jump') dopeSkateRegisterJump();
         if(action === 'trick1') dopeSkateRegisterTrick('trick1');
         if(action === 'trick2') dopeSkateRegisterTrick('trick2');
         if(action === 'trick3') dopeSkateRegisterTrick('trick3');
@@ -1642,14 +1757,6 @@ function bindMobileOverlay(gameId, overlay){
         }
       }
     });
-    const endPress = (e)=>{
-      if(gameId === 'dope-skate'){
-        const action = btn.dataset.mobileAction;
-        if(action === 'jump') dopeSkate.jumpHeld = false;
-      }
-    };
-    btn.addEventListener('pointerup', endPress);
-    btn.addEventListener('pointercancel', endPress);
   });
 }
 
@@ -3485,6 +3592,7 @@ function initDopeSkateInWindow(winEl){
   canvas.addEventListener('touchmove', (e)=>{ if(!dopeSkateIsInteractiveTarget(e.target)) e.preventDefault(); }, { passive:false });
   screen.addEventListener('pointerdown', (e)=>{
     if(e.pointerType === 'mouse') return;
+    markMobileTouchPointerDown(e.pointerId, e.pointerType);
     if(dopeSkateIsInteractiveTarget(e.target)) return;
     if(!dopeSkate.running || dopeSkate.gameOver) return;
     dopeSkate.jumpHeld = true;
@@ -3493,6 +3601,7 @@ function initDopeSkateInWindow(winEl){
   }, { passive:false });
   const clearJumpHold = (e)=>{
     if(e.pointerType === 'mouse') return;
+    markMobileTouchPointerUp(e.pointerId);
     dopeSkate.jumpHeld = false;
   };
   screen.addEventListener('pointerup', clearJumpHold, { passive:true });
@@ -4478,6 +4587,7 @@ function dopeSkateDrawSkaterArmOverlay(ctx, swing, kneeBend){
 function dopeSkateCheckGamepad(){
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
   if(!pads) return;
+  const touchPriority = isMobileTouchPriorityActive();
   for(const pad of pads){
     if(!pad) continue;
     const menuOpen = dopeSkateMenuIsOpen();
@@ -4496,7 +4606,7 @@ function dopeSkateCheckGamepad(){
       (pad.buttons && pad.buttons[5] && pad.buttons[5].pressed)
     );
 
-    if(menuOpen){
+    if(menuOpen && !touchPriority){
       if(upPressed && !dopeSkate.gamepad.up) dopeSkateMenuNavigate(0, -1);
       if(downPressed && !dopeSkate.gamepad.down) dopeSkateMenuNavigate(0, 1);
       if(leftPressed && !dopeSkate.gamepad.left) dopeSkateMenuNavigate(-1, 0);
@@ -4504,7 +4614,7 @@ function dopeSkateCheckGamepad(){
       if(jumpPressed && !dopeSkate.gamepad.confirm) dopeSkateMenuActivate();
       if(backPressed && !dopeSkate.gamepad.back) dopeSkateMenuBack();
       if(closePressed && !dopeSkate.gamepad.close) dopeSkateHideMenu();
-    } else {
+    } else if(!menuOpen && !touchPriority){
       if(jumpPressed && !dopeSkate.gamepad.jump){
         dopeSkateRegisterJump();
       }
@@ -4518,12 +4628,12 @@ function dopeSkateCheckGamepad(){
         dopeSkateRegisterTrick('trick3');
       }
     }
-    if(startPressed && !dopeSkate.gamepad.start){
+    if(!touchPriority && startPressed && !dopeSkate.gamepad.start){
       if(dopeSkateMenuIsOpen()) dopeSkateHideMenu();
       else dopeSkateShowMenu('play');
     }
     dopeSkate.gamepad.jump = jumpPressed;
-    dopeSkate.jumpHeld = jumpPressed;
+    if(!touchPriority) dopeSkate.jumpHeld = jumpPressed;
     dopeSkate.gamepad.trick1 = trick1Pressed;
     dopeSkate.gamepad.trick2 = trick2Pressed;
     dopeSkate.gamepad.trick3 = trick3Pressed;
@@ -4536,7 +4646,7 @@ function dopeSkateCheckGamepad(){
     dopeSkate.gamepad.close = closePressed;
     dopeSkate.gamepad.start = startPressed;
 
-    if(!menuOpen && pad.axes && pad.axes.length){
+    if(!touchPriority && !menuOpen && pad.axes && pad.axes.length){
       dopeSkate.inputs.left = pad.axes[0] < -0.4;
       dopeSkate.inputs.right = pad.axes[0] > 0.4;
     }
@@ -9470,6 +9580,21 @@ function installLongPress(el, getTarget){
           'skate.action.trick1': 'Trick 1',
           'skate.action.trick2': 'Trick 2',
           'skate.action.trick3': 'Trick 3',
+          'mobile.controls.analog': 'ANALOG',
+          'mobile.controls.select': 'SELECT',
+          'mobile.controls.start': 'START',
+          'aria.mobile.controls.joystick': 'Joystick',
+          'aria.mobile.controls.analog': 'Toggle analog mode',
+          'aria.mobile.controls.select': 'Select',
+          'aria.mobile.controls.start': 'Start',
+          'aria.mobile.controls.up': 'Up',
+          'aria.mobile.controls.down': 'Down',
+          'aria.mobile.controls.left': 'Left',
+          'aria.mobile.controls.right': 'Right',
+          'aria.mobile.controls.upRight': 'Up-right',
+          'aria.mobile.controls.downRight': 'Down-right',
+          'aria.mobile.controls.downLeft': 'Down-left',
+          'aria.mobile.controls.upLeft': 'Up-left',
           'skate.hud.score': 'Score',
           'skate.hud.combo': 'Combo',
           'skate.hud.best': 'Best',
@@ -10004,6 +10129,21 @@ function installLongPress(el, getTarget){
           'skate.action.trick1': 'Trick 1',
           'skate.action.trick2': 'Trick 2',
           'skate.action.trick3': 'Trick 3',
+          'mobile.controls.analog': 'ANALOG',
+          'mobile.controls.select': 'SELECT',
+          'mobile.controls.start': 'START',
+          'aria.mobile.controls.joystick': 'Joystick',
+          'aria.mobile.controls.analog': 'Alternar modo analogico',
+          'aria.mobile.controls.select': 'Selecionar',
+          'aria.mobile.controls.start': 'Iniciar',
+          'aria.mobile.controls.up': 'Cima',
+          'aria.mobile.controls.down': 'Baixo',
+          'aria.mobile.controls.left': 'Esquerda',
+          'aria.mobile.controls.right': 'Direita',
+          'aria.mobile.controls.upRight': 'Cima-direita',
+          'aria.mobile.controls.downRight': 'Baixo-direita',
+          'aria.mobile.controls.downLeft': 'Baixo-esquerda',
+          'aria.mobile.controls.upLeft': 'Cima-esquerda',
           'skate.hud.score': 'Score',
           'skate.hud.combo': 'Combo',
           'skate.hud.best': 'Recorde',

@@ -2662,10 +2662,10 @@
       }
       .ps1-dpad{
         position:absolute;
-        left:28px;
-        bottom:22px;
-        width:120px;
-        height:120px;
+        left:24px;
+        bottom:18px;
+        width:132px;
+        height:132px;
         display:flex;
         align-items:center;
         justify-content:center;
@@ -2673,12 +2673,12 @@
       }
       .ps1-dpad-cross{
         position:absolute;
-        inset:12px;
-        border-radius:14px;
-        border:2px solid var(--ps1-btn-border);
-        background:linear-gradient(180deg, var(--ps1-btn-top) 0%, var(--ps1-btn-bottom) 100%);
-        box-shadow:var(--ps1-btn-shadow);
-        clip-path:polygon(34% 0,66% 0,66% 34%,100% 34%,100% 66%,66% 66%,66% 100%,34% 100%,34% 66%,0 66%,0 34%,34% 34%);
+        inset:11px;
+        border-radius:16px;
+        border:1px solid rgba(0,0,0,0.26);
+        background:linear-gradient(180deg, #e0d8ca 0%, #b6ad9e 100%);
+        box-shadow:inset 0 2px 4px rgba(255,255,255,0.58), inset 0 -3px 5px rgba(0,0,0,0.24), 0 4px 8px rgba(0,0,0,0.2);
+        clip-path:polygon(35% 0,65% 0,65% 35%,100% 35%,100% 65%,65% 65%,65% 100%,35% 100%,35% 65%,0 65%,0 35%,35% 35%);
         pointer-events:none;
       }
       .ps1-dpad-cross::after{
@@ -2686,13 +2686,13 @@
         position:absolute;
         left:50%;
         top:50%;
-        width:22px;
-        height:22px;
-        border-radius:6px;
+        width:23px;
+        height:23px;
+        border-radius:5px;
         transform:translate(-50%, -50%);
-        border:1px solid rgba(0,0,0,0.22);
-        background:linear-gradient(180deg, #f7f3ea 0%, #cfc6b8 100%);
-        box-shadow:inset 0 1px 2px rgba(255,255,255,0.6);
+        border:1px solid rgba(0,0,0,0.28);
+        background:linear-gradient(180deg, #d7cebf 0%, #b2a899 100%);
+        box-shadow:inset 0 1px 2px rgba(255,255,255,0.35), inset 0 -1px 2px rgba(0,0,0,0.18);
       }
       .ps1-icon{
         width:20px;
@@ -2708,50 +2708,43 @@
         display:block;
         transform-origin:50% 50%;
       }
-      .ps1-icon-stroke{
-        fill:none;
-        stroke:currentColor;
-        stroke-width:2.2;
-        stroke-linecap:round;
-        stroke-linejoin:round;
-        vector-effect:non-scaling-stroke;
-      }
       .ps1-dpad-corner{
         position:absolute;
-        color:rgba(66,57,45,0.82);
         pointer-events:auto;
         user-select:none;
-        border:1px solid rgba(0,0,0,0.14);
-        background:linear-gradient(180deg, rgba(250,248,243,0.95) 0%, rgba(224,214,200,0.92) 100%);
+        border:0;
+        background:transparent;
         padding:0;
-        width:24px;
-        height:24px;
-        border-radius:999px;
+        width:30px;
+        height:30px;
+        border-radius:0;
         display:flex;
         align-items:center;
         justify-content:center;
         touch-action:none;
-        box-shadow:0 2px 6px rgba(0,0,0,0.14);
-        z-index:3;
+        box-shadow:none;
+        color:transparent;
+        z-index:1;
       }
-      .ps1-dpad-corner.ne{ top:2px; right:2px; }
-      .ps1-dpad-corner.se{ bottom:2px; right:2px; }
-      .ps1-dpad-corner.sw{ bottom:2px; left:2px; }
-      .ps1-dpad-corner.nw{ top:2px; left:2px; }
+      .ps1-dpad-corner.ne{ top:0; right:0; }
+      .ps1-dpad-corner.se{ bottom:0; right:0; }
+      .ps1-dpad-corner.sw{ bottom:0; left:0; }
+      .ps1-dpad-corner.nw{ top:0; left:0; }
+      .ps1-dpad-corner .ps1-icon{
+        display:none;
+      }
       .ps1-dpad-corner.ne .ps1-icon-arrow svg{ transform:rotate(45deg); }
       .ps1-dpad-corner.se .ps1-icon-arrow svg{ transform:rotate(135deg); }
       .ps1-dpad-corner.sw .ps1-icon-arrow svg{ transform:rotate(-135deg); }
       .ps1-dpad-corner.nw .ps1-icon-arrow svg{ transform:rotate(-45deg); }
       .ps1-dpad-btn{
         position:absolute;
-        width:42px;
-        height:42px;
-        border-radius:10px;
+        width:46px;
+        height:46px;
+        border-radius:8px;
         border:0;
         background:transparent;
-        color:#4b4339;
-        font-size:18px;
-        font-weight:700;
+        color:#4d463c;
         display:flex;
         align-items:center;
         justify-content:center;
@@ -2761,18 +2754,23 @@
       .ps1-dpad-btn::before{
         content:'';
         position:absolute;
-        inset:2px;
-        border-radius:10px;
-        border:1px solid rgba(0,0,0,0.16);
-        background:linear-gradient(180deg, rgba(250,248,243,0.95) 0%, rgba(219,207,191,0.95) 100%);
-        box-shadow:var(--ps1-btn-shadow);
-        opacity:0;
+        inset:1px;
+        border-radius:8px;
+        border:1px solid rgba(0,0,0,0.2);
+        background:linear-gradient(180deg, rgba(250,247,239,0.95) 0%, rgba(205,194,176,0.97) 100%);
+        box-shadow:0 3px 5px rgba(0,0,0,0.18), inset 0 1px 2px rgba(255,255,255,0.55), inset 0 -1px 2px rgba(0,0,0,0.16);
+        opacity:1;
         transform:translateY(0);
-        transition:opacity 0.08s ease, transform 0.08s ease, box-shadow 0.08s ease;
+        transition:transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease;
       }
       .ps1-dpad-btn .ps1-icon{
         position:relative;
         z-index:1;
+        width:15px;
+        height:15px;
+      }
+      .ps1-dpad-btn .ps1-icon-arrow svg{
+        filter:drop-shadow(0 1px 0 rgba(255,255,255,0.4));
       }
       .ps1-dpad-btn.up{ top:4px; left:50%; transform:translateX(-50%); }
       .ps1-dpad-btn.down{ bottom:4px; left:50%; transform:translateX(-50%); }
@@ -2783,9 +2781,9 @@
       .ps1-dpad-btn.right .ps1-icon-arrow svg{ transform:rotate(90deg); }
       .ps1-dpad-btn:active::before,
       .ps1-dpad-btn.is-pressed::before{
-        opacity:1;
         transform:translateY(1px);
-        box-shadow:var(--ps1-btn-pressed-shadow);
+        box-shadow:inset 0 2px 3px rgba(0,0,0,0.24), inset 0 -1px 2px rgba(255,255,255,0.18);
+        filter:brightness(0.94);
       }
       .ps1-stick{
         position:absolute;
@@ -2833,13 +2831,15 @@
         touch-action:none;
       }
       .ps1-face-btn .ps1-icon{
-        width:26px;
-        height:26px;
+        width:28px;
+        height:28px;
+        filter:drop-shadow(0 1px 0 rgba(255,255,255,0.34));
       }
       .ps1-face-btn.triangle{ color:#2bb14f; left:48px; top:0; }
       .ps1-face-btn.circle{ color:#d63b5a; right:0; top:48px; }
       .ps1-face-btn.cross{ color:#2b78ff; left:48px; bottom:0; }
       .ps1-face-btn.square{ color:#7c49d1; left:0; top:48px; }
+      .ps1-face-btn.triangle .ps1-icon{ transform:translateY(-1px); }
       .ps1-center{
         position:absolute;
         inset:0;
@@ -4760,6 +4760,6 @@
       </div>
     </div>
 
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260211-snake-ui-5"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260211-ps1-visual-hotfix-1"></script>
   </body>
 </html>

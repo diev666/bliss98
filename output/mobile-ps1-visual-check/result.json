@@ -1,0 +1,58 @@
+{
+  "scope": "#win_dope-skate",
+  "dockMode": "dpad",
+  "hasDock": true,
+  "faceButtons": [
+    {
+      "classes": "ps1-face-btn triangle ps1-pressable",
+      "iconSvg": true,
+      "iconPathCount": 1
+    },
+    {
+      "classes": "ps1-face-btn circle ps1-pressable",
+      "iconSvg": true,
+      "iconPathCount": 1
+    },
+    {
+      "classes": "ps1-face-btn cross ps1-pressable",
+      "iconSvg": true,
+      "iconPathCount": 1
+    },
+    {
+      "classes": "ps1-face-btn square ps1-pressable",
+      "iconSvg": true,
+      "iconPathCount": 1
+    }
+  ],
+  "dpadCornersVisible": [
+    {
+      "display": "flex",
+      "color": "rgba(0, 0, 0, 0)",
+      "width": "30px",
+      "height": "30px",
+      "background": "none"
+    },
+    {
+      "display": "flex",
+      "color": "rgba(0, 0, 0, 0)",
+      "width": "30px",
+      "height": "30px",
+      "background": "none"
+    },
+    {
+      "display": "flex",
+      "color": "rgba(0, 0, 0, 0)",
+      "width": "30px",
+      "height": "30px",
+      "background": "none"
+    },
+    {
+      "display": "flex",
+      "color": "rgba(0, 0, 0, 0)",
+      "width": "30px",
+      "height": "30px",
+      "background": "none"
+    }
+  ],
+  "consoleErrors": []
+}

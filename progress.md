@@ -510,3 +510,55 @@ Original prompt (continuação): e crie esses sons dentro da pasta assets/sounds
   - validação visual Playwright mobile:
     - `output/mobile-ps1-visual-check/dope-ps1-after.png`
     - `output/mobile-ps1-visual-check/dope-ps1-dock.png`
+- Controle mobile PS1: melhorias técnicas 1,2,3,4,5 implementadas.
+  - (1) Input unificado por ponteiro:
+    - adicionado mapa de estado por ponteiro (`pointerActions`, `pointerOwners`) com limpeza centralizada (`clearPointerState`).
+    - hold states (`left/right/jump`) agora são derivados do mapa de ponteiros ativos, reduzindo risco de estado preso.
+  - (2) Pointer capture robusto e limpeza abrangente:
+    - `setPointerCapture` reforçado em botões de ação mobile; limpeza em `pointerup`, `pointercancel`, `lostpointercapture`.
+    - reset global registrado para `window.blur` e `document.visibilitychange` via `registerMobileOverlayResetter`.
+  - (3) Troca analog/dpad com reset explícito:
+    - `setMobileControlsMode()` agora executa `resetMobileInputs()` e atualiza `aria-pressed` do botão ANALOG em todos os docks.
+  - (4) Prioridade touch sobre gamepad:
+    - adicionado rastreamento de ponteiros touch (`mobileTouchPointers`) + janela de prioridade (`MOBILE_TOUCH_PRIORITY_WINDOW_MS`).
+    - `dopeSkateCheckGamepad()` ignora navegação/ações/eixos quando prioridade touch está ativa.
+  - (5) Labels/ARIA padronizados e localizáveis:
+    - dock mobile agora usa `data-i18n`/`data-i18n-aria` nos botões centrais e no toggle ANALOG.
+    - adicionadas chaves i18n EN/PT para controles mobile e aria labels de direção/diagonais/joystick.
+    - `applyI18nTo(dock)` aplicado no mount do dock.
+- Arquivos alterados nesta rodada:
+  - `assets/js/modules/02-games-and-ui.js`
+  - `assets/js/modules/03-i18n-and-theme.js`
+  - rebuild: `assets/js/bliss98.bundle.js`
+- Validação:
+  - `node --check` módulos e bundle: OK.
+  - Playwright mobile técnico (`output/mobile-ps1-tech-check/result.json`):
+    - `leftPressedAfterDown=true` e limpa ao trocar modo (`leftPressedAfterModeToggle=false`),
+    - botão analógico limpa estado pressionado no toggle (`analogPressedAfterModeToggle=false`),
+    - estado pressionado limpa em blur (`startPressedAfterBlur=false`),
+    - labels/ARIA presentes (`ANALOG`, `SELECT`, `START`, `aria.mobile.controls.up`),
+    - sem `consoleErrors`.
+- Hotfix visual do controle PS1 mobile após feedback do usuário (ícones sumidos + D-pad descaracterizado):
+  - Ícones dos botões de ação (triangle/circle/cross/square) passaram a usar SVG com `stroke` explícito por cor (não dependem mais de `currentColor` + classe genérica), evitando regressão de renderização.
+  - Ícone de seta do D-pad trocado para triângulo preenchido (mais próximo do PS1 clássico).
+  - D-pad redesenhado para aparência de cruz clássica com peça central sólida, relevo e sombras mais próximas do controle PS1.
+  - Botões diagonais do D-pad permanecem funcionais para gameplay, mas ficaram visualmente invisíveis (hit-area transparente) para não poluir a estética.
+  - Face buttons receberam ajuste de tamanho do ícone + sombra suave para legibilidade.
+- Arquivos alterados nesta rodada:
+  - `assets/js/modules/02-games-and-ui.js`
+  - `index.html`
+  - rebuild: `assets/js/bliss98.bundle.js`
+- Validação executada:
+  - `node --check assets/js/modules/02-games-and-ui.js`: OK
+  - `node scripts/build-js-bundle.mjs`: OK
+  - `node --check assets/js/bliss98.bundle.js`: OK
+  - Playwright skill loop (`$WEB_GAME_CLIENT`) executado em `output/mobile-ps1-visual-check/client-skill-run/shot-0.png`.
+  - Captura mobile dedicada do dock + janela completa:
+    - `output/mobile-ps1-visual-check/dock-after-visual-fix.png`
+    - `output/mobile-ps1-visual-check/window-after-visual-fix.png`
+  - Métricas de verificação (`output/mobile-ps1-visual-check/result.json`):
+    - 4 face buttons com SVG presente (`iconSvg=true` e paths válidos);
+    - dock no modo `dpad`;
+    - sem `consoleErrors`.
+- Cache bust atualizado em `index.html` para forçar carregamento do hotfix visual no mobile:
+  - `./assets/js/bliss98.bundle.js?v=20260211-ps1-visual-hotfix-1`
