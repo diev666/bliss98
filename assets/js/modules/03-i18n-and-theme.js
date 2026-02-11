@@ -129,13 +129,19 @@
           'snake.start': 'Start',
           'snake.restart': 'Restart',
           'snake.pause': 'Pause',
+          'snake.resume': 'Resume',
+          'snake.paused': 'Paused',
           'snake.score': 'Score:',
           'snake.highScore': 'High Score:',
+          'snake.length': 'Length:',
+          'snake.level': 'Level:',
+          'snake.bonus': 'Bonus:',
+          'snake.bonus.none': '--',
           'snake.speed': 'Speed:',
           'snake.speed.slow': 'Slow',
           'snake.speed.normal': 'Normal',
           'snake.speed.fast': 'Fast',
-          'snake.instructions': 'Use arrow keys or WASD. On mobile, swipe.',
+          'snake.instructions': 'Use arrow keys or WASD. On mobile, swipe or use the controller.',
           'snake.gameOver': 'Game Over',
           'snake.playAgain': 'Play again',
 
@@ -387,6 +393,7 @@
           'menu.games.sort': 'Sort by',
           'menu.games.sort.new': 'New',
           'menu.games.sort.favorite': 'Favorite',
+          'menu.games.howto': 'How to Play',
           'menu.games.requirements': 'Requirements',
 
           'menu.videos.openChannel': 'Open Channel',
@@ -426,6 +433,8 @@
           'dialog.openTrack.open': 'Open',
           'dialog.controls.title': 'Tips',
           'dialog.controls.body': 'Whenever in doubt, turn off your mind, relax, float downstream',
+          'dialog.gamesHowTo.title': 'How to Play',
+          'dialog.gamesHowTo.body': 'Use arrow keys or WASD. On mobile, swipe or use the controller.',
           'dialog.where.title': 'Where to listen',
           'dialog.where.body': 'These are official BLISS links. Pick a platform to open or copy the link.',
           'dialog.playerTips.title': 'Playback tips',
@@ -650,13 +659,19 @@
           'snake.start': 'Iniciar',
           'snake.restart': 'Reiniciar',
           'snake.pause': 'Pausar',
+          'snake.resume': 'Continuar',
+          'snake.paused': 'Pausado',
           'snake.score': 'Score:',
           'snake.highScore': 'High Score:',
+          'snake.length': 'Tamanho:',
+          'snake.level': 'Nivel:',
+          'snake.bonus': 'Bonus:',
+          'snake.bonus.none': '--',
           'snake.speed': 'Velocidade:',
           'snake.speed.slow': 'Lento',
           'snake.speed.normal': 'Normal',
           'snake.speed.fast': 'Rápido',
-          'snake.instructions': 'Use as setas ou WASD. No celular, deslize.',
+          'snake.instructions': 'Use as setas ou WASD. No celular, deslize ou use o controle.',
           'snake.gameOver': 'Game Over',
           'snake.playAgain': 'Jogar novamente',
 
@@ -908,6 +923,7 @@
           'menu.games.sort': 'Ordenar por',
           'menu.games.sort.new': 'Novidades',
           'menu.games.sort.favorite': 'Favorito',
+          'menu.games.howto': 'Como Jogar',
           'menu.games.requirements': 'Requisitos',
 
           'menu.videos.openChannel': 'Abrir canal',
@@ -947,6 +963,8 @@
           'dialog.openTrack.open': 'Abrir',
           'dialog.controls.title': 'Tips',
           'dialog.controls.body': 'Whenever in doubt, turn off your mind, relax, float downstream',
+          'dialog.gamesHowTo.title': 'Como Jogar',
+          'dialog.gamesHowTo.body': 'Use arrow keys or WASD. On mobile, swipe or use the controller.',
           'dialog.where.title': 'Onde ouvir',
           'dialog.where.body': 'Estes são links oficiais da BLISS. Escolha uma plataforma para abrir ou copiar.',
           'dialog.playerTips.title': 'Dicas de reprodução',
@@ -1520,7 +1538,10 @@
           if(appId === 'contact') items.push({ labelKey:'menu.contact.support', action:'contact:support' });
           if(appId === 'settings') items.push({ labelKey:'menu.settings.what', action:'settings:what' });
           if(appId === 'art') items.push({ labelKey:'menu.art.credits', action:'art:credits' });
-          if(appId === 'games') items.push({ labelKey:'menu.games.requirements', action:'games:requirements' });
+          if(appId === 'games'){
+            items.push({ labelKey:'menu.games.howto', action:'games:howto' });
+            items.push({ labelKey:'menu.games.requirements', action:'games:requirements' });
+          }
           if(appId === 'videos') items.push({ labelKey:'menu.videos.tips', action:'videos:tips' });
           if(appId === 'about') items.push({ labelKey:'menu.about.controls', action:'about:controls' });
 
@@ -2130,6 +2151,10 @@
           if(state.activeWindowId === 'games' && state.games.view === 'list'){
             renderGamesWindow();
           }
+          return;
+        }
+        if(action === 'games:howto'){
+          showMessage('dialog.gamesHowTo.title', 'dialog.gamesHowTo.body');
           return;
         }
 

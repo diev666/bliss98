@@ -739,7 +739,64 @@ function renderIcons(){
         return { left, top, width, height };
       }
 
-      // Auto-fit windows to their rendered content on first open (when no saved/manual size exists).
+      function getContentOverflow(contentEl){
+  if(!contentEl){
+    return { x: 0, y: 0, hasOverflow: false };
+  }
+  const overflowX = Math.max(0, Math.ceil(contentEl.scrollWidth - contentEl.clientWidth));
+  const overflowY = Math.max(0, Math.ceil(contentEl.scrollHeight - contentEl.clientHeight));
+  return {
+    x: overflowX,
+    y: overflowY,
+    hasOverflow: overflowX > 1 || overflowY > 1,
+  };
+}
+
+function smartFitWindowIfOverflow(winEl, mode = 'tabChange'){
+  if(!winEl || winEl.classList.contains('hidden') || winEl.classList.contains('mobile-game')){
+    return Promise.resolve(null);
+  }
+  const appId = getWindowId(winEl);
+  const w = appId ? state.windows.get(appId) : null;
+  if(!appId || !w){
+    return Promise.resolve(null);
+  }
+  const content = winEl.querySelector('.content');
+  const overflow = getContentOverflow(content);
+  if(!overflow.hasOverflow){
+    return Promise.resolve(getWindowRectFromState(w));
+  }
+  return smartFitWindow(winEl, mode).catch(()=> getWindowRectFromState(w));
+}
+
+function scheduleOverflowFitPasses(winEl, mode = 'tabChange', delays = [0]){
+  const runPass = (delayMs)=>{
+    return new Promise(resolve => {
+      if(delayMs > 0){
+        setTimeout(resolve, delayMs);
+        return;
+      }
+      resolve();
+    }).then(()=> smartFitWindowIfOverflow(winEl, mode));
+  };
+  return new Promise(resolve => {
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        let chain = Promise.resolve();
+        delays.forEach(delayMs => {
+          chain = chain.then(()=> runPass(delayMs));
+        });
+        chain.finally(()=>{
+          const appId = getWindowId(winEl);
+          const w = appId ? state.windows.get(appId) : null;
+          resolve(getWindowRectFromState(w));
+        });
+      });
+    });
+  });
+}
+
+      // Auto-fit windows only when the content actually overflows.
 function installAutoFitObserver(winEl, appId){
   if(!winEl || winEl.dataset.autoFitObserver) return;
   const content = winEl.querySelector('.content');
@@ -747,7 +804,7 @@ function installAutoFitObserver(winEl, appId){
   const w = state.windows.get(appId);
   const observer = new MutationObserver(()=>{
     if(winEl.classList.contains('mobile-game')) return;
-    smartFitWindow(winEl, 'tabChange');
+    smartFitWindowIfOverflow(winEl, 'tabChange');
   });
   observer.observe(content, { childList: true, subtree: true, characterData: true });
   winEl.dataset.autoFitObserver = '1';
@@ -1634,11 +1691,14 @@ function toggleFitWindow(appId) {
         applyI18nTo(el);
         applyWindowState(el, appId);
         
-        // Auto-fit after content + i18n, unless a saved/manual size exists.
+        // Auto-fit after content + i18n and keep correcting only when overflow appears.
+        installAutoFitObserver(el, appId);
         let fitPromise = Promise.resolve(getWindowRectFromState(wstate));
         if(!wstate.savedRect){
-          installAutoFitObserver(el, appId);
           fitPromise = smartFitWindow(el, 'open');
+        } else {
+          // Saved rects can become stale after UI changes (new bars/buttons/text scale).
+          fitPromise = scheduleOverflowFitPasses(el, 'tabChange', [0, 180, 260]);
         }
         wstate.smartFitPromise = fitPromise.catch(()=> getWindowRectFromState(wstate));
         

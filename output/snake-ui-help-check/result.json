@@ -1,0 +1,32 @@
+{
+  "statsText": {
+    "lengthValue": "3",
+    "levelValue": "1",
+    "bonusValue": "--"
+  },
+  "howToPlay": {
+    "title": "How to Play",
+    "body": "Use arrow keys or WASD. On mobile, swipe or use the controller."
+  },
+  "rects": {
+    "stats": {
+      "top": 321,
+      "left": 446,
+      "width": 336,
+      "height": 44,
+      "bottom": 365,
+      "right": 782
+    },
+    "board": {
+      "top": 373,
+      "left": 446,
+      "width": 356,
+      "height": 356,
+      "bottom": 729,
+      "right": 802
+    }
+  },
+  "statsAboveBoard": true,
+  "menuMode": "blissos",
+  "consoleErrors": []
+}

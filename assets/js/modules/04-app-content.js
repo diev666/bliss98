@@ -785,35 +785,29 @@ Eu sou o buffalo branco extinto`
             return `
               <div class="snake-topbar">
                 <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
-                <div class="snake-topbar-stats">
-                  <div class="tiny"><span data-i18n="snake.score">Score:</span> <strong data-snake-score>0</strong></div>
-                  <div class="tiny"><span data-i18n="snake.highScore">High Score:</span> <strong data-snake-high>0</strong></div>
-                  <label class="snake-speed">
-                    <span class="tiny" data-i18n="snake.speed">Speed:</span>
-                    <select data-snake-speed>
-                      <option value="slow" data-i18n="snake.speed.slow">Slow</option>
-                      <option value="normal" data-i18n="snake.speed.normal">Normal</option>
-                      <option value="fast" data-i18n="snake.speed.fast">Fast</option>
-                    </select>
-                  </label>
-                </div>
               </div>
               <h2>${t('games.snake')}</h2>
               <div class="snake-layout">
-                <div class="snake-board bevel-in" id="snakeBoard">
-                  <canvas id="snakeCanvas" class="pixel" width="320" height="320"></canvas>
-                  <div class="snake-overlay hidden" id="snakeOverlay">
-                    <div class="snake-overlay-box bevel">
-                      <strong data-i18n="snake.gameOver">Game Over</strong>
-                      <div class="tiny"><span data-i18n="snake.score">Score:</span> <span data-snake-over-score>0</span></div>
-                      <button class="btn bevel" type="button" data-snake-action="playAgain" data-i18n="snake.playAgain">Play again</button>
+                <div class="snake-main">
+                  <div class="bevel-in snake-board-stats">
+                    <div class="tiny"><span data-i18n="snake.score">Score:</span> <strong data-snake-score>0</strong></div>
+                    <div class="tiny"><span data-i18n="snake.highScore">High Score:</span> <strong data-snake-high>0</strong></div>
+                    <div class="tiny"><span data-i18n="snake.length">Length:</span> <strong data-snake-length>3</strong></div>
+                    <div class="tiny"><span data-i18n="snake.level">Level:</span> <strong data-snake-level>1</strong></div>
+                    <div class="tiny"><span data-i18n="snake.bonus">Bonus:</span> <strong data-snake-bonus>--</strong></div>
+                  </div>
+                  <div class="snake-board bevel-in" id="snakeBoard">
+                    <canvas id="snakeCanvas" class="pixel" width="320" height="320"></canvas>
+                    <div class="snake-overlay hidden" id="snakeOverlay">
+                      <div class="snake-overlay-box bevel">
+                        <strong data-snake-overlay-title data-i18n="snake.gameOver">Game Over</strong>
+                        <div class="tiny" data-snake-overlay-meta><span data-i18n="snake.score">Score:</span> <span data-snake-over-score>0</span></div>
+                        <button class="btn bevel" type="button" data-snake-action="playAgain" data-snake-overlay-btn data-i18n="snake.playAgain">Play again</button>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div class="snake-side">
-                  <div class="snake-controls">
-                    <button class="btn bevel" type="button" data-snake-action="start" data-i18n="snake.start">Start</button>
-                    <button class="btn bevel" type="button" data-snake-action="pause" data-i18n="snake.pause">Pause</button>
+                  <div class="snake-action-row">
+                    <button class="btn bevel" type="button" data-snake-action="primary" data-i18n="snake.start">Start</button>
                   </div>
                 </div>
               </div>

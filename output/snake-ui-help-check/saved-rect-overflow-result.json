@@ -1,0 +1,40 @@
+{
+  "overflowX": 0,
+  "overflowY": 0,
+  "contentRect": {
+    "top": 127,
+    "bottom": 746,
+    "left": 36,
+    "right": 616,
+    "width": 580,
+    "height": 619
+  },
+  "boardRect": {
+    "top": 252,
+    "bottom": 608,
+    "left": 48,
+    "right": 404,
+    "width": 356,
+    "height": 356
+  },
+  "actionRect": {
+    "top": 616,
+    "bottom": 640,
+    "left": 48,
+    "right": 384,
+    "width": 336,
+    "height": 24
+  },
+  "statsRect": {
+    "top": 200,
+    "bottom": 244,
+    "left": 48,
+    "right": 384,
+    "width": 336,
+    "height": 44
+  },
+  "statsAboveBoard": true,
+  "actionVisible": true,
+  "speedUiVisible": false,
+  "consoleErrors": []
+}

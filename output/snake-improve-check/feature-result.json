@@ -1,0 +1,77 @@
+{
+  "pauseCheck": {
+    "pauseOverlay": {
+      "visible": true,
+      "title": "Paused",
+      "overlayButton": "Resume",
+      "pauseButton": "Resume"
+    },
+    "afterResume": {
+      "visible": false,
+      "pauseButton": "Pause"
+    }
+  },
+  "telemetry": {
+    "maxScore": 390,
+    "maxLength": 32,
+    "maxLevel": 8,
+    "minStepMs": 81,
+    "bonusSeen": true,
+    "bonusCaptured": true,
+    "gameOverCount": 2
+  },
+  "stabilized": true,
+  "finalState": {
+    "game": "snake",
+    "mode": "running",
+    "coordinateSystem": "Grid coordinates. Origin at top-left (0,0); x increases right, y increases down.",
+    "grid": {
+      "width": 20,
+      "height": 20
+    },
+    "speedSetting": "normal",
+    "stepMs": 130,
+    "score": 0,
+    "highScore": 420,
+    "level": 1,
+    "snake": {
+      "direction": {
+        "x": 1,
+        "y": 0
+      },
+      "nextDirection": {
+        "x": 1,
+        "y": 0
+      },
+      "length": 3,
+      "body": [
+        {
+          "x": 12,
+          "y": 10
+        },
+        {
+          "x": 11,
+          "y": 10
+        },
+        {
+          "x": 10,
+          "y": 10
+        }
+      ]
+    },
+    "food": {
+      "x": 13,
+      "y": 13
+    },
+    "bonusFood": null
+  },
+  "ui": {
+    "score": "0",
+    "high": "420",
+    "length": "3",
+    "level": "1",
+    "bonus": "--",
+    "pauseButton": "Pause"
+  },
+  "consoleErrors": []
+}

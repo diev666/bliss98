@@ -1,3 +1,25 @@
+      function maybeAutoLaunchGameFromQuery(){
+        let params = null;
+        try{
+          params = new URLSearchParams(window.location.search);
+        } catch {
+          return;
+        }
+        if(!params) return;
+        const autoGame = (params.get('autogame') || '').trim().toLowerCase();
+        if(autoGame !== 'snake') return;
+        const rawUser = (params.get('user') || localStorage.getItem('bliss98_user') || 'PLAYER').trim();
+        const user = rawUser || 'PLAYER';
+        setUser(user);
+        if($('#username')) $('#username').value = user;
+        showDesktop();
+        if(!state.windows.has('games')) openApp('games');
+        state.games.view = 'snake';
+        state.games.selectedId = 'snake';
+        renderGamesWindow();
+        focusWindow('games');
+      }
+
       (function init(){
         const savedLang = localStorage.getItem('bliss98_lang') || 'en';
         state.lang = (savedLang === 'pt') ? 'pt' : 'en';
@@ -56,6 +78,7 @@
         updateTrashIconUI();
         initSfx();
         showLogin(true);
+        maybeAutoLaunchGameFromQuery();
         window.addEventListener('resize', scheduleWindowRelayout, { passive:true });
         window.addEventListener('orientationchange', scheduleWindowRelayout, { passive:true });
         if(window.visualViewport){

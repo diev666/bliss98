@@ -1,0 +1,30 @@
+{
+  "statsText": "Score: 0 High Score: 0 Length: 3 Level: 1 Bonus: --",
+  "hasScore": true,
+  "hasHigh": true,
+  "hasLength": true,
+  "hasLevel": true,
+  "hasBonus": true,
+  "hasSpeedUi": false,
+  "topbarText": "Back",
+  "rects": {
+    "stats": {
+      "top": 297,
+      "left": 456,
+      "width": 336,
+      "height": 44,
+      "bottom": 341,
+      "right": 792
+    },
+    "board": {
+      "top": 349,
+      "left": 456,
+      "width": 356,
+      "height": 356,
+      "bottom": 705,
+      "right": 812
+    }
+  },
+  "statsAboveBoard": true,
+  "consoleErrors": []
+}

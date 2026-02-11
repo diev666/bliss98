@@ -115,7 +115,6 @@
           items: {},
         },
         snake: {
-          speed: 'normal',
           highScore: 0,
         },
         dopeSkate: {

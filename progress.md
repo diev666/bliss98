@@ -390,3 +390,71 @@ Original prompt (continuação): e crie esses sons dentro da pasta assets/sounds
   - E2E específico: `output/dope-standalone-check/check-standalone.mjs`.
   - Evidências: `output/dope-standalone-check/games-hub-window.png`, `output/dope-standalone-check/dope-standalone-window.png`.
   - Métricas `result.json`: janelas `win_games` e `win_dope-skate` coexistem, HUD presente no standalone, sem `consoleErrors`.
+- Snake: pacote de melhorias de gameplay/UX implementado.
+  - Controles: adicionada fila de direção (até 3 inputs) para evitar perda de comandos em sequência rápida.
+  - Dificuldade: velocidade agora escala por nível (nível sobe por score), sem quebrar os presets slow/normal/fast.
+  - Novo objetivo: fruta bônus temporária (estrela dourada) com +30 pontos e timer de expiração.
+  - HUD expandido: `Length`, `Level` e `Bonus` (tempo restante), além de overlay reutilizável para `Paused`/`Game Over`.
+  - UI/UX: botão de pausa alterna para `Resume`, tecla `Enter` inicia/reinicia/retoma e `P` também pausa.
+  - Test hooks adicionados para automação: `window.render_game_to_text` e `window.advanceTime(ms)`.
+  - Dev harness leve: `?autogame=snake` (opcional) para auto-abrir Snake em ambiente de teste.
+- Validação técnica intermediária:
+  - `node --check` nos módulos alterados: OK.
+  - Rebuild de bundle (`scripts/build-js-bundle.mjs`): OK.
+  - `node --check assets/js/bliss98.bundle.js`: OK.
+- Snake: hotfix de colisão aplicado após validação.
+  - Regra ajustada para permitir movimento para a célula da cauda quando ela vai se mover no mesmo tick (comportamento clássico de Snake), reduzindo game over injusto em curvas apertadas.
+- Validação final de features (`output/snake-improve-check/check-snake-features.mjs`):
+  - Pause/Resume: overlay correto (`Paused`) + botão `Resume` funcionando.
+  - Progressão: nível avançando dinamicamente e `stepMs` reduzindo com score.
+  - Bônus: fruta bônus apareceu e foi coletada ao menos uma vez durante run automatizada.
+  - Sem `console.error`/`pageerror`.
+- Snake: removido `autostart` do query-harness após validação (mantido apenas `?autogame=snake` para abrir direto no jogo sem impacto em runtime).
+- Validação final reexecutada após hotfixes:
+  - Script: `output/snake-improve-check/check-snake-features.mjs`.
+  - Resultado: pause/resume OK, progressão de nível OK, bonus spawn/capture OK, sem `console.error`/`pageerror`.
+- Snake UI refinada conforme pedido:
+  - `Length / Level / Bonus` movidos para uma faixa (`snake-board-stats`) no topo, imediatamente acima do canvas.
+  - Bloco lateral de stats removido; lateral mantém apenas controles (`Start`/`Pause`).
+- Snake Help atualizado:
+  - Adicionada opção `How to Play` no menu `Help` do app `Games` (ação `games:howto`).
+  - Diálogo novo com texto: `Use arrow keys or WASD. On mobile, swipe or use the controller.`
+  - Texto de instruções de `snake.instructions` também atualizado para a nova frase.
+- Validação Playwright:
+  - Arquivos: `output/snake-ui-help-check/result.json`, `snake-layout.png`, `snake-help-open.png`.
+  - `statsAboveBoard=true`, diálogo `How to Play` exibido com o texto correto, sem `consoleErrors`.
+- Snake UI (ajuste solicitado): controles de baixo unificados em botão único.
+  - Removidos botões separados `Start` e `Pause` abaixo do canvas.
+  - Adicionado botão único centralizado `data-snake-action="primary"` abaixo do canvas.
+  - Lógica do botão: estado inicial `Start` -> após iniciar `Pause` -> ao pausar `Resume` -> ao retomar `Pause`.
+- Validação:
+  - Script: `output/snake-ui-help-check/check-single-button.mjs`.
+  - Evidência: `single-button-result.json` confirma sequência de label correta e apenas 1 controle principal fora do overlay.
+  - Screenshot: `output/snake-ui-help-check/snake-single-button.png`.
+  - Sem `consoleErrors`.
+- Snake UI (pedido atual): barra de info unificada e speed removido.
+  - `Score` e `High Score` movidos para a mesma barra superior do board junto de `Length`, `Level` e `Bonus`.
+  - Topbar do Snake agora mantém apenas o botão `Back`.
+  - Campo/selector de `Speed` removido da UI do Snake.
+- Snake gameplay (pedido atual): speed manual removido do runtime.
+  - Removidos `snake.speed`, `state.snake.speed`, `data-snake-speed` e listener de troca de velocidade.
+  - Tick base fixado em `SNAKE_BASE_TICK_MS=130` e progressão de velocidade continua automática por nível (`SNAKE_LEVEL_SCORE_STEP` + `SNAKE_LEVEL_SPEED_DELTA`).
+- Validação:
+  - Script: `output/snake-ui-help-check/check-merged-stats-no-speed.mjs`.
+  - Resultado: `merged-stats-no-speed-result.json` confirma `hasSpeedUi=false`, barra unificada presente e `statsAboveBoard=true`.
+  - Screenshot: `output/snake-ui-help-check/snake-merged-stats.png`.
+  - Sem `consoleErrors`.
+- Hotfix de entrega aplicado: cache-bust no bundle em `index.html` (`bliss98.bundle.js?v=20260211-snake-ui`) para impedir carregamento da versão antiga em cache do navegador.
+- Revalidação após cache-bust:
+  - `output/snake-ui-help-check/merged-stats-no-speed-result.json` segue com `hasSpeedUi=false` e barra contendo `Score + High Score + Length + Level + Bonus`.
+- Hotfix de janela com conteúdo cortado/scroll lateral (especialmente em Games/Snake):
+  - Causa raiz: quando existia `savedRect` (tamanho salvo antigo), o auto-fit inicial era pulado e o observer não era instalado; com mudanças recentes de layout, algumas janelas abriam menores que o conteúdo.
+  - Correção aplicada em `assets/js/modules/06-shell-and-windowing.js`:
+    - novo `getContentOverflow()` para detectar overflow real;
+    - novo `smartFitWindowIfOverflow()` para ajustar apenas quando necessário;
+    - novo `scheduleOverflowFitPasses()` para rodar passes curtos após abrir janela com `savedRect` e corrigir tamanho stale;
+    - `installAutoFitObserver()` agora usa ajuste condicional por overflow, evitando resize desnecessário;
+    - `createWindowElement()` agora sempre instala observer e, para `savedRect`, roda passes de correção ao abrir.
+  - Bundle rebuildado: `assets/js/bliss98.bundle.js`.
+  - Validação Playwright (cenário com `bliss98_window_games` pequeno salvo):
+    - `overflowX: 0`, `overflowY: 0`, sem scrollbar lateral, botão abaixo do canvas visível.

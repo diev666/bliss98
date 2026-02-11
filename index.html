@@ -2429,18 +2429,45 @@
         flex-wrap:wrap;
         align-items:stretch;
       }
+      .snake-main{
+        flex:0 0 auto;
+        width:336px;
+        max-width:100%;
+        display:flex;
+        flex-direction:column;
+        gap:8px;
+      }
+      .snake-action-row{
+        display:flex;
+        justify-content:center;
+        width:100%;
+      }
+      .snake-action-row .btn{
+        width:min(320px, 100%);
+        justify-content:center;
+      }
       .snake-topbar{
         display:flex;
         align-items:center;
-        gap:10px;
+        gap:8px;
         flex-wrap:wrap;
         margin-bottom:10px;
       }
-      .snake-topbar-stats{
+      .snake-board-stats{
         display:flex;
         align-items:center;
-        gap:10px;
+        justify-content:center;
         flex-wrap:wrap;
+        gap:8px;
+        padding:6px 10px;
+        min-height:30px;
+      }
+      .snake-board-stats .tiny{
+        white-space:nowrap;
+        text-align:center;
+      }
+      .snake-board-stats strong{
+        font-variant-numeric:tabular-nums;
       }
       .snake-board{
         flex:0 0 auto;
@@ -2466,29 +2493,6 @@
         top:50%;
         transform:translate(-50%, -50%);
       }
-      .snake-side{
-        width:200px;
-        min-width:180px;
-        display:flex;
-        flex-direction:column;
-        gap:10px;
-      }
-      .snake-controls{
-        display:flex;
-        flex-direction:column;
-        gap:8px;
-      }
-      .snake-controls .btn{
-        justify-content:center;
-      }
-      .snake-speed{
-        display:flex;
-        flex-direction:column;
-        gap:4px;
-      }
-      .snake-speed select{
-        height:24px;
-      }
       .snake-overlay{
         position:absolute;
         inset:8px;
@@ -2508,8 +2512,8 @@
         min-width:160px;
         text-align:center;
       }
-      .snake-instructions{
-        line-height:1.3;
+      .snake-overlay-box .btn{
+        justify-content:center;
       }
       .skate-shell{
         display:flex;
@@ -2915,30 +2919,28 @@
         align-items:stretch;
         height:100%;
       }
-      :is(#win_games, #win_dope-skate).mobile-game .snake-side{
-        width:100%;
-        min-width:0;
-        flex-direction:row;
-        flex-wrap:wrap;
-        gap:8px;
-        justify-content:center;
-        padding:6px 8px;
-      }
-      :is(#win_games, #win_dope-skate).mobile-game .snake-controls{
-        display:none;
+      :is(#win_games, #win_dope-skate).mobile-game .snake-main{
+        width:min(84vw, 300px);
+        max-width:100%;
+        align-self:center;
       }
       :is(#win_games, #win_dope-skate).mobile-game .snake-topbar{
         margin-bottom:6px;
       }
-      :is(#win_games, #win_dope-skate).mobile-game .snake-topbar-stats{
+      :is(#win_games, #win_dope-skate).mobile-game .snake-board-stats{
         width:100%;
-        justify-content:flex-start;
+        justify-content:center;
+        padding:6px 8px;
       }
-      :is(#win_games, #win_dope-skate).mobile-game .snake-speed{
-        margin-left:auto;
-      }
-      :is(#win_games, #win_dope-skate) .snake-controls .btn,
+      :is(#win_games, #win_dope-skate) .snake-action-row .btn,
       :is(#win_games, #win_dope-skate) .snake-topbar .btn{
+        background:linear-gradient(180deg, #8b6337 0%, #6f4b27 100%);
+        color:#f4f0e6;
+        border:1px solid rgba(0,0,0,0.35);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,0.2);
+      }
+      :is(#win_games, #win_dope-skate) .snake-board-stats,
+      :is(#win_games, #win_dope-skate) .snake-board-stats.bevel-in{
         background:linear-gradient(180deg, #8b6337 0%, #6f4b27 100%);
         color:#f4f0e6;
         border:1px solid rgba(0,0,0,0.35);
@@ -3577,10 +3579,6 @@
         .games-item{
           width:100%;
           max-width:100%;
-        }
-        .snake-side{
-          width:100%;
-          min-width:0;
         }
         .snake-board{
           width:336px;
@@ -4599,6 +4597,6 @@
       </div>
     </div>
 
-    <script defer src="./assets/js/bliss98.bundle.js"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260211-snake-ui-2"></script>
   </body>
 </html>

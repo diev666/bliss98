@@ -1,0 +1,62 @@
+{
+  "states": {
+    "initial": {
+      "text": "Start",
+      "pressed": false,
+      "actions": [
+        {
+          "action": "playAgain",
+          "text": "Play again"
+        },
+        {
+          "action": "primary",
+          "text": "Start"
+        }
+      ]
+    },
+    "afterStart": {
+      "text": "Pause",
+      "pressed": false,
+      "actions": [
+        {
+          "action": "playAgain",
+          "text": "Play again"
+        },
+        {
+          "action": "primary",
+          "text": "Pause"
+        }
+      ]
+    },
+    "afterPause": {
+      "text": "Resume",
+      "pressed": true,
+      "actions": [
+        {
+          "action": "playAgain",
+          "text": "Resume"
+        },
+        {
+          "action": "primary",
+          "text": "Resume"
+        }
+      ]
+    },
+    "afterResume": {
+      "text": "Pause",
+      "pressed": false,
+      "actions": [
+        {
+          "action": "playAgain",
+          "text": "Play again"
+        },
+        {
+          "action": "primary",
+          "text": "Pause"
+        }
+      ]
+    }
+  },
+  "onlyPrimaryControlOutsideOverlay": true,
+  "consoleErrors": []
+}

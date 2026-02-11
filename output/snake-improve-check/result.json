@@ -1,0 +1,57 @@
+{
+  "ui": {
+    "score": "0",
+    "high": "0",
+    "length": "3",
+    "level": "1",
+    "bonus": "--",
+    "pauseBtn": "Pause"
+  },
+  "state": {
+    "game": "snake",
+    "mode": "running",
+    "coordinateSystem": "Grid coordinates. Origin at top-left (0,0); x increases right, y increases down.",
+    "grid": {
+      "width": 20,
+      "height": 20
+    },
+    "speedSetting": "normal",
+    "stepMs": 130,
+    "score": 0,
+    "highScore": 0,
+    "level": 1,
+    "snake": {
+      "direction": {
+        "x": 1,
+        "y": 0
+      },
+      "nextDirection": {
+        "x": 1,
+        "y": 0
+      },
+      "length": 3,
+      "body": [
+        {
+          "x": 5,
+          "y": 10
+        },
+        {
+          "x": 4,
+          "y": 10
+        },
+        {
+          "x": 3,
+          "y": 10
+        }
+      ]
+    },
+    "food": {
+      "x": 8,
+      "y": 19
+    },
+    "bonusFood": null
+  },
+  "overlayVisible": false,
+  "overlayTitle": "Game Over",
+  "consoleErrors": []
+}

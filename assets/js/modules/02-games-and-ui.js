@@ -70,8 +70,19 @@ function renderGamesWindow(){
   }
 
   if(state.games.view === 'snake'){
+    content.dataset.fitMinW = state.isMobile ? '280' : '500';
+    content.dataset.fitMinH = state.isMobile ? '280' : '620';
     initSnakeInWindow(win);
     mountMobileGameDock('snake', win);
+    if(!mobileGameView){
+      const wstate = state.windows.get('games');
+      const prevUserSized = wstate ? wstate.userSized : false;
+      if(wstate) wstate.userSized = false;
+      smartFitWindow(win, 'tabChange').finally(()=>{
+        if(wstate) wstate.userSized = prevUserSized;
+      });
+    }
+    return;
   }
   if(!mobileGameView){
     smartFitWindow(win, 'tabChange');
@@ -458,11 +469,14 @@ function backToGamesHub(){
   focusWindow('games');
 }
 
-const SNAKE_SPEEDS = {
-  slow: 180,
-  normal: 130,
-  fast: 90,
-};
+const SNAKE_BASE_TICK_MS = 130;
+const SNAKE_LEVEL_SCORE_STEP = 50;
+const SNAKE_LEVEL_SPEED_DELTA = 7;
+const SNAKE_MIN_SPEED_MS = 58;
+const SNAKE_BONUS_SCORE = 30;
+const SNAKE_BONUS_FOOD_EVERY = 4;
+const SNAKE_BONUS_LIFETIME_TICKS = 28;
+const SNAKE_MAX_TURN_QUEUE = 3;
 
 const GAMES_LEADER_KEY = 'bliss98_games_leaderboard';
 
@@ -471,14 +485,18 @@ let snake = {
   body: [],
   dir: { x: 1, y: 0 },
   nextDir: { x: 1, y: 0 },
+  turnQueue: [],
   food: { x: 0, y: 0 },
+  bonusFood: null,
+  foodsEaten: 0,
+  tickCount: 0,
+  advanceAccumulator: 0,
   eatPulses: [],
   running: false,
   paused: false,
   score: 0,
   gameOver: false,
   started: false,
-  speed: 'normal',
   timer: null,
   cell: 16,
   baseSize: 320,
@@ -547,6 +565,97 @@ function isSnakeActive(){
   return state.activeWindowId === 'games' && state.games.view === 'snake';
 }
 
+function snakeGetLevel(score = snake.score){
+  return 1 + Math.floor(Math.max(0, score) / SNAKE_LEVEL_SCORE_STEP);
+}
+
+function snakeGetTickMs(){
+  const base = SNAKE_BASE_TICK_MS;
+  const levelDelta = Math.max(0, snakeGetLevel() - 1);
+  return Math.max(SNAKE_MIN_SPEED_MS, base - levelDelta * SNAKE_LEVEL_SPEED_DELTA);
+}
+
+function snakeGetBonusTicksLeft(){
+  if(!snake.bonusFood) return 0;
+  return Math.max(0, snake.bonusFood.expiresAtTick - snake.tickCount);
+}
+
+function snakeGetBonusTimeLeftSec(){
+  return snakeGetBonusTicksLeft() * (snakeGetTickMs() / 1000);
+}
+
+function snakeGetRandomEmptyCell(extraBlocked = []){
+  const blocked = new Set();
+  snake.body.forEach(seg => blocked.add(`${seg.x},${seg.y}`));
+  extraBlocked.forEach(seg => {
+    if(seg && Number.isFinite(seg.x) && Number.isFinite(seg.y)){
+      blocked.add(`${seg.x},${seg.y}`);
+    }
+  });
+  const free = [];
+  for(let y = 0; y < snake.grid; y += 1){
+    for(let x = 0; x < snake.grid; x += 1){
+      if(!blocked.has(`${x},${y}`)) free.push({ x, y });
+    }
+  }
+  if(!free.length) return null;
+  return free[Math.floor(Math.random() * free.length)];
+}
+
+function snakeInstallTestingHooks(){
+  window.render_game_to_text = snakeRenderGameToText;
+  window.advanceTime = (ms)=>{
+    snakeAdvanceTime(ms);
+  };
+}
+
+function snakeRenderGameToText(){
+  const mode = snake.gameOver ? 'game_over' : (snake.paused ? 'paused' : (snake.running ? 'running' : 'idle'));
+  const payload = {
+    game: 'snake',
+    mode,
+    coordinateSystem: 'Grid coordinates. Origin at top-left (0,0); x increases right, y increases down.',
+    grid: { width: snake.grid, height: snake.grid },
+    stepMs: snakeGetTickMs(),
+    score: snake.score,
+    highScore: state.snake.highScore || 0,
+    level: snakeGetLevel(),
+    snake: {
+      direction: { x: snake.dir.x, y: snake.dir.y },
+      nextDirection: { x: snake.nextDir.x, y: snake.nextDir.y },
+      length: snake.body.length,
+      body: snake.body.map(seg => ({ x: seg.x, y: seg.y })),
+    },
+    food: snake.food ? { x: snake.food.x, y: snake.food.y } : null,
+    bonusFood: snake.bonusFood ? {
+      x: snake.bonusFood.x,
+      y: snake.bonusFood.y,
+      ticksLeft: snakeGetBonusTicksLeft(),
+      timeLeftSec: Number(snakeGetBonusTimeLeftSec().toFixed(2)),
+    } : null,
+  };
+  return JSON.stringify(payload);
+}
+
+function snakeAdvanceTime(ms){
+  if(!isSnakeActive()) return;
+  if(!Number.isFinite(ms) || ms <= 0) return;
+  const wasTicking = !!snake.timer;
+  if(wasTicking) snakeStopLoop();
+  snake.advanceAccumulator += ms;
+  let guard = 0;
+  while(snake.running && !snake.paused && !snake.gameOver && guard < 300){
+    const step = snakeGetTickMs();
+    if(snake.advanceAccumulator < step) break;
+    snake.advanceAccumulator -= step;
+    snakeTick();
+    guard += 1;
+  }
+  if(wasTicking && snake.running && !snake.paused && !snake.gameOver){
+    snakeStartLoop();
+  }
+}
+
 function snakeResizeCanvas(){
   if(!snake.els || !snake.els.canvas || !snake.ctx) return;
   const board = snake.els.board;
@@ -576,14 +685,18 @@ function initSnakeInWindow(winEl){
   snake.els = {
     board,
     canvas,
-    startBtn: winEl.querySelector('[data-snake-action="start"]'),
-    pauseBtn: winEl.querySelector('[data-snake-action="pause"]'),
+    actionBtn: winEl.querySelector('[data-snake-action="primary"]'),
     playAgainBtn: winEl.querySelector('[data-snake-action="playAgain"]'),
-    speedSelect: winEl.querySelector('[data-snake-speed]'),
     score: winEl.querySelector('[data-snake-score]'),
     high: winEl.querySelector('[data-snake-high]'),
     overlay: winEl.querySelector('#snakeOverlay'),
+    overlayTitle: winEl.querySelector('[data-snake-overlay-title]'),
+    overlayMeta: winEl.querySelector('[data-snake-overlay-meta]'),
+    overlayBtn: winEl.querySelector('[data-snake-overlay-btn]'),
     overScore: winEl.querySelector('[data-snake-over-score]'),
+    length: winEl.querySelector('[data-snake-length]'),
+    level: winEl.querySelector('[data-snake-level]'),
+    bonus: winEl.querySelector('[data-snake-bonus]'),
     backBtn: winEl.querySelector('[data-games-action="back"]'),
   };
 
@@ -597,8 +710,6 @@ function initSnakeInWindow(winEl){
   if(typeof state.snake.highScore !== 'number' || Number.isNaN(state.snake.highScore)){
     state.snake.highScore = loadSnakeHighScore();
   }
-  snake.speed = state.snake.speed || 'normal';
-  if(snake.els.speedSelect) snake.els.speedSelect.value = snake.speed;
 
   const fixedSize = 320;
   snake.baseSize = fixedSize;
@@ -608,6 +719,7 @@ function initSnakeInWindow(winEl){
   canvas.style.height = fixedSize + 'px';
   snake.cell = Math.max(8, Math.floor(fixedSize / snake.grid));
   snakeDraw();
+  snakeInstallTestingHooks();
 
   if(snake.els.backBtn){
     snake.els.backBtn.addEventListener('click', (e)=>{
@@ -615,32 +727,24 @@ function initSnakeInWindow(winEl){
       backToGamesHub();
     });
   }
-  if(snake.els.startBtn){
-    snake.els.startBtn.addEventListener('click', (e)=>{
+  if(snake.els.actionBtn){
+    snake.els.actionBtn.addEventListener('click', (e)=>{
       e.preventDefault();
-      snakeStartGame();
+      snakeHandlePrimaryAction();
     });
   }
-  if(snake.els.pauseBtn){
-    snake.els.pauseBtn.addEventListener('click', (e)=>{
+  if(snake.els.playAgainBtn){
+    snake.els.playAgainBtn.addEventListener('click', (e)=>{
       e.preventDefault();
-      snakeTogglePause();
+      if(snake.gameOver || !snake.started){
+        snakeStartGame();
+        return;
+      }
+      if(snake.paused){
+        snakeTogglePause();
+      }
     });
   }
-      if(snake.els.playAgainBtn){
-          snake.els.playAgainBtn.addEventListener('pointerdown', (e)=>{
-            e.preventDefault();
-            snakeStartGame();
-          });
-        }  if(snake.els.speedSelect){
-    snake.els.speedSelect.addEventListener('change', (e)=>{
-      const val = e.target.value;
-      state.snake.speed = val;
-      snake.speed = val;
-      if(snake.running) snakeStartLoop();
-    });
-  }
-
   if(snake.resizeObserver){
     snake.resizeObserver.disconnect();
     snake.resizeObserver = null;
@@ -684,38 +788,43 @@ function initSnakeInWindow(winEl){
   updateSnakeUI();
 }
 
+function snakeSeedBody(){
+  const mid = Math.floor(snake.grid / 2);
+  snake.body = [
+    { x: mid, y: mid },
+    { x: mid - 1, y: mid },
+    { x: mid - 2, y: mid },
+  ];
+}
+
+function snakeResetRoundState(){
+  snake.dir = { x: 1, y: 0 };
+  snake.nextDir = { x: 1, y: 0 };
+  snake.turnQueue = [];
+  snake.score = 0;
+  snake.eatPulses = [];
+  snake.foodsEaten = 0;
+  snake.tickCount = 0;
+  snake.bonusFood = null;
+  snake.advanceAccumulator = 0;
+}
+
 function snakePrepareBoard(){
   snakeStopLoop();
   snake.running = false;
   snake.paused = false;
   snake.gameOver = false;
   snake.started = false;
-  snake.score = 0;
-  snake.eatPulses = [];
-  snake.dir = { x: 1, y: 0 };
-  snake.nextDir = { x: 1, y: 0 };
-  const mid = Math.floor(snake.grid / 2);
-  snake.body = [
-    { x: mid, y: mid },
-    { x: mid - 1, y: mid },
-    { x: mid - 2, y: mid },
-  ];
+  snakeResetRoundState();
+  snakeSeedBody();
   snakePlaceFood();
   snakeDraw();
   updateSnakeUI();
 }
 
 function snakeStartGame(){
-  const mid = Math.floor(snake.grid / 2);
-  snake.body = [
-    { x: mid, y: mid },
-    { x: mid - 1, y: mid },
-    { x: mid - 2, y: mid },
-  ];
-  snake.dir = { x: 1, y: 0 };
-  snake.nextDir = { x: 1, y: 0 };
-  snake.score = 0;
-  snake.eatPulses = [];
+  snakeResetRoundState();
+  snakeSeedBody();
   snake.running = true;
   snake.paused = false;
   snake.gameOver = false;
@@ -729,21 +838,40 @@ function snakeStartGame(){
 
 function snakeStartLoop(){
   snakeStopLoop();
-  const step = SNAKE_SPEEDS[snake.speed] || SNAKE_SPEEDS.normal;
-  snake.timer = setInterval(snakeTick, step);
+  if(!snake.running || snake.paused || snake.gameOver) return;
+  const loop = ()=>{
+    snake.timer = null;
+    snakeTick();
+    if(!snake.running || snake.paused || snake.gameOver) return;
+    snake.timer = setTimeout(loop, snakeGetTickMs());
+  };
+  snake.timer = setTimeout(loop, snakeGetTickMs());
 }
 
 function snakeStopLoop(){
   if(snake.timer){
-    clearInterval(snake.timer);
+    clearTimeout(snake.timer);
     snake.timer = null;
   }
 }
 
 function snakeTogglePause(){
-  if(!snake.running) return;
+  if(!snake.running || snake.gameOver) return;
   snake.paused = !snake.paused;
+  if(snake.paused){
+    snakeStopLoop();
+  } else {
+    snakeStartLoop();
+  }
   updateSnakeUI();
+}
+
+function snakeHandlePrimaryAction(){
+  if(!snake.started || snake.gameOver){
+    snakeStartGame();
+    return;
+  }
+  snakeTogglePause();
 }
 
 function snakeStop(){
@@ -752,6 +880,9 @@ function snakeStop(){
   snake.paused = false;
   snake.gameOver = false;
   snake.started = false;
+  snake.turnQueue = [];
+  snake.bonusFood = null;
+  snake.advanceAccumulator = 0;
   if(snake.resizeObserver){
     snake.resizeObserver.disconnect();
     snake.resizeObserver = null;
@@ -768,25 +899,70 @@ function snakeStop(){
   snake.ctx = null;
 }
 
+function snakeApplyQueuedDirection(){
+  while(snake.turnQueue.length){
+    const queued = snake.turnQueue.shift();
+    if(queued.x === -snake.dir.x && queued.y === -snake.dir.y) continue;
+    snake.nextDir = queued;
+    return;
+  }
+}
+
+function snakeMaybeSpawnBonusFood(){
+  if(snake.bonusFood) return;
+  if(snake.foodsEaten <= 0 || snake.foodsEaten % SNAKE_BONUS_FOOD_EVERY !== 0) return;
+  const cell = snakeGetRandomEmptyCell([snake.food]);
+  if(!cell) return;
+  snake.bonusFood = {
+    x: cell.x,
+    y: cell.y,
+    expiresAtTick: snake.tickCount + SNAKE_BONUS_LIFETIME_TICKS,
+  };
+}
+
+function snakeMaybeExpireBonusFood(){
+  if(!snake.bonusFood) return;
+  if(snake.tickCount >= snake.bonusFood.expiresAtTick){
+    snake.bonusFood = null;
+  }
+}
+
 function snakeTick(){
   if(!snake.running || snake.paused || snake.gameOver) return;
+  snakeApplyQueuedDirection();
   snake.dir = { ...snake.nextDir };
+  snake.tickCount += 1;
+  snakeMaybeExpireBonusFood();
   const head = snake.body[0];
   const next = {
     x: (head.x + snake.dir.x + snake.grid) % snake.grid,
     y: (head.y + snake.dir.y + snake.grid) % snake.grid,
   };
-  if(snake.body.some(seg => seg.x === next.x && seg.y === next.y)){
+  const willEatFood = next.x === snake.food.x && next.y === snake.food.y;
+  const willEatBonus = !!snake.bonusFood && next.x === snake.bonusFood.x && next.y === snake.bonusFood.y;
+  const willGrow = willEatFood || willEatBonus;
+  const bodyToCheck = willGrow ? snake.body : snake.body.slice(0, -1);
+  if(bodyToCheck.some(seg => seg.x === next.x && seg.y === next.y)){
     snakeGameOver();
     return;
   }
 
   snake.body.unshift(next);
-  if(next.x === snake.food.x && next.y === snake.food.y){
+  const ateFood = willEatFood;
+  const ateBonus = willEatBonus;
+  if(ateFood){
     snake.score += 10;
+    snake.foodsEaten += 1;
     snakePlaceFood();
-    snake.eatPulses.push({ t: 0 });
-  } else {
+    snakeMaybeSpawnBonusFood();
+    snake.eatPulses.push({ t: 0, bonus: false });
+  }
+  if(ateBonus){
+    snake.score += SNAKE_BONUS_SCORE;
+    snake.bonusFood = null;
+    snake.eatPulses.push({ t: 0, bonus: true });
+  }
+  if(!ateFood && !ateBonus){
     snake.body.pop();
   }
   if(snake.eatPulses.length){
@@ -798,15 +974,8 @@ function snakeTick(){
 }
 
 function snakePlaceFood(){
-  let x = 0;
-  let y = 0;
-  let guard = 0;
-  do{
-    x = Math.floor(Math.random() * snake.grid);
-    y = Math.floor(Math.random() * snake.grid);
-    guard += 1;
-  } while(snake.body.some(seg => seg.x === x && seg.y === y) && guard < 200);
-  snake.food = { x, y };
+  const cell = snakeGetRandomEmptyCell(snake.bonusFood ? [snake.bonusFood] : []);
+  if(cell) snake.food = cell;
 }
 
 function snakeGameOver(){
@@ -819,6 +988,7 @@ function snakeGameOver(){
     saveSnakeHighScore(state.snake.highScore);
   }
   recordGameScore('snake', state.snake.highScore, new Date().toISOString());
+  snakeDraw();
   updateSnakeUI();
 }
 
@@ -904,7 +1074,7 @@ function snakeDraw(){
       const frac = pulse.t - idx;
       const px = (segA.x + (segB.x - segA.x) * frac) * cell + cell / 2;
       const py = (segA.y + (segB.y - segA.y) * frac) * cell + cell / 2;
-      ctx.fillStyle = '#2a5f2a';
+      ctx.fillStyle = pulse.bonus ? '#f2c84e' : '#2a5f2a';
       ctx.beginPath();
       ctx.arc(px, py, Math.max(2, cell * 0.16), 0, Math.PI * 2);
       ctx.fill();
@@ -924,13 +1094,51 @@ function snakeDraw(){
   ctx.beginPath();
   ctx.ellipse(appleX + 4, appleY - appleR - 2, 4, 2, -0.6, 0, Math.PI * 2);
   ctx.fill();
+
+  if(snake.bonusFood){
+    const bonusX = snake.bonusFood.x * cell + cell / 2;
+    const bonusY = snake.bonusFood.y * cell + cell / 2;
+    const outer = Math.max(4, cell * 0.34);
+    const inner = outer * 0.5;
+    const pulse = 0.75 + 0.25 * Math.sin(snake.tickCount * 0.5);
+    ctx.save();
+    ctx.translate(bonusX, bonusY);
+    ctx.rotate(snake.tickCount * 0.08);
+    ctx.beginPath();
+    for(let i = 0; i < 10; i += 1){
+      const angle = -Math.PI / 2 + (Math.PI * 2 * i) / 10;
+      const radius = i % 2 === 0 ? outer : inner;
+      const px = Math.cos(angle) * radius;
+      const py = Math.sin(angle) * radius;
+      if(i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fillStyle = `rgba(245, 211, 94, ${pulse.toFixed(3)})`;
+    ctx.fill();
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = '#8d5f0b';
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 
 
 function snakeHandleDirection(dx, dy){
   if(!isSnakeActive()) return;
-  if(dx === -snake.dir.x && dy === -snake.dir.y) return;
-  snake.nextDir = { x: dx, y: dy };
+  const next = { x: dx, y: dy };
+  const lastQueued = snake.turnQueue.length ? snake.turnQueue[snake.turnQueue.length - 1] : snake.nextDir;
+  if(next.x === lastQueued.x && next.y === lastQueued.y) return;
+  if(next.x === -lastQueued.x && next.y === -lastQueued.y) return;
+  snake.turnQueue.push(next);
+  if(snake.turnQueue.length > SNAKE_MAX_TURN_QUEUE){
+    snake.turnQueue.shift();
+  }
+  if(!snake.running){
+    snake.nextDir = next;
+    snake.dir = next;
+    snakeDraw();
+  }
 }
 
 function snakeHandleKey(e){
@@ -944,7 +1152,16 @@ function snakeHandleKey(e){
   else if(key === 'arrowdown' || key === 's') snakeHandleDirection(0, 1);
   else if(key === 'arrowleft' || key === 'a') snakeHandleDirection(-1, 0);
   else if(key === 'arrowright' || key === 'd') snakeHandleDirection(1, 0);
-  else if(key === ' ' || key === 'spacebar') snakeTogglePause();
+  else if(key === ' ' || key === 'spacebar' || key === 'p') snakeTogglePause();
+  else if(key === 'enter'){
+    if(!snake.started || snake.gameOver){
+      snakeStartGame();
+    } else if(snake.paused){
+      snakeTogglePause();
+    } else {
+      handled = false;
+    }
+  }
   else handled = false;
 
   if(handled){
@@ -1013,12 +1230,37 @@ function updateSnakeUI(){
   if(snake.els.score) snake.els.score.textContent = String(snake.score);
   if(snake.els.high) snake.els.high.textContent = String(state.snake.highScore || 0);
   if(snake.els.overScore) snake.els.overScore.textContent = String(snake.score);
-  if(snake.els.overlay) snake.els.overlay.classList.toggle('hidden', !snake.gameOver);
-  if(snake.els.startBtn){
-    snake.els.startBtn.textContent = snake.started ? t('snake.restart') : t('snake.start');
+  if(snake.els.length) snake.els.length.textContent = String(snake.body.length || 0);
+  if(snake.els.level) snake.els.level.textContent = String(snakeGetLevel());
+  if(snake.els.bonus){
+    snake.els.bonus.textContent = snake.bonusFood ? `${snakeGetBonusTimeLeftSec().toFixed(1)}s` : t('snake.bonus.none');
   }
-  if(snake.els.pauseBtn){
-    snake.els.pauseBtn.classList.toggle('pressed', snake.paused);
+  if(snake.els.overlay){
+    const showOverlay = snake.gameOver || snake.paused;
+    snake.els.overlay.classList.toggle('hidden', !showOverlay);
+  }
+  if(snake.els.overlayTitle){
+    if(snake.gameOver) snake.els.overlayTitle.textContent = t('snake.gameOver');
+    else if(snake.paused) snake.els.overlayTitle.textContent = t('snake.paused');
+    else snake.els.overlayTitle.textContent = t('snake.gameOver');
+  }
+  if(snake.els.overlayBtn){
+    if(snake.gameOver) snake.els.overlayBtn.textContent = t('snake.playAgain');
+    else if(snake.paused) snake.els.overlayBtn.textContent = t('snake.resume');
+    else snake.els.overlayBtn.textContent = t('snake.playAgain');
+  }
+  if(snake.els.overlayMeta){
+    snake.els.overlayMeta.classList.toggle('hidden', !snake.gameOver && !snake.paused);
+  }
+  if(snake.els.actionBtn){
+    snake.els.actionBtn.classList.toggle('pressed', snake.paused);
+    if(!snake.started || snake.gameOver){
+      snake.els.actionBtn.textContent = t('snake.start');
+    } else if(snake.paused){
+      snake.els.actionBtn.textContent = t('snake.resume');
+    } else {
+      snake.els.actionBtn.textContent = t('snake.pause');
+    }
   }
 }
 
