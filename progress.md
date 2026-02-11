@@ -481,3 +481,10 @@ Original prompt (continuação): e crie esses sons dentro da pasta assets/sounds
   - `boardSquare=true`, `canvasSquare=true`, `canvasFillBoard=true`
   - sem overflow na content e sem erros de console.
 - Cache bust atualizado em `index.html`: `bliss98.bundle.js?v=20260211-snake-ui-4`.
+- Refino adicional de Snake mobile (somente mobile):
+  - barra de stats alinhada exatamente ao board/canvas (mesma largura e centro) com `box-sizing:border-box` e `align-self:center`;
+  - header (`Back` + `Snake`) desceu alguns pixels para não encostar na titlebar (`margin-top:6px` em `.snake-header`).
+- Validação mobile Playwright (390x844):
+  - `statsMatchBoardWidth=true`, `statsMatchBoardCenter=true`, `headerHasTopGap=true`.
+- Cache bust atualizado para garantir reload em celular:
+  - `bliss98.bundle.js?v=20260211-snake-ui-5`.

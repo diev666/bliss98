@@ -52,8 +52,10 @@ const result = await page.evaluate(() => {
   const back = rect('#win_games .snake-topbar .btn');
   const main = rect('#win_games .snake-main');
   const board = rect('#win_games #snakeBoard');
+  const stats = rect('#win_games .snake-board-stats');
   const canvas = rect('#win_games #snakeCanvas');
   const content = rect('#win_games .content');
+  const titlebar = rect('#win_games .titlebar');
   const actionRow = document.querySelector('#win_games .snake-action-row');
   const actionDisplay = actionRow ? getComputedStyle(actionRow).display : null;
 
@@ -67,16 +69,21 @@ const result = await page.evaluate(() => {
     back,
     main,
     board,
+    stats,
     canvas,
     content,
+    titlebar,
     actionDisplay,
     checks: {
       startHiddenOnMobile: actionDisplay === 'none',
       backOnLeft: !!(header && back && back.left <= header.left + 2),
       titleCentered: !!(header && title && Math.abs(header.centerX - title.centerX) <= 2),
       sameLineHeader: !!(title && back && Math.abs(title.centerY - back.centerY) <= 3),
+      headerHasTopGap: !!(titlebar && header && header.top >= titlebar.bottom + 4),
       boardCentered: !!(main && board && Math.abs(main.centerX - board.centerX) <= 2),
       boardBiggerThan300: !!(board && board.width >= 320),
+      statsMatchBoardWidth: !!(board && stats && Math.abs(board.width - stats.width) <= 2),
+      statsMatchBoardCenter: !!(board && stats && Math.abs(board.centerX - stats.centerX) <= 2),
       boardSquare: boardRatio !== null ? Math.abs(boardRatio - 1) <= 0.02 : false,
       canvasSquare: canvasRatio !== null ? Math.abs(canvasRatio - 1) <= 0.02 : false,
       canvasFillBoard: fillRatio !== null ? fillRatio >= 0.90 : false,
