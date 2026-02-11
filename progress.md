@@ -458,3 +458,7 @@ Original prompt (continuação): e crie esses sons dentro da pasta assets/sounds
   - Bundle rebuildado: `assets/js/bliss98.bundle.js`.
   - Validação Playwright (cenário com `bliss98_window_games` pequeno salvo):
     - `overflowX: 0`, `overflowY: 0`, sem scrollbar lateral, botão abaixo do canvas visível.
+- Snake UI: centralização horizontal completa no desktop ajustada.
+  - `.content[data-games-view="snake"]` agora centraliza o bloco inteiro (topbar, título, stats, board e botão).
+  - `.snake-main` ajustado de `336px` para `356px` para casar com largura real do board (356px com borda/padding), eliminando desalinhamento de ~10px.
+  - Validação Playwright: `deltaBoard=0`, `deltaStats=0`, `deltaBtn=0` em `output/snake-ui-help-check/snake-centered-result.json`.

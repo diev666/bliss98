@@ -1,0 +1,65 @@
+{
+  "content": {
+    "left": 458,
+    "right": 970,
+    "top": 215,
+    "bottom": 809,
+    "width": 512,
+    "height": 594,
+    "centerX": 714
+  },
+  "board": {
+    "left": 536,
+    "right": 892,
+    "top": 340,
+    "bottom": 696,
+    "width": 356,
+    "height": 356,
+    "centerX": 714
+  },
+  "stats": {
+    "left": 536,
+    "right": 892,
+    "top": 288,
+    "bottom": 332,
+    "width": 356,
+    "height": 44,
+    "centerX": 714
+  },
+  "btn": {
+    "left": 536,
+    "right": 892,
+    "top": 704,
+    "bottom": 728,
+    "width": 356,
+    "height": 24,
+    "centerX": 714
+  },
+  "title": {
+    "left": 691,
+    "right": 737,
+    "top": 259,
+    "bottom": 280,
+    "width": 46,
+    "height": 21,
+    "centerX": 714
+  },
+  "topbar": {
+    "left": 470,
+    "right": 958,
+    "top": 225,
+    "bottom": 249,
+    "width": 488,
+    "height": 24,
+    "centerX": 714
+  },
+  "centered": {
+    "board": true,
+    "stats": true,
+    "buttonRow": true,
+    "deltaBoard": 0,
+    "deltaStats": 0,
+    "deltaBtn": 0
+  },
+  "consoleErrors": []
+}

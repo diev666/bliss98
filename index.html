@@ -2431,7 +2431,7 @@
       }
       .snake-main{
         flex:0 0 auto;
-        width:336px;
+        width:356px;
         max-width:100%;
         display:flex;
         flex-direction:column;
@@ -2452,6 +2452,21 @@
         gap:8px;
         flex-wrap:wrap;
         margin-bottom:10px;
+      }
+      :is(#win_games, #win_dope-skate):not(.mobile-game) .content[data-games-view="snake"]{
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+      }
+      :is(#win_games, #win_dope-skate):not(.mobile-game) .content[data-games-view="snake"] .snake-layout{
+        justify-content:center;
+      }
+      :is(#win_games, #win_dope-skate):not(.mobile-game) .content[data-games-view="snake"] .snake-topbar{
+        width:100%;
+        justify-content:center;
+      }
+      :is(#win_games, #win_dope-skate):not(.mobile-game) .content[data-games-view="snake"] > h2{
+        text-align:center;
       }
       .snake-board-stats{
         display:flex;
