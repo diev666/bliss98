@@ -606,3 +606,12 @@ Original prompt (continuação): e crie esses sons dentro da pasta assets/sounds
 - Validação mobile:
   - Arquivos: `output/dope-mobile-open-fix-check/mobile-dope-open.png` e `output/dope-mobile-open-fix-check/result.json`.
   - Resultado: `fillsViewport=true`, `menuButtonVisible=false`, `consoleErrors=[]`.
+- Ajuste mobile solicitado: título do Dope Skate centralizado no topo da janela standalone.
+  - CSS em `index.html` (bloco `.mobile-game`):
+    - `.skate-topbar` agora `position:relative` e `justify-content:flex-start`.
+    - `.skate-title` com centralização absoluta (`left:50%`, `top:50%`, `transform:translate(-50%,-50%)`) + largura limitada com ellipsis.
+    - botão Back mantém prioridade visual (`z-index:1`) para não ser coberto.
+- Validação (Playwright + screenshot):
+  - script: `output/dope-mobile-title-center-check/check-mobile-title-center.mjs`
+  - screenshot: `output/dope-mobile-title-center-check/mobile-title-center.png`
+  - métricas: `centerOffset=0`, `centeredWithin8px=true`, `overlapsBack=false`, `consoleErrors=[]`.

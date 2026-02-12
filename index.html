@@ -3032,9 +3032,28 @@
         transform:scale(var(--skate-ui-scale));
         transform-origin:top left;
         width:calc(100% / var(--skate-ui-scale));
+        position:relative;
+        justify-content:flex-start;
       }
       :is(#win_games, #win_dope-skate).mobile-game .skate-topbar-actions{
         display:none !important;
+      }
+      :is(#win_games, #win_dope-skate).mobile-game .skate-topbar .skate-btn[data-games-action="back"]{
+        position:relative;
+        z-index:1;
+      }
+      :is(#win_games, #win_dope-skate).mobile-game .skate-title{
+        position:absolute;
+        left:50%;
+        top:50%;
+        transform:translate(-50%, -50%);
+        width:calc(100% - 190px);
+        max-width:320px;
+        text-align:center;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        pointer-events:none;
       }
       :is(#win_games, #win_dope-skate).mobile-game .skate-hud{
         position:absolute;
