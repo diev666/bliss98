@@ -915,8 +915,12 @@ function buildOccupiedFromFs(parentId, excludeIds, metrics, opts = {}){
 
 function getDefaultIconLayout(){
   const area = $('#desktopArea').getBoundingClientRect();
-  const metrics = getGridMetrics();
-  const isMobile = area.width <= 520;
+  const fallbackWidth = Math.max(ICON_SIZE.w + 6, window.innerWidth || 0);
+  const fallbackHeight = Math.max(ICON_SIZE.h + 6, (window.innerHeight || 0) - 36);
+  const width = area.width > (ICON_SIZE.w + 6) ? area.width : fallbackWidth;
+  const height = area.height > (ICON_SIZE.h + 6) ? area.height : fallbackHeight;
+  const metrics = getGridMetricsForSize(width, height);
+  const isMobile = width <= 520;
   const order = ['settings','games','about','videos','mediaplayer','diev','art','contact','poetry','music','clothes'];
   const available = APPS.filter(app => app.showOnDesktop !== false && app.id !== 'trash' && !state.trash.has(app.id) && !isInFolder(app.id));
   const availableIds = new Set(available.map(app => app.id));
@@ -925,12 +929,12 @@ function getDefaultIconLayout(){
   );
 
   const layout = {};
-  const maxX = Math.max(0, Math.floor(area.width - ICON_SIZE.w - 6));
-  const maxY = Math.max(0, Math.floor(area.height - ICON_SIZE.h - 6));
+  const maxX = Math.max(0, Math.floor(width - ICON_SIZE.w - 6));
+  const maxY = Math.max(0, Math.floor(height - ICON_SIZE.h - 6));
 
   if(isMobile){
-    const cols = Math.max(1, Math.floor((area.width - 6) / metrics.stepX));
-    const rows = Math.max(1, Math.floor((area.height - 6) / metrics.stepY));
+    const cols = Math.max(1, Math.floor((width - 6) / metrics.stepX));
+    const rows = Math.max(1, Math.floor((height - 6) / metrics.stepY));
     const trashCell = { col: cols - 1, row: rows - 1 };
     let i = 0;
     ordered.forEach(id => {
@@ -949,7 +953,7 @@ function getDefaultIconLayout(){
   } else {
     let col = 0;
     let row = 0;
-    const maxRows = Math.max(1, Math.floor((area.height - 6) / metrics.stepY));
+    const maxRows = Math.max(1, Math.floor((height - 6) / metrics.stepY));
     ordered.forEach(id => {
       const x = clamp(col * metrics.stepX, 0, maxX);
       const y = clamp(row * metrics.stepY, 0, maxY);

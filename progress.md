@@ -562,3 +562,36 @@ Original prompt (continuação): e crie esses sons dentro da pasta assets/sounds
     - sem `consoleErrors`.
 - Cache bust atualizado em `index.html` para forçar carregamento do hotfix visual no mobile:
   - `./assets/js/bliss98.bundle.js?v=20260211-ps1-visual-hotfix-1`
+- Bugfix solicitado: opção `Grid (snap)` ficava efetivamente sempre ativa ao arrastar ícones (desktop e mobile).
+  - Causa raiz principal:
+    - fluxo de drop do desktop passava por `placeOnFreeCell(...)` mesmo com `state.gridSnap=false`; essa função sempre quantiza para célula de grid.
+  - Causa raiz secundária (detectada durante validação):
+    - durante init/reload, `renderIcons()` podia rodar com `#desktopArea` ainda sem tamanho útil (desktop oculto), gerando recomputação e persistência indevida de posições em `(0,0)`.
+- Correções aplicadas:
+  - `assets/js/modules/06-shell-and-windowing.js`
+    - `renderIcons()` agora respeita posição livre quando `gridSnap` está desligado e o item já possui posição salva.
+    - no drop de ícones desktop, quando `gridSnap=false`, usa apenas `clampIconPos(...)` (sem `placeOnFreeCell`).
+    - proteção extra em `renderIcons()`: quando a área do desktop não está mensurável, não recalcula/salva layout; preserva posições existentes.
+  - `assets/js/modules/02-games-and-ui.js`
+    - `getFreeIconPlacement(...)` no desktop retorna posição livre clamped quando `gridSnap=false`.
+    - `setIconPosition(...)` passa a evitar grid placement quando `gridSnap=false`.
+  - `assets/js/modules/01-core.js`
+    - `getDefaultIconLayout()` ganhou fallback para `window.innerWidth/innerHeight` quando `#desktopArea` ainda não tem dimensão válida no boot/reload (evita layout degenerado em 0,0).
+  - Rebuild bundle: `assets/js/bliss98.bundle.js`.
+- Validação:
+  - `node --check` módulos + bundle: OK.
+  - Teste de regressão Playwright desktop+mobile criado e executado:
+    - script: `output/grid-snap-regression/check-grid-snap.mjs`
+    - resultado: `output/grid-snap-regression/result.json` com `"passed": true`.
+    - checks confirmados em desktop e mobile:
+      - com `gridSnap=false`, ícone termina em posição livre (não múltiplo do step do grid);
+      - posição livre persiste após reload;
+      - com `gridSnap=true`, ícone volta a encaixar no grid.
+    - sem `consoleErrors`.
+  - Skill loop executado (`$WEB_GAME_CLIENT`) sem erros:
+    - `output/grid-snap-skill-check/shot-0.png`.
+
+## TODO / handoff
+- Nenhum bloqueio pendente para este bug.
+- Cache bust do bundle atualizado em `index.html` para garantir entrega imediata do fix em mobile/desktop:
+  - `./assets/js/bliss98.bundle.js?v=20260212-grid-snap-fix-1`

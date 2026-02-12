@@ -1,0 +1,94 @@
+{
+  "url": "http://127.0.0.1:4173",
+  "step": {
+    "x": 104,
+    "y": 96
+  },
+  "desktop": {
+    "name": "desktop",
+    "dragId": "poetry",
+    "offDrag": {
+      "before": {
+        "x": 104,
+        "y": 0
+      },
+      "after": {
+        "x": 141,
+        "y": 29
+      },
+      "fsPos": {
+        "x": 141,
+        "y": 29,
+        "parentId": null
+      }
+    },
+    "offSnapped": false,
+    "afterReload": {
+      "x": 141,
+      "y": 29
+    },
+    "offPersistMatches": true,
+    "onDrag": {
+      "before": {
+        "x": 141,
+        "y": 29
+      },
+      "after": {
+        "x": 208,
+        "y": 96
+      },
+      "fsPos": {
+        "x": 208,
+        "y": 96,
+        "parentId": null
+      }
+    },
+    "onSnapped": true,
+    "consoleErrors": [],
+    "screenshotPath": "/Users/dieverson/Library/Mobile Documents/com~apple~CloudDocs/BLISS/BLISS SITE/bliss98/output/grid-snap-regression/desktop-after.png"
+  },
+  "mobile": {
+    "name": "mobile",
+    "dragId": "poetry",
+    "offDrag": {
+      "before": {
+        "x": 104,
+        "y": 0
+      },
+      "after": {
+        "x": 141,
+        "y": 29
+      },
+      "fsPos": {
+        "x": 141,
+        "y": 29,
+        "parentId": null
+      }
+    },
+    "offSnapped": false,
+    "afterReload": {
+      "x": 141,
+      "y": 29
+    },
+    "offPersistMatches": true,
+    "onDrag": {
+      "before": {
+        "x": 141,
+        "y": 29
+      },
+      "after": {
+        "x": 0,
+        "y": 384
+      },
+      "fsPos": {
+        "x": 0,
+        "y": 384,
+        "parentId": null
+      }
+    },
+    "onSnapped": true,
+    "consoleErrors": [],
+    "screenshotPath": "/Users/dieverson/Library/Mobile Documents/com~apple~CloudDocs/BLISS/BLISS SITE/bliss98/output/grid-snap-regression/mobile-after.png"
+  },
+  "passed": true
+}

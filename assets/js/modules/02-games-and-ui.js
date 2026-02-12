@@ -6514,6 +6514,9 @@ function getFreeIconPlacement(parentId, preferred, containerEl, excludeIds){
     ? (containerEl ? containerEl.getBoundingClientRect() : $('#desktopArea').getBoundingClientRect())
     : (containerEl ? containerEl.getBoundingClientRect() : FOLDER_VIEW_FALLBACK_SIZE);
   const clamped = clampIconPosToSize(base.x, base.y, bounds.width, bounds.height);
+  if(isDesktop && !isFolderView && !state.gridSnap){
+    return { x: clamped.x, y: clamped.y };
+  }
   const occupied = buildOccupiedFromFs(normalized, excludeIds, metrics, { visibleOnly: isDesktop });
   return placeOnFreeCell(clamped.x, clamped.y, occupied, metrics);
 }
@@ -7648,7 +7651,6 @@ function setIconPosition(id, x, y){
   const item = getFsItem(id) || ensureFsItemForApp(id, { save: false });
   if(!item) return;
   const saved = loadIconPositions();
-  const metrics = getGridMetrics();
   let nx = x;
   let ny = y;
   if(state.gridSnap){
@@ -7656,8 +7658,15 @@ function setIconPosition(id, x, y){
     nx = snapped.x;
     ny = snapped.y;
   }
-  const occupied = buildOccupiedFromFs(null, [id], metrics, { visibleOnly: true });
-  const placed = placeOnFreeCell(nx, ny, occupied, metrics);
+  let placed;
+  if(state.gridSnap){
+    const metrics = getGridMetrics();
+    const occupied = buildOccupiedFromFs(null, [id], metrics, { visibleOnly: true });
+    placed = placeOnFreeCell(nx, ny, occupied, metrics);
+  } else {
+    const clamped = clampIconPos(nx, ny);
+    placed = { x: clamped.x, y: clamped.y };
+  }
   upsertFsItem({ id, parentId: null, x: placed.x, y: placed.y }, { save: false, syncIconPos: true, iconPosCache: saved });
   saveIconPositions(saved);
   saveDesktopFs();

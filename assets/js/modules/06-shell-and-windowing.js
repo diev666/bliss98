@@ -56,7 +56,17 @@ function renderIcons(){
   APPS.filter(app => app.showOnDesktop !== false).forEach(app => ensureFsItemForApp(app.id, { save: false }));
   VIRTUAL_ICONS.forEach(v => ensureFsItemForApp(v.id, { save: false }));
 
-  const metrics = getGridMetrics();
+  const areaEl = $('#desktopArea');
+  const areaRect = areaEl ? areaEl.getBoundingClientRect() : { width: 0, height: 0 };
+  const canLayoutDesktop =
+    areaRect.width > (ICON_SIZE.w + 6) &&
+    areaRect.height > (ICON_SIZE.h + 6);
+  const metrics = canLayoutDesktop
+    ? getGridMetrics()
+    : getGridMetricsForSize(
+      Math.max(ICON_SIZE.w + 6, window.innerWidth || 0),
+      Math.max(ICON_SIZE.h + 6, (window.innerHeight || 0) - 36)
+    );
   const occupied = new Map();
   const iconPosCache = loadIconPositions();
   const defaultLayout = getDefaultIconLayout();
@@ -87,14 +97,31 @@ function renderIcons(){
     el.dataset.itemType = item.type || 'app';
     if(item.type === 'folder') el.dataset.folderId = id;
 
-    const basePos = (Number.isFinite(item.x) && Number.isFinite(item.y))
+    const hasStoredPos = Number.isFinite(item.x) && Number.isFinite(item.y);
+    const basePos = hasStoredPos
       ? { x: item.x, y: item.y }
       : (defaultLayout[id] || legacyDefaultIconPos(idx));
-    const placed = placeOnFreeCell(basePos.x, basePos.y, occupied, metrics);
+    let placed;
+    if(!canLayoutDesktop && hasStoredPos){
+      placed = {
+        x: Math.floor(basePos.x),
+        y: Math.floor(basePos.y),
+        changed: false
+      };
+    } else if(state.gridSnap || !hasStoredPos){
+      placed = placeOnFreeCell(basePos.x, basePos.y, occupied, metrics);
+    } else {
+      const clamped = clampIconPos(basePos.x, basePos.y);
+      placed = {
+        x: clamped.x,
+        y: clamped.y,
+        changed: clamped.x !== Math.floor(basePos.x) || clamped.y !== Math.floor(basePos.y)
+      };
+    }
     el.style.left = placed.x + 'px';
     el.style.top = placed.y + 'px';
 
-    if((placed.changed || !Number.isFinite(item.x) || !Number.isFinite(item.y)) && item.parentId == null){
+    if(canLayoutDesktop && (placed.changed || !hasStoredPos) && item.parentId == null){
       upsertFsItem({ id, parentId: null, x: placed.x, y: placed.y }, { save: false, syncIconPos: true, iconPosCache });
       fsDirty = true;
       if(isAppLikeItem(item)) iconPosDirty = true;
@@ -267,7 +294,9 @@ function renderIcons(){
                   } else {
                     restoreGroupLayer();
                     const metrics = getGridMetrics();
-                    const occupied = buildOccupiedFromFs(null, ids, metrics, { visibleOnly: true });
+                    const occupied = state.gridSnap
+                      ? buildOccupiedFromFs(null, ids, metrics, { visibleOnly: true })
+                      : null;
                     let fsDirty = false;
                     let iconPosDirty = false;
 
@@ -276,14 +305,13 @@ function renderIcons(){
                       const dy = e.clientY - startY;
                       let x = p.x + dx;
                       let y = p.y + dy;
-
+                      let placed;
                       if(state.gridSnap){
-                        const snapped = snapToGrid(x, y);
-                        x = snapped.x;
-                        y = snapped.y;
+                        placed = placeOnFreeCell(x, y, occupied, metrics);
+                      } else {
+                        const clamped = clampIconPos(x, y);
+                        placed = { x: clamped.x, y: clamped.y };
                       }
-
-                      const placed = placeOnFreeCell(x, y, occupied, metrics);
                       p.el.style.left = placed.x + 'px';
                       p.el.style.top = placed.y + 'px';
                       p.el.style.transform = '';
