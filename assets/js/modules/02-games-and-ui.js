@@ -6222,6 +6222,7 @@ function applyTitlebarTheme(){
   const cur = (isBlissOS && isBlank)
     ? TITLEBAR_THEMES.defaultBlue
     : (TITLEBAR_THEMES[state.theme.titlebar] || TITLEBAR_THEMES.defaultBlue);
+  document.body.dataset.titlebarTheme = state.theme.titlebar || 'defaultBlue';
   document.body.classList.toggle('titlebar-blank', !isBlissOS && isBlank);
   document.body.style.setProperty('--title', cur.bar1);
   document.body.style.setProperty('--title2', cur.bar2);

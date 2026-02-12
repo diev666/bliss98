@@ -336,6 +336,14 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
           repeat: 'no-repeat',
           position: 'center'
         },
+        {
+          id: 'scarbliss',
+          labelKey: 'wallpaper.scarbliss',
+          background: 'url("./assets/wallpapers/scarbliss.png")',
+          size: 'cover',
+          repeat: 'no-repeat',
+          position: 'center'
+        },
       ];
 
       const TITLEBAR_THEMES = {
@@ -351,6 +359,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
         offWhite: { bar1:'#e6e6e6', bar2:'#cfcfcf', text:'#1a1a1a' },
         greenDark: { bar1:'#1b4a2a', bar2:'#0e2e1a', text:'#f1f1f1' },
         redDark: { bar1:'#5a1a1a', bar2:'#2f0b0b', text:'#f1f1f1' },
+        scarbliss: { bar1:'#080808', bar2:'#000000', text:'#f4f4f4' },
         blank: { bar1:'#b6b6b6', bar2:'#c9c9c9', text:'#f1f1f1' },
         xpBlue: { bar1:'#0a2e8f', bar2:'#4f86d8', text:'#ffffff' },
       };
@@ -360,6 +369,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
         { id:'totvers', nameKey:'theme.totvers', titlebarColor:'pinkLight', wallpaperId:'tot', darkMode:false },
         { id:'matrix', nameKey:'theme.matrix', titlebarColor:'greenDark', wallpaperId:'matrix', darkMode:true },
         { id:'xp98', nameKey:'theme.xp98', titlebarColor:'xpBlue', wallpaperId:'blissxp', darkMode:false },
+        { id:'scarbliss', nameKey:'theme.scarbliss', titlebarColor:'scarbliss', wallpaperId:'scarbliss', darkMode:true },
         { id:'blank', nameKey:'theme.blank', titlebarColor:'blank', wallpaperId:'classic', darkMode:false },
       ];
 
@@ -7414,6 +7424,7 @@ function applyTitlebarTheme(){
   const cur = (isBlissOS && isBlank)
     ? TITLEBAR_THEMES.defaultBlue
     : (TITLEBAR_THEMES[state.theme.titlebar] || TITLEBAR_THEMES.defaultBlue);
+  document.body.dataset.titlebarTheme = state.theme.titlebar || 'defaultBlue';
   document.body.classList.toggle('titlebar-blank', !isBlissOS && isBlank);
   document.body.style.setProperty('--title', cur.bar1);
   document.body.style.setProperty('--title2', cur.bar2);
@@ -9808,12 +9819,14 @@ function installLongPress(el, getTarget){
           'titlebar.offWhite': 'Off-white',
           'titlebar.greenDark': 'Dark Green',
           'titlebar.redDark': 'Dark Red',
+          'titlebar.scarbliss': 'ScarBliss',
           'titlebar.blank': 'Blank',
           'titlebar.xpBlue': 'XP Blue',
           'theme.default': 'Default',
           'theme.totvers': 'Totvers',
           'theme.matrix': 'Matrix',
           'theme.xp98': 'XP98',
+          'theme.scarbliss': 'ScarBliss',
           'theme.blank': 'Blank',
           'theme.custom': 'Custom',
           'theme.customEmpty': 'Empty',
@@ -10009,6 +10022,7 @@ function installLongPress(el, getTarget){
           'wallpaper.tot': 'Pink Tot',
           'wallpaper.matrix': 'Matrix',
           'wallpaper.blissxp': 'BlissXP',
+          'wallpaper.scarbliss': 'ScarBliss',
 
           'music.title': 'BLISS — Music',
           'music.subtitle': 'Listen everywhere:',
@@ -10353,12 +10367,14 @@ function installLongPress(el, getTarget){
           'titlebar.offWhite': 'Branco off-white',
           'titlebar.greenDark': 'Verde escuro',
           'titlebar.redDark': 'Vermelho escuro',
+          'titlebar.scarbliss': 'ScarBliss',
           'titlebar.blank': 'Vazio',
           'titlebar.xpBlue': 'Azul XP',
           'theme.default': 'Padrão',
           'theme.totvers': 'Totvers',
           'theme.matrix': 'Matrix',
           'theme.xp98': 'XP98',
+          'theme.scarbliss': 'ScarBliss',
           'theme.blank': 'Vazio',
           'theme.custom': 'Personalizado',
           'theme.customEmpty': 'Vazio',
@@ -10554,6 +10570,7 @@ function installLongPress(el, getTarget){
           'wallpaper.tot': 'Tot (Rosa)',
           'wallpaper.matrix': 'Matrix',
           'wallpaper.blissxp': 'BlissXP',
+          'wallpaper.scarbliss': 'ScarBliss',
 
           'music.title': 'BLISS — Música',
           'music.subtitle': 'Ouça em todas as plataformas:',
@@ -12427,6 +12444,7 @@ Eu sou o buffalo branco extinto`
               <p>${t('about.p4')}</p>
               <p>${t('about.p5')}</p>
               <p>${t('about.p6')}</p>
+              <p>And we tell the truth... even when we lie!</p>
             </div>
             <div class="about-gif-wrap">
               <img class="pixel about-gif" src="./assets/gifs/3Drotate.gif" alt="BLISS 3D rotate" loading="lazy" />
@@ -13071,6 +13089,13 @@ Eu sou o buffalo branco extinto`
                       </div>
                       <span data-i18n="theme.xp98">XP98</span>
                     </button>
+                    <button class="theme-thumb bevel" type="button" data-set-theme="scarbliss" data-theme-thumb="scarbliss">
+                      <div class="theme-preview theme-preview-scarbliss">
+                        <div class="theme-preview-bar"></div>
+                        <div class="theme-preview-body" style="background:url('./assets/wallpapers/scarbliss.png') center/cover no-repeat;"></div>
+                      </div>
+                      <span data-i18n="theme.scarbliss">ScarBliss</span>
+                    </button>
                     <button class="theme-thumb bevel" type="button" data-set-theme="blank" data-theme-thumb="blank">
                       <div class="theme-preview theme-preview-blank">
                         <div class="theme-preview-bar"></div>
@@ -13145,6 +13170,10 @@ Eu sou o buffalo branco extinto`
                       <span class="titlebar-swatch" style="background:linear-gradient(90deg,#5a1a1a,#2f0b0b);"></span>
                       <span data-i18n="titlebar.redDark">Dark Red</span>
                     </button>
+                    <button class="btn bevel" type="button" data-set-titlebar="scarbliss">
+                      <span class="titlebar-swatch" style="background:radial-gradient(circle at 22% 32%, rgba(190,18,18,0.95) 0 3px, transparent 4px),radial-gradient(circle at 54% 68%, rgba(164,8,8,0.86) 0 2px, transparent 3px),radial-gradient(circle at 84% 26%, rgba(150,8,8,0.82) 0 2px, transparent 3px),linear-gradient(90deg,#090909,#000000);"></span>
+                      <span data-i18n="titlebar.scarbliss">ScarBliss</span>
+                    </button>
                     <button class="btn bevel" type="button" data-set-titlebar="blank">
                       <span class="titlebar-swatch" style="background:linear-gradient(90deg,#b6b6b6,#c9c9c9);"></span>
                       <span data-i18n="titlebar.blank">Blank</span>
@@ -13210,6 +13239,10 @@ Eu sou o buffalo branco extinto`
                         <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="blissxp">
                           <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/BlissXP.png') center/cover no-repeat;"></span>
                           <span class="wallpaper-card-label" data-i18n="wallpaper.blissxp">BlissXP</span>
+                        </button>
+                        <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="scarbliss">
+                          <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/scarbliss.png') center/cover no-repeat;"></span>
+                          <span class="wallpaper-card-label" data-i18n="wallpaper.scarbliss">ScarBliss</span>
                         </button>
                       </div>
                     </div>

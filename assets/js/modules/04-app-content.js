@@ -468,6 +468,7 @@ Eu sou o buffalo branco extinto`
               <p>${t('about.p4')}</p>
               <p>${t('about.p5')}</p>
               <p>${t('about.p6')}</p>
+              <p>And we tell the truth... even when we lie!</p>
             </div>
             <div class="about-gif-wrap">
               <img class="pixel about-gif" src="./assets/gifs/3Drotate.gif" alt="BLISS 3D rotate" loading="lazy" />
@@ -1112,6 +1113,13 @@ Eu sou o buffalo branco extinto`
                       </div>
                       <span data-i18n="theme.xp98">XP98</span>
                     </button>
+                    <button class="theme-thumb bevel" type="button" data-set-theme="scarbliss" data-theme-thumb="scarbliss">
+                      <div class="theme-preview theme-preview-scarbliss">
+                        <div class="theme-preview-bar"></div>
+                        <div class="theme-preview-body" style="background:url('./assets/wallpapers/scarbliss.png') center/cover no-repeat;"></div>
+                      </div>
+                      <span data-i18n="theme.scarbliss">ScarBliss</span>
+                    </button>
                     <button class="theme-thumb bevel" type="button" data-set-theme="blank" data-theme-thumb="blank">
                       <div class="theme-preview theme-preview-blank">
                         <div class="theme-preview-bar"></div>
@@ -1186,6 +1194,10 @@ Eu sou o buffalo branco extinto`
                       <span class="titlebar-swatch" style="background:linear-gradient(90deg,#5a1a1a,#2f0b0b);"></span>
                       <span data-i18n="titlebar.redDark">Dark Red</span>
                     </button>
+                    <button class="btn bevel" type="button" data-set-titlebar="scarbliss">
+                      <span class="titlebar-swatch" style="background:radial-gradient(circle at 22% 32%, rgba(190,18,18,0.95) 0 3px, transparent 4px),radial-gradient(circle at 54% 68%, rgba(164,8,8,0.86) 0 2px, transparent 3px),radial-gradient(circle at 84% 26%, rgba(150,8,8,0.82) 0 2px, transparent 3px),linear-gradient(90deg,#090909,#000000);"></span>
+                      <span data-i18n="titlebar.scarbliss">ScarBliss</span>
+                    </button>
                     <button class="btn bevel" type="button" data-set-titlebar="blank">
                       <span class="titlebar-swatch" style="background:linear-gradient(90deg,#b6b6b6,#c9c9c9);"></span>
                       <span data-i18n="titlebar.blank">Blank</span>
@@ -1251,6 +1263,10 @@ Eu sou o buffalo branco extinto`
                         <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="blissxp">
                           <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/BlissXP.png') center/cover no-repeat;"></span>
                           <span class="wallpaper-card-label" data-i18n="wallpaper.blissxp">BlissXP</span>
+                        </button>
+                        <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="scarbliss">
+                          <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/scarbliss.png') center/cover no-repeat;"></span>
+                          <span class="wallpaper-card-label" data-i18n="wallpaper.scarbliss">ScarBliss</span>
                         </button>
                       </div>
                     </div>

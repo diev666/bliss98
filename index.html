@@ -1846,6 +1846,24 @@
         cursor:move;
         touch-action:none;
       }
+      body[data-titlebar-theme="scarbliss"] .titlebar,
+      body[data-titlebar-theme="scarbliss"] .modal-titlebar,
+      body[data-titlebar-theme="scarbliss"] :is(#win_games, #win_dope-skate) .titlebar{
+        background:
+          radial-gradient(11px 8px at 10% 26%, rgba(188, 14, 14, 0.95) 0 55%, rgba(105, 0, 0, 0.86) 56% 78%, transparent 79%),
+          radial-gradient(7px 5px at 16% 76%, rgba(149, 7, 7, 0.85) 0 62%, transparent 63%),
+          radial-gradient(13px 9px at 34% 36%, rgba(172, 10, 10, 0.88) 0 54%, rgba(110, 0, 0, 0.7) 55% 76%, transparent 77%),
+          radial-gradient(6px 5px at 52% 72%, rgba(160, 7, 7, 0.82) 0 60%, transparent 61%),
+          radial-gradient(10px 7px at 68% 28%, rgba(196, 20, 20, 0.9) 0 58%, rgba(120, 0, 0, 0.72) 59% 78%, transparent 79%),
+          radial-gradient(8px 6px at 83% 62%, rgba(142, 5, 5, 0.84) 0 60%, transparent 61%),
+          linear-gradient(180deg, #0d0d0d 0%, #000000 100%);
+        color:#f4f4f4;
+        text-shadow:0 1px 0 rgba(0,0,0,0.55);
+      }
+      body[data-titlebar-theme="scarbliss"] .titlebar .wctl,
+      body[data-titlebar-theme="scarbliss"] .modal-titlebar .wctl{
+        color:#f4f4f4;
+      }
       .title-left{display:flex; align-items:center; gap:6px; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;}
       .title-left strong{font-weight:700; font-size:12px; overflow:hidden; text-overflow:ellipsis;}
       .title-controls{display:flex; gap:4px; flex-shrink:0;}
@@ -3952,6 +3970,14 @@
       .theme-preview-xp98 .theme-preview-bar{
         background:linear-gradient(90deg, #0a2e8f, #4f86d8);
       }
+      .theme-preview-scarbliss .theme-preview-bar{
+        background:
+          radial-gradient(circle at 12% 36%, rgba(190, 18, 18, 0.94) 0 3px, transparent 4px),
+          radial-gradient(circle at 34% 22%, rgba(166, 8, 8, 0.88) 0 2px, transparent 3px),
+          radial-gradient(circle at 62% 62%, rgba(146, 6, 6, 0.85) 0 2px, transparent 3px),
+          radial-gradient(circle at 86% 32%, rgba(184, 16, 16, 0.9) 0 3px, transparent 4px),
+          linear-gradient(90deg, #090909, #000000);
+      }
       .theme-preview-blank .theme-preview-bar{
         background:transparent;
         border-bottom:1px solid var(--panel-border);
@@ -4760,6 +4786,6 @@
       </div>
     </div>
 
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260211-ps1-visual-hotfix-1"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260212-scarbliss-theme-1"></script>
   </body>
 </html>

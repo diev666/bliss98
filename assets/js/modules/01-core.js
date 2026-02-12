@@ -332,6 +332,14 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
           repeat: 'no-repeat',
           position: 'center'
         },
+        {
+          id: 'scarbliss',
+          labelKey: 'wallpaper.scarbliss',
+          background: 'url("./assets/wallpapers/scarbliss.png")',
+          size: 'cover',
+          repeat: 'no-repeat',
+          position: 'center'
+        },
       ];
 
       const TITLEBAR_THEMES = {
@@ -347,6 +355,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
         offWhite: { bar1:'#e6e6e6', bar2:'#cfcfcf', text:'#1a1a1a' },
         greenDark: { bar1:'#1b4a2a', bar2:'#0e2e1a', text:'#f1f1f1' },
         redDark: { bar1:'#5a1a1a', bar2:'#2f0b0b', text:'#f1f1f1' },
+        scarbliss: { bar1:'#080808', bar2:'#000000', text:'#f4f4f4' },
         blank: { bar1:'#b6b6b6', bar2:'#c9c9c9', text:'#f1f1f1' },
         xpBlue: { bar1:'#0a2e8f', bar2:'#4f86d8', text:'#ffffff' },
       };
@@ -356,6 +365,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
         { id:'totvers', nameKey:'theme.totvers', titlebarColor:'pinkLight', wallpaperId:'tot', darkMode:false },
         { id:'matrix', nameKey:'theme.matrix', titlebarColor:'greenDark', wallpaperId:'matrix', darkMode:true },
         { id:'xp98', nameKey:'theme.xp98', titlebarColor:'xpBlue', wallpaperId:'blissxp', darkMode:false },
+        { id:'scarbliss', nameKey:'theme.scarbliss', titlebarColor:'scarbliss', wallpaperId:'scarbliss', darkMode:true },
         { id:'blank', nameKey:'theme.blank', titlebarColor:'blank', wallpaperId:'classic', darkMode:false },
       ];
 
