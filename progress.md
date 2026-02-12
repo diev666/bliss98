@@ -595,3 +595,7 @@ Original prompt (continuação): e crie esses sons dentro da pasta assets/sounds
 - Nenhum bloqueio pendente para este bug.
 - Cache bust do bundle atualizado em `index.html` para garantir entrega imediata do fix em mobile/desktop:
   - `./assets/js/bliss98.bundle.js?v=20260212-grid-snap-fix-1`
+- Mobile games window chrome rule applied:
+  - in `.mobile-game` for `#win_games` and `#win_dope-skate`, title text + menubar now hidden, only window controls (`min/max/close`) remain visible as overlay.
+  - removes topbar/menubar vertical push from game content area.
+- Cache bust updated: `bliss98.bundle.js?v=20260212-grid-snap-fix-2`.

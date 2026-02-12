@@ -56,6 +56,9 @@ const result = await page.evaluate(() => {
   const canvas = rect('#win_games #snakeCanvas');
   const content = rect('#win_games .content');
   const titlebar = rect('#win_games .titlebar');
+  const menubar = document.querySelector('#win_games .menubar');
+  const titleLeft = document.querySelector('#win_games .title-left');
+  const controls = Array.from(document.querySelectorAll('#win_games .title-controls .wctl'));
   const actionRow = document.querySelector('#win_games .snake-action-row');
   const actionDisplay = actionRow ? getComputedStyle(actionRow).display : null;
 
@@ -73,9 +76,13 @@ const result = await page.evaluate(() => {
     canvas,
     content,
     titlebar,
+    controlsVisible: controls.filter(el => el.offsetParent !== null).length,
+    menubarDisplay: menubar ? getComputedStyle(menubar).display : null,
+    titleLeftDisplay: titleLeft ? getComputedStyle(titleLeft).display : null,
     actionDisplay,
     checks: {
       startHiddenOnMobile: actionDisplay === 'none',
+      onlyControlsTopbar: controls.filter(el => el.offsetParent !== null).length === 3 && (!menubar || getComputedStyle(menubar).display === 'none') && (!titleLeft || getComputedStyle(titleLeft).display === 'none'),
       backOnLeft: !!(header && back && back.left <= header.left + 2),
       titleCentered: !!(header && title && Math.abs(header.centerX - title.centerX) <= 2),
       sameLineHeader: !!(title && back && Math.abs(title.centerY - back.centerY) <= 3),

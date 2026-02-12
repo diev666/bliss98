@@ -2,96 +2,100 @@
   "header": {
     "left": 19,
     "right": 371,
-    "top": 41,
-    "bottom": 65,
+    "top": 25,
+    "bottom": 49,
     "width": 352,
     "height": 24,
     "centerX": 195,
-    "centerY": 53
+    "centerY": 37
   },
   "title": {
     "left": 172,
     "right": 218,
-    "top": 41,
-    "bottom": 65,
+    "top": 25,
+    "bottom": 49,
     "width": 46,
     "height": 24,
     "centerX": 195,
-    "centerY": 53
+    "centerY": 37
   },
   "back": {
     "left": 19,
     "right": 71,
-    "top": 41,
-    "bottom": 65,
+    "top": 25,
+    "bottom": 49,
     "width": 52,
     "height": 24,
     "centerX": 45,
-    "centerY": 53
+    "centerY": 37
   },
   "main": {
     "left": 19,
     "right": 371,
-    "top": 35,
-    "bottom": 477,
+    "top": 19,
+    "bottom": 461,
     "width": 352,
     "height": 442,
     "centerX": 195,
-    "centerY": 256
+    "centerY": 240
   },
   "board": {
     "left": 19,
     "right": 371,
-    "top": 125,
-    "bottom": 477,
+    "top": 109,
+    "bottom": 461,
     "width": 352,
     "height": 352,
     "centerX": 195,
-    "centerY": 301
+    "centerY": 285
   },
   "stats": {
     "left": 19,
     "right": 371,
-    "top": 73,
-    "bottom": 117,
+    "top": 57,
+    "bottom": 101,
     "width": 352,
     "height": 44,
     "centerX": 195,
-    "centerY": 95
+    "centerY": 79
   },
   "canvas": {
     "left": 27,
     "right": 363,
-    "top": 133,
-    "bottom": 469,
+    "top": 117,
+    "bottom": 453,
     "width": 336,
     "height": 336,
     "centerX": 195,
-    "centerY": 301
+    "centerY": 285
   },
   "content": {
     "left": 19,
     "right": 371,
-    "top": 35,
+    "top": 19,
     "bottom": 846,
     "width": 352,
-    "height": 811,
+    "height": 827,
     "centerX": 195,
-    "centerY": 441
+    "centerY": 433
   },
   "titlebar": {
     "left": 19,
     "right": 371,
     "top": 19,
-    "bottom": 35,
+    "bottom": 19,
     "width": 352,
-    "height": 16,
+    "height": 0,
     "centerX": 195,
-    "centerY": 27
+    "centerY": 19
   },
+  "controlsVisible": 3,
+  "menubarDisplay": "none",
+  "titleLeftDisplay": "none",
   "actionDisplay": "none",
   "checks": {
     "startHiddenOnMobile": true,
+    "onlyControlsTopbar": true,
     "backOnLeft": true,
     "titleCentered": true,
     "sameLineHeader": true,
