@@ -114,12 +114,16 @@ function renderDopeSkateWindow(){
   const mobileGameView = isMobileGameMode();
   if(mobileGameView){
     enterMobileFullscreen('dope-skate', win);
+    requestAnimationFrame(()=> enterMobileFullscreen('dope-skate', win));
   } else {
     win.classList.remove('mobile-game');
   }
   DopeSkateGame.mount(win);
   mountMobileGameDock('dope-skate', win);
-  if(!mobileGameView){
+  if(mobileGameView){
+    // Guard against delayed window-fit writes overriding full-screen on first open.
+    setTimeout(()=> enterMobileFullscreen('dope-skate', win), 120);
+  } else {
     smartFitWindow(win, 'maximize');
   }
 }
@@ -2254,6 +2258,12 @@ function initDopeSkateInWindow(winEl){
   dopeSkate.renderScaleX = 1;
   dopeSkate.renderScaleY = 1;
   const mobile = isMobileGameMode();
+  if(mobile){
+    // Mobile uses Start/select controls, so the top-right menu button is redundant
+    // and can overlap OS window controls.
+    const topbarActions = root.querySelector('.skate-topbar-actions');
+    if(topbarActions) topbarActions.remove();
+  }
   dopeSkate.width = 640;
   dopeSkate.height = mobile ? 640 : 360;
   canvas.width = dopeSkate.width;

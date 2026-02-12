@@ -1257,8 +1257,16 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
 
         let rect = defaultWindowRect();
         const area = $('#desktopArea').getBoundingClientRect();
-        const savedRect = appId === 'about' ? null : getSavedWindowRect(appId);
-        if(appId === 'mediaplayer'){
+        const mobileDopeSkate = appId === 'dope-skate' && typeof isMobileGameMode === 'function' && isMobileGameMode();
+        const savedRect = (appId === 'about' || appId === 'dope-skate') ? null : getSavedWindowRect(appId);
+        if(mobileDopeSkate){
+          rect = normalizeWindowRect({
+            left: 0,
+            top: 0,
+            width: Math.max(240, Math.floor(area.width)),
+            height: Math.max(200, Math.floor(area.height)),
+          }, area, 0);
+        } else if(appId === 'mediaplayer'){
           rect = normalizeWindowRect(getMediaPlayerRect(), area, 16);
         } else if(savedRect){
           rect = normalizeWindowRect(savedRect, area, 16);
@@ -1720,13 +1728,18 @@ function toggleFitWindow(appId) {
         applyWindowState(el, appId);
         
         // Auto-fit after content + i18n and keep correcting only when overflow appears.
-        installAutoFitObserver(el, appId);
+        const skipOpenAutoFit = appId === 'dope-skate' && typeof isMobileGameMode === 'function' && isMobileGameMode();
+        if(!skipOpenAutoFit){
+          installAutoFitObserver(el, appId);
+        }
         let fitPromise = Promise.resolve(getWindowRectFromState(wstate));
-        if(!wstate.savedRect){
+        if(!wstate.savedRect && !skipOpenAutoFit){
           fitPromise = smartFitWindow(el, 'open');
         } else {
           // Saved rects can become stale after UI changes (new bars/buttons/text scale).
-          fitPromise = scheduleOverflowFitPasses(el, 'tabChange', [0, 180, 260]);
+          fitPromise = skipOpenAutoFit
+            ? Promise.resolve(getWindowRectFromState(wstate))
+            : scheduleOverflowFitPasses(el, 'tabChange', [0, 180, 260]);
         }
         wstate.smartFitPromise = fitPromise.catch(()=> getWindowRectFromState(wstate));
         

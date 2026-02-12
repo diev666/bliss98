@@ -1,0 +1,44 @@
+{
+  "viewport": {
+    "w": 430,
+    "h": 932
+  },
+  "rects": {
+    "dope": {
+      "x": 0,
+      "y": 0,
+      "width": 430,
+      "height": 932,
+      "top": 0,
+      "right": 430,
+      "bottom": 932,
+      "left": 0
+    },
+    "shell": {
+      "x": 0,
+      "y": 0,
+      "width": 430,
+      "height": 655,
+      "top": 0,
+      "right": 430,
+      "bottom": 655,
+      "left": 0
+    },
+    "frame": {
+      "x": 0,
+      "y": 0,
+      "width": 430,
+      "height": 932,
+      "top": 0,
+      "right": 430,
+      "bottom": 932,
+      "left": 0
+    }
+  },
+  "classMobileGame": true,
+  "positionStyle": "fixed",
+  "insetStyle": "0px,0px,0px,0px",
+  "menuButtonVisible": false,
+  "fillsViewport": true,
+  "consoleErrors": []
+}

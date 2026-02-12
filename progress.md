@@ -599,3 +599,10 @@ Original prompt (continuação): e crie esses sons dentro da pasta assets/sounds
   - in `.mobile-game` for `#win_games` and `#win_dope-skate`, title text + menubar now hidden, only window controls (`min/max/close`) remain visible as overlay.
   - removes topbar/menubar vertical push from game content area.
 - Cache bust updated: `bliss98.bundle.js?v=20260212-grid-snap-fix-2`.
+- Correção solicitada após separação do app Dope Skate:
+  - Mobile open: Dope Skate agora ignora `savedRect` e já nasce com retângulo fullscreen no `openApp` (sem depender de maximizar manual).
+  - Mobile fit race: `smartFit(open)` foi pulado para `dope-skate` em mobile; fit é controlado pelo `enterMobileFullscreen` no render do jogo.
+  - Botão Menu no topo removido no mobile: `initDopeSkateInWindow` remove `.skate-topbar-actions` quando `isMobileGameMode()`.
+- Validação mobile:
+  - Arquivos: `output/dope-mobile-open-fix-check/mobile-dope-open.png` e `output/dope-mobile-open-fix-check/result.json`.
+  - Resultado: `fillsViewport=true`, `menuButtonVisible=false`, `consoleErrors=[]`.
