@@ -87,6 +87,7 @@
           tab: 'general',
           darkMode: false,
           blissosDarkMode: false,
+          blissosAqua: false,
           retroGlow: false,
           clock24: true,
           oldCrt: false,
@@ -282,6 +283,14 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
           id: 'blissos',
           labelKey: 'wallpaper.blissos',
           background: 'url("./assets/wallpapers/BlissOS.png")',
+          size: 'cover',
+          repeat: 'no-repeat',
+          position: 'center'
+        },
+        {
+          id: 'aqua',
+          labelKey: 'wallpaper.aqua',
+          background: 'url("./assets/wallpapers/Aqua.png")',
           size: 'cover',
           repeat: 'no-repeat',
           position: 'center'

@@ -205,7 +205,7 @@
   .blissos-menu-item, .blissos-menu-brand, .blissos-appmenu,
   .wctl, .settings-tab,
   [data-set-theme], [data-set-lang], [data-set-wallpaper], [data-set-animations], [data-set-appopenanim],
-  [data-set-scanlines], [data-set-darkmode], [data-set-blissos-darkmode], [data-set-retro],
+  [data-set-scanlines], [data-set-darkmode], [data-set-blissos-darkmode], [data-set-blissos-aqua], [data-set-retro],
   [data-set-clock], [data-set-oldcrt], [data-set-os-theme], [data-set-titlebar],
   [data-theme-custom], [data-games-tab], [data-music-id], [data-poem-id], [data-trash-id],
   [data-trash-action], [data-modal-action], [data-menu-action], [data-txt-action], [data-folder-nav-id],
@@ -1289,6 +1289,502 @@
         flex:1;
         text-align:left;
       }
+
+      /* BlissOS Aqua skin (optional toggle) */
+      body[data-theme="blissos"][data-blissos-style="aqua"]{
+        --blissos-bg:#5f86c2;
+        --blissos-desktop:#4f78b5;
+        --blissos-text:#1e2b3a;
+        --blissos-text-muted:#5b6978;
+        --blissos-text-disabled:#8b95a1;
+        --blissos-text-invert:#ffffff;
+        --blissos-link:#2b66b8;
+        --blissos-border:#7f8a99;
+        --blissos-border-hi:#ffffff;
+        --blissos-border-lo:#707b89;
+        --blissos-surface:#eceef2;
+        --blissos-surface-2:#d7dce4;
+        --blissos-surface-3:#f9fbff;
+        --blissos-content:#f5f6f8;
+        --blissos-titlebar-base:#d4d9e1;
+        --blissos-titlebar-active:#dce4f0;
+        --blissos-titlebar-line-hi:rgba(255,255,255,0.88);
+        --blissos-titlebar-line-lo:rgba(102,116,136,0.2);
+        --blissos-highlight:#3f86d3;
+        --blissos-highlight-press:#2f6fb4;
+        --blissos-icon-label-bg:transparent;
+        --blissos-icon-label-border:transparent;
+        --blissos-icon-selected-label:#2f74be;
+        --blissos-scroll-track:#d7deea;
+        --blissos-scroll-thumb:#a8bdd9;
+        --blissos-scroll-button:#c3d2e6;
+        --blissos-scroll-arrow:#2d4f78;
+        --blissos-dock-bg:#d7e5f8;
+        --blissos-dock-bg-glass:rgba(219,233,251,0.74);
+        --blissos-dock-item:rgba(255,255,255,0.08);
+        --blissos-dock-item-hover:rgba(255,255,255,0.24);
+        --blissos-dock-item-open:rgba(255,255,255,0.34);
+        --blissos-dock-indicator:#315c89;
+        --blissos-shadow:rgba(23,42,76,0.35);
+        --blissos-accent:#3f86d3;
+        --blissos-accent-2:#5ca2eb;
+        --blissos-accent-weak:rgba(63,134,211,0.2);
+        --blissos-accent-contrast:#ffffff;
+        font-family:"Lucida Grande","Lucida Sans Unicode","Geneva","Tahoma",system-ui,sans-serif;
+        font-size:13px;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"]{
+        --blissos-bg:#1f2d41;
+        --blissos-desktop:#18263a;
+        --blissos-text:#d6e2f0;
+        --blissos-text-muted:#9eb2ca;
+        --blissos-text-disabled:#71839a;
+        --blissos-text-invert:#f3f8ff;
+        --blissos-link:#8abfff;
+        --blissos-border:#4f6481;
+        --blissos-border-hi:#88a3c4;
+        --blissos-border-lo:#22354f;
+        --blissos-surface:#223248;
+        --blissos-surface-2:#263a52;
+        --blissos-surface-3:#2e4562;
+        --blissos-content:#24364d;
+        --blissos-titlebar-base:#2a3e58;
+        --blissos-titlebar-active:#315077;
+        --blissos-titlebar-line-hi:rgba(190,219,255,0.34);
+        --blissos-titlebar-line-lo:rgba(9,18,28,0.42);
+        --blissos-highlight:#4e99eb;
+        --blissos-highlight-press:#3a82cf;
+        --blissos-scroll-track:#24384f;
+        --blissos-scroll-thumb:#4f6f98;
+        --blissos-scroll-button:#3f5775;
+        --blissos-scroll-arrow:#d3e4fa;
+        --blissos-dock-bg:#2f4867;
+        --blissos-dock-bg-glass:rgba(46,74,107,0.72);
+        --blissos-dock-item:rgba(236,245,255,0.06);
+        --blissos-dock-item-hover:rgba(236,245,255,0.16);
+        --blissos-dock-item-open:rgba(236,245,255,0.24);
+        --blissos-dock-indicator:#d6ebff;
+        --blissos-shadow:rgba(0,0,0,0.54);
+        --blissos-accent:#5ca9f4;
+        --blissos-accent-2:#7abcf8;
+        --blissos-accent-weak:rgba(92,169,244,0.22);
+        --blissos-accent-contrast:#0d1f32;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] #desktop{
+        background-color:var(--blissos-desktop);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .desktop-area{
+        inset:24px 0 82px 0;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .icon span{
+        color:#f8fbff;
+        text-shadow:0 1px 2px rgba(0,0,0,0.72);
+        background:transparent;
+        border:0;
+        box-shadow:none;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .icon.selected{
+        border:1px solid rgba(194,225,255,0.75);
+        background:rgba(62,121,189,0.3);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .icon.selected span{
+        color:#ffffff;
+        background:rgba(52,104,174,0.72);
+        border:1px solid rgba(208,231,255,0.72);
+        border-radius:4px;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .window .frame{
+        border-radius:8px;
+        border:1px solid #7b8593;
+        background:linear-gradient(180deg, #f6f7f9 0%, #eceff3 100%);
+        box-shadow:
+          0 14px 36px rgba(13,33,62,0.34),
+          inset 0 1px 0 rgba(255,255,255,0.86),
+          inset 0 -1px 0 rgba(90,104,124,0.38);
+        overflow:hidden;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .titlebar{
+        height:24px;
+        min-height:24px;
+        padding:2px 10px 2px 64px;
+        border-bottom:1px solid #8f99a8;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(232,238,246,0.92) 43%, rgba(204,212,223,0.94) 44%, rgba(196,205,217,0.94) 100%),
+          repeating-linear-gradient(180deg, rgba(255,255,255,0.66) 0 1px, rgba(126,140,162,0.16) 1px 2px);
+        color:#223245;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .window:focus-within .titlebar,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .window[data-active="1"] .titlebar{
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(225,240,255,0.95) 43%, rgba(186,214,244,0.97) 44%, rgba(168,200,236,0.97) 100%),
+          repeating-linear-gradient(180deg, rgba(255,255,255,0.62) 0 1px, rgba(87,126,176,0.14) 1px 2px);
+        color:#16365e;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .title-left{
+        position:absolute;
+        left:64px;
+        right:10px;
+        top:0;
+        bottom:0;
+        justify-content:center;
+        pointer-events:none;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .win-title-icon{
+        display:none !important;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls{
+        position:absolute;
+        top:6px;
+        left:10px;
+        right:auto;
+        width:44px;
+        height:12px;
+        display:flex;
+        gap:4px;
+        z-index:2;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl{
+        width:12px;
+        height:12px;
+        border-radius:50%;
+        border:1px solid rgba(0,0,0,0.4);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.78),
+          inset 0 -1px 0 rgba(0,0,0,0.2),
+          0 0 0 1px rgba(255,255,255,0.12);
+        color:transparent;
+        font-size:0;
+        line-height:0;
+        text-indent:-9999px;
+        overflow:hidden;
+        transform:none !important;
+        position:relative;
+        filter:saturate(1.08);
+        transition:filter .14s ease, box-shadow .14s ease;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl[data-action="close"]{
+        left:0;
+        right:auto;
+        border-color:#8a3e35;
+        background:linear-gradient(180deg, #ffd2c8 0%, #ff8d7f 44%, #f15245 65%, #c52c22 100%);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl[data-action="min"]{
+        left:16px;
+        right:auto;
+        border-color:#947734;
+        background:linear-gradient(180deg, #fff5c7 0%, #ffe07a 44%, #f2bf33 65%, #bf8300 100%);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl[data-action="max"]{
+        left:32px;
+        right:auto;
+        border-color:#4a7f2d;
+        background:linear-gradient(180deg, #dcffc3 0%, #9aee6e 44%, #56c935 65%, #2b8b1d 100%);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl::after{
+        content:"";
+        position:absolute;
+        inset:0;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        text-indent:0;
+        font-weight:800;
+        line-height:1;
+        opacity:0;
+        transform:scale(0.74);
+        transition:opacity .12s ease, transform .12s ease;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl[data-action="close"]::after{
+        content:"×";
+        font-size:9px;
+        color:#562019;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl[data-action="min"]::after{
+        content:"–";
+        font-size:11px;
+        color:#664e12;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl[data-action="max"]::after{
+        content:"↖↘";
+        font-size:7px;
+        letter-spacing:-1px;
+        color:#1f5420;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl:hover,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl:focus-visible{
+        filter:saturate(1.24) brightness(1.06);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.9),
+          inset 0 -1px 0 rgba(0,0,0,0.26),
+          0 0 0 1px rgba(255,255,255,0.22);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl:hover::after,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl:focus-visible::after{
+        opacity:0.95;
+        transform:scale(1);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .btn,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .bevel{
+        border:1px solid #7d92af;
+        border-radius:14px;
+        background:
+          linear-gradient(180deg, #f9fcff 0%, #d9e9fa 48%, #bbd5f1 49%, #cfdef3 100%);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.92),
+          inset 0 -1px 0 rgba(71,109,155,0.22);
+        color:#1e3553;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .btn:active,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .btn.pressed{
+        border-color:#557fb0;
+        background:
+          linear-gradient(180deg, #d4e8ff 0%, #8ec0f1 48%, #6ea6df 49%, #8ab8e8 100%);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.38),
+          inset 0 -1px 0 rgba(23,58,97,0.32);
+        color:#ffffff;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-menubar{
+        height:24px;
+        padding:0 10px;
+        background:
+          linear-gradient(180deg, #fefefe 0%, #e7ebf0 46%, #d1d6de 47%, #c5cbd4 100%);
+        border-top:0;
+        border-bottom:1px solid #7e8896;
+        box-shadow:none;
+        color:#1f2b39;
+        font-weight:600;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-menu-item,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-menu-brand{
+        border-radius:5px;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-appmenu{
+        height:20px;
+        padding:0 8px 0 6px;
+        border:1px solid rgba(99,122,150,0.72);
+        border-radius:5px;
+        background:linear-gradient(180deg, rgba(248,252,255,0.8) 0%, rgba(199,214,233,0.74) 100%);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,0.72);
+        color:#1f3047;
+        text-shadow:0 1px 0 rgba(255,255,255,0.36);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-appmenu:hover,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-appmenu:focus-visible{
+        border-color:#6e91bb;
+        background:linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(210,225,244,0.86) 100%);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-appmenu-icon{
+        filter:drop-shadow(0 1px 0 rgba(255,255,255,0.45));
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-menu-right .blissos-menu-sep{
+        color:rgba(34,50,71,0.68);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-menu-item:hover,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-menu-item:focus,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-menu-brand:hover,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-menu-brand:focus,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-menu-item.active,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-menu-brand.active,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-appmenu.active{
+        background:linear-gradient(180deg, #6db4f5 0%, #3d87d4 52%, #2d6eb8 100%);
+        color:#ffffff;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock{
+        bottom:calc(env(safe-area-inset-bottom) + 8px);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-inner{
+        height:60px;
+        padding:8px 14px;
+        border-radius:18px;
+        border:1px solid rgba(103,129,164,0.88);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.86) 0%, rgba(232,242,255,0.78) 45%, rgba(178,204,235,0.68) 46%, rgba(198,218,242,0.74) 100%);
+        box-shadow:
+          0 14px 28px rgba(11,30,58,0.36),
+          inset 0 1px 0 rgba(255,255,255,0.86),
+          inset 0 -1px 0 rgba(53,88,129,0.3);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-inner::before{
+        content:"";
+        position:absolute;
+        left:10px;
+        right:10px;
+        top:3px;
+        height:42%;
+        border-radius:14px;
+        background:linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0));
+        pointer-events:none;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item{
+        width:48px;
+        height:48px;
+        border:1px solid transparent;
+        border-radius:12px;
+        background:rgba(255,255,255,0.06);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item:hover{
+        background:rgba(255,255,255,0.26);
+        border-color:rgba(255,255,255,0.45);
+        transform:translateY(-5px) scale(1.14);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item.open{
+        background:rgba(255,255,255,0.34);
+        border-color:rgba(255,255,255,0.52);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item .dock-indicator{
+        width:8px;
+        height:8px;
+        border-radius:50%;
+        background:radial-gradient(circle at 35% 30%, #f5fbff 0%, #7faedb 45%, #3e6697 100%);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .ctx-menu,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .menu-drop,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .menu-sub,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-menu-drop,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-appmenu-drop,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-apple-menu{
+        border:1px solid #90a0b3;
+        border-radius:8px;
+        background:rgba(248,252,255,0.97);
+        box-shadow:0 10px 24px rgba(14,34,66,0.28);
+        backdrop-filter:blur(4px);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .menu-item,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .ctx-item,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-apple-menu button{
+        color:#24374f;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-apple-menu .menu-sep,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-appmenu-drop .menu-sep{
+        background:#9fb0c5;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] #win_settings .settings-panel[data-tab="language"] [data-set-lang] .kbd{
+        display:none;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] #win_settings .settings-panel[data-tab="language"] .settings-actions [data-set-lang]{
+        min-width:142px;
+        height:30px;
+        padding:0 16px;
+        gap:0;
+        justify-content:center;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .menu-item:hover,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .menu-item:focus,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .ctx-item:hover,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .ctx-item:focus{
+        border-radius:5px;
+        background:linear-gradient(180deg, #6db4f5 0%, #3d87d4 52%, #2d6eb8 100%);
+        color:#ffffff;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .window .frame{
+        border-color:#4d6280;
+        background:linear-gradient(180deg, #2a3f5b 0%, #25364d 100%);
+        box-shadow:
+          0 14px 34px rgba(0,0,0,0.58),
+          inset 0 1px 0 rgba(179,208,244,0.2),
+          inset 0 -1px 0 rgba(5,12,20,0.42);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .titlebar{
+        border-bottom-color:#436183;
+        background:
+          linear-gradient(180deg, rgba(112,147,193,0.86) 0%, rgba(72,108,151,0.9) 43%, rgba(58,89,128,0.92) 44%, rgba(48,74,107,0.94) 100%),
+          repeating-linear-gradient(180deg, rgba(178,212,255,0.2) 0 1px, rgba(8,18,31,0.24) 1px 2px);
+        color:#eaf4ff;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .window:focus-within .titlebar,
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .window[data-active="1"] .titlebar{
+        background:
+          linear-gradient(180deg, rgba(135,187,245,0.88) 0%, rgba(82,142,210,0.92) 43%, rgba(63,116,179,0.94) 44%, rgba(47,88,139,0.95) 100%),
+          repeating-linear-gradient(180deg, rgba(198,225,255,0.22) 0 1px, rgba(16,35,58,0.24) 1px 2px);
+        color:#f4fbff;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-menubar{
+        border-top:0;
+        border-bottom-color:#446486;
+        background:
+          linear-gradient(180deg, #4d6f99 0%, #365071 46%, #2e4461 47%, #273a53 100%);
+        box-shadow:none;
+        color:#e0ecfa;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-appmenu{
+        border-color:rgba(132,168,208,0.76);
+        background:linear-gradient(180deg, rgba(102,136,176,0.52) 0%, rgba(52,80,114,0.62) 100%);
+        box-shadow:inset 0 1px 0 rgba(209,231,255,0.24);
+        color:#ecf5ff;
+        text-shadow:0 1px 0 rgba(0,0,0,0.38);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-appmenu:hover,
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-appmenu:focus-visible{
+        border-color:#95c2f0;
+        background:linear-gradient(180deg, rgba(120,162,209,0.62) 0%, rgba(60,99,142,0.74) 100%);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-menu-right .blissos-menu-sep{
+        color:rgba(227,241,255,0.6);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .title-controls .wctl[data-action="close"]::after{
+        color:#ffece8;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .title-controls .wctl[data-action="min"]::after{
+        color:#fff9de;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .title-controls .wctl[data-action="max"]::after{
+        color:#eaffde;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .ctx-menu,
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .menu-drop,
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .menu-sub,
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-menu-drop,
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-appmenu-drop,
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-apple-menu,
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-apple-menu .submenu{
+        border-color:#4f6787;
+        background:rgba(31,47,69,0.97);
+        box-shadow:
+          0 14px 30px rgba(0,0,0,0.56),
+          inset 0 1px 0 rgba(186,216,252,0.16);
+        color:#e8f2ff;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .menu-item,
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .ctx-item,
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-apple-menu button{
+        color:#e8f2ff;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .menu-item.disabled,
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .menu-item:disabled{
+        color:#8ea2bc;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-apple-menu .menu-sep,
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-appmenu-drop .menu-sep{
+        background:#5c7598;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-inner{
+        border-color:rgba(108,140,180,0.86);
+        background:
+          linear-gradient(180deg, rgba(68,101,139,0.88) 0%, rgba(46,73,106,0.86) 47%, rgba(33,53,79,0.9) 48%, rgba(39,61,90,0.9) 100%);
+        box-shadow:
+          0 14px 28px rgba(0,0,0,0.58),
+          inset 0 1px 0 rgba(197,223,255,0.2),
+          inset 0 -1px 0 rgba(4,10,18,0.56);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-inner::before{
+        background:linear-gradient(180deg, rgba(227,242,255,0.24), rgba(227,242,255,0));
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-item{
+        background:rgba(236,245,255,0.08);
+        border-color:rgba(205,227,255,0.08);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-item:hover{
+        background:rgba(236,245,255,0.2);
+        border-color:rgba(205,227,255,0.35);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-item.open{
+        background:rgba(236,245,255,0.28);
+        border-color:rgba(205,227,255,0.44);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-item .dock-indicator{
+        background:radial-gradient(circle at 35% 30%, #f1f9ff 0%, #9ec7ef 45%, #4f7fac 100%);
+      }
       .btn:active{ filter:brightness(0.97); }
       .btn.pressed{
         border-top:2px solid var(--shadow-dark);
@@ -1789,7 +2285,7 @@
           inset -1px -1px 0 rgba(0,0,0,0.44),
           0 0 0 1px rgba(198,226,255,0.48);
       }
-      body[data-theme="blissos"] .taskbar-calendar{
+      body[data-theme="blissos"][data-blissos-style="aqua"] .taskbar-calendar{
         color:#17365f;
         border:1px solid #6c93c8;
         border-radius:14px;
@@ -1802,7 +2298,7 @@
           inset 0 1px 0 rgba(255,255,255,0.94),
           inset 0 -1px 0 rgba(66,103,155,0.45);
       }
-      body[data-theme="blissos"] .taskbar-calendar-shell{
+      body[data-theme="blissos"][data-blissos-style="aqua"] .taskbar-calendar-shell{
         border:1px solid #8fb3df;
         border-radius:10px;
         padding:10px;
@@ -1812,7 +2308,7 @@
           inset 0 10px 14px rgba(255,255,255,0.58),
           inset 0 -8px 12px rgba(108,150,205,0.28);
       }
-      body[data-theme="blissos"] .taskbar-calendar-header{
+      body[data-theme="blissos"][data-blissos-style="aqua"] .taskbar-calendar-header{
         margin-bottom:9px;
         border:1px solid #4a78b3;
         border-radius:8px;
@@ -1824,16 +2320,16 @@
           inset 0 1px 0 rgba(255,255,255,0.82),
           inset 0 -1px 0 rgba(16,48,87,0.42);
       }
-      body[data-theme="blissos"] .taskbar-calendar-month{
+      body[data-theme="blissos"][data-blissos-style="aqua"] .taskbar-calendar-month{
         letter-spacing:0.2px;
       }
-      body[data-theme="blissos"] .taskbar-calendar-date{
+      body[data-theme="blissos"][data-blissos-style="aqua"] .taskbar-calendar-date{
         color:#eef7ff;
       }
-      body[data-theme="blissos"] .taskbar-calendar-weekday{
+      body[data-theme="blissos"][data-blissos-style="aqua"] .taskbar-calendar-weekday{
         color:#2c5e99;
       }
-      body[data-theme="blissos"] .taskbar-calendar-day{
+      body[data-theme="blissos"][data-blissos-style="aqua"] .taskbar-calendar-day{
         border:1px solid #90b3dc;
         border-radius:6px;
         color:#1f3f69;
@@ -1843,12 +2339,12 @@
           inset 0 1px 0 rgba(255,255,255,0.92),
           inset 0 -1px 0 rgba(87,126,178,0.26);
       }
-      body[data-theme="blissos"] .taskbar-calendar-day.is-muted{
+      body[data-theme="blissos"][data-blissos-style="aqua"] .taskbar-calendar-day.is-muted{
         color:rgba(37,76,123,0.52);
         background:
           linear-gradient(180deg, #f2f7fd 0%, #d7e4f6 100%);
       }
-      body[data-theme="blissos"] .taskbar-calendar-day.is-today{
+      body[data-theme="blissos"][data-blissos-style="aqua"] .taskbar-calendar-day.is-today{
         color:#ffffff;
         border-color:#245996;
         background:
@@ -1859,12 +2355,12 @@
           inset 0 -1px 0 rgba(0,0,0,0.3),
           0 0 0 1px rgba(168,214,255,0.68);
       }
-      body[data-theme="blissos"] .clock.calendar-open,
-      body[data-theme="blissos"] .blissos-menu-clock.calendar-open{
+      body[data-theme="blissos"][data-blissos-style="aqua"] .clock.calendar-open,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-menu-clock.calendar-open{
         color:#f5fbff;
         text-shadow:0 0 8px rgba(119,186,255,0.95);
       }
-      body[data-theme="blissos"][data-blissos-mode="dark"] .taskbar-calendar{
+      body[data-theme="blissos"][data-blissos-mode="dark"][data-blissos-style="aqua"] .taskbar-calendar{
         color:#d7e7ff;
         border-color:#3e5f8d;
         background:
@@ -1874,28 +2370,28 @@
           inset 0 1px 0 rgba(188,217,255,0.16),
           inset 0 -1px 0 rgba(0,0,0,0.42);
       }
-      body[data-theme="blissos"][data-blissos-mode="dark"] .taskbar-calendar-shell{
+      body[data-theme="blissos"][data-blissos-mode="dark"][data-blissos-style="aqua"] .taskbar-calendar-shell{
         border-color:#476895;
         background:linear-gradient(180deg, rgba(50,78,116,0.82) 0%, rgba(31,50,78,0.86) 100%);
       }
-      body[data-theme="blissos"][data-blissos-mode="dark"] .taskbar-calendar-header{
+      body[data-theme="blissos"][data-blissos-mode="dark"][data-blissos-style="aqua"] .taskbar-calendar-header{
         border-color:#2d5f98;
         background:linear-gradient(180deg, #7dc3ff 0%, #2d7bd0 48%, #1e5ca7 49%, #17487f 100%);
       }
-      body[data-theme="blissos"][data-blissos-mode="dark"] .taskbar-calendar-weekday{
+      body[data-theme="blissos"][data-blissos-mode="dark"][data-blissos-style="aqua"] .taskbar-calendar-weekday{
         color:#a9cbf7;
       }
-      body[data-theme="blissos"][data-blissos-mode="dark"] .taskbar-calendar-day{
+      body[data-theme="blissos"][data-blissos-mode="dark"][data-blissos-style="aqua"] .taskbar-calendar-day{
         color:#dceaff;
         border-color:#5a7da8;
         background:
           linear-gradient(180deg, #5f7fa8 0%, #3f628d 52%, #355478 53%, #446890 100%);
       }
-      body[data-theme="blissos"][data-blissos-mode="dark"] .taskbar-calendar-day.is-muted{
+      body[data-theme="blissos"][data-blissos-mode="dark"][data-blissos-style="aqua"] .taskbar-calendar-day.is-muted{
         color:rgba(194,218,249,0.56);
         background:linear-gradient(180deg, #536f90 0%, #3a536f 100%);
       }
-      body[data-theme="blissos"][data-blissos-mode="dark"] .taskbar-calendar-day.is-today{
+      body[data-theme="blissos"][data-blissos-mode="dark"][data-blissos-style="aqua"] .taskbar-calendar-day.is-today{
         border-color:#94d0ff;
         background:linear-gradient(180deg, #8dd1ff 0%, #3f93e6 48%, #2a73c4 49%, #1c5fa7 100%);
       }
@@ -5072,6 +5568,6 @@
       </div>
     </div>
 
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260213-taskbar-calendar"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260213-aqua-polish-2"></script>
   </body>
 </html>

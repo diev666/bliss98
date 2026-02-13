@@ -91,6 +91,7 @@
           tab: 'general',
           darkMode: false,
           blissosDarkMode: false,
+          blissosAqua: false,
           retroGlow: false,
           clock24: true,
           oldCrt: false,
@@ -286,6 +287,14 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
           id: 'blissos',
           labelKey: 'wallpaper.blissos',
           background: 'url("./assets/wallpapers/BlissOS.png")',
+          size: 'cover',
+          repeat: 'no-repeat',
+          position: 'center'
+        },
+        {
+          id: 'aqua',
+          labelKey: 'wallpaper.aqua',
+          background: 'url("./assets/wallpapers/Aqua.png")',
           size: 'cover',
           repeat: 'no-repeat',
           position: 'center'
@@ -6171,6 +6180,7 @@ function initClothesWindow(winEl){
     updateRetroGlowButtons(win);
     updateDarkModeButtons(win);
     updateBlissOSDarkButtons(win);
+    updateBlissOSAquaButtons(win);
     updateBlissosAccentButtons(win);
     updateClockButtons(win);
     updateOldCrtButtons(win);
@@ -6532,6 +6542,13 @@ function updateBlissOSDarkButtons(root=document){
   });
 }
 
+function updateBlissOSAquaButtons(root=document){
+  $$('[data-set-blissos-aqua]', root).forEach(btn => {
+    const on = btn.dataset.setBlissosAqua === 'on';
+    btn.classList.toggle('pressed', on === state.settings.blissosAqua);
+  });
+}
+
 function updateBlissosAccentButtons(root=document){
   $$('[data-set-blissos-accent]', root).forEach(btn => {
     btn.classList.toggle('active', btn.dataset.setBlissosAccent === state.settings.blissosAccent);
@@ -6554,6 +6571,19 @@ function setBlissOSDarkMode(enabled){
   applyDarkMode();
   applyBlissosAccent(state.settings.blissosAccent);
   updateBlissOSDarkButtons();
+  syncOsProfile();
+}
+
+function applyBlissOSAqua(){
+  const isBlissOS = state.settings.theme === 'blissos';
+  document.body.dataset.blissosStyle = (isBlissOS && state.settings.blissosAqua) ? 'aqua' : 'classic';
+  updateBlissOSAquaButtons();
+}
+
+function setBlissOSAqua(enabled){
+  if(state.settings.theme !== 'blissos') return;
+  state.settings.blissosAqua = !!enabled;
+  applyBlissOSAqua();
   syncOsProfile();
 }
 
@@ -7077,6 +7107,7 @@ function getDefaultOsProfiles(){
       titlebar: loadTitlebarTheme(),
       darkMode: loadDarkMode(),
       blissosDarkMode: false,
+      blissosAqua: false,
       retroGlow: loadRetroGlow(),
       scanlines: loadScanlines(),
       clock24: loadClockFormat(),
@@ -7091,6 +7122,7 @@ function getDefaultOsProfiles(){
       titlebar: 'defaultBlue',
       darkMode: false,
       blissosDarkMode: false,
+      blissosAqua: false,
       retroGlow: false,
       scanlines: false,
       clock24: true,
@@ -7132,6 +7164,7 @@ function syncOsProfile(){
     titlebar: state.theme.titlebar,
     darkMode: state.settings.darkMode,
     blissosDarkMode: state.settings.blissosDarkMode,
+    blissosAqua: state.settings.blissosAqua,
     retroGlow: state.settings.retroGlow,
     scanlines: state.settings.scanlines,
     clock24: state.settings.clock24,
@@ -7154,6 +7187,7 @@ function applyOsProfile(theme){
   }
   state.settings.darkMode = !!profile.darkMode;
   state.settings.blissosDarkMode = !!profile.blissosDarkMode;
+  state.settings.blissosAqua = !!profile.blissosAqua;
   state.settings.retroGlow = !!profile.retroGlow;
   state.settings.scanlines = !!profile.scanlines;
   state.settings.clock24 = profile.clock24 !== false;
@@ -7212,6 +7246,7 @@ function applyOsTheme(){
   if(blissos){
     applyBlissosAccent(state.settings.blissosAccent);
   }
+  applyBlissOSAqua();
 }
 
 function setOsTheme(theme){
@@ -9199,6 +9234,7 @@ function applyDarkMode(){
   const isBlissOS = state.settings.theme === 'blissos';
   document.body.classList.toggle('dark', !isBlissOS && state.settings.darkMode);
   document.body.dataset.blissosMode = (isBlissOS && state.settings.blissosDarkMode) ? 'dark' : 'classic';
+  applyBlissOSAqua();
   if(!isBlissOS) saveDarkMode();
   updateDarkModeButtons();
   if(isBlissOS) updateBlissOSDarkButtons();
@@ -9800,6 +9836,10 @@ function installLongPress(el, getTarget){
           'settings.blissosDark.desc': 'Enables a dark Mac OS 9 inspired look for BlissOS.',
           'settings.blissosDark.on': 'On',
           'settings.blissosDark.off': 'Off',
+          'settings.blissosAqua.title': 'BlissOS Aqua Theme',
+          'settings.blissosAqua.desc': 'Enable the classic Apple Aqua look for BlissOS.',
+          'settings.blissosAqua.on': 'On',
+          'settings.blissosAqua.off': 'Off',
           'settings.retro.title': 'Glow',
           'settings.retro.desc': 'Add glow to windows and icons.',
           'settings.retro.on': 'On',
@@ -10039,6 +10079,7 @@ function installLongPress(el, getTarget){
 
           'wallpaper.classic': 'Classic Teal',
           'wallpaper.blissos': 'BlissOS',
+          'wallpaper.aqua': 'Aqua',
           'wallpaper.bliss': 'Sunrise',
           'wallpaper.clouds': 'Clouds',
           'wallpaper.diev': 'Grid',
@@ -10348,6 +10389,10 @@ function installLongPress(el, getTarget){
           'settings.blissosDark.desc': 'Ativa um visual escuro inspirado no Mac OS 9 para o BlissOS.',
           'settings.blissosDark.on': 'Ligado',
           'settings.blissosDark.off': 'Desligado',
+          'settings.blissosAqua.title': 'Tema Aqua do BlissOS',
+          'settings.blissosAqua.desc': 'Ativa o visual clássico Aqua da Apple no BlissOS.',
+          'settings.blissosAqua.on': 'Ligado',
+          'settings.blissosAqua.off': 'Desligado',
           'settings.retro.title': 'Glow',
           'settings.retro.desc': 'Adicione brilho nas janelas e ícones.',
           'settings.retro.on': 'Ligado',
@@ -10587,6 +10632,7 @@ function installLongPress(el, getTarget){
 
           'wallpaper.classic': 'Teal clássico',
           'wallpaper.blissos': 'BlissOS',
+          'wallpaper.aqua': 'Aqua',
           'wallpaper.bliss': 'Nascer do Sol',
           'wallpaper.clouds': 'Nuvens',
           'wallpaper.diev': 'Grid',
@@ -13224,6 +13270,14 @@ Eu sou o buffalo branco extinto`
                     <button class="btn bevel" type="button" data-set-blissos-darkmode="off"><span data-i18n="settings.blissosDark.off">Off</span></button>
                   </div>
                 </div>
+                <div class="settings-block blissos-only" id="settingsBlissOSAqua">
+                  <strong data-i18n="settings.blissosAqua.title">BlissOS Aqua Theme</strong>
+                  <p style="margin:6px 0 10px 0;" data-i18n="settings.blissosAqua.desc">Enable the classic Apple Aqua look for BlissOS.</p>
+                  <div class="settings-actions">
+                    <button class="btn bevel" type="button" data-set-blissos-aqua="on"><span data-i18n="settings.blissosAqua.on">On</span></button>
+                    <button class="btn bevel" type="button" data-set-blissos-aqua="off"><span data-i18n="settings.blissosAqua.off">Off</span></button>
+                  </div>
+                </div>
                 <div class="settings-block" id="settingsWallpaper">
                   <strong data-i18n="settings.wallpaperTab">Wallpaper</strong>
                   <p style="margin:6px 0 10px 0;" data-i18n="settings.wallpaperDesc">Choose a wallpaper for your desktop.</p>
@@ -13238,6 +13292,10 @@ Eu sou o buffalo branco extinto`
                         <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="blissos">
                           <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/BlissOS.png') center/cover no-repeat;"></span>
                           <span class="wallpaper-card-label" data-i18n="wallpaper.blissos">BlissOS</span>
+                        </button>
+                        <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="aqua">
+                          <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/Aqua.png') center/cover no-repeat;"></span>
+                          <span class="wallpaper-card-label" data-i18n="wallpaper.aqua">Aqua</span>
                         </button>
                         <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="bliss">
                           <span class="wallpaper-card-thumb" style="background:radial-gradient(circle at 20% 20%, #fff2c4 0%, #ffb77a 30%, #7fc7ff 65%, #1d5b9e 100%);"></span>
@@ -18035,6 +18093,10 @@ function renderBlissOSAppMenu(){
         const blissosDarkBtn = target.closest('[data-set-blissos-darkmode]');
         if(blissosDarkBtn && blissosDarkBtn.dataset && blissosDarkBtn.dataset.setBlissosDarkmode){
           setBlissOSDarkMode(blissosDarkBtn.dataset.setBlissosDarkmode === 'on');
+        }
+        const blissosAquaBtn = target.closest('[data-set-blissos-aqua]');
+        if(blissosAquaBtn && blissosAquaBtn.dataset && blissosAquaBtn.dataset.setBlissosAqua){
+          setBlissOSAqua(blissosAquaBtn.dataset.setBlissosAqua === 'on');
         }
         const retroBtn = target.closest('[data-set-retro]');
         if(retroBtn && retroBtn.dataset && retroBtn.dataset.setRetro){

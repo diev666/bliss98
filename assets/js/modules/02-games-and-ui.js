@@ -4965,6 +4965,7 @@ function initClothesWindow(winEl){
     updateRetroGlowButtons(win);
     updateDarkModeButtons(win);
     updateBlissOSDarkButtons(win);
+    updateBlissOSAquaButtons(win);
     updateBlissosAccentButtons(win);
     updateClockButtons(win);
     updateOldCrtButtons(win);
@@ -5326,6 +5327,13 @@ function updateBlissOSDarkButtons(root=document){
   });
 }
 
+function updateBlissOSAquaButtons(root=document){
+  $$('[data-set-blissos-aqua]', root).forEach(btn => {
+    const on = btn.dataset.setBlissosAqua === 'on';
+    btn.classList.toggle('pressed', on === state.settings.blissosAqua);
+  });
+}
+
 function updateBlissosAccentButtons(root=document){
   $$('[data-set-blissos-accent]', root).forEach(btn => {
     btn.classList.toggle('active', btn.dataset.setBlissosAccent === state.settings.blissosAccent);
@@ -5348,6 +5356,19 @@ function setBlissOSDarkMode(enabled){
   applyDarkMode();
   applyBlissosAccent(state.settings.blissosAccent);
   updateBlissOSDarkButtons();
+  syncOsProfile();
+}
+
+function applyBlissOSAqua(){
+  const isBlissOS = state.settings.theme === 'blissos';
+  document.body.dataset.blissosStyle = (isBlissOS && state.settings.blissosAqua) ? 'aqua' : 'classic';
+  updateBlissOSAquaButtons();
+}
+
+function setBlissOSAqua(enabled){
+  if(state.settings.theme !== 'blissos') return;
+  state.settings.blissosAqua = !!enabled;
+  applyBlissOSAqua();
   syncOsProfile();
 }
 
@@ -5871,6 +5892,7 @@ function getDefaultOsProfiles(){
       titlebar: loadTitlebarTheme(),
       darkMode: loadDarkMode(),
       blissosDarkMode: false,
+      blissosAqua: false,
       retroGlow: loadRetroGlow(),
       scanlines: loadScanlines(),
       clock24: loadClockFormat(),
@@ -5885,6 +5907,7 @@ function getDefaultOsProfiles(){
       titlebar: 'defaultBlue',
       darkMode: false,
       blissosDarkMode: false,
+      blissosAqua: false,
       retroGlow: false,
       scanlines: false,
       clock24: true,
@@ -5926,6 +5949,7 @@ function syncOsProfile(){
     titlebar: state.theme.titlebar,
     darkMode: state.settings.darkMode,
     blissosDarkMode: state.settings.blissosDarkMode,
+    blissosAqua: state.settings.blissosAqua,
     retroGlow: state.settings.retroGlow,
     scanlines: state.settings.scanlines,
     clock24: state.settings.clock24,
@@ -5948,6 +5972,7 @@ function applyOsProfile(theme){
   }
   state.settings.darkMode = !!profile.darkMode;
   state.settings.blissosDarkMode = !!profile.blissosDarkMode;
+  state.settings.blissosAqua = !!profile.blissosAqua;
   state.settings.retroGlow = !!profile.retroGlow;
   state.settings.scanlines = !!profile.scanlines;
   state.settings.clock24 = profile.clock24 !== false;
@@ -6006,6 +6031,7 @@ function applyOsTheme(){
   if(blissos){
     applyBlissosAccent(state.settings.blissosAccent);
   }
+  applyBlissOSAqua();
 }
 
 function setOsTheme(theme){
@@ -7993,6 +8019,7 @@ function applyDarkMode(){
   const isBlissOS = state.settings.theme === 'blissos';
   document.body.classList.toggle('dark', !isBlissOS && state.settings.darkMode);
   document.body.dataset.blissosMode = (isBlissOS && state.settings.blissosDarkMode) ? 'dark' : 'classic';
+  applyBlissOSAqua();
   if(!isBlissOS) saveDarkMode();
   updateDarkModeButtons();
   if(isBlissOS) updateBlissOSDarkButtons();

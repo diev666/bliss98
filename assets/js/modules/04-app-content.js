@@ -1225,6 +1225,14 @@ Eu sou o buffalo branco extinto`
                     <button class="btn bevel" type="button" data-set-blissos-darkmode="off"><span data-i18n="settings.blissosDark.off">Off</span></button>
                   </div>
                 </div>
+                <div class="settings-block blissos-only" id="settingsBlissOSAqua">
+                  <strong data-i18n="settings.blissosAqua.title">BlissOS Aqua Theme</strong>
+                  <p style="margin:6px 0 10px 0;" data-i18n="settings.blissosAqua.desc">Enable the classic Apple Aqua look for BlissOS.</p>
+                  <div class="settings-actions">
+                    <button class="btn bevel" type="button" data-set-blissos-aqua="on"><span data-i18n="settings.blissosAqua.on">On</span></button>
+                    <button class="btn bevel" type="button" data-set-blissos-aqua="off"><span data-i18n="settings.blissosAqua.off">Off</span></button>
+                  </div>
+                </div>
                 <div class="settings-block" id="settingsWallpaper">
                   <strong data-i18n="settings.wallpaperTab">Wallpaper</strong>
                   <p style="margin:6px 0 10px 0;" data-i18n="settings.wallpaperDesc">Choose a wallpaper for your desktop.</p>
@@ -1239,6 +1247,10 @@ Eu sou o buffalo branco extinto`
                         <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="blissos">
                           <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/BlissOS.png') center/cover no-repeat;"></span>
                           <span class="wallpaper-card-label" data-i18n="wallpaper.blissos">BlissOS</span>
+                        </button>
+                        <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="aqua">
+                          <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/Aqua.png') center/cover no-repeat;"></span>
+                          <span class="wallpaper-card-label" data-i18n="wallpaper.aqua">Aqua</span>
                         </button>
                         <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="bliss">
                           <span class="wallpaper-card-thumb" style="background:radial-gradient(circle at 20% 20%, #fff2c4 0%, #ffb77a 30%, #7fc7ff 65%, #1d5b9e 100%);"></span>
