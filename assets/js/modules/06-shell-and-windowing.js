@@ -21,6 +21,7 @@
       function showLogin(playBoot = false){
         $('#desktop').classList.add('hidden');
         $('#login').classList.remove('hidden');
+        closeTaskbarCalendar();
         updateMatrixEffect();
         $('#username').focus();
         if(playBoot && areSystemSoundsEnabled() && SFX.boot && !SFX.boot.played){
@@ -41,6 +42,7 @@
         closeStartMenu();
         closeCtxMenu();
         closeWindowMenu();
+        closeTaskbarCalendar();
         closeModal();
         playSfxAndWait('logoff').finally(()=>{
           showLogin(false);
@@ -729,7 +731,199 @@ function renderIcons(){
         if(isOpen) closeStartMenu();
         else openStartMenu();
       }
-      $('#startBtn').addEventListener('click', (e)=>{ e.stopPropagation(); toggleStartMenu(); });
+      $('#startBtn').addEventListener('click', (e)=>{
+        e.stopPropagation();
+        closeTaskbarCalendar();
+        toggleStartMenu();
+      });
+
+      let taskbarCalendarAnchorId = 'clock';
+
+      function getTaskbarCalendarAnchor(){
+        if(taskbarCalendarAnchorId){
+          const byId = document.getElementById(taskbarCalendarAnchorId);
+          if(byId) return byId;
+        }
+        return document.getElementById('clock') || document.getElementById('blissosClock') || null;
+      }
+
+      function clearTaskbarCalendarClockState(){
+        const clock = $('#clock');
+        if(clock) clock.classList.remove('calendar-open');
+        const blissClock = $('#blissosClock');
+        if(blissClock) blissClock.classList.remove('calendar-open');
+      }
+
+      function ensureTaskbarCalendar(){
+        const calendar = $('#taskbarCalendar');
+        if(!calendar) return null;
+        if(calendar.dataset.ready === '1') return calendar;
+        calendar.innerHTML = `
+          <div class="taskbar-calendar-shell">
+            <div class="taskbar-calendar-header">
+              <div class="taskbar-calendar-month" data-calendar-month></div>
+              <div class="taskbar-calendar-date" data-calendar-date></div>
+            </div>
+            <div class="taskbar-calendar-weekdays" data-calendar-weekdays></div>
+            <div class="taskbar-calendar-days" data-calendar-days></div>
+          </div>
+        `;
+        calendar.dataset.ready = '1';
+        return calendar;
+      }
+
+      function getTaskbarCalendarLocale(){
+        const locale = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language : '';
+        if(locale && locale.trim()) return locale;
+        return state.lang === 'pt' ? 'pt-BR' : 'en-US';
+      }
+
+      function isTaskbarCalendarOpen(){
+        const calendar = $('#taskbarCalendar');
+        return !!calendar && !calendar.classList.contains('hidden');
+      }
+
+      function renderTaskbarCalendar(){
+        const calendar = ensureTaskbarCalendar();
+        if(!calendar) return;
+        const monthEl = calendar.querySelector('[data-calendar-month]');
+        const dateEl = calendar.querySelector('[data-calendar-date]');
+        const weekdaysEl = calendar.querySelector('[data-calendar-weekdays]');
+        const daysEl = calendar.querySelector('[data-calendar-days]');
+        if(!monthEl || !dateEl || !weekdaysEl || !daysEl) return;
+
+        const locale = getTaskbarCalendarLocale();
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        const firstOfMonth = new Date(year, month, 1);
+        const firstWeekday = firstOfMonth.getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+        monthEl.textContent = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(firstOfMonth);
+        dateEl.textContent = new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' }).format(today);
+
+        weekdaysEl.textContent = '';
+        const weekdayFmt = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+        for(let i = 0; i < 7; i++){
+          const weekday = document.createElement('div');
+          weekday.className = 'taskbar-calendar-weekday';
+          weekday.textContent = weekdayFmt.format(new Date(2024, 0, 7 + i, 12)).replace(/\.$/, '');
+          weekdaysEl.appendChild(weekday);
+        }
+
+        daysEl.textContent = '';
+        for(let i = 0; i < 42; i++){
+          const day = document.createElement('div');
+          day.className = 'taskbar-calendar-day';
+
+          const current = i - firstWeekday + 1;
+          let cellDay = current;
+          let cellMonth = month;
+          let cellYear = year;
+
+          if(current < 1){
+            cellDay = daysInPrevMonth + current;
+            cellMonth = month - 1;
+            if(cellMonth < 0){
+              cellMonth = 11;
+              cellYear -= 1;
+            }
+            day.classList.add('is-muted');
+          } else if(current > daysInMonth){
+            cellDay = current - daysInMonth;
+            cellMonth = month + 1;
+            if(cellMonth > 11){
+              cellMonth = 0;
+              cellYear += 1;
+            }
+            day.classList.add('is-muted');
+          }
+
+          if(cellDay === today.getDate() && cellMonth === today.getMonth() && cellYear === today.getFullYear()){
+            day.classList.add('is-today');
+          }
+          day.textContent = String(cellDay);
+          daysEl.appendChild(day);
+        }
+      }
+
+      function positionTaskbarCalendar(anchorEl = null){
+        const calendar = ensureTaskbarCalendar();
+        if(!calendar || calendar.classList.contains('hidden')) return;
+        const anchor = anchorEl || getTaskbarCalendarAnchor();
+        if(!anchor || !anchor.getBoundingClientRect){
+          const fallbackWidth = calendar.offsetWidth || 304;
+          const fallbackHeight = calendar.offsetHeight || 320;
+          const fallbackLeft = Math.max(8, window.innerWidth - fallbackWidth - 8);
+          const fallbackTop = Math.max(8, window.innerHeight - fallbackHeight - 44);
+          calendar.style.left = `${fallbackLeft}px`;
+          calendar.style.top = `${fallbackTop}px`;
+          return;
+        }
+        const rect = anchor.getBoundingClientRect();
+        const width = calendar.offsetWidth || 304;
+        const height = calendar.offsetHeight || 320;
+        const pad = 8;
+        let left = Math.round(rect.right - width);
+        left = clamp(left, pad, Math.max(pad, window.innerWidth - width - pad));
+        let top = Math.round(rect.top - height - 8);
+        if(top < pad){
+          const below = Math.round(rect.bottom + 8);
+          top = clamp(below, pad, Math.max(pad, window.innerHeight - height - pad));
+        }
+        calendar.style.left = `${left}px`;
+        calendar.style.top = `${top}px`;
+      }
+
+      function closeTaskbarCalendar(){
+        const calendar = $('#taskbarCalendar');
+        if(!calendar) return;
+        calendar.classList.add('hidden');
+        clearTaskbarCalendarClockState();
+      }
+
+      function openTaskbarCalendar(anchorEl = null){
+        const calendar = ensureTaskbarCalendar();
+        if(!calendar) return;
+        if(anchorEl && anchorEl.id) taskbarCalendarAnchorId = anchorEl.id;
+        closeStartMenu();
+        closeCtxMenu();
+        closeWindowMenu();
+        closeBlissOSMenu();
+        closeBlissOSAppMenu();
+        renderTaskbarCalendar();
+        calendar.classList.remove('hidden');
+        clearTaskbarCalendarClockState();
+        const activeAnchor = getTaskbarCalendarAnchor();
+        if(activeAnchor) activeAnchor.classList.add('calendar-open');
+        positionTaskbarCalendar(activeAnchor);
+      }
+
+      function toggleTaskbarCalendar(anchorEl = null){
+        const calendar = ensureTaskbarCalendar();
+        if(!calendar) return;
+        if(anchorEl && anchorEl.id) taskbarCalendarAnchorId = anchorEl.id;
+        const activeAnchor = getTaskbarCalendarAnchor();
+        const clickingActiveAnchor = !!anchorEl && !!activeAnchor && anchorEl.id === activeAnchor.id;
+        if(isTaskbarCalendarOpen() && clickingActiveAnchor){
+          closeTaskbarCalendar();
+          return;
+        }
+        openTaskbarCalendar(anchorEl || activeAnchor);
+      }
+
+      function refreshTaskbarCalendarLayout(){
+        if(!isTaskbarCalendarOpen()) return;
+        positionTaskbarCalendar();
+      }
+
+      window.addEventListener('resize', refreshTaskbarCalendarLayout, { passive:true });
+      window.addEventListener('orientationchange', refreshTaskbarCalendarLayout, { passive:true });
+      if(window.visualViewport){
+        window.visualViewport.addEventListener('resize', refreshTaskbarCalendarLayout, { passive:true });
+      }
 
       function defaultWindowRect(){
         const area = $('#desktopArea').getBoundingClientRect();
@@ -3238,9 +3432,15 @@ function renderBlissOSAppMenu(){
 }
 
       function tickClock(){
-        $('#clock').textContent = getDisplayTime();
+        const displayTime = getDisplayTime();
+        const clock = $('#clock');
+        if(clock) clock.textContent = displayTime;
         const blissClock = $('#blissosClock');
-        if(blissClock) blissClock.textContent = getDisplayTime();
+        if(blissClock) blissClock.textContent = displayTime;
+        if(isTaskbarCalendarOpen()){
+          renderTaskbarCalendar();
+          positionTaskbarCalendar();
+        }
         setTimeout(tickClock, 1000);
       }
 
@@ -3277,9 +3477,16 @@ function renderBlissOSAppMenu(){
           closeModal();
           closeBlissOSMenu();
           closeBlissOSAppMenu();
+          closeTaskbarCalendar();
         }
         if(snakeHandleKey(e)) return;
         if(dopeSkateHandleKey(e)) return;
+        const activeEl = document.activeElement;
+        if((e.key === 'Enter' || e.key === ' ') && activeEl && (activeEl.id === 'clock' || activeEl.id === 'blissosClock')){
+          e.preventDefault();
+          toggleTaskbarCalendar(activeEl);
+          return;
+        }
         if(e.key === 'Enter' && state.activeWindowId === 'poetry' && state.poetry.view === 'list' && state.poetry.selectedId){
           state.poetry.view = 'read';
           state.poetry.currentId = state.poetry.selectedId;
@@ -3378,8 +3585,18 @@ function renderBlissOSAppMenu(){
           closeCtxMenu();
           closeBlissOSMenu();
           closeBlissOSAppMenu();
+          closeTaskbarCalendar();
           return;
         }
+        const calendarClock = target.closest('#clock') || target.closest('#blissosClock');
+        if(calendarClock){
+          e.preventDefault();
+          e.stopPropagation();
+          toggleTaskbarCalendar(calendarClock);
+          return;
+        }
+        const inTaskbarCalendar = target.closest('#taskbarCalendar');
+        if(!inTaskbarCalendar) closeTaskbarCalendar();
         const startArea = target.closest('#startMenu') || target.closest('#startBtn');
         if(!startArea) closeStartMenu();
         const ctxArea = target.closest('#ctxMenu');
