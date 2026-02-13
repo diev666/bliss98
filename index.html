@@ -1406,7 +1406,7 @@
       body[data-theme="blissos"][data-blissos-style="aqua"] .titlebar{
         height:24px;
         min-height:24px;
-        padding:2px 10px 2px 64px;
+        padding:2px 64px;
         border-bottom:1px solid #8f99a8;
         background:
           linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(232,238,246,0.92) 43%, rgba(204,212,223,0.94) 44%, rgba(196,205,217,0.94) 100%),
@@ -1423,7 +1423,7 @@
       body[data-theme="blissos"][data-blissos-style="aqua"] .title-left{
         position:absolute;
         left:64px;
-        right:10px;
+        right:64px;
         top:0;
         bottom:0;
         justify-content:center;
@@ -1436,16 +1436,21 @@
         position:absolute;
         top:6px;
         left:10px;
-        right:auto;
-        width:44px;
+        right:auto !important;
+        width:auto;
         height:12px;
         display:flex;
+        align-items:center;
         gap:4px;
         z-index:2;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl{
         width:12px;
         height:12px;
+        position:relative;
+        top:auto !important;
+        left:auto !important;
+        right:auto !important;
         border-radius:50%;
         border:1px solid rgba(0,0,0,0.4);
         box-shadow:
@@ -1458,25 +1463,21 @@
         text-indent:-9999px;
         overflow:hidden;
         transform:none !important;
-        position:relative;
         filter:saturate(1.08);
         transition:filter .14s ease, box-shadow .14s ease;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl[data-action="close"]{
-        left:0;
-        right:auto;
+        order:1;
         border-color:#8a3e35;
         background:linear-gradient(180deg, #ffd2c8 0%, #ff8d7f 44%, #f15245 65%, #c52c22 100%);
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl[data-action="min"]{
-        left:16px;
-        right:auto;
+        order:2;
         border-color:#947734;
         background:linear-gradient(180deg, #fff5c7 0%, #ffe07a 44%, #f2bf33 65%, #bf8300 100%);
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl[data-action="max"]{
-        left:32px;
-        right:auto;
+        order:3;
         border-color:#4a7f2d;
         background:linear-gradient(180deg, #dcffc3 0%, #9aee6e 44%, #56c935 65%, #2b8b1d 100%);
       }
@@ -1497,18 +1498,18 @@
       body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl[data-action="close"]::after{
         content:"×";
         font-size:9px;
-        color:#562019;
+        color:#0b0b0b;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl[data-action="min"]::after{
         content:"–";
         font-size:11px;
-        color:#664e12;
+        color:#0b0b0b;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl[data-action="max"]::after{
         content:"↖↘";
         font-size:7px;
         letter-spacing:-1px;
-        color:#1f5420;
+        color:#0b0b0b;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl:hover,
       body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl:focus-visible{
@@ -1517,6 +1518,11 @@
           inset 0 1px 0 rgba(255,255,255,0.9),
           inset 0 -1px 0 rgba(0,0,0,0.26),
           0 0 0 1px rgba(255,255,255,0.22);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls:hover .wctl::after,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls:focus-within .wctl::after{
+        opacity:0.95;
+        transform:scale(1);
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl:hover::after,
       body[data-theme="blissos"][data-blissos-style="aqua"] .title-controls .wctl:focus-visible::after{
@@ -1723,13 +1729,13 @@
         color:rgba(227,241,255,0.6);
       }
       body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .title-controls .wctl[data-action="close"]::after{
-        color:#ffece8;
+        color:#0b0b0b;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .title-controls .wctl[data-action="min"]::after{
-        color:#fff9de;
+        color:#0b0b0b;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .title-controls .wctl[data-action="max"]::after{
-        color:#eaffde;
+        color:#0b0b0b;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .ctx-menu,
       body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .menu-drop,
@@ -5568,6 +5574,6 @@
       </div>
     </div>
 
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260213-aqua-polish-2"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260213-aqua-polish-3"></script>
   </body>
 </html>

@@ -6582,8 +6582,13 @@ function applyBlissOSAqua(){
 
 function setBlissOSAqua(enabled){
   if(state.settings.theme !== 'blissos') return;
-  state.settings.blissosAqua = !!enabled;
+  const turningOn = !!enabled;
+  state.settings.blissosAqua = turningOn;
   applyBlissOSAqua();
+  if(turningOn && state.wallpaper !== 'aqua'){
+    applyWallpaper('aqua');
+    return;
+  }
   syncOsProfile();
 }
 
