@@ -10127,6 +10127,22 @@ function installLongPress(el, getTarget){
           'player.prev': 'Prev',
           'player.next': 'Next',
           'player.vol': 'Vol',
+          'player.searchPlaceholder': 'Search',
+          'player.search': 'Search',
+          'player.browse': 'Browse',
+          'player.source': 'Source',
+          'player.library': 'Library',
+          'player.podcasts': 'Podcasts',
+          'player.partyShuffle': 'Party Shuffle',
+          'player.playlists': 'Playlists',
+          'player.radio': 'Radio',
+          'player.musicStore': 'Music Store',
+          'player.recentlyPlayed': 'Recently Played',
+          'player.top25': 'Top 25 Most Played',
+          'player.col.name': 'Name',
+          'player.col.time': 'Time',
+          'player.col.artist': 'Artist',
+          'player.col.album': 'Album',
           'player.shuffle': 'Shuffle',
           'player.repeat': 'Repeat',
           'player.repeat.off': 'Off',
@@ -10134,6 +10150,9 @@ function installLongPress(el, getTarget){
           'player.repeat.all': 'All',
           'player.loading': 'Loading tracks…',
           'player.notfound': 'No songs yet.',
+          'player.notfoundFilter': 'No songs match your search.',
+          'player.song': 'song',
+          'player.songs': 'songs',
           'player.autoplay': 'Autoplay may be blocked by your browser. If it does not start, press Play.',
           'player.addSongs': 'Add songs…',
           'player.reimport': 'Re-import files',
@@ -10680,6 +10699,22 @@ function installLongPress(el, getTarget){
           'player.prev': 'Anterior',
           'player.next': 'Próxima',
           'player.vol': 'Vol',
+          'player.searchPlaceholder': 'Buscar',
+          'player.search': 'Buscar',
+          'player.browse': 'Explorar',
+          'player.source': 'Fonte',
+          'player.library': 'Biblioteca',
+          'player.podcasts': 'Podcasts',
+          'player.partyShuffle': 'Party Shuffle',
+          'player.playlists': 'Playlists',
+          'player.radio': 'Rádio',
+          'player.musicStore': 'Loja de Música',
+          'player.recentlyPlayed': 'Tocadas Recentemente',
+          'player.top25': 'Top 25 Mais Tocadas',
+          'player.col.name': 'Nome',
+          'player.col.time': 'Tempo',
+          'player.col.artist': 'Artista',
+          'player.col.album': 'Álbum',
           'player.shuffle': 'Aleatório',
           'player.repeat': 'Repetir',
           'player.repeat.off': 'Desligado',
@@ -10687,6 +10722,9 @@ function installLongPress(el, getTarget){
           'player.repeat.all': 'Todas',
           'player.loading': 'Carregando músicas…',
           'player.notfound': 'Sem músicas ainda.',
+          'player.notfoundFilter': 'Nenhuma música encontrada na busca.',
+          'player.song': 'música',
+          'player.songs': 'músicas',
           'player.autoplay': 'O autoplay pode ser bloqueado. Se não tocar, aperte Play.',
           'player.addSongs': 'Adicionar músicas…',
           'player.reimport': 'Reimportar arquivos',
@@ -12551,43 +12589,142 @@ Eu sou o buffalo branco extinto`
 `,
 
         mediaplayer: () => `
-          <div class="mp-mini bevel">
-            <div class="mp-now">
-              <span class="tiny" data-i18n="player.now">Now playing:</span>
-              <span class="mp-title" id="mpNow">—</span>
-            </div>
-
-            <audio id="mpAudio" preload="metadata"></audio>
-
-            <div class="mp-controls">
-              <button class="btn bevel" type="button" data-mp-action="prev">⏮ ${t('player.prev')}</button>
-              <button class="btn bevel" type="button" data-mp-action="toggle">▶ ${t('player.play')}</button>
-              <button class="btn bevel" type="button" data-mp-action="next">⏭ ${t('player.next')}</button>
-              <button class="btn bevel" type="button" data-mp-action="shuffle"></button>
-              <button class="btn bevel" type="button" data-mp-action="repeat"></button>
-            </div>
-
-            <div class="mp-seek-row">
-              <input class="retro-slider" id="mpSeek" type="range" min="0" max="1000" step="1" value="0" />
-              <div class="mp-time"><span data-mp-current>0:00</span> / <span data-mp-total>--:--</span></div>
-            </div>
-
-            <div class="mp-list" id="mpList"></div>
-
-            <div class="mp-bottom">
-              <div class="mp-actions">
-                <button class="btn bevel" type="button" data-mp-action="add" data-i18n="player.addSongs">Add songs…</button>
-                <button class="btn bevel hidden" type="button" data-mp-action="reimport" data-i18n="player.reimport">Re-import files</button>
+          <section class="mp-app-shell">
+            <header class="mp-app-titlebar" data-mp-drag="1">
+              <div class="title-controls">
+                <div class="wctl bevel" title="${t('win.close')}" data-action="close">×</div>
+                <div class="wctl bevel" title="${t('win.minimize')}" data-action="min">_</div>
+                <div class="wctl bevel" title="${t('win.maximize')}" data-action="max">&#x25A1;</div>
               </div>
-              <div class="tiny mp-status" id="mpMsg"></div>
-              <div class="mp-vol">
-                <span class="kbd" data-i18n="player.vol">Vol</span>
-                <input id="mpVol" class="retro-slider" type="range" min="0" max="1" step="0.01" value="0.1" />
+              <div class="title-left">
+                <strong data-i18n="player.title">${t('player.title')}</strong>
+              </div>
+            </header>
+
+            <div class="mp-app-main">
+              <div class="mp-mini mp-drop-zone">
+                <audio id="mpAudio" preload="metadata"></audio>
+
+                <section class="mp-top-chrome">
+                  <div class="mp-toolbar-row">
+                    <div class="mp-transport-pack">
+                      <div class="mp-pill-controls">
+                        <button class="mp-round-btn" type="button" data-mp-action="prev" data-i18n-title="player.prev" title="${t('player.prev')}">◀◀</button>
+                        <button class="mp-round-btn" type="button" data-mp-action="toggle" data-i18n-title="player.play" title="${t('player.play')}">▶</button>
+                        <button class="mp-round-btn" type="button" data-mp-action="next" data-i18n-title="player.next" title="${t('player.next')}">▶▶</button>
+                      </div>
+                      <div class="mp-vol-line">
+                        <span class="mp-vol-icon" aria-hidden="true">◀</span>
+                        <input id="mpVol" class="retro-slider mp-vol-slider" type="range" min="0" max="1" step="0.01" value="0.1" />
+                        <span class="mp-vol-icon" aria-hidden="true">▶</span>
+                      </div>
+                    </div>
+
+                    <div class="mp-display-zone">
+                      <div class="mp-display">
+                        <div class="mp-display-top">
+                          <span class="mp-display-title" id="mpNow">—</span>
+                        </div>
+                        <div class="mp-display-bottom">
+                          <span class="mp-display-elapsed">Elapsed Time:</span>
+                          <span class="mp-time"><span data-mp-current>0:00</span> / <span data-mp-total>--:--</span></span>
+                        </div>
+                        <div class="mp-seek-row">
+                          <span class="mp-seek-diamond" aria-hidden="true">◆</span>
+                          <input class="retro-slider" id="mpSeek" type="range" min="0" max="1000" step="1" value="0" />
+                          <span class="mp-seek-dot" aria-hidden="true">●</span>
+                        </div>
+                      </div>
+                      <div class="mp-mode-controls">
+                        <button class="btn bevel mp-mode-btn" type="button" data-mp-action="shuffle"></button>
+                        <button class="btn bevel mp-mode-btn" type="button" data-mp-action="repeat"></button>
+                      </div>
+                    </div>
+
+                    <div class="mp-right-tools">
+                      <div class="mp-search-top">
+                        <label class="mp-search-wrap" for="mpSearch">
+                          <span class="mp-search-icon" aria-hidden="true">⌕</span>
+                          <input id="mpSearch" type="search" data-i18n-placeholder="player.searchPlaceholder" placeholder="${t('player.searchPlaceholder')}" />
+                        </label>
+                        <button class="mp-browse-btn" type="button" data-mp-action="browse" data-i18n-title="player.browse" title="${t('player.browse')}" aria-label="${t('player.browse')}">
+                          <span class="mp-eye-dot" aria-hidden="true">◉</span>
+                        </button>
+                      </div>
+                      <div class="mp-search-labels">
+                        <span data-i18n="player.search">${t('player.search')}</span>
+                        <span data-i18n="player.browse">${t('player.browse')}</span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="mp-library-shell">
+                  <aside class="mp-source-panel" aria-label="${t('player.source')}">
+                    <div class="mp-source-head" data-i18n="player.source">${t('player.source')}</div>
+                    <div class="mp-source-list">
+                      <button class="mp-source-item active" type="button">
+                        <span class="mp-source-glyph" aria-hidden="true">♫</span>
+                        <span data-i18n="player.library">${t('player.library')}</span>
+                      </button>
+                      <button class="mp-source-item" type="button">
+                        <span class="mp-source-glyph" aria-hidden="true">◍</span>
+                        <span data-i18n="player.podcasts">${t('player.podcasts')}</span>
+                      </button>
+                      <button class="mp-source-item" type="button">
+                        <span class="mp-source-glyph" aria-hidden="true">✦</span>
+                        <span data-i18n="player.partyShuffle">${t('player.partyShuffle')}</span>
+                      </button>
+                      <button class="mp-source-item" type="button">
+                        <span class="mp-source-glyph" aria-hidden="true">⌁</span>
+                        <span data-i18n="player.radio">${t('player.radio')}</span>
+                      </button>
+                      <button class="mp-source-item" type="button">
+                        <span class="mp-source-glyph" aria-hidden="true">▣</span>
+                        <span data-i18n="player.musicStore">${t('player.musicStore')}</span>
+                      </button>
+                      <button class="mp-source-item" type="button">
+                        <span class="mp-source-glyph" aria-hidden="true">▸</span>
+                        <span data-i18n="player.recentlyPlayed">${t('player.recentlyPlayed')}</span>
+                      </button>
+                      <button class="mp-source-item" type="button">
+                        <span class="mp-source-glyph" aria-hidden="true">▸</span>
+                        <span data-i18n="player.top25">${t('player.top25')}</span>
+                      </button>
+                    </div>
+                  </aside>
+
+                  <section class="mp-track-panel">
+                    <header class="mp-track-head">
+                      <span data-i18n="player.col.name">${t('player.col.name')}</span>
+                      <span data-i18n="player.col.time">${t('player.col.time')}</span>
+                      <span data-i18n="player.col.artist">${t('player.col.artist')}</span>
+                      <span data-i18n="player.col.album">${t('player.col.album')}</span>
+                    </header>
+                    <div class="mp-list" id="mpList"></div>
+                  </section>
+                </section>
+
+                <section class="mp-footer-controls">
+                  <div class="mp-toolbar-left">
+                    <button class="mp-tool-btn" type="button" data-mp-action="add" data-i18n-title="player.addSongs" title="${t('player.addSongs')}">+</button>
+                    <button class="mp-tool-btn hidden" type="button" data-mp-action="reimport" data-i18n-title="player.reimport" title="${t('player.reimport')}">↻</button>
+                  </div>
+                  <div class="tiny mp-library-stats" id="mpLibraryStats">0 songs</div>
+                  <div class="tiny mp-status" id="mpMsg"></div>
+                  <div class="mp-toolbar-right" aria-hidden="true">
+                    <button class="mp-tool-btn mp-tool-btn-mini" type="button" tabindex="-1">▥</button>
+                    <button class="mp-tool-btn mp-tool-btn-mini" type="button" tabindex="-1">☼</button>
+                    <button class="mp-tool-btn mp-tool-btn-mini" type="button" tabindex="-1">▴</button>
+                  </div>
+                  <div class="mp-corner-grip" aria-hidden="true">◢</div>
+                </section>
+
+                <div class="tiny mp-drop hidden" id="mpDropHint" data-i18n="player.drop">Drop audio files here</div>
+                <input id="mpFileInput" class="hidden" type="file" multiple accept=".flac,.mp3,.wav,.ogg,audio/*" />
               </div>
             </div>
-            <div class="tiny mp-drop hidden" id="mpDropHint" data-i18n="player.drop">Drop audio files here</div>
-            <input id="mpFileInput" class="hidden" type="file" multiple accept=".flac,.mp3,.wav,.ogg,audio/*" />
-          </div>
+          </section>
         `,
 
         art: () => `
@@ -13491,6 +13628,8 @@ function getDisplayTime(){
         loaded: false,
         seeking: false,
         supportsFlac: true,
+        search: '',
+        durationBySrc: new Map(),
       };
       const MP_FALLBACK_TRACKS = [
         '6 Years.flac',
@@ -13537,6 +13676,31 @@ function getDisplayTime(){
         return mpSafeTitleFromFilename(src);
       }
 
+      function mpNormalizeDuration(raw){
+        if(Number.isFinite(raw) && raw > 0){
+          return Number(raw);
+        }
+        if(typeof raw !== 'string'){
+          return 0;
+        }
+        const value = raw.trim();
+        if(!value) return 0;
+        if(/^\d+(\.\d+)?$/.test(value)){
+          return Number(value);
+        }
+        const parts = value.split(':').map(p => Number(p));
+        if(parts.some(n => !Number.isFinite(n) || n < 0)){
+          return 0;
+        }
+        if(parts.length === 2){
+          return (parts[0] * 60) + parts[1];
+        }
+        if(parts.length === 3){
+          return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+        }
+        return 0;
+      }
+
       function mpNormalizeManifest(data, baseDir){
         if(!Array.isArray(data)) return [];
         return data.map(item => {
@@ -13544,13 +13708,27 @@ function getDisplayTime(){
             const file = item.trim();
             const isAbs = /^(https?:)?\//.test(file);
             const src = (isAbs || file.startsWith('.')) ? file : (baseDir + file);
-            return { src, title: mpResolveTitleFromSrc(file), kind: 'manifest' };
+            return {
+              src,
+              title: mpResolveTitleFromSrc(file),
+              artist: 'BLISS',
+              album: 'BLISS',
+              duration: 0,
+              kind: 'manifest'
+            };
           }
           if(item && typeof item === 'object' && (item.src || item.file)){
             const raw = String(item.src || item.file);
             const isAbs = /^(https?:)?\//.test(raw);
             const src = (isAbs || raw.startsWith('.')) ? raw : (baseDir + raw);
-            return { src, title: item.title ? String(item.title) : mpResolveTitleFromSrc(raw), kind: 'manifest' };
+            return {
+              src,
+              title: item.title ? String(item.title) : mpResolveTitleFromSrc(raw),
+              artist: item.artist ? String(item.artist) : 'BLISS',
+              album: item.album ? String(item.album) : 'BLISS',
+              duration: mpNormalizeDuration(item.duration),
+              kind: 'manifest'
+            };
           }
           return null;
         }).filter(Boolean);
@@ -13695,6 +13873,9 @@ function getDisplayTime(){
           added.push({
             src,
             title: mpSafeTitleFromFilename(name),
+            artist: 'BLISS',
+            album: 'Imported',
+            duration: 0,
             kind: 'local',
             ext,
             file,
@@ -13729,38 +13910,112 @@ function getDisplayTime(){
           current: win.querySelector('[data-mp-current]'),
           total: win.querySelector('[data-mp-total]'),
           vol: win.querySelector('#mpVol'),
+          search: win.querySelector('#mpSearch'),
           toggleBtn: win.querySelector('[data-mp-action="toggle"]'),
           shuffleBtn: win.querySelector('[data-mp-action="shuffle"]'),
           repeatBtn: win.querySelector('[data-mp-action="repeat"]'),
           addBtn: win.querySelector('[data-mp-action="add"]'),
           reimportBtn: win.querySelector('[data-mp-action="reimport"]'),
+          libraryStats: win.querySelector('#mpLibraryStats'),
           dropHint: win.querySelector('#mpDropHint'),
           fileInput: win.querySelector('#mpFileInput'),
           list: win.querySelector('#mpList'),
         };
       }
 
+      function mpGetTrackDuration(track){
+        if(!track) return 0;
+        const fromTrack = Number(track.duration);
+        if(Number.isFinite(fromTrack) && fromTrack > 0){
+          return fromTrack;
+        }
+        const src = String(track.src || '');
+        const fromMap = src ? Number(mp.durationBySrc.get(src)) : 0;
+        return (Number.isFinite(fromMap) && fromMap > 0) ? fromMap : 0;
+      }
+
+      function mpGetTrackArtist(track){
+        const artist = track && track.artist ? String(track.artist) : '';
+        return artist || 'BLISS';
+      }
+
+      function mpGetTrackAlbum(track){
+        const album = track && track.album ? String(track.album) : '';
+        return album || 'BLISS';
+      }
+
+      function mpGetFilteredEntries(els){
+        const rawQuery = String((els && els.search && els.search.value) || mp.search || '').trim();
+        const q = rawQuery.toLowerCase();
+        mp.search = rawQuery;
+        if(!q){
+          return mp.tracks.map((track, index) => ({ track, index }));
+        }
+        return mp.tracks.map((track, index) => ({ track, index }))
+          .filter(({ track }) => {
+            const blob = [
+              String(track && track.title || ''),
+              mpGetTrackArtist(track),
+              mpGetTrackAlbum(track)
+            ].join(' ').toLowerCase();
+            return blob.includes(q);
+          });
+      }
+
+      function mpFormatLibraryStats(){
+        const count = mp.tracks.length;
+        const unit = (count === 1) ? t('player.song') : t('player.songs');
+        let totalSeconds = 0;
+        let knownCount = 0;
+        mp.tracks.forEach(track => {
+          const dur = mpGetTrackDuration(track);
+          if(dur > 0){
+            totalSeconds += dur;
+            knownCount += 1;
+          }
+        });
+        if(totalSeconds > 0){
+          const suffix = mpFormatTime(totalSeconds);
+          const approx = (knownCount < count) ? '+' : '';
+          return `${count} ${unit}, ${suffix}${approx}`;
+        }
+        return `${count} ${unit}`;
+      }
+
       function mpRenderList(els){
         const list = els && els.list;
         if(!list) return;
-        if(mp.tracks.length === 0){
-          list.innerHTML = `<div class="tiny mp-empty">${escapeHTML(t('player.notfound'))}</div>`;
+        const entries = mpGetFilteredEntries(els);
+        if(entries.length === 0){
+          const key = (mp.tracks.length > 0 && mp.search) ? 'player.notfoundFilter' : 'player.notfound';
+          list.innerHTML = `<div class="tiny mp-empty">${escapeHTML(t(key))}</div>`;
           return;
         }
-        list.innerHTML = mp.tracks.map((tr, i) => {
-          const selected = state.mediaplayer.selected.has(i);
-          const active = i === mp.idx;
+        list.innerHTML = entries.map(({ track, index }) => {
+          const selected = state.mediaplayer.selected.has(index);
+          const active = index === mp.idx;
           const cls = `mp-item${selected ? ' selected' : ''}${active ? ' active' : ''}`;
           const marker = active ? '&#9654;' : '&nbsp;';
-          const title = escapeHTML(String(tr.title || ''));
-          return `<button class="${cls}" type="button" data-mp-pick="${i}" title="${title}"><span class="mp-item-mark">${marker}</span><span class="mp-item-title">${title}</span></button>`;
+          const title = escapeHTML(String(track.title || ''));
+          const duration = mpGetTrackDuration(track);
+          const durationLabel = duration > 0 ? mpFormatTime(duration) : '--:--';
+          const artist = escapeHTML(mpGetTrackArtist(track));
+          const album = escapeHTML(mpGetTrackAlbum(track));
+          return `
+            <button class="${cls}" type="button" data-mp-pick="${index}" title="${title}">
+              <span class="mp-item-col mp-item-name"><span class="mp-item-mark">${marker}</span><span class="mp-item-title">${title}</span><span class="mp-item-go" aria-hidden="true">◉</span></span>
+              <span class="mp-item-col mp-item-time">${escapeHTML(durationLabel)}</span>
+              <span class="mp-item-col mp-item-artist">${artist}</span>
+              <span class="mp-item-col mp-item-album">${album}</span>
+            </button>
+          `;
         }).join('');
       }
 
       function mpRender(){
         const els = mpEls();
         if(!els) return;
-        const { now, msg, vol, toggleBtn, audio, shuffleBtn, repeatBtn, reimportBtn } = els;
+        const { now, msg, vol, toggleBtn, audio, shuffleBtn, repeatBtn, reimportBtn, search, libraryStats } = els;
 
         if(vol){
           vol.value = String(mp.vol);
@@ -13789,18 +14044,29 @@ function getDisplayTime(){
 
         const cur = mp.tracks[mp.idx];
         if(now) now.textContent = cur ? cur.title : '—';
-        if(toggleBtn) toggleBtn.innerHTML = mp.playing ? `⏸ ${t('player.pause')}` : `▶ ${t('player.play')}`;
+        if(toggleBtn){
+          const nextAction = mp.playing ? t('player.pause') : t('player.play');
+          toggleBtn.innerHTML = mp.playing ? '⏸' : '▶';
+          toggleBtn.setAttribute('title', nextAction);
+        }
         if(shuffleBtn){
           shuffleBtn.textContent = t('player.shuffle');
           shuffleBtn.classList.toggle('pressed', state.mediaplayer.shuffle);
         }
         if(repeatBtn){
           const repeatKey = `player.repeat.${state.mediaplayer.repeat}`;
-          repeatBtn.textContent = `${t('player.repeat')} ${t(repeatKey)}`;
+          repeatBtn.textContent = t(repeatKey);
+          repeatBtn.setAttribute('title', `${t('player.repeat')}: ${t(repeatKey)}`);
           repeatBtn.classList.toggle('pressed', state.mediaplayer.repeat !== 'off');
         }
         if(reimportBtn){
           reimportBtn.classList.toggle('hidden', !state.mediaplayer.needsReimport);
+        }
+        if(search && search.value !== mp.search){
+          search.value = mp.search;
+        }
+        if(libraryStats){
+          libraryStats.textContent = mpFormatLibraryStats();
         }
         mpRenderList(els);
         mpUpdateTime();
@@ -13857,6 +14123,20 @@ function getDisplayTime(){
           });
         }
 
+        if(els.search){
+          els.search.addEventListener('input', ()=>{
+            mp.search = String(els.search.value || '').trim();
+            mpRenderList(els);
+          });
+          els.search.addEventListener('keydown', (e)=>{
+            if(e.key === 'Escape'){
+              els.search.value = '';
+              mp.search = '';
+              mpRenderList(els);
+            }
+          });
+        }
+
         if(els.fileInput){
           els.fileInput.addEventListener('change', ()=>{
             const replaceImported = (els.fileInput.dataset.mpMode === 'reimport');
@@ -13866,7 +14146,7 @@ function getDisplayTime(){
           });
         }
 
-        const dropTarget = win.querySelector('.mp-mini');
+        const dropTarget = win.querySelector('.mp-drop-zone') || win.querySelector('.mp-mini');
         if(dropTarget && !dropTarget.dataset.mpDrop){
           dropTarget.dataset.mpDrop = '1';
           const showDrop = (on)=>{
@@ -13910,6 +14190,20 @@ function getDisplayTime(){
         const { audio, seek, current, total } = els;
         const dur = Number.isFinite(audio.duration) ? audio.duration : 0;
         const cur = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
+        let shouldRefreshList = false;
+
+        const active = mp.tracks[mp.idx];
+        if(active && dur > 0){
+          const prevTrackDur = mpGetTrackDuration(active);
+          if(Math.abs(prevTrackDur - dur) > 0.4){
+            active.duration = dur;
+            const srcKey = String(active.src || '');
+            if(srcKey){
+              mp.durationBySrc.set(srcKey, dur);
+            }
+            shouldRefreshList = true;
+          }
+        }
 
         if(seek){
           seek.disabled = !dur;
@@ -13922,6 +14216,12 @@ function getDisplayTime(){
         }
         if(current) current.textContent = mpFormatTime(cur);
         if(total) total.textContent = dur ? mpFormatTime(dur) : '--:--';
+        if(shouldRefreshList){
+          mpRenderList(els);
+          if(els.libraryStats){
+            els.libraryStats.textContent = mpFormatLibraryStats();
+          }
+        }
       }
 
       function mpSeekTo(value){
@@ -14165,6 +14465,10 @@ function getDisplayTime(){
           }
           if(action === 'reimport'){
             mpOpenFilePicker('reimport');
+          }
+          if(action === 'browse'){
+            openApp('music');
+            focusWindow('music');
           }
         }
 
@@ -15454,13 +15758,18 @@ function smartFitWindow(winEl, mode = 'auto', opts = {}){
 
 function getMediaPlayerRect(){
   const area = $('#desktopArea').getBoundingClientRect();
-  const margin = 24;
-  const maxSide = Math.max(240, Math.min(area.width - margin * 2, area.height - margin * 2));
-  const candidate = Math.min(maxSide, Math.max(320, Math.floor(maxSide * 0.65)));
-  const size = clamp(candidate, 280, 520);
-  const left = Math.round(clamp((area.width - size) / 2, margin, area.width - size - margin));
-  const top = Math.round(clamp((area.height - size) / 2, margin, area.height - size - margin));
-  return { left, top, width: size, height: size };
+  const margin = 20;
+  const maxW = Math.max(320, Math.floor(area.width - margin * 2));
+  const maxH = Math.max(260, Math.floor(area.height - margin * 2));
+  const minW = Math.min(620, maxW);
+  const minH = Math.min(430, maxH);
+  const targetW = Math.round(maxW * 0.72);
+  const targetH = Math.round(maxH * 0.74);
+  const width = clamp(targetW, minW, Math.min(860, maxW));
+  const height = clamp(targetH, minH, Math.min(620, maxH));
+  const left = Math.round(clamp((area.width - width) / 2, margin, Math.max(margin, area.width - width - margin)));
+  const top = Math.round(clamp((area.height - height) / 2, margin, Math.max(margin, area.height - height - margin)));
+  return { left, top, width, height };
 }
 
 function getViewportRectForWindow(appId){
@@ -16039,6 +16348,7 @@ function toggleFitWindow(appId) {
         const appId = wstate.id;
         const el = document.createElement('div');
         el.className = 'window';
+        if(appId === 'mediaplayer') el.classList.add('mp-app-window');
         if(wstate.kind) el.classList.add(`win-${wstate.kind}`);
         el.id = `win_${appId}`;
         el.style.left = wstate.left + 'px';
@@ -16197,7 +16507,9 @@ function toggleFitWindow(appId) {
       }
 
       function makeDraggable(winEl, appId){
-        const titlebar = winEl.querySelector('[data-drag="1"]');
+        const titlebar = (appId === 'mediaplayer')
+          ? (winEl.querySelector('[data-mp-drag="1"]') || winEl.querySelector('[data-drag="1"]'))
+          : winEl.querySelector('[data-drag="1"]');
         if(!titlebar) return;
 
         let dragging = false;
@@ -18320,4 +18632,3 @@ function renderBlissOSAppMenu(){
         // Mobile optimization: Native Pointer Events and Click handlers now work without suppression
         // IS_COARSE removed - all events handled via standard Pointer Events API
       })();
-
