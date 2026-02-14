@@ -13637,6 +13637,8 @@ function getDisplayTime(){
         supportsFlac: true,
         search: '',
         durationBySrc: new Map(),
+        durationPrefetchRunId: 0,
+        durationPrefetchPromise: null,
       };
       const MP_FALLBACK_TRACKS = [
         '6 Years.flac',
@@ -13677,6 +13679,10 @@ function getDisplayTime(){
 
       function mpSaveState(){
         try{ localStorage.setItem(MP_STATE_KEY, JSON.stringify({ idx: mp.idx, vol: mp.vol })); } catch {}
+      }
+
+      function mpCancelDurationPrefetch(){
+        mp.durationPrefetchRunId += 1;
       }
 
       function mpResolveTitleFromSrc(src){
@@ -13743,6 +13749,53 @@ function getDisplayTime(){
 
       function mpRebuildTracks(){
         mp.tracks = [...mp.manifestTracks, ...mp.imported];
+      }
+
+      function mpProbeTrackDuration(track, timeoutMs = 12000){
+        const src = String((track && track.src) || '');
+        if(!src) return Promise.resolve(0);
+        return new Promise(resolve => {
+          const probe = document.createElement('audio');
+          let done = false;
+          let timer = 0;
+          const finish = (raw)=>{
+            if(done) return;
+            done = true;
+            if(timer) clearTimeout(timer);
+            probe.removeEventListener('loadedmetadata', onReady);
+            probe.removeEventListener('durationchange', onReady);
+            probe.removeEventListener('canplay', onReady);
+            probe.removeEventListener('error', onError);
+            try{ probe.pause(); } catch {}
+            try{
+              probe.removeAttribute('src');
+              probe.load();
+            } catch {}
+            const val = Number(raw);
+            resolve((Number.isFinite(val) && val > 0) ? val : 0);
+          };
+          const onReady = ()=>{
+            const dur = Number(probe.duration);
+            if(Number.isFinite(dur) && dur > 0){
+              finish(dur);
+            }
+          };
+          const onError = ()=> finish(0);
+          probe.preload = 'metadata';
+          probe.muted = true;
+          probe.playsInline = true;
+          probe.addEventListener('loadedmetadata', onReady);
+          probe.addEventListener('durationchange', onReady);
+          probe.addEventListener('canplay', onReady);
+          probe.addEventListener('error', onError);
+          timer = setTimeout(()=> finish(0), timeoutMs);
+          try{
+            probe.src = src;
+            probe.load();
+          } catch {
+            finish(0);
+          }
+        });
       }
 
       function mpTrackFileKey(file){
@@ -13895,6 +13948,7 @@ function getDisplayTime(){
         state.mediaplayer.needsReimport = false;
         try{ localStorage.setItem(MP_IMPORT_KEY, JSON.stringify(mp.importedNames)); } catch {}
 
+        mpCancelDurationPrefetch();
         mpRebuildTracks();
         if(state.mediaplayer.shuffle) mpResetShuffleRuntime();
         if(mp.tracks.length > 0){
@@ -13903,6 +13957,7 @@ function getDisplayTime(){
         } else {
           mpRender();
         }
+        mpPrefetchTrackDurations().catch(()=>{});
       }
 
       function mpEls(){
@@ -13947,6 +14002,61 @@ function getDisplayTime(){
 
       function mpGetTrackAlbum(track){
         return 'Unknown';
+      }
+
+      async function mpPrefetchTrackDurations(opts = {}){
+        const force = !!opts.force;
+        const runId = ++mp.durationPrefetchRunId;
+        if(mp.durationPrefetchPromise && !force){
+          return mp.durationPrefetchPromise;
+        }
+        const entries = mp.tracks.map(track => ({
+          track,
+          src: String((track && track.src) || '')
+        }));
+        const job = (async ()=>{
+          let changed = false;
+          for(const entry of entries){
+            if(runId !== mp.durationPrefetchRunId) break;
+            const track = entry.track;
+            const src = entry.src;
+            if(!track || !src) continue;
+            if(!force){
+              const known = mpGetTrackDuration(track);
+              if(known > 0) continue;
+            }
+            const dur = await mpProbeTrackDuration(track);
+            if(runId !== mp.durationPrefetchRunId) break;
+            if(!(dur > 0)) continue;
+            const prev = mpGetTrackDuration(track);
+            if(Math.abs(prev - dur) <= 0.4) continue;
+            track.duration = dur;
+            mp.durationBySrc.set(src, dur);
+            changed = true;
+            const els = mpEls();
+            if(els){
+              mpRenderList(els);
+              if(els.libraryStats){
+                els.libraryStats.textContent = mpFormatLibraryStats();
+              }
+              if(mp.tracks[mp.idx] === track){
+                mpUpdateTime();
+              }
+            }
+          }
+          if(changed){
+            const els = mpEls();
+            if(els && els.libraryStats){
+              els.libraryStats.textContent = mpFormatLibraryStats();
+            }
+          }
+        })();
+        mp.durationPrefetchPromise = job.finally(()=>{
+          if(mp.durationPrefetchPromise === job){
+            mp.durationPrefetchPromise = null;
+          }
+        });
+        return mp.durationPrefetchPromise;
       }
 
       function mpGetFilteredEntries(els){
@@ -14391,10 +14501,12 @@ function getDisplayTime(){
           } else {
             mpRender();
           }
+          mpPrefetchTrackDurations().catch(()=>{});
           return;
         }
 
         mp.loadingPromise = (async ()=>{
+          mpCancelDurationPrefetch();
           mp.loaded = false;
           mp.manifestTracks = [];
           mpRebuildTracks();
@@ -14429,6 +14541,7 @@ function getDisplayTime(){
             mpSetTrack(mp.idx);
           }
           mpRender();
+          mpPrefetchTrackDurations().catch(()=>{});
         })();
 
         try{
@@ -14452,6 +14565,7 @@ function getDisplayTime(){
       }
 
       window.addEventListener('beforeunload', ()=>{
+        mpCancelDurationPrefetch();
         mpDisposeImportedTracks();
       });
 
