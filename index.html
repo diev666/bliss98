@@ -5676,6 +5676,214 @@
       .mp-compact .mp-item{
         grid-template-columns:minmax(0, 1fr) 70px;
       }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-app-shell{
+        border-radius:0;
+        border-top:2px solid var(--shadow-white);
+        border-left:2px solid var(--shadow-white);
+        border-right:2px solid var(--shadow-dark);
+        border-bottom:2px solid var(--shadow-dark);
+        background:var(--task);
+        color:var(--text);
+        box-shadow:inset 1px 1px 0 var(--shadow-mid), inset -1px -1px 0 var(--shadow-light);
+        font-family:"MS Sans Serif", Tahoma, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-app-titlebar{
+        height:22px;
+        padding:2px 3px;
+        border-bottom:1px solid var(--shadow-dark);
+        background:linear-gradient(90deg, var(--title), var(--title2));
+        color:var(--titlebar-text);
+        text-shadow:none;
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-app-titlebar .title-left{
+        max-width:calc(100% - 146px);
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-app-titlebar .title-left strong{
+        font-size:12px;
+        letter-spacing:0;
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-app-titlebar .title-controls{
+        left:auto;
+        right:3px;
+        top:2px;
+        transform:none;
+        gap:2px;
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-app-titlebar .title-controls .wctl{
+        width:18px;
+        height:18px;
+        min-width:18px;
+        border-radius:0;
+        background:var(--task);
+        border-top:2px solid var(--shadow-white);
+        border-left:2px solid var(--shadow-white);
+        border-right:2px solid var(--shadow-dark);
+        border-bottom:2px solid var(--shadow-dark);
+        box-shadow:inset 1px 1px 0 var(--shadow-mid), inset -1px -1px 0 var(--shadow-light);
+        color:var(--btn-text);
+        font-size:11px;
+        line-height:1;
+        text-indent:0;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-app-titlebar .title-controls .wctl[data-action="min"]{order:1;}
+      body[data-theme="bliss98"] #win_mediaplayer .mp-app-titlebar .title-controls .wctl[data-action="max"]{order:2;}
+      body[data-theme="bliss98"] #win_mediaplayer .mp-app-titlebar .title-controls .wctl[data-action="close"]{order:3;}
+      body[data-theme="bliss98"] #win_mediaplayer .mp-app-titlebar .title-controls .wctl[data-action="close"],
+      body[data-theme="bliss98"] #win_mediaplayer .mp-app-titlebar .title-controls .wctl[data-action="min"],
+      body[data-theme="bliss98"] #win_mediaplayer .mp-app-titlebar .title-controls .wctl[data-action="max"]{
+        background:var(--task);
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-mini{
+        border:1px solid var(--panel-border);
+        border-radius:0;
+        background:var(--panel-bg);
+        box-shadow:inset 1px 1px 0 var(--shadow-white), inset -1px -1px 0 var(--shadow-mid);
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-display{
+        border-color:#8d9682;
+        border-radius:18px;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0.1)),
+          linear-gradient(180deg, #d5d9c2 0%, #bcc1a7 100%);
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-source-panel{
+        border-color:var(--panel-border);
+        background:#d0d4dc;
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-source-head,
+      body[data-theme="bliss98"] #win_mediaplayer .mp-track-head{
+        border-bottom:1px solid #8d93a0;
+        background:linear-gradient(180deg, #f3f4f8 0%, #bcc5d4 100%);
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-track-panel{
+        border:1px solid #6e7683;
+        background:#e6eaf1;
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-list{
+        background:#f3f6fb;
+        color:#1f2736;
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-item{
+        background:rgba(255,255,255,0.72);
+        border-bottom-color:rgba(111,123,140,0.2);
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-item:nth-child(2n){
+        background:rgba(197,206,220,0.48);
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-item.selected{
+        background:rgba(67,122,203,0.62);
+        color:#f2f7ff;
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-source-item.active{
+        background:rgba(67,112,180,0.3);
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-search-wrap{
+        border-color:#8b95a3;
+        background:linear-gradient(180deg, #f9fbfe 0%, #e1e8f2 100%);
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-round-btn,
+      body[data-theme="bliss98"] #win_mediaplayer .mp-tool-btn,
+      body[data-theme="bliss98"] #win_mediaplayer .mp-browse-btn{
+        border-color:#7c8593;
+        background:linear-gradient(180deg, #edf1f6 0%, #c1c9d6 100%);
+        color:#213349;
+      }
+      body[data-theme="bliss98"] #win_mediaplayer .mp-library-stats,
+      body[data-theme="bliss98"] #win_mediaplayer .mp-status,
+      body[data-theme="bliss98"] #win_mediaplayer .mp-search-labels{
+        color:rgba(34,42,53,0.86);
+      }
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-app-shell{
+        background:#1e2531;
+        color:#d9e3f0;
+        border-top-color:#5a677d;
+        border-left-color:#5a677d;
+        border-right-color:#0f141d;
+        border-bottom-color:#0f141d;
+        box-shadow:inset 1px 1px 0 #344153, inset -1px -1px 0 #101621;
+      }
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-app-titlebar{
+        background:linear-gradient(90deg, #17345f, #0b1f3d);
+        color:#edf4ff;
+        border-bottom-color:#0a1321;
+      }
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-app-titlebar .title-controls .wctl{
+        background:#2a3444;
+        color:#dbe6f6;
+        border-top-color:#6f809a;
+        border-left-color:#6f809a;
+        border-right-color:#111925;
+        border-bottom-color:#111925;
+        box-shadow:inset 1px 1px 0 #45566f, inset -1px -1px 0 #121b28;
+      }
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-app-titlebar .title-controls .wctl[data-action="close"],
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-app-titlebar .title-controls .wctl[data-action="min"],
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-app-titlebar .title-controls .wctl[data-action="max"]{
+        background:#2a3444;
+      }
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-mini{
+        background:#2a3241;
+        border-color:#4f5b70;
+        box-shadow:inset 1px 1px 0 #62728c, inset -1px -1px 0 #1a2331;
+      }
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-display{
+        border-color:#5b6a56;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04)),
+          linear-gradient(180deg, #5b6650 0%, #48513f 100%);
+      }
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-source-panel{
+        background:#232c3a;
+        border-color:#4f5f78;
+      }
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-source-head,
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-track-head{
+        background:linear-gradient(180deg, #3f4b5f 0%, #2c3647 100%);
+        border-bottom-color:#556a89;
+        color:#e4edf9;
+      }
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-track-panel{
+        border-color:#4f5f78;
+        background:#1f2733;
+      }
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-list{
+        background:#1d2532;
+        color:#d8e2f1;
+      }
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-item{
+        background:rgba(39,49,67,0.82);
+        border-bottom-color:rgba(86,106,135,0.36);
+      }
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-item:nth-child(2n){
+        background:rgba(30,39,54,0.84);
+      }
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-item.selected{
+        background:rgba(70,118,189,0.62);
+        color:#f0f7ff;
+      }
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-source-item.active{
+        background:rgba(76,118,182,0.36);
+        color:#edf4ff;
+      }
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-search-wrap{
+        background:#242c3a;
+        border-color:#596983;
+      }
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-round-btn,
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-tool-btn,
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-browse-btn{
+        background:linear-gradient(180deg, #3a465a 0%, #263246 100%);
+        border-color:#566781;
+        color:#e0ebfb;
+      }
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-library-stats,
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-status,
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-search-labels{
+        color:#a9bbd5;
+      }
       body.dark #win_mediaplayer .mp-app-shell{
         color:#d7e0ee;
       }
@@ -5699,8 +5907,46 @@
         text-shadow:none;
       }
       body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-app-titlebar .title-controls{
-        top:50%;
-        transform:translateY(-50%);
+        left:auto;
+        right:6px;
+        top:1px;
+        transform:none;
+        width:52px;
+        height:18px;
+        display:block;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-app-titlebar .title-controls .wctl{
+        position:absolute;
+        top:0;
+        border-radius:2px;
+        background:var(--blissos-surface-2);
+        border:1px solid var(--blissos-border);
+        box-shadow:inset 1px 1px 0 var(--blissos-border-hi), inset -1px -1px 0 var(--blissos-border-lo);
+        color:var(--blissos-text);
+        font-size:12px;
+        line-height:1;
+        text-indent:0;
+        overflow:hidden;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-app-titlebar .title-controls .wctl[data-action="close"]{
+        left:0;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-app-titlebar .title-controls .wctl[data-action="min"]{
+        right:16px;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-app-titlebar .title-controls .wctl[data-action="max"]{
+        right:0;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-app-titlebar .title-controls .wctl[data-action="close"],
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-app-titlebar .title-controls .wctl[data-action="min"],
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-app-titlebar .title-controls .wctl[data-action="max"]{
+        background:var(--blissos-surface-2);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-app-titlebar .title-left{
+        max-width:calc(100% - 146px);
       }
       body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-mini{
         border:1px solid var(--blissos-border);
