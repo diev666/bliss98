@@ -12645,7 +12645,7 @@ Eu sou o buffalo branco extinto`
                       <div class="mp-search-top">
                         <label class="mp-search-wrap" for="mpSearch">
                           <span class="mp-search-icon" aria-hidden="true">⌕</span>
-                          <input id="mpSearch" type="search" data-i18n-placeholder="player.searchPlaceholder" placeholder="${t('player.searchPlaceholder')}" />
+                          <input id="mpSearch" type="text" data-i18n-placeholder="player.searchPlaceholder" placeholder="${t('player.searchPlaceholder')}" />
                         </label>
                         <button class="mp-browse-btn" type="button" data-mp-action="browse" data-i18n-title="player.browse" title="${t('player.browse')}" aria-label="${t('player.browse')}">
                           <span class="mp-eye-dot" aria-hidden="true">◉</span>
@@ -12664,31 +12664,31 @@ Eu sou o buffalo branco extinto`
                     <div class="mp-source-head" data-i18n="player.source">${t('player.source')}</div>
                     <div class="mp-source-list">
                       <button class="mp-source-item active" type="button">
-                        <span class="mp-source-glyph" aria-hidden="true">♫</span>
+                        <span class="mp-source-glyph icon-library" aria-hidden="true"></span>
                         <span data-i18n="player.library">${t('player.library')}</span>
                       </button>
                       <button class="mp-source-item" type="button">
-                        <span class="mp-source-glyph" aria-hidden="true">◍</span>
+                        <span class="mp-source-glyph icon-podcast" aria-hidden="true"></span>
                         <span data-i18n="player.podcasts">${t('player.podcasts')}</span>
                       </button>
                       <button class="mp-source-item" type="button">
-                        <span class="mp-source-glyph" aria-hidden="true">✦</span>
+                        <span class="mp-source-glyph icon-party" aria-hidden="true"></span>
                         <span data-i18n="player.partyShuffle">${t('player.partyShuffle')}</span>
                       </button>
                       <button class="mp-source-item" type="button">
-                        <span class="mp-source-glyph" aria-hidden="true">⌁</span>
+                        <span class="mp-source-glyph icon-radio" aria-hidden="true"></span>
                         <span data-i18n="player.radio">${t('player.radio')}</span>
                       </button>
                       <button class="mp-source-item" type="button">
-                        <span class="mp-source-glyph" aria-hidden="true">▣</span>
+                        <span class="mp-source-glyph icon-store" aria-hidden="true"></span>
                         <span data-i18n="player.musicStore">${t('player.musicStore')}</span>
                       </button>
                       <button class="mp-source-item" type="button">
-                        <span class="mp-source-glyph" aria-hidden="true">▸</span>
+                        <span class="mp-source-glyph icon-arrow" aria-hidden="true"></span>
                         <span data-i18n="player.recentlyPlayed">${t('player.recentlyPlayed')}</span>
                       </button>
                       <button class="mp-source-item" type="button">
-                        <span class="mp-source-glyph" aria-hidden="true">▸</span>
+                        <span class="mp-source-glyph icon-arrow" aria-hidden="true"></span>
                         <span data-i18n="player.top25">${t('player.top25')}</span>
                       </button>
                     </div>
@@ -12697,6 +12697,7 @@ Eu sou o buffalo branco extinto`
                   <section class="mp-track-panel">
                     <header class="mp-track-head">
                       <span data-i18n="player.col.name">${t('player.col.name')}</span>
+                      <span aria-hidden="true"></span>
                       <span data-i18n="player.col.time">${t('player.col.time')}</span>
                       <span data-i18n="player.col.artist">${t('player.col.artist')}</span>
                       <span data-i18n="player.col.album">${t('player.col.album')}</span>
@@ -12708,6 +12709,8 @@ Eu sou o buffalo branco extinto`
                 <section class="mp-footer-controls">
                   <div class="mp-toolbar-left">
                     <button class="mp-tool-btn" type="button" data-mp-action="add" data-i18n-title="player.addSongs" title="${t('player.addSongs')}">+</button>
+                    <button class="mp-tool-btn" type="button" data-mp-action="shuffle" data-i18n-title="player.shuffle" title="${t('player.shuffle')}">⤮</button>
+                    <button class="mp-tool-btn" type="button" data-mp-action="repeat" data-i18n-title="player.repeat" title="${t('player.repeat')}">↻</button>
                     <button class="mp-tool-btn hidden" type="button" data-mp-action="reimport" data-i18n-title="player.reimport" title="${t('player.reimport')}">↻</button>
                   </div>
                   <div class="tiny mp-library-stats" id="mpLibraryStats">0 songs</div>
@@ -13711,8 +13714,8 @@ function getDisplayTime(){
             return {
               src,
               title: mpResolveTitleFromSrc(file),
-              artist: 'BLISS',
-              album: 'BLISS',
+              artist: 'DIEV',
+              album: 'Unknown',
               duration: 0,
               kind: 'manifest'
             };
@@ -13724,8 +13727,8 @@ function getDisplayTime(){
             return {
               src,
               title: item.title ? String(item.title) : mpResolveTitleFromSrc(raw),
-              artist: item.artist ? String(item.artist) : 'BLISS',
-              album: item.album ? String(item.album) : 'BLISS',
+              artist: item.artist ? String(item.artist) : 'DIEV',
+              album: item.album ? String(item.album) : 'Unknown',
               duration: mpNormalizeDuration(item.duration),
               kind: 'manifest'
             };
@@ -13873,8 +13876,8 @@ function getDisplayTime(){
           added.push({
             src,
             title: mpSafeTitleFromFilename(name),
-            artist: 'BLISS',
-            album: 'Imported',
+            artist: 'DIEV',
+            album: 'Unknown',
             duration: 0,
             kind: 'local',
             ext,
@@ -13912,8 +13915,8 @@ function getDisplayTime(){
           vol: win.querySelector('#mpVol'),
           search: win.querySelector('#mpSearch'),
           toggleBtn: win.querySelector('[data-mp-action="toggle"]'),
-          shuffleBtn: win.querySelector('[data-mp-action="shuffle"]'),
-          repeatBtn: win.querySelector('[data-mp-action="repeat"]'),
+          shuffleBtns: Array.from(win.querySelectorAll('[data-mp-action="shuffle"]')),
+          repeatBtns: Array.from(win.querySelectorAll('[data-mp-action="repeat"]')),
           addBtn: win.querySelector('[data-mp-action="add"]'),
           reimportBtn: win.querySelector('[data-mp-action="reimport"]'),
           libraryStats: win.querySelector('#mpLibraryStats'),
@@ -13935,13 +13938,11 @@ function getDisplayTime(){
       }
 
       function mpGetTrackArtist(track){
-        const artist = track && track.artist ? String(track.artist) : '';
-        return artist || 'BLISS';
+        return 'DIEV';
       }
 
       function mpGetTrackAlbum(track){
-        const album = track && track.album ? String(track.album) : '';
-        return album || 'BLISS';
+        return 'Unknown';
       }
 
       function mpGetFilteredEntries(els){
@@ -13995,7 +13996,7 @@ function getDisplayTime(){
           const selected = state.mediaplayer.selected.has(index);
           const active = index === mp.idx;
           const cls = `mp-item${selected ? ' selected' : ''}${active ? ' active' : ''}`;
-          const marker = active ? '&#9654;' : '&nbsp;';
+          const marker = active ? '&#9654;' : '';
           const title = escapeHTML(String(track.title || ''));
           const duration = mpGetTrackDuration(track);
           const durationLabel = duration > 0 ? mpFormatTime(duration) : '--:--';
@@ -14003,7 +14004,8 @@ function getDisplayTime(){
           const album = escapeHTML(mpGetTrackAlbum(track));
           return `
             <button class="${cls}" type="button" data-mp-pick="${index}" title="${title}">
-              <span class="mp-item-col mp-item-name"><span class="mp-item-mark">${marker}</span><span class="mp-item-title">${title}</span><span class="mp-item-go" aria-hidden="true">◉</span></span>
+              <span class="mp-item-col mp-item-name"><span class="mp-item-check" aria-hidden="true">☑</span><span class="mp-item-mark">${marker}</span><span class="mp-item-title">${title}</span></span>
+              <span class="mp-item-col mp-item-go-col"><span class="mp-item-go" aria-hidden="true">◉</span></span>
               <span class="mp-item-col mp-item-time">${escapeHTML(durationLabel)}</span>
               <span class="mp-item-col mp-item-artist">${artist}</span>
               <span class="mp-item-col mp-item-album">${album}</span>
@@ -14015,7 +14017,7 @@ function getDisplayTime(){
       function mpRender(){
         const els = mpEls();
         if(!els) return;
-        const { now, msg, vol, toggleBtn, audio, shuffleBtn, repeatBtn, reimportBtn, search, libraryStats } = els;
+        const { now, msg, vol, toggleBtn, audio, shuffleBtns, repeatBtns, reimportBtn, search, libraryStats } = els;
 
         if(vol){
           vol.value = String(mp.vol);
@@ -14049,16 +14051,25 @@ function getDisplayTime(){
           toggleBtn.innerHTML = mp.playing ? '⏸' : '▶';
           toggleBtn.setAttribute('title', nextAction);
         }
-        if(shuffleBtn){
-          shuffleBtn.textContent = t('player.shuffle');
-          shuffleBtn.classList.toggle('pressed', state.mediaplayer.shuffle);
-        }
-        if(repeatBtn){
-          const repeatKey = `player.repeat.${state.mediaplayer.repeat}`;
-          repeatBtn.textContent = t(repeatKey);
-          repeatBtn.setAttribute('title', `${t('player.repeat')}: ${t(repeatKey)}`);
-          repeatBtn.classList.toggle('pressed', state.mediaplayer.repeat !== 'off');
-        }
+        (shuffleBtns || []).forEach(btn => {
+          if(!btn) return;
+          const isTool = btn.classList.contains('mp-tool-btn');
+          if(!isTool){
+            btn.textContent = t('player.shuffle');
+          }
+          btn.setAttribute('title', t('player.shuffle'));
+          btn.classList.toggle('pressed', state.mediaplayer.shuffle);
+        });
+        const repeatKey = `player.repeat.${state.mediaplayer.repeat}`;
+        (repeatBtns || []).forEach(btn => {
+          if(!btn) return;
+          const isTool = btn.classList.contains('mp-tool-btn');
+          if(!isTool){
+            btn.textContent = t(repeatKey);
+          }
+          btn.setAttribute('title', `${t('player.repeat')}: ${t(repeatKey)}`);
+          btn.classList.toggle('pressed', state.mediaplayer.repeat !== 'off');
+        });
         if(reimportBtn){
           reimportBtn.classList.toggle('hidden', !state.mediaplayer.needsReimport);
         }
