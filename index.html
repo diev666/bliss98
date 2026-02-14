@@ -6173,6 +6173,216 @@
           display:none;
         }
       }
+      #win_mediaplayer.mp-mobile-player{
+        min-width:260px;
+        min-height:300px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-app-titlebar{
+        cursor:default;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-app-titlebar .title-left{
+        max-width:calc(100% - 146px);
+      }
+      #win_mediaplayer.mp-mobile-player .mp-app-main{
+        padding:7px;
+        gap:7px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-mini{
+        padding:8px 8px 7px;
+        gap:8px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-top-chrome{
+        gap:8px;
+        padding-bottom:6px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-toolbar-row{
+        grid-template-columns:1fr;
+        gap:8px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-transport-pack{
+        align-items:flex-start;
+        gap:6px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-round-btn{
+        width:38px;
+        height:38px;
+        font-size:11px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-vol-line{
+        width:min(100%, 220px);
+      }
+      #win_mediaplayer.mp-mobile-player .mp-display{
+        padding:6px 9px 7px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-display-top{
+        font-size:12px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-display-bottom{
+        font-size:12px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-right-tools{
+        align-items:stretch;
+        gap:5px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-search-top{
+        width:100%;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-search-wrap{
+        width:auto;
+        min-width:0;
+        flex:1;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-browse-btn{
+        width:40px;
+        min-width:40px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-search-labels{
+        width:100%;
+        max-width:none;
+        font-size:12px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-library-shell{
+        grid-template-columns:1fr;
+        gap:7px;
+        flex:1;
+        min-height:0;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-source-panel{
+        flex:0 0 auto;
+        max-height:108px;
+        min-height:86px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-source-list{
+        max-height:84px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-source-item{
+        height:28px;
+        font-size:12px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-track-panel{
+        flex:1;
+        min-height:0;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-track-head,
+      #win_mediaplayer.mp-mobile-player .mp-item{
+        grid-template-columns:minmax(0, 1fr) 24px 64px minmax(74px, 0.42fr);
+      }
+      #win_mediaplayer.mp-mobile-player .mp-track-head > span:nth-child(5),
+      #win_mediaplayer.mp-mobile-player .mp-item .mp-item-album{
+        display:none;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-track-head{
+        height:23px;
+        font-size:12px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-item{
+        min-height:29px;
+        font-size:12px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-list{
+        min-height:0;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-footer-controls{
+        grid-template-columns:auto 1fr;
+        gap:8px;
+        height:auto;
+        padding-top:6px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-tool-btn{
+        width:30px;
+        height:28px;
+        font-size:14px;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-toolbar-right,
+      #win_mediaplayer.mp-mobile-player .mp-status,
+      #win_mediaplayer.mp-mobile-player .mp-corner-grip,
+      #win_mediaplayer.mp-mobile-player .resize{
+        display:none;
+      }
+      #win_mediaplayer.mp-mobile-player .mp-library-stats{
+        text-align:right;
+        font-size:12px;
+      }
+      @media (hover:none) and (pointer:coarse) and (max-width:420px){
+        #win_mediaplayer.mp-mobile-player .mp-pill-controls{
+          gap:6px;
+        }
+        #win_mediaplayer.mp-mobile-player .mp-round-btn{
+          width:36px;
+          height:36px;
+        }
+        #win_mediaplayer.mp-mobile-player .mp-track-head,
+        #win_mediaplayer.mp-mobile-player .mp-item{
+          grid-template-columns:minmax(0, 1fr) 22px 58px minmax(66px, 0.4fr);
+        }
+      }
+      #win_music.music-mobile-window{
+        min-width:240px;
+        min-height:250px;
+      }
+      #win_music.music-mobile-window .content{
+        padding:8px 10px;
+      }
+      #win_music.music-mobile-window h2{
+        margin:0 0 4px;
+        font-size:20px;
+      }
+      #win_music.music-mobile-window p{
+        margin:0 0 8px 0;
+      }
+      #win_music.music-mobile-window .music-grid{
+        display:grid;
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+        gap:8px 7px;
+        align-items:start;
+      }
+      #win_music.music-mobile-window .music-item{
+        width:100%;
+        max-width:none;
+        min-height:74px;
+        padding:6px 4px;
+        flex-direction:column;
+        justify-content:flex-start;
+        align-items:center;
+        gap:4px;
+      }
+      #win_music.music-mobile-window .music-item span{
+        max-width:100%;
+        text-align:center;
+        font-size:11px;
+        line-height:1.15;
+      }
+      #win_music.music-mobile-window .music-icon{
+        width:36px;
+        height:36px;
+      }
+      #win_music.music-mobile-window .music-icon img{
+        width:30px;
+        height:30px;
+      }
+      #win_music.music-mobile-window .hr98{
+        margin:7px 0 5px;
+      }
+      #win_music.music-mobile-window .tiny{
+        font-size:11px;
+        line-height:1.2;
+      }
+      @media (hover:none) and (pointer:coarse) and (max-width:420px){
+        #win_music.music-mobile-window .music-grid{
+          grid-template-columns:1fr;
+        }
+        #win_music.music-mobile-window .music-item{
+          min-height:58px;
+          flex-direction:row;
+          justify-content:flex-start;
+          gap:8px;
+          padding:6px;
+        }
+        #win_music.music-mobile-window .music-item span{
+          text-align:left;
+          font-size:12px;
+        }
+      }
       .diev-small .content{font-size:12px;}
       .diev-large .content{font-size:15px;}
       .diev-contrast .content{

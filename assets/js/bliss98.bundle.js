@@ -159,6 +159,8 @@
         const onChange = (e) => {
           state.isMobile = !!(e && e.matches);
           if(typeof tickClock === 'function') tickClock();
+          if(typeof applyMusicState === 'function') applyMusicState();
+          if(typeof applyMediaplayerState === 'function') applyMediaplayerState();
           if(typeof scheduleWindowRelayout === 'function') scheduleWindowRelayout();
         };
         if(typeof MOBILE_MQ.addEventListener === 'function') MOBILE_MQ.addEventListener('change', onChange);
@@ -7571,6 +7573,7 @@ function applyMusicState(winEl){
   if(!win) return;
   const grid = win.querySelector('.music-grid');
   if(!grid) return;
+  win.classList.toggle('music-mobile-window', !!state.isMobile);
   grid.classList.toggle('music-small', state.music.tileSize === 'small');
   win.classList.toggle('music-hide-icons', !state.music.showIcons);
   grid.querySelectorAll('[data-music-id]').forEach(card => {
@@ -7583,6 +7586,7 @@ function applyMediaplayerState(winEl){
   const win = winEl || document.getElementById('win_mediaplayer');
   if(!win) return;
   const hasList = !!win.querySelector('#mpList');
+  win.classList.toggle('mp-mobile-player', !!state.isMobile);
   if(hasList){
     win.classList.toggle('mp-hide-list', !state.mediaplayer.showPlaylist);
   }
@@ -15678,7 +15682,7 @@ function smartFitWindow(winEl, mode = 'auto', opts = {}){
     return out;
   };
 
-  if(!winEl || winEl.classList.contains('hidden') || !appId || !w || appId === 'mediaplayer'){
+  if(!winEl || winEl.classList.contains('hidden') || !appId || !w || appId === 'mediaplayer' || (state.isMobile && appId === 'music')){
     return Promise.resolve(finish(getWindowRectFromState(w)));
   }
   if(w.userSized && !['maximize','restore'].includes(mode)){
@@ -15769,6 +15773,20 @@ function smartFitWindow(winEl, mode = 'auto', opts = {}){
 
 function getMediaPlayerRect(){
   const area = $('#desktopArea').getBoundingClientRect();
+  if(state.isMobile){
+    const marginX = 6;
+    const topInset = isBlissOS() ? 16 : 0;
+    const bottomInset = isBlissOS() ? 56 : 30;
+    const availableW = Math.max(250, Math.floor(area.width - (marginX * 2)));
+    const availableH = Math.max(260, Math.floor(area.height - topInset - bottomInset - 10));
+    const minW = Math.max(250, Math.min(280, availableW));
+    const maxW = Math.max(minW, Math.min(460, availableW));
+    const width = clamp(Math.round(availableW), minW, maxW);
+    const height = availableH;
+    const left = Math.round((area.width - width) / 2);
+    const top = Math.round(clamp(topInset + 4, 2, Math.max(2, area.height - height - bottomInset)));
+    return { left, top, width, height };
+  }
   const margin = 20;
   const maxW = Math.max(320, Math.floor(area.width - margin * 2));
   const maxH = Math.max(260, Math.floor(area.height - margin * 2));
@@ -15780,6 +15798,24 @@ function getMediaPlayerRect(){
   const height = clamp(targetH, minH, Math.min(620, maxH));
   const left = Math.round(clamp((area.width - width) / 2, margin, Math.max(margin, area.width - width - margin)));
   const top = Math.round(clamp((area.height - height) / 2, margin, Math.max(margin, area.height - height - margin)));
+  return { left, top, width, height };
+}
+
+function getMobileMusicRect(){
+  const area = $('#desktopArea').getBoundingClientRect();
+  const marginX = 8;
+  const topInset = isBlissOS() ? 18 : 4;
+  const bottomInset = isBlissOS() ? 58 : 30;
+  const availableW = Math.max(240, Math.floor(area.width - (marginX * 2)));
+  const availableH = Math.max(240, Math.floor(area.height - topInset - bottomInset - 10));
+  const minW = Math.max(240, Math.min(300, availableW));
+  const maxW = Math.max(minW, Math.min(360, availableW));
+  const width = clamp(availableW, minW, maxW);
+  const minH = Math.max(260, Math.min(320, availableH));
+  const maxH = Math.max(minH, Math.min(460, availableH));
+  const height = clamp(Math.round(availableH * 0.56), minH, maxH);
+  const left = Math.round((area.width - width) / 2);
+  const top = Math.round(clamp(topInset + 12, 4, Math.max(4, area.height - height - bottomInset)));
   return { left, top, width, height };
 }
 
@@ -15820,6 +15856,17 @@ function relayoutWindowsToViewport(){
     if(!w) return;
     const winEl = document.getElementById(`win_${appId}`);
     if(!winEl || winEl.classList.contains('mobile-game')) return;
+
+    if(appId === 'mediaplayer' && state.isMobile && !w.minimized && !winEl.classList.contains('hidden')){
+      const rect = normalizeWindowRect(getMediaPlayerRect(), bounds.area, 8);
+      assignWindowRect(winEl, w, rect);
+      return;
+    }
+    if(appId === 'music' && state.isMobile && !w.minimized && !winEl.classList.contains('hidden')){
+      const rect = normalizeWindowRect(getMobileMusicRect(), bounds.area, 8);
+      assignWindowRect(winEl, w, rect);
+      return;
+    }
 
     if(w.fit && !w.minimized && !winEl.classList.contains('hidden')){
       if(state.isMobile){
@@ -16034,7 +16081,9 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
             height: Math.max(200, Math.floor(area.height)),
           }, area, 0);
         } else if(appId === 'mediaplayer'){
-          rect = normalizeWindowRect(getMediaPlayerRect(), area, 16);
+          rect = normalizeWindowRect(getMediaPlayerRect(), area, state.isMobile ? 8 : 16);
+        } else if(appId === 'music' && state.isMobile){
+          rect = normalizeWindowRect(getMobileMusicRect(), area, 8);
         } else if(savedRect){
           rect = normalizeWindowRect(savedRect, area, 16);
         } else {
@@ -16056,7 +16105,7 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
           height: rect.height,
           z: ++state.zTop,
           savedRect: Boolean(savedRect),
-          userSized: appId === 'mediaplayer',
+          userSized: appId === 'mediaplayer' && !state.isMobile,
           autoFitObserver: null,
           lastFitKey: '',
           lastFitW: 0,
@@ -16533,6 +16582,7 @@ function toggleFitWindow(appId) {
           const dragTarget = getEventTargetEl(e);
           // Ignore clicks on window control buttons
           if(dragTarget && dragTarget.dataset && dragTarget.dataset.action) return;
+          if(state.isMobile && (appId === 'mediaplayer' || appId === 'music')) return;
 
           e.preventDefault();
           dragging = true;
@@ -16598,6 +16648,11 @@ function toggleFitWindow(appId) {
         const handle = winEl.querySelector('.resize');
         const EDGE = 6; // px
         const TOUCH_EDGE = 12; // px
+
+        if(state.isMobile && (appId === 'mediaplayer' || appId === 'music')){
+          if(handle) handle.classList.add('hidden');
+          return;
+        }
 
         let resizing = false;
         let pointerId = null;
