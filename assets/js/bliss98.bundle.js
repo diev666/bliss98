@@ -16696,7 +16696,7 @@ function toggleFitWindow(appId) {
           const dragTarget = getEventTargetEl(e);
           // Ignore clicks on window control buttons
           if(dragTarget && dragTarget.dataset && dragTarget.dataset.action) return;
-          if(state.isMobile && (appId === 'mediaplayer' || appId === 'music')) return;
+          if(state.isMobile && appId === 'music') return;
 
           e.preventDefault();
           dragging = true;
