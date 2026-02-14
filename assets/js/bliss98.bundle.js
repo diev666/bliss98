@@ -12644,7 +12644,7 @@ Eu sou o buffalo branco extinto`
                     <div class="mp-right-tools">
                       <div class="mp-search-top">
                         <label class="mp-search-wrap" for="mpSearch">
-                          <span class="mp-search-icon" aria-hidden="true">⌕</span>
+                          <span class="mp-search-icon" aria-hidden="true"></span>
                           <input id="mpSearch" type="text" data-i18n-placeholder="player.searchPlaceholder" placeholder="${t('player.searchPlaceholder')}" />
                         </label>
                         <button class="mp-browse-btn" type="button" data-mp-action="browse" data-i18n-title="player.browse" title="${t('player.browse')}" aria-label="${t('player.browse')}">
