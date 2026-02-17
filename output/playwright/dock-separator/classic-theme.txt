@@ -1,0 +1,9 @@
+### Result
+{
+  "theme": "blissos",
+  "style": "classic"
+}
+### Ran Playwright code
+```js
+await page.evaluate('() => { if (typeof setOsTheme === "function") setOsTheme("blissos"); if (typeof setBlissOSAqua === "function") setBlissOSAqua(false); if (typeof renderBlissOSDock === "function") renderBlissOSDock(); return { theme: document.body.dataset.theme || null, style: document.body.dataset.blissosStyle || null }; }');
+```

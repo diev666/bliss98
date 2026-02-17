@@ -615,3 +615,132 @@ Original prompt (continuação): e crie esses sons dentro da pasta assets/sounds
   - script: `output/dope-mobile-title-center-check/check-mobile-title-center.mjs`
   - screenshot: `output/dope-mobile-title-center-check/mobile-title-center.png`
   - métricas: `centerOffset=0`, `centeredWithin8px=true`, `overlapsBack=false`, `consoleErrors=[]`.
+- Ajuste solicitado no Dock (estilo macOS): separador vertical adicionado entre os ícones comuns e a Lixeira.
+  - Implementação estrutural no render do dock: inserido `span.blissos-dock-separator` antes do item `trash` quando há ícones à esquerda.
+  - Estilo aplicado para os dois visuais:
+    - BlissOS normal (classic): gradiente/contraste neutro.
+    - BlissOS Aqua (incluindo Aqua dark): separador com acabamento vítreo azul-claro.
+  - Ajustes mobile: altura do separador reduzida nos breakpoints compactos.
+- Arquivos alterados nesta rodada:
+  - `assets/js/modules/06-shell-and-windowing.js`
+  - `index.html`
+  - rebuild: `assets/js/bliss98.bundle.js`
+- Validação:
+  - Build do bundle: `node scripts/build-js-bundle.mjs` (OK).
+  - Sintaxe: `node --check assets/js/bliss98.bundle.js` e `node --check assets/js/modules/06-shell-and-windowing.js` (OK).
+  - Playwright skill client executado: `output/dock-separator-skill-check/shot-0.png`.
+  - Validação visual do dock (classic + aqua) com `playwright-cli`:
+    - screenshots: `output/playwright/dock-separator/classic.png`, `output/playwright/dock-separator/aqua.png`
+    - checagens DOM: `output/playwright/dock-separator/classic-check.txt`, `output/playwright/dock-separator/aqua-check.txt`
+    - console: `output/playwright/dock-separator/console-errors.txt` (0 erros).
+- Cache bust do bundle atualizado em `index.html` para distribuir a mudança:
+  - `./assets/js/bliss98.bundle.js?v=20260217-dock-separator-1`
+- Bug report do usuário: BLISS Media Player parecia "versão mobile" no desktop (títulos quebrando em múltiplas linhas).
+- Causa raiz identificada:
+  - mismatch entre markup atual da playlist (`.mp-item` com `mp-item-mark + mp-item-title`) e CSS de grid em 5 colunas, que colocava o título em coluna estreita.
+- Correção aplicada em `index.html`:
+  - `.mp-item` passou a usar grid de 2 colunas (`18px` + `1fr`) compatível com o markup real.
+  - `.mp-item-title` recebeu truncamento/ellipsis em linha única (`white-space:nowrap`, `overflow:hidden`, `text-overflow:ellipsis`).
+  - `.mp-compact .mp-item` alinhado ao mesmo grid para evitar regressão ao alternar modo compacto.
+- Validação:
+  - Screenshot antes/depois em desktop com BlissOS Aqua:
+    - antes: `output/playwright/mp-debug/shot.png`
+    - depois: `output/playwright/mp-debug-fix/shot.png`
+  - Estado computado pós-fix: `itemGrid="18px 478px"`, título em `nowrap` sem quebra (`output/playwright/mp-debug-fix/state.txt`).
+  - Console sem erros no fluxo (`output/playwright/mp-debug-fix/console.txt`).
+- Follow-up após novo feedback: Media Player ainda parecia versão reduzida no desktop.
+- Causa raiz confirmada:
+  - o app estava renderizando markup simplificado (`mp-mini` legado) enquanto o CSS principal já estava preparado para layout desktop completo (`mp-app-shell`, source panel, track head em colunas).
+- Correções aplicadas:
+  - `assets/js/modules/04-app-content.js`: reconstruído conteúdo do `mediaplayer` para o layout desktop completo (titlebar interno, painel Source, cabeçalho de colunas, busca e barra inferior).
+  - `assets/js/modules/05-media-player.js`: `mpRenderList()` voltou a renderizar linhas em 5 colunas (Name/Go/Time/Artist/Album) e `mpRender()` ajustado para botões glyph (`shuffle`/`repeat`) e stats.
+  - `assets/js/modules/02-games-and-ui.js`: `applyMediaplayerState()` agora força classe `mp-app-window` e controla `mp-mobile-player` por `state.isMobile`.
+  - `assets/js/modules/06-shell-and-windowing.js`: removido `data-drag` da titlebar nativa para o mediaplayer (arraste passa para titlebar interno) e `getMediaPlayerRect()` ampliado para desktop (abre em tamanho grande, não compacto).
+  - `index.html`: grid de `.mp-item` restaurado para 5 colunas + cache bust para `v=20260217-mediaplayer-restore-1`.
+- Validação:
+  - build/check: `node scripts/build-js-bundle.mjs` + `node --check` (OK).
+  - screenshot desktop BlissOS: `output/playwright/mp-layout-restore/shot.png` (layout completo ativo).
+  - screenshot desktop Bliss98 dark: `output/playwright/mp-layout-restore-dark/shot.png` (layout completo ativo, sem `mp-mobile-player`).
+- Ajuste fino solicitado pelo usuário: Media Player estava "grande demais" no desktop após restauração.
+- Correção aplicada em `getMediaPlayerRect()` (`assets/js/modules/06-shell-and-windowing.js`):
+  - desktop ajustado para proporção mais equilibrada (aprox. 84% largura / 86% altura, com clamps), evitando janela quase full-screen.
+  - validação em viewport 1824x911 resultou em janela ~1532x733 (`output/playwright/mp-size-tune/state.txt`).
+- Cache bust atualizado em `index.html` para forçar carregamento do ajuste:
+  - `./assets/js/bliss98.bundle.js?v=20260217-mediaplayer-size-tune-1`
+- Novo ajuste solicitado: janela do Media Player ainda estava grande demais.
+- `getMediaPlayerRect()` recalibrado novamente para desktop:
+  - alvo reduzido para ~76% largura e ~80% altura,
+  - clamp máximo reduzido (`1420x780`) para evitar quase fullscreen.
+- Validação em 1824x911:
+  - janela passou de ~1532x733 (tune anterior) para ~1386x682 (`output/playwright/mp-size-tune-2/state.txt`).
+- Cache bust atualizado para garantir entrega do novo tamanho:
+  - `./assets/js/bliss98.bundle.js?v=20260217-mediaplayer-size-tune-2`
+- Novo pedido do usuário: reduzir ainda mais o tamanho inicial do Media Player.
+- Ajuste adicional em `getMediaPlayerRect()`:
+  - desktop agora abre em ~62% largura / ~68% altura com clamps mais baixos (`max 1150x640`).
+- Validação (viewport 1824x911):
+  - janela inicial: `1130x580` (`output/playwright/mp-size-tune-4/state.txt`).
+  - screenshot: `output/playwright/mp-size-tune-4/shot.png`.
+- Cache bust atualizado:
+  - `./assets/js/bliss98.bundle.js?v=20260217-mediaplayer-size-tune-4`
+- Bug report: coluna `Time` do Media Player não mostrava duração por faixa.
+- Causa raiz:
+  - os tracks vinham sem `duration/time` no catálogo inicial; UI mostrava fallback `--:--`.
+- Correção implementada em `assets/js/modules/05-media-player.js`:
+  - suporte a parse de duração em manifesto (`duration` em segundos ou `time` em `mm:ss`/`hh:mm:ss`).
+  - hidratação assíncrona da duração real via metadata de áudio para faixas sem duração.
+  - cache em memória por track (`durationCache`) + prevenção de retrabalho (`durationPending`/`durationFailed`).
+  - atualização incremental da célula `.mp-item-time` e sincronização quando a faixa ativa carrega metadata.
+- Validação:
+  - `output/playwright/mp-time-fix/times.txt` retornou tempos reais para todas as faixas (`03:03`, `04:15`, `02:38`, `03:14`, `02:54`) e `unresolved: 0`.
+  - screenshot: `output/playwright/mp-time-fix/shot.png`.
+- Cache bust atualizado para distribuir a correção:
+  - `./assets/js/bliss98.bundle.js?v=20260217-mediaplayer-time-fix-1`
+- Auditoria geral adicional executada (estática + runtime) para pedido de varredura completa do projeto.
+- Correção estrutural de regressão potencial (case-sensitive filesystem) em ícones BlissOS:
+  - problema: mapeamento de `./assets/icons/Settings.png` para BlissOS assumia mesmo case no disco; em ambientes case-sensitive isso quebra porque o arquivo real é `assets/BlissOS/settings.png`.
+  - ajuste em `assets/js/modules/03-i18n-and-theme.js`:
+    - introduzido override bidirecional de nomes (`Settings.png -> settings.png`) no mapeamento de tema;
+    - `getBlissOSAssetPath` e `getBlissOSFallbackPath` agora respeitam overrides e preservam query strings.
+  - efeito: ícone de Settings carrega corretamente em Bliss98 e BlissOS também fora de sistemas case-insensitive.
+- Build/validação da rodada:
+  - `node scripts/build-js-bundle.mjs` (OK)
+  - `node --check assets/js/modules/03-i18n-and-theme.js` (OK)
+  - `node --check assets/js/bliss98.bundle.js` (OK)
+- Validação UI (Playwright CLI):
+  - tema BlissOS: `desktopSettingsSrc` e `panelSettingsSrc` = `./assets/BlissOS/settings.png`, `naturalWidth > 0`.
+  - tema Bliss98: `desktopSettingsSrc` e `panelSettingsSrc` = `./assets/icons/Settings.png`, `naturalWidth > 0`.
+  - sem `console.error`/`pageerror` no fluxo validado.
+- Validação skill `develop-web-game` pós-change executada:
+  - `output/web-game-skillloop2/shot-0.png` gerado sem `errors-*.json`.
+- Cache bust atualizado no `index.html` para distribuição da correção:
+  - `./assets/js/bliss98.bundle.js?v=20260217-settings-case-map-1`
+- Segunda passada focada em performance runtime e redução de repetição concluída.
+- Otimizações de render aplicadas em `assets/js/modules/06-shell-and-windowing.js`:
+  - `renderTaskButtons` agora usa assinatura de estado (`buildTaskButtonsSignature`) e faz bailout quando não há mudança real de UI.
+  - `renderBlissOSDock` agora usa assinatura de estado (`blissosDockRenderSignature`) e evita reconstrução de DOM quando estado visual não mudou.
+  - Em modo não-BlissOS, limpeza do dock agora ocorre apenas na transição para evitar `innerHTML=''` redundante.
+- Refatoração para reduzir código repetido:
+  - criado helper `focusWindowAndRefreshTaskbar(appId)`.
+  - substituídos blocos repetidos `focusWindow(...); renderTaskButtons();` em:
+    - `assets/js/modules/06-shell-and-windowing.js` (`openApp`)
+    - `assets/js/modules/02-games-and-ui.js` (`openAppFromDesktopIcon`, `openFolderWindow`, `openTxtFileWindow`).
+- Validação técnica:
+  - build bundle: `node scripts/build-js-bundle.mjs` (OK)
+  - checagem sintática: `node --check` em `02-games-and-ui.js`, `06-shell-and-windowing.js` e bundle (OK)
+- Validação runtime (Playwright, fluxo `runtime-pass-2c`):
+  - sem `console.error`, sem `pageerror`, sem HTTP >= 400.
+  - janelas abertas via API (`settings`, `music`, `games`) com sucesso.
+  - ícone de Settings íntegro após otimizações:
+    - BlissOS: `./assets/BlissOS/settings.png` (`naturalWidth=512`)
+    - Bliss98: `./assets/icons/Settings.png` (`naturalWidth=48`)
+  - probe de mutação em storm de chamadas (`renderTaskButtons` x40 + `focusWindowAndRefreshTaskbar` x20):
+    - `taskMutations=8`
+    - `dockMutations=0`
+    - indicando eliminação de rebuild redundante do dock e redução de churn na taskbar.
+- Cache bust atualizado no `index.html` para distribuição desta rodada:
+  - `./assets/js/bliss98.bundle.js?v=20260217-runtime-pass2-1`
+- Probe adicional de performance (estado estável) para confirmar bailout de render:
+  - cenário: 50x `renderTaskButtons()` + 30x `focusWindowAndRefreshTaskbar('settings')` após estabilizar janela ativa.
+  - resultado: `taskMutations=0`, `dockMutations=0`.
+  - conclusão: chamadas redundantes no mesmo estado não reconstruem mais taskbar/dock.

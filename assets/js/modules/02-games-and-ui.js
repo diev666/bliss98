@@ -6367,6 +6367,8 @@ function applyMusicState(winEl){
 function applyMediaplayerState(winEl){
   const win = winEl || document.getElementById('win_mediaplayer');
   if(!win) return;
+  win.classList.add('mp-app-window');
+  win.classList.toggle('mp-mobile-player', !!state.isMobile);
   const hasList = !!win.querySelector('#mpList');
   if(hasList){
     win.classList.toggle('mp-hide-list', !state.mediaplayer.showPlaylist);
@@ -6415,8 +6417,7 @@ function openAppFromDesktopIcon(appId, iconEl){
     if(finished) return;
     finished = true;
     revealWindow(appId, { skipAnim: true });
-    focusWindow(appId);
-    renderTaskButtons();
+    focusWindowAndRefreshTaskbar(appId);
   };
   const timeoutId = window.setTimeout(finalize, 900);
   waitForSmartFitCompletion(appId).then(targetRect => {
@@ -7018,8 +7019,7 @@ function openFolderWindow(folderId, opts = {}){
       el.classList.remove('hidden');
       renderFolderWindow(winId, navId);
     }
-    focusWindow(winId);
-    renderTaskButtons();
+    focusWindowAndRefreshTaskbar(winId);
     return el;
   }
 
@@ -7070,8 +7070,7 @@ function openFolderWindow(folderId, opts = {}){
   state.windows.set(winId, wstate);
   createWindowElement(wstate);
   const winEl = document.getElementById(`win_${winId}`);
-  focusWindow(winId);
-  renderTaskButtons();
+  focusWindowAndRefreshTaskbar(winId);
   return winEl;
 }
 
@@ -7089,8 +7088,7 @@ function openTxtFileWindow(txtId, opts = {}){
       el.classList.remove('hidden');
       renderTxtFileWindow(winId);
     }
-    focusWindow(winId);
-    renderTaskButtons();
+    focusWindowAndRefreshTaskbar(winId);
     return el;
   }
 
@@ -7139,8 +7137,7 @@ function openTxtFileWindow(txtId, opts = {}){
   state.windows.set(winId, wstate);
   createWindowElement(wstate);
   const winEl = document.getElementById(`win_${winId}`);
-  focusWindow(winId);
-  renderTaskButtons();
+  focusWindowAndRefreshTaskbar(winId);
   return winEl;
 }
 

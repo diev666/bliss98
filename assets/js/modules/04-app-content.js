@@ -501,42 +501,138 @@ Eu sou o buffalo branco extinto`
 `,
 
         mediaplayer: () => `
-          <div class="mp-mini bevel">
-            <div class="mp-now">
-              <span class="tiny" data-i18n="player.now">Now playing:</span>
-              <span class="mp-title" id="mpNow">—</span>
-            </div>
-
-            <audio id="mpAudio" preload="metadata"></audio>
-
-            <div class="mp-controls">
-              <button class="btn bevel" type="button" data-mp-action="prev">⏮ ${t('player.prev')}</button>
-              <button class="btn bevel" type="button" data-mp-action="toggle">▶ ${t('player.play')}</button>
-              <button class="btn bevel" type="button" data-mp-action="next">⏭ ${t('player.next')}</button>
-              <button class="btn bevel" type="button" data-mp-action="shuffle"></button>
-              <button class="btn bevel" type="button" data-mp-action="repeat"></button>
-            </div>
-
-            <div class="mp-seek-row">
-              <input class="retro-slider" id="mpSeek" type="range" min="0" max="1000" step="1" value="0" />
-              <div class="mp-time"><span data-mp-current>0:00</span> / <span data-mp-total>--:--</span></div>
-            </div>
-
-            <div class="mp-list" id="mpList"></div>
-
-            <div class="mp-bottom">
-              <div class="mp-actions">
-                <button class="btn bevel" type="button" data-mp-action="add" data-i18n="player.addSongs">Add songs…</button>
-                <button class="btn bevel hidden" type="button" data-mp-action="reimport" data-i18n="player.reimport">Re-import files</button>
+          <div class="mp-app-shell">
+            <div class="mp-app-titlebar" data-drag="1">
+              <div class="title-controls">
+                <div class="wctl bevel" title="${t('win.close')}" data-action="close">×</div>
+                <div class="wctl bevel" title="${t('win.minimize')}" data-action="min">_</div>
+                <div class="wctl bevel" title="${t('win.maximize')}" data-action="max">&#x25A1;</div>
               </div>
-              <div class="tiny mp-status" id="mpMsg"></div>
-              <div class="mp-vol">
-                <span class="kbd" data-i18n="player.vol">Vol</span>
-                <input id="mpVol" class="retro-slider" type="range" min="0" max="1" step="0.01" value="0.1" />
+              <div class="title-left">
+                <strong data-i18n="app.mediaplayer">${t('app.mediaplayer')}</strong>
               </div>
             </div>
-            <div class="tiny mp-drop hidden" id="mpDropHint" data-i18n="player.drop">Drop audio files here</div>
-            <input id="mpFileInput" class="hidden" type="file" multiple accept=".flac,.mp3,.wav,.ogg,audio/*" />
+
+            <div class="mp-app-main">
+              <div class="mp-mini">
+                <audio id="mpAudio" preload="metadata"></audio>
+
+                <div class="mp-top-chrome">
+                  <div class="mp-toolbar-row">
+                    <div class="mp-transport-pack">
+                      <div class="mp-pill-controls">
+                        <button class="mp-round-btn" type="button" data-mp-action="prev" title="${t('player.prev')}">⏮</button>
+                        <button class="mp-round-btn" type="button" data-mp-action="toggle" title="${t('player.play')}">▶</button>
+                        <button class="mp-round-btn" type="button" data-mp-action="next" title="${t('player.next')}">⏭</button>
+                      </div>
+                      <div class="mp-vol-line">
+                        <span class="mp-vol-icon" data-i18n="player.vol">${t('player.vol')}</span>
+                        <input id="mpVol" class="retro-slider mp-vol-slider" type="range" min="0" max="1" step="0.01" value="0.1" />
+                      </div>
+                    </div>
+
+                    <div class="mp-display-zone">
+                      <div class="mp-display">
+                        <div class="mp-display-top">
+                          <span class="mp-display-title" id="mpNow">—</span>
+                        </div>
+                        <div class="mp-display-bottom">
+                          <span class="mp-display-elapsed"><span data-mp-current>0:00</span> / <span data-mp-total>--:--</span></span>
+                        </div>
+                        <div class="mp-seek-row">
+                          <span class="mp-seek-diamond">◆</span>
+                          <input class="retro-slider" id="mpSeek" type="range" min="0" max="1000" step="1" value="0" />
+                          <span class="mp-seek-dot">•</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="mp-right-tools">
+                      <div class="mp-search-top">
+                        <label class="mp-search-wrap" for="mpSearch">
+                          <span class="mp-search-icon" aria-hidden="true"></span>
+                          <input id="mpSearch" type="search" placeholder="Search" />
+                        </label>
+                        <button class="mp-browse-btn" type="button" aria-label="Browse">
+                          <span class="mp-eye-dot">◉</span>
+                        </button>
+                      </div>
+                      <div class="mp-search-labels">
+                        <span>Search</span>
+                        <span>Browse</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mp-library-shell">
+                  <div class="mp-source-panel">
+                    <div class="mp-source-head">Source</div>
+                    <div class="mp-source-list">
+                      <button class="mp-source-item active" type="button">
+                        <span class="mp-source-glyph icon-library"></span>
+                        <span>Library</span>
+                      </button>
+                      <button class="mp-source-item" type="button">
+                        <span class="mp-source-glyph icon-podcast"></span>
+                        <span>Podcasts</span>
+                      </button>
+                      <button class="mp-source-item" type="button">
+                        <span class="mp-source-glyph icon-party"></span>
+                        <span>Party Shuffle</span>
+                      </button>
+                      <button class="mp-source-item" type="button">
+                        <span class="mp-source-glyph icon-radio"></span>
+                        <span>Radio</span>
+                      </button>
+                      <button class="mp-source-item" type="button">
+                        <span class="mp-source-glyph icon-store"></span>
+                        <span>Music Store</span>
+                      </button>
+                      <button class="mp-source-item" type="button">
+                        <span class="mp-source-glyph icon-arrow"></span>
+                        <span>Recently Played</span>
+                      </button>
+                      <button class="mp-source-item" type="button">
+                        <span class="mp-source-glyph icon-arrow"></span>
+                        <span>Top 25 Most Played</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="mp-track-panel">
+                    <div class="mp-track-head">
+                      <span>Name</span>
+                      <span></span>
+                      <span>Time</span>
+                      <span>Artist</span>
+                      <span>Album</span>
+                    </div>
+                    <div class="mp-list" id="mpList"></div>
+                  </div>
+                </div>
+
+                <div class="mp-footer-controls">
+                  <div class="mp-toolbar-left">
+                    <button class="mp-tool-btn" type="button" data-mp-action="add" title="${t('player.addSongs')}">+</button>
+                    <button class="mp-tool-btn hidden" type="button" data-mp-action="reimport" title="${t('player.reimport')}">↻</button>
+                    <button class="mp-tool-btn" type="button" data-mp-action="shuffle" data-mp-glyph="1" title="${t('player.shuffle')}">⤮</button>
+                    <button class="mp-tool-btn" type="button" data-mp-action="repeat" data-mp-glyph="1" title="${t('player.repeat')}">↺</button>
+                  </div>
+                  <div class="mp-library-stats" id="mpStats">BLISS Library</div>
+                  <div class="mp-status" id="mpMsg"></div>
+                  <div class="mp-toolbar-right">
+                    <button class="mp-tool-btn mp-tool-btn-mini" type="button" aria-label="View">▥</button>
+                    <button class="mp-tool-btn mp-tool-btn-mini" type="button" aria-label="Star">*</button>
+                    <button class="mp-tool-btn mp-tool-btn-mini" type="button" aria-label="More">▴</button>
+                  </div>
+                  <div class="mp-corner-grip">◢</div>
+                </div>
+
+                <div class="tiny mp-drop hidden" id="mpDropHint" data-i18n="player.drop">Drop audio files here</div>
+                <input id="mpFileInput" class="hidden" type="file" multiple accept=".flac,.mp3,.wav,.ogg,audio/*" />
+              </div>
+            </div>
           </div>
         `,
 

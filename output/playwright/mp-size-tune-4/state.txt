@@ -1,0 +1,18 @@
+### Result
+{
+  "hasWin": true,
+  "rect": {
+    "width": 1130,
+    "height": 580,
+    "left": 347,
+    "top": 137
+  },
+  "viewport": {
+    "w": 1824,
+    "h": 911
+  }
+}
+### Ran Playwright code
+```js
+await page.evaluate('() => { if (typeof setOsTheme === "function") setOsTheme("bliss98"); if (typeof setDarkMode === "function") setDarkMode(true); if (typeof openApp === "function") openApp("mediaplayer"); const win = document.getElementById("win_mediaplayer"); const r = win ? win.getBoundingClientRect() : null; return { hasWin: !!win, rect: r ? { width: Math.round(r.width), height: Math.round(r.height), left: Math.round(r.left), top: Math.round(r.top) } : null, viewport: { w: window.innerWidth, h: window.innerHeight } }; }');
+```

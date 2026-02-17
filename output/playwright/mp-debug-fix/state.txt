@@ -1,0 +1,12 @@
+### Result
+{
+  "itemGrid": "18px 478px",
+  "titleWhiteSpace": "nowrap",
+  "titleOverflow": "ellipsis",
+  "titleClientWidth": 478,
+  "titleScrollWidth": 478
+}
+### Ran Playwright code
+```js
+await page.evaluate('() => { const first = document.querySelector("#win_mediaplayer #mpList .mp-item"); const title = document.querySelector("#win_mediaplayer #mpList .mp-item .mp-item-title"); const sItem = first ? getComputedStyle(first) : null; const sTitle = title ? getComputedStyle(title) : null; return { itemGrid: sItem ? sItem.gridTemplateColumns : null, titleWhiteSpace: sTitle ? sTitle.whiteSpace : null, titleOverflow: sTitle ? sTitle.textOverflow : null, titleClientWidth: title ? title.clientWidth : null, titleScrollWidth: title ? title.scrollWidth : null }; }');
+```

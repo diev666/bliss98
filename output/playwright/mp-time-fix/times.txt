@@ -1,0 +1,15 @@
+### Result
+{
+  "times": [
+    "03:03",
+    "04:15",
+    "02:38",
+    "03:14",
+    "02:54"
+  ],
+  "unresolved": 0
+}
+### Ran Playwright code
+```js
+await page.evaluate('async () => { await new Promise(r => setTimeout(r, 3200)); const times = Array.from(document.querySelectorAll("#win_mediaplayer #mpList .mp-item-time")).map(el => el.textContent.trim()); return { times, unresolved: times.filter(t => !t || t === "--:--").length }; }');
+```

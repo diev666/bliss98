@@ -1,0 +1,14 @@
+### Result
+{
+  "hasWin": true,
+  "className": "window mp-app-window active",
+  "hasShell": true,
+  "hasTrackHead": true,
+  "itemGrid": "554.141px 28px 74px 249.359px 332.484px",
+  "mobileClass": false,
+  "compactClass": false
+}
+### Ran Playwright code
+```js
+await page.evaluate('() => { const win = document.getElementById("win_mediaplayer"); const shell = win ? win.querySelector(".mp-app-shell") : null; const head = win ? win.querySelector(".mp-track-head") : null; const firstItem = win ? win.querySelector("#mpList .mp-item") : null; const cs = firstItem ? getComputedStyle(firstItem) : null; return { hasWin: !!win, className: win ? win.className : null, hasShell: !!shell, hasTrackHead: !!head, itemGrid: cs ? cs.gridTemplateColumns : null, mobileClass: !!(win && win.classList.contains("mp-mobile-player")), compactClass: !!(win && win.classList.contains("mp-compact")) }; }');
+```

@@ -1,0 +1,15 @@
+### Result
+{
+  "hasWin": true,
+  "winClasses": "window active",
+  "itemGrid": "189.984px 28px 74px 90px 114px",
+  "itemDisplay": "grid",
+  "titleWhiteSpace": "normal",
+  "titleOverflowWrap": "normal",
+  "titleWordBreak": "normal",
+  "itemHtml": "<button class=\"mp-item selected active\" type=\"button\" data-mp-pick=\"0\" title=\"6 Years\"><span class=\"mp-item-mark\">▶</span><span class=\"mp-item-title\">6 Years</span></button>"
+}
+### Ran Playwright code
+```js
+await page.evaluate('() => { const win = document.getElementById("win_mediaplayer"); const first = win ? win.querySelector("#mpList .mp-item") : null; const firstTitle = win ? win.querySelector("#mpList .mp-item .mp-item-title") : null; const sItem = first ? getComputedStyle(first) : null; const sTitle = firstTitle ? getComputedStyle(firstTitle) : null; return { hasWin: !!win, winClasses: win ? win.className : null, itemGrid: sItem ? sItem.gridTemplateColumns : null, itemDisplay: sItem ? sItem.display : null, titleWhiteSpace: sTitle ? sTitle.whiteSpace : null, titleOverflowWrap: sTitle ? sTitle.overflowWrap : null, titleWordBreak: sTitle ? sTitle.wordBreak : null, itemHtml: first ? first.outerHTML : null }; }');
+```

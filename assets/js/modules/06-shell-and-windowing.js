@@ -1201,13 +1201,20 @@ function smartFitWindow(winEl, mode = 'auto', opts = {}){
 
 function getMediaPlayerRect(){
   const area = $('#desktopArea').getBoundingClientRect();
-  const margin = 24;
-  const maxSide = Math.max(240, Math.min(area.width - margin * 2, area.height - margin * 2));
-  const candidate = Math.min(maxSide, Math.max(320, Math.floor(maxSide * 0.65)));
-  const size = clamp(candidate, 280, 520);
-  const left = Math.round(clamp((area.width - size) / 2, margin, area.width - size - margin));
-  const top = Math.round(clamp((area.height - size) / 2, margin, area.height - size - margin));
-  return { left, top, width: size, height: size };
+  const margin = state.isMobile ? 10 : 24;
+  const maxWidth = Math.max(260, area.width - margin * 2);
+  const maxHeight = Math.max(220, area.height - margin * 2);
+  const targetWidth = state.isMobile
+    ? Math.max(260, area.width - 12)
+    : Math.max(860, Math.floor(area.width * 0.62));
+  const targetHeight = state.isMobile
+    ? Math.max(240, area.height - 18)
+    : Math.max(520, Math.floor(area.height * 0.68));
+  const width = clamp(targetWidth, state.isMobile ? 260 : 820, Math.min(maxWidth, state.isMobile ? maxWidth : 1150));
+  const height = clamp(targetHeight, state.isMobile ? 240 : 480, Math.min(maxHeight, state.isMobile ? maxHeight : 640));
+  const left = Math.round(clamp((area.width - width) / 2, 0, Math.max(0, area.width - width)));
+  const top = Math.round(clamp((area.height - height) / 2, 0, Math.max(0, area.height - height)));
+  return { left, top, width, height };
 }
 
 function getViewportRectForWindow(appId){
@@ -1442,8 +1449,7 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
             el.classList.remove('hidden');
             if(el.style.visibility === 'hidden') revealWindow(appId, { skipAnim: true });
           }
-          focusWindow(appId);
-          renderTaskButtons();
+          focusWindowAndRefreshTaskbar(appId);
           return el;
         }
 
@@ -1499,8 +1505,7 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
         createWindowElement(wstate);
         const winEl = document.getElementById(`win_${appId}`);
         if(!deferReveal){
-          focusWindow(appId);
-          renderTaskButtons();
+          focusWindowAndRefreshTaskbar(appId);
         }
         
         // Apply launch animation if enabled
@@ -1782,6 +1787,11 @@ function toggleFitWindow(appId) {
         closeBlissOSAppMenu();
       }
 
+      function focusWindowAndRefreshTaskbar(appId){
+        focusWindow(appId);
+        renderTaskButtons();
+      }
+
       function createWindowElement(wstate){
         const appId = wstate.id;
         const el = document.createElement('div');
@@ -1846,6 +1856,10 @@ function toggleFitWindow(appId) {
             aboutContent.dataset.fitMinH = state.isMobile ? '340' : '420';
             aboutContent.dataset.fitKey = `about-${state.isMobile ? 'mobile' : 'desktop'}`;
           }
+        }
+        if(appId === 'mediaplayer'){
+          const nativeTitlebar = el.querySelector('.frame > .titlebar[data-drag="1"]');
+          if(nativeTitlebar) nativeTitlebar.removeAttribute('data-drag');
         }
 
         // Make windows focus on mousedown except when clicking on a control button (min/max/close).
@@ -2199,10 +2213,28 @@ function toggleFitWindow(appId) {
         }
       }
 
+      let taskButtonsRenderSignature = '';
+      let blissosDockRenderSignature = '';
+
+      function buildTaskButtonsSignature(wins){
+        const parts = wins.map(w => {
+          const active = (state.activeWindowId === w.id && !w.minimized) ? 1 : 0;
+          return `${w.id}~${w.title}~${active}~${w.minimized ? 1 : 0}~${w.icon || ''}~${w.iconFile || ''}`;
+        });
+        return `${state.settings.theme}|${state.lang}|${parts.join('||')}`;
+      }
+
       function renderTaskButtons(){
         const host = $('#taskButtons');
-        host.innerHTML = '';
+        if(!host) return;
         const wins = Array.from(state.windows.values()).sort((a,b)=>a.title.localeCompare(b.title));
+        const signature = buildTaskButtonsSignature(wins);
+        if(signature === taskButtonsRenderSignature && host.childElementCount === wins.length){
+          renderBlissOSDock();
+          return;
+        }
+        taskButtonsRenderSignature = signature;
+        host.innerHTML = '';
         wins.forEach(w => {
           const b = document.createElement('div');
           b.className = 'btn bevel task-item';
@@ -2241,7 +2273,10 @@ function renderBlissOSDock(){
   const blissos = state.settings.theme === 'blissos';
   dock.classList.toggle('hidden', !blissos);
   if(!blissos){
-    dock.innerHTML = '';
+    if(blissosDockRenderSignature !== 'hidden'){
+      dock.innerHTML = '';
+      blissosDockRenderSignature = 'hidden';
+    }
     return;
   }
         const openIds = new Set(Array.from(state.windows.values()).map(w => w.id));
@@ -2269,6 +2304,18 @@ function renderBlissOSDock(){
           normalItems = normalItems.slice(0, DOCK_MOBILE_MAX_NORMAL);
         }
         const trashItem = normalized.find(isTrashDockItem);
+        const renderItems = trashItem ? normalItems.concat(trashItem) : normalItems.slice();
+        const dockStateSig = renderItems.map(item => {
+          const winId = getDockWindowIdForItem(item);
+          const win = winId ? state.windows.get(winId) : null;
+          const label = getDockItemLabel(item);
+          return `${item.id}|${item.type}|${item.refId}|${item.iconPath || ''}|${label}|${winId}|${openIds.has(winId) ? 1 : 0}|${win && win.minimized ? 1 : 0}|${state.activeWindowId === winId ? 1 : 0}`;
+        }).join('||');
+        const dockSignature = `${state.settings.theme}|${state.settings.blissosStyle || ''}|${state.settings.blissosMode || ''}|${state.lang}|${isMobileDock() ? 'mobile' : 'desktop'}|${dockStateSig}`;
+        if(dockSignature === blissosDockRenderSignature && dock.firstElementChild){
+          return;
+        }
+        blissosDockRenderSignature = dockSignature;
         normalItems.forEach(item => {
           const winId = getDockWindowIdForItem(item);
           const win = winId ? state.windows.get(winId) : null;
@@ -2313,6 +2360,12 @@ function renderBlissOSDock(){
           mid.appendChild(btn);
         });
         if(trashItem && right){
+          if(mid && mid.childElementCount > 0){
+            const separator = document.createElement('span');
+            separator.className = 'blissos-dock-separator';
+            separator.setAttribute('aria-hidden', 'true');
+            right.appendChild(separator);
+          }
           const winId = getDockWindowIdForItem(trashItem);
           const win = winId ? state.windows.get(winId) : null;
           const btn = document.createElement('button');

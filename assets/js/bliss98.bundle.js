@@ -159,8 +159,6 @@
         const onChange = (e) => {
           state.isMobile = !!(e && e.matches);
           if(typeof tickClock === 'function') tickClock();
-          if(typeof applyMusicState === 'function') applyMusicState();
-          if(typeof applyMediaplayerState === 'function') applyMediaplayerState();
           if(typeof scheduleWindowRelayout === 'function') scheduleWindowRelayout();
         };
         if(typeof MOBILE_MQ.addEventListener === 'function') MOBILE_MQ.addEventListener('change', onChange);
@@ -7573,7 +7571,6 @@ function applyMusicState(winEl){
   if(!win) return;
   const grid = win.querySelector('.music-grid');
   if(!grid) return;
-  win.classList.toggle('music-mobile-window', !!state.isMobile);
   grid.classList.toggle('music-small', state.music.tileSize === 'small');
   win.classList.toggle('music-hide-icons', !state.music.showIcons);
   grid.querySelectorAll('[data-music-id]').forEach(card => {
@@ -7585,8 +7582,9 @@ function applyMusicState(winEl){
 function applyMediaplayerState(winEl){
   const win = winEl || document.getElementById('win_mediaplayer');
   if(!win) return;
-  const hasList = !!win.querySelector('#mpList');
+  win.classList.add('mp-app-window');
   win.classList.toggle('mp-mobile-player', !!state.isMobile);
+  const hasList = !!win.querySelector('#mpList');
   if(hasList){
     win.classList.toggle('mp-hide-list', !state.mediaplayer.showPlaylist);
   }
@@ -7634,8 +7632,7 @@ function openAppFromDesktopIcon(appId, iconEl){
     if(finished) return;
     finished = true;
     revealWindow(appId, { skipAnim: true });
-    focusWindow(appId);
-    renderTaskButtons();
+    focusWindowAndRefreshTaskbar(appId);
   };
   const timeoutId = window.setTimeout(finalize, 900);
   waitForSmartFitCompletion(appId).then(targetRect => {
@@ -8237,8 +8234,7 @@ function openFolderWindow(folderId, opts = {}){
       el.classList.remove('hidden');
       renderFolderWindow(winId, navId);
     }
-    focusWindow(winId);
-    renderTaskButtons();
+    focusWindowAndRefreshTaskbar(winId);
     return el;
   }
 
@@ -8289,8 +8285,7 @@ function openFolderWindow(folderId, opts = {}){
   state.windows.set(winId, wstate);
   createWindowElement(wstate);
   const winEl = document.getElementById(`win_${winId}`);
-  focusWindow(winId);
-  renderTaskButtons();
+  focusWindowAndRefreshTaskbar(winId);
   return winEl;
 }
 
@@ -8308,8 +8303,7 @@ function openTxtFileWindow(txtId, opts = {}){
       el.classList.remove('hidden');
       renderTxtFileWindow(winId);
     }
-    focusWindow(winId);
-    renderTaskButtons();
+    focusWindowAndRefreshTaskbar(winId);
     return el;
   }
 
@@ -8358,8 +8352,7 @@ function openTxtFileWindow(txtId, opts = {}){
   state.windows.set(winId, wstate);
   createWindowElement(wstate);
   const winEl = document.getElementById(`win_${winId}`);
-  focusWindow(winId);
-  renderTaskButtons();
+  focusWindowAndRefreshTaskbar(winId);
   return winEl;
 }
 
@@ -10131,22 +10124,6 @@ function installLongPress(el, getTarget){
           'player.prev': 'Prev',
           'player.next': 'Next',
           'player.vol': 'Vol',
-          'player.searchPlaceholder': 'Search',
-          'player.search': 'Search',
-          'player.browse': 'Browse',
-          'player.source': 'Source',
-          'player.library': 'Library',
-          'player.podcasts': 'Podcasts',
-          'player.partyShuffle': 'Party Shuffle',
-          'player.playlists': 'Playlists',
-          'player.radio': 'Radio',
-          'player.musicStore': 'Music Store',
-          'player.recentlyPlayed': 'Recently Played',
-          'player.top25': 'Top 25 Most Played',
-          'player.col.name': 'Name',
-          'player.col.time': 'Time',
-          'player.col.artist': 'Artist',
-          'player.col.album': 'Album',
           'player.shuffle': 'Shuffle',
           'player.repeat': 'Repeat',
           'player.repeat.off': 'Off',
@@ -10154,9 +10131,6 @@ function installLongPress(el, getTarget){
           'player.repeat.all': 'All',
           'player.loading': 'Loading tracks…',
           'player.notfound': 'No songs yet.',
-          'player.notfoundFilter': 'No songs match your search.',
-          'player.song': 'song',
-          'player.songs': 'songs',
           'player.autoplay': 'Autoplay may be blocked by your browser. If it does not start, press Play.',
           'player.addSongs': 'Add songs…',
           'player.reimport': 'Re-import files',
@@ -10703,22 +10677,6 @@ function installLongPress(el, getTarget){
           'player.prev': 'Anterior',
           'player.next': 'Próxima',
           'player.vol': 'Vol',
-          'player.searchPlaceholder': 'Buscar',
-          'player.search': 'Buscar',
-          'player.browse': 'Explorar',
-          'player.source': 'Fonte',
-          'player.library': 'Biblioteca',
-          'player.podcasts': 'Podcasts',
-          'player.partyShuffle': 'Party Shuffle',
-          'player.playlists': 'Playlists',
-          'player.radio': 'Rádio',
-          'player.musicStore': 'Loja de Música',
-          'player.recentlyPlayed': 'Tocadas Recentemente',
-          'player.top25': 'Top 25 Mais Tocadas',
-          'player.col.name': 'Nome',
-          'player.col.time': 'Tempo',
-          'player.col.artist': 'Artista',
-          'player.col.album': 'Álbum',
           'player.shuffle': 'Aleatório',
           'player.repeat': 'Repetir',
           'player.repeat.off': 'Desligado',
@@ -10726,9 +10684,6 @@ function installLongPress(el, getTarget){
           'player.repeat.all': 'Todas',
           'player.loading': 'Carregando músicas…',
           'player.notfound': 'Sem músicas ainda.',
-          'player.notfoundFilter': 'Nenhuma música encontrada na busca.',
-          'player.song': 'música',
-          'player.songs': 'músicas',
           'player.autoplay': 'O autoplay pode ser bloqueado. Se não tocar, aperte Play.',
           'player.addSongs': 'Adicionar músicas…',
           'player.reimport': 'Reimportar arquivos',
@@ -11989,21 +11944,45 @@ function installLongPress(el, getTarget){
       const BLISSOS_ICON_MAP = {
         enabled: true,
         base: './assets/BlissOS/',
+        sourceBase: './assets/icons/',
+        // BlissOS keeps this filename in lowercase on disk.
+        fileOverrides: Object.freeze({
+          'Settings.png': 'settings.png',
+        }),
       };
+
+      const BLISSOS_ICON_REVERSE_MAP = Object.freeze(
+        Object.entries(BLISSOS_ICON_MAP.fileOverrides).reduce((acc, [from, to]) => {
+          acc[to] = from;
+          return acc;
+        }, {})
+      );
+
+      function splitAssetQuery(src){
+        const q = src.indexOf('?');
+        if(q === -1) return { path: src, query: '' };
+        return { path: src.slice(0, q), query: src.slice(q) };
+      }
 
       function getBlissOSAssetPath(src){
         if(!src || typeof src !== 'string') return null;
-        if(src.startsWith('./assets/BlissOS/')) return src;
-        if(src.startsWith('./assets/icons/')){
-          return src.replace('./assets/icons/', './assets/BlissOS/');
+        const { path, query } = splitAssetQuery(src);
+        if(path.startsWith(BLISSOS_ICON_MAP.base)) return path + query;
+        if(path.startsWith(BLISSOS_ICON_MAP.sourceBase)){
+          const file = path.slice(BLISSOS_ICON_MAP.sourceBase.length);
+          const mapped = BLISSOS_ICON_MAP.fileOverrides[file] || file;
+          return `${BLISSOS_ICON_MAP.base}${mapped}${query}`;
         }
         return src;
       }
 
       function getBlissOSFallbackPath(src){
         if(!src || typeof src !== 'string') return null;
-        if(src.startsWith('./assets/BlissOS/')){
-          return src.replace('./assets/BlissOS/', './assets/icons/');
+        const { path, query } = splitAssetQuery(src);
+        if(path.startsWith(BLISSOS_ICON_MAP.base)){
+          const file = path.slice(BLISSOS_ICON_MAP.base.length);
+          const mapped = BLISSOS_ICON_REVERSE_MAP[file] || file;
+          return `${BLISSOS_ICON_MAP.sourceBase}${mapped}${query}`;
         }
         return src;
       }
@@ -12593,34 +12572,33 @@ Eu sou o buffalo branco extinto`
 `,
 
         mediaplayer: () => `
-          <section class="mp-app-shell">
-            <header class="mp-app-titlebar" data-mp-drag="1">
+          <div class="mp-app-shell">
+            <div class="mp-app-titlebar" data-drag="1">
               <div class="title-controls">
                 <div class="wctl bevel" title="${t('win.close')}" data-action="close">×</div>
                 <div class="wctl bevel" title="${t('win.minimize')}" data-action="min">_</div>
                 <div class="wctl bevel" title="${t('win.maximize')}" data-action="max">&#x25A1;</div>
               </div>
               <div class="title-left">
-                <strong data-i18n="player.title">${t('player.title')}</strong>
+                <strong data-i18n="app.mediaplayer">${t('app.mediaplayer')}</strong>
               </div>
-            </header>
+            </div>
 
             <div class="mp-app-main">
-              <div class="mp-mini mp-drop-zone">
+              <div class="mp-mini">
                 <audio id="mpAudio" preload="metadata"></audio>
 
-                <section class="mp-top-chrome">
+                <div class="mp-top-chrome">
                   <div class="mp-toolbar-row">
                     <div class="mp-transport-pack">
                       <div class="mp-pill-controls">
-                        <button class="mp-round-btn" type="button" data-mp-action="prev" data-i18n-title="player.prev" title="${t('player.prev')}">◀◀</button>
-                        <button class="mp-round-btn" type="button" data-mp-action="toggle" data-i18n-title="player.play" title="${t('player.play')}">▶</button>
-                        <button class="mp-round-btn" type="button" data-mp-action="next" data-i18n-title="player.next" title="${t('player.next')}">▶▶</button>
+                        <button class="mp-round-btn" type="button" data-mp-action="prev" title="${t('player.prev')}">⏮</button>
+                        <button class="mp-round-btn" type="button" data-mp-action="toggle" title="${t('player.play')}">▶</button>
+                        <button class="mp-round-btn" type="button" data-mp-action="next" title="${t('player.next')}">⏭</button>
                       </div>
                       <div class="mp-vol-line">
-                        <span class="mp-vol-icon" aria-hidden="true">◀</span>
+                        <span class="mp-vol-icon" data-i18n="player.vol">${t('player.vol')}</span>
                         <input id="mpVol" class="retro-slider mp-vol-slider" type="range" min="0" max="1" step="0.01" value="0.1" />
-                        <span class="mp-vol-icon" aria-hidden="true">▶</span>
                       </div>
                     </div>
 
@@ -12630,18 +12608,13 @@ Eu sou o buffalo branco extinto`
                           <span class="mp-display-title" id="mpNow">—</span>
                         </div>
                         <div class="mp-display-bottom">
-                          <span class="mp-display-elapsed">Elapsed Time:</span>
-                          <span class="mp-time"><span data-mp-current>0:00</span> / <span data-mp-total>--:--</span></span>
+                          <span class="mp-display-elapsed"><span data-mp-current>0:00</span> / <span data-mp-total>--:--</span></span>
                         </div>
                         <div class="mp-seek-row">
-                          <span class="mp-seek-diamond" aria-hidden="true">◆</span>
+                          <span class="mp-seek-diamond">◆</span>
                           <input class="retro-slider" id="mpSeek" type="range" min="0" max="1000" step="1" value="0" />
-                          <span class="mp-seek-dot" aria-hidden="true">●</span>
+                          <span class="mp-seek-dot">•</span>
                         </div>
-                      </div>
-                      <div class="mp-mode-controls">
-                        <button class="btn bevel mp-mode-btn" type="button" data-mp-action="shuffle"></button>
-                        <button class="btn bevel mp-mode-btn" type="button" data-mp-action="repeat"></button>
                       </div>
                     </div>
 
@@ -12649,89 +12622,89 @@ Eu sou o buffalo branco extinto`
                       <div class="mp-search-top">
                         <label class="mp-search-wrap" for="mpSearch">
                           <span class="mp-search-icon" aria-hidden="true"></span>
-                          <input id="mpSearch" type="text" data-i18n-placeholder="player.searchPlaceholder" placeholder="${t('player.searchPlaceholder')}" />
+                          <input id="mpSearch" type="search" placeholder="Search" />
                         </label>
-                        <button class="mp-browse-btn" type="button" data-mp-action="browse" data-i18n-title="player.browse" title="${t('player.browse')}" aria-label="${t('player.browse')}">
-                          <span class="mp-eye-dot" aria-hidden="true">◉</span>
+                        <button class="mp-browse-btn" type="button" aria-label="Browse">
+                          <span class="mp-eye-dot">◉</span>
                         </button>
                       </div>
                       <div class="mp-search-labels">
-                        <span data-i18n="player.search">${t('player.search')}</span>
-                        <span data-i18n="player.browse">${t('player.browse')}</span>
+                        <span>Search</span>
+                        <span>Browse</span>
                       </div>
                     </div>
                   </div>
-                </section>
+                </div>
 
-                <section class="mp-library-shell">
-                  <aside class="mp-source-panel" aria-label="${t('player.source')}">
-                    <div class="mp-source-head" data-i18n="player.source">${t('player.source')}</div>
+                <div class="mp-library-shell">
+                  <div class="mp-source-panel">
+                    <div class="mp-source-head">Source</div>
                     <div class="mp-source-list">
                       <button class="mp-source-item active" type="button">
-                        <span class="mp-source-glyph icon-library" aria-hidden="true"></span>
-                        <span data-i18n="player.library">${t('player.library')}</span>
+                        <span class="mp-source-glyph icon-library"></span>
+                        <span>Library</span>
                       </button>
                       <button class="mp-source-item" type="button">
-                        <span class="mp-source-glyph icon-podcast" aria-hidden="true"></span>
-                        <span data-i18n="player.podcasts">${t('player.podcasts')}</span>
+                        <span class="mp-source-glyph icon-podcast"></span>
+                        <span>Podcasts</span>
                       </button>
                       <button class="mp-source-item" type="button">
-                        <span class="mp-source-glyph icon-party" aria-hidden="true"></span>
-                        <span data-i18n="player.partyShuffle">${t('player.partyShuffle')}</span>
+                        <span class="mp-source-glyph icon-party"></span>
+                        <span>Party Shuffle</span>
                       </button>
                       <button class="mp-source-item" type="button">
-                        <span class="mp-source-glyph icon-radio" aria-hidden="true"></span>
-                        <span data-i18n="player.radio">${t('player.radio')}</span>
+                        <span class="mp-source-glyph icon-radio"></span>
+                        <span>Radio</span>
                       </button>
                       <button class="mp-source-item" type="button">
-                        <span class="mp-source-glyph icon-store" aria-hidden="true"></span>
-                        <span data-i18n="player.musicStore">${t('player.musicStore')}</span>
+                        <span class="mp-source-glyph icon-store"></span>
+                        <span>Music Store</span>
                       </button>
                       <button class="mp-source-item" type="button">
-                        <span class="mp-source-glyph icon-arrow" aria-hidden="true"></span>
-                        <span data-i18n="player.recentlyPlayed">${t('player.recentlyPlayed')}</span>
+                        <span class="mp-source-glyph icon-arrow"></span>
+                        <span>Recently Played</span>
                       </button>
                       <button class="mp-source-item" type="button">
-                        <span class="mp-source-glyph icon-arrow" aria-hidden="true"></span>
-                        <span data-i18n="player.top25">${t('player.top25')}</span>
+                        <span class="mp-source-glyph icon-arrow"></span>
+                        <span>Top 25 Most Played</span>
                       </button>
                     </div>
-                  </aside>
+                  </div>
 
-                  <section class="mp-track-panel">
-                    <header class="mp-track-head">
-                      <span data-i18n="player.col.name">${t('player.col.name')}</span>
-                      <span aria-hidden="true"></span>
-                      <span data-i18n="player.col.time">${t('player.col.time')}</span>
-                      <span data-i18n="player.col.artist">${t('player.col.artist')}</span>
-                      <span data-i18n="player.col.album">${t('player.col.album')}</span>
-                    </header>
+                  <div class="mp-track-panel">
+                    <div class="mp-track-head">
+                      <span>Name</span>
+                      <span></span>
+                      <span>Time</span>
+                      <span>Artist</span>
+                      <span>Album</span>
+                    </div>
                     <div class="mp-list" id="mpList"></div>
-                  </section>
-                </section>
+                  </div>
+                </div>
 
-                <section class="mp-footer-controls">
+                <div class="mp-footer-controls">
                   <div class="mp-toolbar-left">
-                    <button class="mp-tool-btn" type="button" data-mp-action="add" data-i18n-title="player.addSongs" title="${t('player.addSongs')}">+</button>
-                    <button class="mp-tool-btn" type="button" data-mp-action="shuffle" data-i18n-title="player.shuffle" title="${t('player.shuffle')}">⤮</button>
-                    <button class="mp-tool-btn" type="button" data-mp-action="repeat" data-i18n-title="player.repeat" title="${t('player.repeat')}">↻</button>
-                    <button class="mp-tool-btn hidden" type="button" data-mp-action="reimport" data-i18n-title="player.reimport" title="${t('player.reimport')}">↻</button>
+                    <button class="mp-tool-btn" type="button" data-mp-action="add" title="${t('player.addSongs')}">+</button>
+                    <button class="mp-tool-btn hidden" type="button" data-mp-action="reimport" title="${t('player.reimport')}">↻</button>
+                    <button class="mp-tool-btn" type="button" data-mp-action="shuffle" data-mp-glyph="1" title="${t('player.shuffle')}">⤮</button>
+                    <button class="mp-tool-btn" type="button" data-mp-action="repeat" data-mp-glyph="1" title="${t('player.repeat')}">↺</button>
                   </div>
-                  <div class="tiny mp-library-stats" id="mpLibraryStats">0 songs</div>
-                  <div class="tiny mp-status" id="mpMsg"></div>
-                  <div class="mp-toolbar-right" aria-hidden="true">
-                    <button class="mp-tool-btn mp-tool-btn-mini" type="button" tabindex="-1">▥</button>
-                    <button class="mp-tool-btn mp-tool-btn-mini" type="button" tabindex="-1">☼</button>
-                    <button class="mp-tool-btn mp-tool-btn-mini" type="button" tabindex="-1">▴</button>
+                  <div class="mp-library-stats" id="mpStats">BLISS Library</div>
+                  <div class="mp-status" id="mpMsg"></div>
+                  <div class="mp-toolbar-right">
+                    <button class="mp-tool-btn mp-tool-btn-mini" type="button" aria-label="View">▥</button>
+                    <button class="mp-tool-btn mp-tool-btn-mini" type="button" aria-label="Star">*</button>
+                    <button class="mp-tool-btn mp-tool-btn-mini" type="button" aria-label="More">▴</button>
                   </div>
-                  <div class="mp-corner-grip" aria-hidden="true">◢</div>
-                </section>
+                  <div class="mp-corner-grip">◢</div>
+                </div>
 
                 <div class="tiny mp-drop hidden" id="mpDropHint" data-i18n="player.drop">Drop audio files here</div>
                 <input id="mpFileInput" class="hidden" type="file" multiple accept=".flac,.mp3,.wav,.ogg,audio/*" />
               </div>
             </div>
-          </section>
+          </div>
         `,
 
         art: () => `
@@ -13635,10 +13608,10 @@ function getDisplayTime(){
         loaded: false,
         seeking: false,
         supportsFlac: true,
-        search: '',
-        durationBySrc: new Map(),
-        durationPrefetchRunId: 0,
-        durationPrefetchPromise: null,
+        durationCache: new Map(),
+        durationPending: new Set(),
+        durationFailed: new Set(),
+        durationHydrating: false,
       };
       const MP_FALLBACK_TRACKS = [
         '6 Years.flac',
@@ -13681,37 +13654,31 @@ function getDisplayTime(){
         try{ localStorage.setItem(MP_STATE_KEY, JSON.stringify({ idx: mp.idx, vol: mp.vol })); } catch {}
       }
 
-      function mpCancelDurationPrefetch(){
-        mp.durationPrefetchRunId += 1;
-      }
-
       function mpResolveTitleFromSrc(src){
         return mpSafeTitleFromFilename(src);
       }
 
-      function mpNormalizeDuration(raw){
-        if(Number.isFinite(raw) && raw > 0){
-          return Number(raw);
+      function mpParseDuration(raw){
+        if(Number.isFinite(raw)){
+          const val = Number(raw);
+          return val >= 0 ? val : null;
         }
-        if(typeof raw !== 'string'){
-          return 0;
+        if(typeof raw !== 'string') return null;
+        const text = raw.trim();
+        if(!text) return null;
+        if(/^\d+(\.\d+)?$/.test(text)){
+          const sec = Number(text);
+          return sec >= 0 ? sec : null;
         }
-        const value = raw.trim();
-        if(!value) return 0;
-        if(/^\d+(\.\d+)?$/.test(value)){
-          return Number(value);
-        }
-        const parts = value.split(':').map(p => Number(p));
-        if(parts.some(n => !Number.isFinite(n) || n < 0)){
-          return 0;
-        }
+        const parts = text.split(':').map(p => p.trim());
+        if(parts.some(p => !/^\d+$/.test(p))) return null;
         if(parts.length === 2){
-          return (parts[0] * 60) + parts[1];
+          return Number(parts[0]) * 60 + Number(parts[1]);
         }
         if(parts.length === 3){
-          return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+          return Number(parts[0]) * 3600 + Number(parts[1]) * 60 + Number(parts[2]);
         }
-        return 0;
+        return null;
       }
 
       function mpNormalizeManifest(data, baseDir){
@@ -13721,81 +13688,56 @@ function getDisplayTime(){
             const file = item.trim();
             const isAbs = /^(https?:)?\//.test(file);
             const src = (isAbs || file.startsWith('.')) ? file : (baseDir + file);
-            return {
-              src,
-              title: mpResolveTitleFromSrc(file),
-              artist: 'DIEV',
-              album: 'Unknown',
-              duration: 0,
-              kind: 'manifest'
-            };
+            return { src, title: mpResolveTitleFromSrc(file), kind: 'manifest' };
           }
           if(item && typeof item === 'object' && (item.src || item.file)){
             const raw = String(item.src || item.file);
             const isAbs = /^(https?:)?\//.test(raw);
             const src = (isAbs || raw.startsWith('.')) ? raw : (baseDir + raw);
+            const duration = mpParseDuration(item.duration ?? item.time);
             return {
               src,
               title: item.title ? String(item.title) : mpResolveTitleFromSrc(raw),
-              artist: item.artist ? String(item.artist) : 'DIEV',
-              album: item.album ? String(item.album) : 'Unknown',
-              duration: mpNormalizeDuration(item.duration),
-              kind: 'manifest'
+              kind: 'manifest',
+              duration,
+              time: Number.isFinite(duration) ? mpFormatTime(duration) : undefined,
+              artist: item.artist ? String(item.artist) : undefined,
+              album: item.album ? String(item.album) : undefined,
             };
           }
           return null;
         }).filter(Boolean);
       }
 
-      function mpRebuildTracks(){
-        mp.tracks = [...mp.manifestTracks, ...mp.imported];
+      function mpTrackDurationKey(track){
+        if(!track) return '';
+        if(track.kind === 'local' && track.fileKey){
+          return `local:${track.fileKey}`;
+        }
+        const src = String(track.src || '').trim();
+        if(src) return `src:${src}`;
+        const title = String(track.title || '').trim();
+        return title ? `title:${title}` : '';
       }
 
-      function mpProbeTrackDuration(track, timeoutMs = 12000){
-        const src = String((track && track.src) || '');
-        if(!src) return Promise.resolve(0);
-        return new Promise(resolve => {
-          const probe = document.createElement('audio');
-          let done = false;
-          let timer = 0;
-          const finish = (raw)=>{
-            if(done) return;
-            done = true;
-            if(timer) clearTimeout(timer);
-            probe.removeEventListener('loadedmetadata', onReady);
-            probe.removeEventListener('durationchange', onReady);
-            probe.removeEventListener('canplay', onReady);
-            probe.removeEventListener('error', onError);
-            try{ probe.pause(); } catch {}
-            try{
-              probe.removeAttribute('src');
-              probe.load();
-            } catch {}
-            const val = Number(raw);
-            resolve((Number.isFinite(val) && val > 0) ? val : 0);
-          };
-          const onReady = ()=>{
-            const dur = Number(probe.duration);
-            if(Number.isFinite(dur) && dur > 0){
-              finish(dur);
-            }
-          };
-          const onError = ()=> finish(0);
-          probe.preload = 'metadata';
-          probe.muted = true;
-          probe.playsInline = true;
-          probe.addEventListener('loadedmetadata', onReady);
-          probe.addEventListener('durationchange', onReady);
-          probe.addEventListener('canplay', onReady);
-          probe.addEventListener('error', onError);
-          timer = setTimeout(()=> finish(0), timeoutMs);
-          try{
-            probe.src = src;
-            probe.load();
-          } catch {
-            finish(0);
+      function mpApplyKnownTrackDurations(){
+        mp.tracks.forEach(track => {
+          if(!track) return;
+          if(Number.isFinite(track.duration) && !track.time){
+            track.time = mpFormatTime(track.duration);
           }
+          const key = mpTrackDurationKey(track);
+          if(!key || !mp.durationCache.has(key)) return;
+          const cached = mp.durationCache.get(key);
+          if(!Number.isFinite(cached)) return;
+          track.duration = cached;
+          track.time = mpFormatTime(cached);
         });
+      }
+
+      function mpRebuildTracks(){
+        mp.tracks = [...mp.manifestTracks, ...mp.imported];
+        mpApplyKnownTrackDurations();
       }
 
       function mpTrackFileKey(file){
@@ -13930,12 +13872,13 @@ function getDisplayTime(){
             mp.imported.splice(existingIdx, 1);
           }
           const src = URL.createObjectURL(file);
+          const durationKey = fileKey ? `local:${fileKey}` : '';
+          if(durationKey){
+            mp.durationFailed.delete(durationKey);
+          }
           added.push({
             src,
             title: mpSafeTitleFromFilename(name),
-            artist: 'DIEV',
-            album: 'Unknown',
-            duration: 0,
             kind: 'local',
             ext,
             file,
@@ -13948,7 +13891,6 @@ function getDisplayTime(){
         state.mediaplayer.needsReimport = false;
         try{ localStorage.setItem(MP_IMPORT_KEY, JSON.stringify(mp.importedNames)); } catch {}
 
-        mpCancelDurationPrefetch();
         mpRebuildTracks();
         if(state.mediaplayer.shuffle) mpResetShuffleRuntime();
         if(mp.tracks.length > 0){
@@ -13957,7 +13899,6 @@ function getDisplayTime(){
         } else {
           mpRender();
         }
-        mpPrefetchTrackDurations().catch(()=>{});
       }
 
       function mpEls(){
@@ -13972,155 +13913,42 @@ function getDisplayTime(){
           current: win.querySelector('[data-mp-current]'),
           total: win.querySelector('[data-mp-total]'),
           vol: win.querySelector('#mpVol'),
-          search: win.querySelector('#mpSearch'),
           toggleBtn: win.querySelector('[data-mp-action="toggle"]'),
-          shuffleBtns: Array.from(win.querySelectorAll('[data-mp-action="shuffle"]')),
-          repeatBtns: Array.from(win.querySelectorAll('[data-mp-action="repeat"]')),
+          shuffleBtn: win.querySelector('[data-mp-action="shuffle"]'),
+          repeatBtn: win.querySelector('[data-mp-action="repeat"]'),
           addBtn: win.querySelector('[data-mp-action="add"]'),
           reimportBtn: win.querySelector('[data-mp-action="reimport"]'),
-          libraryStats: win.querySelector('#mpLibraryStats'),
           dropHint: win.querySelector('#mpDropHint'),
           fileInput: win.querySelector('#mpFileInput'),
           list: win.querySelector('#mpList'),
         };
       }
 
-      function mpGetTrackDuration(track){
-        if(!track) return 0;
-        const fromTrack = Number(track.duration);
-        if(Number.isFinite(fromTrack) && fromTrack > 0){
-          return fromTrack;
-        }
-        const src = String(track.src || '');
-        const fromMap = src ? Number(mp.durationBySrc.get(src)) : 0;
-        return (Number.isFinite(fromMap) && fromMap > 0) ? fromMap : 0;
-      }
-
-      function mpGetTrackArtist(track){
-        return 'DIEV';
-      }
-
-      function mpGetTrackAlbum(track){
-        return 'Unknown';
-      }
-
-      async function mpPrefetchTrackDurations(opts = {}){
-        const force = !!opts.force;
-        const runId = ++mp.durationPrefetchRunId;
-        if(mp.durationPrefetchPromise && !force){
-          return mp.durationPrefetchPromise;
-        }
-        const entries = mp.tracks.map(track => ({
-          track,
-          src: String((track && track.src) || '')
-        }));
-        const job = (async ()=>{
-          let changed = false;
-          for(const entry of entries){
-            if(runId !== mp.durationPrefetchRunId) break;
-            const track = entry.track;
-            const src = entry.src;
-            if(!track || !src) continue;
-            if(!force){
-              const known = mpGetTrackDuration(track);
-              if(known > 0) continue;
-            }
-            const dur = await mpProbeTrackDuration(track);
-            if(runId !== mp.durationPrefetchRunId) break;
-            if(!(dur > 0)) continue;
-            const prev = mpGetTrackDuration(track);
-            if(Math.abs(prev - dur) <= 0.4) continue;
-            track.duration = dur;
-            mp.durationBySrc.set(src, dur);
-            changed = true;
-            const els = mpEls();
-            if(els){
-              mpRenderList(els);
-              if(els.libraryStats){
-                els.libraryStats.textContent = mpFormatLibraryStats();
-              }
-              if(mp.tracks[mp.idx] === track){
-                mpUpdateTime();
-              }
-            }
-          }
-          if(changed){
-            const els = mpEls();
-            if(els && els.libraryStats){
-              els.libraryStats.textContent = mpFormatLibraryStats();
-            }
-          }
-        })();
-        mp.durationPrefetchPromise = job.finally(()=>{
-          if(mp.durationPrefetchPromise === job){
-            mp.durationPrefetchPromise = null;
-          }
-        });
-        return mp.durationPrefetchPromise;
-      }
-
-      function mpGetFilteredEntries(els){
-        const rawQuery = String((els && els.search && els.search.value) || mp.search || '').trim();
-        const q = rawQuery.toLowerCase();
-        mp.search = rawQuery;
-        if(!q){
-          return mp.tracks.map((track, index) => ({ track, index }));
-        }
-        return mp.tracks.map((track, index) => ({ track, index }))
-          .filter(({ track }) => {
-            const blob = [
-              String(track && track.title || ''),
-              mpGetTrackArtist(track),
-              mpGetTrackAlbum(track)
-            ].join(' ').toLowerCase();
-            return blob.includes(q);
-          });
-      }
-
-      function mpFormatLibraryStats(){
-        const count = mp.tracks.length;
-        const unit = (count === 1) ? t('player.song') : t('player.songs');
-        let totalSeconds = 0;
-        let knownCount = 0;
-        mp.tracks.forEach(track => {
-          const dur = mpGetTrackDuration(track);
-          if(dur > 0){
-            totalSeconds += dur;
-            knownCount += 1;
-          }
-        });
-        if(totalSeconds > 0){
-          const suffix = mpFormatTime(totalSeconds);
-          const approx = (knownCount < count) ? '+' : '';
-          return `${count} ${unit}, ${suffix}${approx}`;
-        }
-        return `${count} ${unit}`;
-      }
-
       function mpRenderList(els){
         const list = els && els.list;
         if(!list) return;
-        const entries = mpGetFilteredEntries(els);
-        if(entries.length === 0){
-          const key = (mp.tracks.length > 0 && mp.search) ? 'player.notfoundFilter' : 'player.notfound';
-          list.innerHTML = `<div class="tiny mp-empty">${escapeHTML(t(key))}</div>`;
+        if(mp.tracks.length === 0){
+          list.innerHTML = `<div class="tiny mp-empty">${escapeHTML(t('player.notfound'))}</div>`;
           return;
         }
-        list.innerHTML = entries.map(({ track, index }) => {
-          const selected = state.mediaplayer.selected.has(index);
-          const active = index === mp.idx;
+        list.innerHTML = mp.tracks.map((tr, i) => {
+          const selected = state.mediaplayer.selected.has(i);
+          const active = i === mp.idx;
           const cls = `mp-item${selected ? ' selected' : ''}${active ? ' active' : ''}`;
-          const marker = active ? '&#9654;' : '';
-          const title = escapeHTML(String(track.title || ''));
-          const duration = mpGetTrackDuration(track);
-          const durationLabel = duration > 0 ? mpFormatTime(duration) : '--:--';
-          const artist = escapeHTML(mpGetTrackArtist(track));
-          const album = escapeHTML(mpGetTrackAlbum(track));
+          const marker = active ? '&#9654;' : '&nbsp;';
+          const title = escapeHTML(String(tr.title || ''));
+          const timeLabel = escapeHTML(String(tr.time || '--:--'));
+          const artist = escapeHTML(String(tr.artist || 'DIEV'));
+          const album = escapeHTML(String(tr.album || 'Unknown'));
           return `
-            <button class="${cls}" type="button" data-mp-pick="${index}" title="${title}">
-              <span class="mp-item-col mp-item-name"><span class="mp-item-check" aria-hidden="true">☑</span><span class="mp-item-mark">${marker}</span><span class="mp-item-title">${title}</span></span>
-              <span class="mp-item-col mp-item-go-col"><span class="mp-item-go" aria-hidden="true">◉</span></span>
-              <span class="mp-item-col mp-item-time">${escapeHTML(durationLabel)}</span>
+            <button class="${cls}" type="button" data-mp-pick="${i}" title="${title}">
+              <span class="mp-item-col mp-item-name">
+                <span class="mp-item-check">&#9744;</span>
+                <span class="mp-item-mark">${marker}</span>
+                <span class="mp-item-title">${title}</span>
+              </span>
+              <span class="mp-item-col mp-item-go-col"><span class="mp-item-go">◉</span></span>
+              <span class="mp-item-col mp-item-time">${timeLabel}</span>
               <span class="mp-item-col mp-item-artist">${artist}</span>
               <span class="mp-item-col mp-item-album">${album}</span>
             </button>
@@ -14128,10 +13956,28 @@ function getDisplayTime(){
         }).join('');
       }
 
+      function mpUpdateStats(els){
+        const stats = els && els.win ? els.win.querySelector('#mpStats') : null;
+        if(!stats) return;
+        const count = mp.tracks.length;
+        const countLabel = `${count} ${count === 1 ? 'song' : 'songs'}`;
+        const totalSeconds = mp.tracks.reduce((acc, track)=>{
+          if(track && Number.isFinite(track.duration) && track.duration > 0){
+            return acc + track.duration;
+          }
+          return acc;
+        }, 0);
+        if(totalSeconds > 0){
+          stats.textContent = `${countLabel}, ${mpFormatTime(totalSeconds)}`;
+          return;
+        }
+        stats.textContent = countLabel;
+      }
+
       function mpRender(){
         const els = mpEls();
         if(!els) return;
-        const { now, msg, vol, toggleBtn, audio, shuffleBtns, repeatBtns, reimportBtn, search, libraryStats } = els;
+        const { now, msg, vol, toggleBtn, audio, shuffleBtn, repeatBtn, reimportBtn } = els;
 
         if(vol){
           vol.value = String(mp.vol);
@@ -14161,40 +14007,43 @@ function getDisplayTime(){
         const cur = mp.tracks[mp.idx];
         if(now) now.textContent = cur ? cur.title : '—';
         if(toggleBtn){
-          const nextAction = mp.playing ? t('player.pause') : t('player.play');
-          toggleBtn.innerHTML = mp.playing ? '⏸' : '▶';
-          toggleBtn.setAttribute('title', nextAction);
+          if(toggleBtn.classList.contains('mp-round-btn')){
+            toggleBtn.textContent = mp.playing ? '⏸' : '▶';
+            toggleBtn.title = mp.playing ? t('player.pause') : t('player.play');
+          } else {
+            toggleBtn.innerHTML = mp.playing ? `⏸ ${t('player.pause')}` : `▶ ${t('player.play')}`;
+          }
         }
-        (shuffleBtns || []).forEach(btn => {
-          if(!btn) return;
-          const isTool = btn.classList.contains('mp-tool-btn');
-          if(!isTool){
-            btn.textContent = t('player.shuffle');
+        if(shuffleBtn){
+          if(shuffleBtn.dataset.mpGlyph === '1'){
+            shuffleBtn.textContent = '⤮';
+            shuffleBtn.title = t('player.shuffle');
+          } else {
+            shuffleBtn.textContent = t('player.shuffle');
           }
-          btn.setAttribute('title', t('player.shuffle'));
-          btn.classList.toggle('pressed', state.mediaplayer.shuffle);
-        });
-        const repeatKey = `player.repeat.${state.mediaplayer.repeat}`;
-        (repeatBtns || []).forEach(btn => {
-          if(!btn) return;
-          const isTool = btn.classList.contains('mp-tool-btn');
-          if(!isTool){
-            btn.textContent = t(repeatKey);
+          shuffleBtn.classList.toggle('pressed', state.mediaplayer.shuffle);
+        }
+        if(repeatBtn){
+          const repeatKey = `player.repeat.${state.mediaplayer.repeat}`;
+          if(repeatBtn.dataset.mpGlyph === '1'){
+            repeatBtn.textContent = state.mediaplayer.repeat === 'one'
+              ? '1↺'
+              : (state.mediaplayer.repeat === 'all' ? '∞↺' : '↺');
+            repeatBtn.title = `${t('player.repeat')} ${t(repeatKey)}`;
+          } else {
+            repeatBtn.textContent = `${t('player.repeat')} ${t(repeatKey)}`;
           }
-          btn.setAttribute('title', `${t('player.repeat')}: ${t(repeatKey)}`);
-          btn.classList.toggle('pressed', state.mediaplayer.repeat !== 'off');
-        });
+          repeatBtn.classList.toggle('pressed', state.mediaplayer.repeat !== 'off');
+        }
         if(reimportBtn){
           reimportBtn.classList.toggle('hidden', !state.mediaplayer.needsReimport);
         }
-        if(search && search.value !== mp.search){
-          search.value = mp.search;
-        }
-        if(libraryStats){
-          libraryStats.textContent = mpFormatLibraryStats();
-        }
+        mpUpdateStats(els);
         mpRenderList(els);
         mpUpdateTime();
+        if(mp.loaded && mp.tracks.length > 0){
+          mpHydrateTrackDurations();
+        }
       }
 
       function mpApplyVolume(els){
@@ -14248,20 +14097,6 @@ function getDisplayTime(){
           });
         }
 
-        if(els.search){
-          els.search.addEventListener('input', ()=>{
-            mp.search = String(els.search.value || '').trim();
-            mpRenderList(els);
-          });
-          els.search.addEventListener('keydown', (e)=>{
-            if(e.key === 'Escape'){
-              els.search.value = '';
-              mp.search = '';
-              mpRenderList(els);
-            }
-          });
-        }
-
         if(els.fileInput){
           els.fileInput.addEventListener('change', ()=>{
             const replaceImported = (els.fileInput.dataset.mpMode === 'reimport');
@@ -14271,7 +14106,7 @@ function getDisplayTime(){
           });
         }
 
-        const dropTarget = win.querySelector('.mp-drop-zone') || win.querySelector('.mp-mini');
+        const dropTarget = win.querySelector('.mp-mini');
         if(dropTarget && !dropTarget.dataset.mpDrop){
           dropTarget.dataset.mpDrop = '1';
           const showDrop = (on)=>{
@@ -14309,26 +14144,107 @@ function getDisplayTime(){
         return `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
       }
 
+      function mpUpdateTrackTimeCell(idx){
+        const els = mpEls();
+        if(!els || !els.list) return;
+        const cell = els.list.querySelector(`[data-mp-pick="${idx}"] .mp-item-time`);
+        if(!cell) return;
+        const track = mp.tracks[idx];
+        cell.textContent = (track && track.time) ? track.time : '--:--';
+      }
+
+      function mpProbeTrackDuration(track){
+        return new Promise(resolve => {
+          if(!track || !track.src){
+            resolve(null);
+            return;
+          }
+          const probe = new Audio();
+          let settled = false;
+          const done = (value)=>{
+            if(settled) return;
+            settled = true;
+            try{
+              probe.pause();
+              probe.removeAttribute('src');
+              probe.load();
+            } catch {}
+            resolve(value);
+          };
+          const onMeta = ()=>{
+            const duration = Number(probe.duration);
+            if(Number.isFinite(duration) && duration > 0){
+              done(duration);
+            } else {
+              done(null);
+            }
+          };
+          const onError = ()=> done(null);
+          probe.preload = 'metadata';
+          probe.addEventListener('loadedmetadata', onMeta, { once: true });
+          probe.addEventListener('error', onError, { once: true });
+          try{
+            probe.src = track.src;
+          } catch {
+            done(null);
+          }
+        });
+      }
+
+      async function mpHydrateTrackDurations(){
+        if(mp.durationHydrating) return;
+        if(!mp.tracks || mp.tracks.length === 0) return;
+        const unresolved = mp.tracks
+          .map((track, idx) => ({ track, idx }))
+          .filter(({ track }) => track && track.src && !Number.isFinite(track.duration));
+        if(unresolved.length === 0) return;
+
+        mp.durationHydrating = true;
+        let changed = false;
+        try{
+          for(const entry of unresolved){
+            const { track, idx } = entry;
+            const key = mpTrackDurationKey(track);
+            if(!key) continue;
+            if(mp.durationFailed.has(key) || mp.durationPending.has(key)) continue;
+
+            if(mp.durationCache.has(key)){
+              const cached = mp.durationCache.get(key);
+              if(Number.isFinite(cached)){
+                track.duration = cached;
+                track.time = mpFormatTime(cached);
+                mpUpdateTrackTimeCell(idx);
+                changed = true;
+                continue;
+              }
+            }
+
+            mp.durationPending.add(key);
+            const duration = await mpProbeTrackDuration(track);
+            mp.durationPending.delete(key);
+            if(Number.isFinite(duration) && duration > 0){
+              mp.durationCache.set(key, duration);
+              mp.durationFailed.delete(key);
+              track.duration = duration;
+              track.time = mpFormatTime(duration);
+              mpUpdateTrackTimeCell(idx);
+              changed = true;
+            } else {
+              mp.durationFailed.add(key);
+            }
+          }
+        } finally {
+          mp.durationHydrating = false;
+        }
+        if(changed) mpRender();
+      }
+
       function mpUpdateTime(){
         const els = mpEls();
         if(!els) return;
         const { audio, seek, current, total } = els;
         const dur = Number.isFinite(audio.duration) ? audio.duration : 0;
         const cur = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
-        let shouldRefreshList = false;
-
-        const active = mp.tracks[mp.idx];
-        if(active && dur > 0){
-          const prevTrackDur = mpGetTrackDuration(active);
-          if(Math.abs(prevTrackDur - dur) > 0.4){
-            active.duration = dur;
-            const srcKey = String(active.src || '');
-            if(srcKey){
-              mp.durationBySrc.set(srcKey, dur);
-            }
-            shouldRefreshList = true;
-          }
-        }
 
         if(seek){
           seek.disabled = !dur;
@@ -14341,11 +14257,18 @@ function getDisplayTime(){
         }
         if(current) current.textContent = mpFormatTime(cur);
         if(total) total.textContent = dur ? mpFormatTime(dur) : '--:--';
-        if(shouldRefreshList){
-          mpRenderList(els);
-          if(els.libraryStats){
-            els.libraryStats.textContent = mpFormatLibraryStats();
+
+        const activeTrack = mp.tracks[mp.idx];
+        if(activeTrack && dur > 0 && (!Number.isFinite(activeTrack.duration) || Math.abs(activeTrack.duration - dur) > 0.5)){
+          activeTrack.duration = dur;
+          activeTrack.time = mpFormatTime(dur);
+          const key = mpTrackDurationKey(activeTrack);
+          if(key){
+            mp.durationCache.set(key, dur);
+            mp.durationFailed.delete(key);
           }
+          mpUpdateTrackTimeCell(mp.idx);
+          mpUpdateStats(els);
         }
       }
 
@@ -14487,6 +14410,9 @@ function getDisplayTime(){
 
       async function mpLoadTracks(force=false){
         if(mp.loadingPromise) return mp.loadingPromise;
+        if(force){
+          mp.durationFailed.clear();
+        }
         if(mp.loaded && !force){
           mpRebuildTracks();
           if(mp.tracks.length > 0){
@@ -14501,12 +14427,10 @@ function getDisplayTime(){
           } else {
             mpRender();
           }
-          mpPrefetchTrackDurations().catch(()=>{});
           return;
         }
 
         mp.loadingPromise = (async ()=>{
-          mpCancelDurationPrefetch();
           mp.loaded = false;
           mp.manifestTracks = [];
           mpRebuildTracks();
@@ -14541,7 +14465,6 @@ function getDisplayTime(){
             mpSetTrack(mp.idx);
           }
           mpRender();
-          mpPrefetchTrackDurations().catch(()=>{});
         })();
 
         try{
@@ -14565,7 +14488,6 @@ function getDisplayTime(){
       }
 
       window.addEventListener('beforeunload', ()=>{
-        mpCancelDurationPrefetch();
         mpDisposeImportedTracks();
       });
 
@@ -14594,10 +14516,6 @@ function getDisplayTime(){
           }
           if(action === 'reimport'){
             mpOpenFilePicker('reimport');
-          }
-          if(action === 'browse'){
-            openApp('music');
-            focusWindow('music');
           }
         }
 
@@ -15796,7 +15714,7 @@ function smartFitWindow(winEl, mode = 'auto', opts = {}){
     return out;
   };
 
-  if(!winEl || winEl.classList.contains('hidden') || !appId || !w || appId === 'mediaplayer' || (state.isMobile && appId === 'music')){
+  if(!winEl || winEl.classList.contains('hidden') || !appId || !w || appId === 'mediaplayer'){
     return Promise.resolve(finish(getWindowRectFromState(w)));
   }
   if(w.userSized && !['maximize','restore'].includes(mode)){
@@ -15887,49 +15805,19 @@ function smartFitWindow(winEl, mode = 'auto', opts = {}){
 
 function getMediaPlayerRect(){
   const area = $('#desktopArea').getBoundingClientRect();
-  if(state.isMobile){
-    const marginX = 6;
-    const topInset = isBlissOS() ? 16 : 0;
-    const bottomInset = isBlissOS() ? 56 : 30;
-    const availableW = Math.max(250, Math.floor(area.width - (marginX * 2)));
-    const availableH = Math.max(260, Math.floor(area.height - topInset - bottomInset - 10));
-    const minW = Math.max(250, Math.min(280, availableW));
-    const maxW = Math.max(minW, Math.min(460, availableW));
-    const width = clamp(Math.round(availableW), minW, maxW);
-    const height = availableH;
-    const left = Math.round((area.width - width) / 2);
-    const top = Math.round(clamp(topInset + 4, 2, Math.max(2, area.height - height - bottomInset)));
-    return { left, top, width, height };
-  }
-  const margin = 20;
-  const maxW = Math.max(320, Math.floor(area.width - margin * 2));
-  const maxH = Math.max(260, Math.floor(area.height - margin * 2));
-  const minW = Math.min(620, maxW);
-  const minH = Math.min(430, maxH);
-  const targetW = Math.round(maxW * 0.72);
-  const targetH = Math.round(maxH * 0.74);
-  const width = clamp(targetW, minW, Math.min(860, maxW));
-  const height = clamp(targetH, minH, Math.min(620, maxH));
-  const left = Math.round(clamp((area.width - width) / 2, margin, Math.max(margin, area.width - width - margin)));
-  const top = Math.round(clamp((area.height - height) / 2, margin, Math.max(margin, area.height - height - margin)));
-  return { left, top, width, height };
-}
-
-function getMobileMusicRect(){
-  const area = $('#desktopArea').getBoundingClientRect();
-  const marginX = 8;
-  const topInset = isBlissOS() ? 18 : 4;
-  const bottomInset = isBlissOS() ? 58 : 30;
-  const availableW = Math.max(240, Math.floor(area.width - (marginX * 2)));
-  const availableH = Math.max(240, Math.floor(area.height - topInset - bottomInset - 10));
-  const minW = Math.max(240, Math.min(300, availableW));
-  const maxW = Math.max(minW, Math.min(360, availableW));
-  const width = clamp(availableW, minW, maxW);
-  const minH = Math.max(260, Math.min(320, availableH));
-  const maxH = Math.max(minH, Math.min(460, availableH));
-  const height = clamp(Math.round(availableH * 0.56), minH, maxH);
-  const left = Math.round((area.width - width) / 2);
-  const top = Math.round(clamp(topInset + 12, 4, Math.max(4, area.height - height - bottomInset)));
+  const margin = state.isMobile ? 10 : 24;
+  const maxWidth = Math.max(260, area.width - margin * 2);
+  const maxHeight = Math.max(220, area.height - margin * 2);
+  const targetWidth = state.isMobile
+    ? Math.max(260, area.width - 12)
+    : Math.max(860, Math.floor(area.width * 0.62));
+  const targetHeight = state.isMobile
+    ? Math.max(240, area.height - 18)
+    : Math.max(520, Math.floor(area.height * 0.68));
+  const width = clamp(targetWidth, state.isMobile ? 260 : 820, Math.min(maxWidth, state.isMobile ? maxWidth : 1150));
+  const height = clamp(targetHeight, state.isMobile ? 240 : 480, Math.min(maxHeight, state.isMobile ? maxHeight : 640));
+  const left = Math.round(clamp((area.width - width) / 2, 0, Math.max(0, area.width - width)));
+  const top = Math.round(clamp((area.height - height) / 2, 0, Math.max(0, area.height - height)));
   return { left, top, width, height };
 }
 
@@ -15970,17 +15858,6 @@ function relayoutWindowsToViewport(){
     if(!w) return;
     const winEl = document.getElementById(`win_${appId}`);
     if(!winEl || winEl.classList.contains('mobile-game')) return;
-
-    if(appId === 'mediaplayer' && state.isMobile && !w.minimized && !winEl.classList.contains('hidden')){
-      const rect = normalizeWindowRect(getMediaPlayerRect(), bounds.area, 8);
-      assignWindowRect(winEl, w, rect);
-      return;
-    }
-    if(appId === 'music' && state.isMobile && !w.minimized && !winEl.classList.contains('hidden')){
-      const rect = normalizeWindowRect(getMobileMusicRect(), bounds.area, 8);
-      assignWindowRect(winEl, w, rect);
-      return;
-    }
 
     if(w.fit && !w.minimized && !winEl.classList.contains('hidden')){
       if(state.isMobile){
@@ -16176,8 +16053,7 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
             el.classList.remove('hidden');
             if(el.style.visibility === 'hidden') revealWindow(appId, { skipAnim: true });
           }
-          focusWindow(appId);
-          renderTaskButtons();
+          focusWindowAndRefreshTaskbar(appId);
           return el;
         }
 
@@ -16195,9 +16071,7 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
             height: Math.max(200, Math.floor(area.height)),
           }, area, 0);
         } else if(appId === 'mediaplayer'){
-          rect = normalizeWindowRect(getMediaPlayerRect(), area, state.isMobile ? 8 : 16);
-        } else if(appId === 'music' && state.isMobile){
-          rect = normalizeWindowRect(getMobileMusicRect(), area, 8);
+          rect = normalizeWindowRect(getMediaPlayerRect(), area, 16);
         } else if(savedRect){
           rect = normalizeWindowRect(savedRect, area, 16);
         } else {
@@ -16219,7 +16093,7 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
           height: rect.height,
           z: ++state.zTop,
           savedRect: Boolean(savedRect),
-          userSized: appId === 'mediaplayer' && !state.isMobile,
+          userSized: appId === 'mediaplayer',
           autoFitObserver: null,
           lastFitKey: '',
           lastFitW: 0,
@@ -16235,8 +16109,7 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
         createWindowElement(wstate);
         const winEl = document.getElementById(`win_${appId}`);
         if(!deferReveal){
-          focusWindow(appId);
-          renderTaskButtons();
+          focusWindowAndRefreshTaskbar(appId);
         }
         
         // Apply launch animation if enabled
@@ -16518,11 +16391,15 @@ function toggleFitWindow(appId) {
         closeBlissOSAppMenu();
       }
 
+      function focusWindowAndRefreshTaskbar(appId){
+        focusWindow(appId);
+        renderTaskButtons();
+      }
+
       function createWindowElement(wstate){
         const appId = wstate.id;
         const el = document.createElement('div');
         el.className = 'window';
-        if(appId === 'mediaplayer') el.classList.add('mp-app-window');
         if(wstate.kind) el.classList.add(`win-${wstate.kind}`);
         el.id = `win_${appId}`;
         el.style.left = wstate.left + 'px';
@@ -16583,6 +16460,10 @@ function toggleFitWindow(appId) {
             aboutContent.dataset.fitMinH = state.isMobile ? '340' : '420';
             aboutContent.dataset.fitKey = `about-${state.isMobile ? 'mobile' : 'desktop'}`;
           }
+        }
+        if(appId === 'mediaplayer'){
+          const nativeTitlebar = el.querySelector('.frame > .titlebar[data-drag="1"]');
+          if(nativeTitlebar) nativeTitlebar.removeAttribute('data-drag');
         }
 
         // Make windows focus on mousedown except when clicking on a control button (min/max/close).
@@ -16681,9 +16562,7 @@ function toggleFitWindow(appId) {
       }
 
       function makeDraggable(winEl, appId){
-        const titlebar = (appId === 'mediaplayer')
-          ? (winEl.querySelector('[data-mp-drag="1"]') || winEl.querySelector('[data-drag="1"]'))
-          : winEl.querySelector('[data-drag="1"]');
+        const titlebar = winEl.querySelector('[data-drag="1"]');
         if(!titlebar) return;
 
         let dragging = false;
@@ -16696,7 +16575,6 @@ function toggleFitWindow(appId) {
           const dragTarget = getEventTargetEl(e);
           // Ignore clicks on window control buttons
           if(dragTarget && dragTarget.dataset && dragTarget.dataset.action) return;
-          if(state.isMobile && appId === 'music') return;
 
           e.preventDefault();
           dragging = true;
@@ -16762,11 +16640,6 @@ function toggleFitWindow(appId) {
         const handle = winEl.querySelector('.resize');
         const EDGE = 6; // px
         const TOUCH_EDGE = 12; // px
-
-        if(state.isMobile && (appId === 'mediaplayer' || appId === 'music')){
-          if(handle) handle.classList.add('hidden');
-          return;
-        }
 
         let resizing = false;
         let pointerId = null;
@@ -16944,10 +16817,28 @@ function toggleFitWindow(appId) {
         }
       }
 
+      let taskButtonsRenderSignature = '';
+      let blissosDockRenderSignature = '';
+
+      function buildTaskButtonsSignature(wins){
+        const parts = wins.map(w => {
+          const active = (state.activeWindowId === w.id && !w.minimized) ? 1 : 0;
+          return `${w.id}~${w.title}~${active}~${w.minimized ? 1 : 0}~${w.icon || ''}~${w.iconFile || ''}`;
+        });
+        return `${state.settings.theme}|${state.lang}|${parts.join('||')}`;
+      }
+
       function renderTaskButtons(){
         const host = $('#taskButtons');
-        host.innerHTML = '';
+        if(!host) return;
         const wins = Array.from(state.windows.values()).sort((a,b)=>a.title.localeCompare(b.title));
+        const signature = buildTaskButtonsSignature(wins);
+        if(signature === taskButtonsRenderSignature && host.childElementCount === wins.length){
+          renderBlissOSDock();
+          return;
+        }
+        taskButtonsRenderSignature = signature;
+        host.innerHTML = '';
         wins.forEach(w => {
           const b = document.createElement('div');
           b.className = 'btn bevel task-item';
@@ -16986,7 +16877,10 @@ function renderBlissOSDock(){
   const blissos = state.settings.theme === 'blissos';
   dock.classList.toggle('hidden', !blissos);
   if(!blissos){
-    dock.innerHTML = '';
+    if(blissosDockRenderSignature !== 'hidden'){
+      dock.innerHTML = '';
+      blissosDockRenderSignature = 'hidden';
+    }
     return;
   }
         const openIds = new Set(Array.from(state.windows.values()).map(w => w.id));
@@ -17014,6 +16908,18 @@ function renderBlissOSDock(){
           normalItems = normalItems.slice(0, DOCK_MOBILE_MAX_NORMAL);
         }
         const trashItem = normalized.find(isTrashDockItem);
+        const renderItems = trashItem ? normalItems.concat(trashItem) : normalItems.slice();
+        const dockStateSig = renderItems.map(item => {
+          const winId = getDockWindowIdForItem(item);
+          const win = winId ? state.windows.get(winId) : null;
+          const label = getDockItemLabel(item);
+          return `${item.id}|${item.type}|${item.refId}|${item.iconPath || ''}|${label}|${winId}|${openIds.has(winId) ? 1 : 0}|${win && win.minimized ? 1 : 0}|${state.activeWindowId === winId ? 1 : 0}`;
+        }).join('||');
+        const dockSignature = `${state.settings.theme}|${state.settings.blissosStyle || ''}|${state.settings.blissosMode || ''}|${state.lang}|${isMobileDock() ? 'mobile' : 'desktop'}|${dockStateSig}`;
+        if(dockSignature === blissosDockRenderSignature && dock.firstElementChild){
+          return;
+        }
+        blissosDockRenderSignature = dockSignature;
         normalItems.forEach(item => {
           const winId = getDockWindowIdForItem(item);
           const win = winId ? state.windows.get(winId) : null;
@@ -17058,6 +16964,12 @@ function renderBlissOSDock(){
           mid.appendChild(btn);
         });
         if(trashItem && right){
+          if(mid && mid.childElementCount > 0){
+            const separator = document.createElement('span');
+            separator.className = 'blissos-dock-separator';
+            separator.setAttribute('aria-hidden', 'true');
+            right.appendChild(separator);
+          }
           const winId = getDockWindowIdForItem(trashItem);
           const win = winId ? state.windows.get(winId) : null;
           const btn = document.createElement('button');
@@ -18812,3 +18724,4 @@ function renderBlissOSAppMenu(){
         // Mobile optimization: Native Pointer Events and Click handlers now work without suppression
         // IS_COARSE removed - all events handled via standard Pointer Events API
       })();
+

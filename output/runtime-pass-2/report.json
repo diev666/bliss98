@@ -1,0 +1,44 @@
+{
+  "consoleErrors": [],
+  "pageErrors": [],
+  "httpErrors": [],
+  "checks": {
+    "apiPresence": {
+      "openApp": "function",
+      "openIconById": "function",
+      "renderTaskButtons": "function",
+      "focusWindowAndRefreshTaskbar": "function"
+    },
+    "windowsOpened": {
+      "settings": true,
+      "music": true,
+      "games": true
+    },
+    "settingsBlissOS": {
+      "theme": "blissos",
+      "desktopSrc": "./assets/BlissOS/settings.png",
+      "desktopNatural": 512,
+      "panelSrc": "./assets/BlissOS/settings.png",
+      "panelNatural": 512
+    },
+    "settingsBliss98": {
+      "theme": "bliss98",
+      "desktopSrc": "./assets/icons/Settings.png",
+      "desktopNatural": 48,
+      "panelSrc": "./assets/icons/Settings.png",
+      "panelNatural": 48
+    },
+    "renderMutationProbe": {
+      "ok": true,
+      "taskMutations": 8,
+      "dockMutations": 0
+    },
+    "gamesSmoke": {
+      "ok": true,
+      "snake": {
+        "running": true,
+        "score": 0
+      }
+    }
+  }
+}

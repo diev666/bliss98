@@ -1,0 +1,9 @@
+### Result
+{
+  "theme": "bliss98",
+  "dark": true
+}
+### Ran Playwright code
+```js
+await page.evaluate('() => { if (typeof setOsTheme === "function") setOsTheme("bliss98"); if (typeof setDarkMode === "function") setDarkMode(true); if (typeof openApp === "function") openApp("mediaplayer"); return { theme: document.body.dataset.theme || null, dark: document.body.classList.contains("dark") }; }');
+```

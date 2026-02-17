@@ -298,6 +298,7 @@
         }
         .blissos-dock-cap.left{ width:14px; }
         .blissos-dock-cap.right{ width:16px; }
+        .blissos-dock-separator{ height:28px; }
         .blissos-dock-item{
           width:36px;
           height:36px;
@@ -393,6 +394,8 @@
         --blissos-dock-item-hover:#e1e1db;
         --blissos-dock-item-open:#d2d2cc;
         --blissos-dock-indicator:#4a4a45;
+        --blissos-dock-separator-hi:rgba(255,255,255,0.72);
+        --blissos-dock-separator-lo:rgba(74,74,69,0.48);
         --blissos-shadow:#5f5f59;
         --blissos-accent: #1B7BE5; /* Default blue for multicolor base */
         --blissos-accent-2: #2B8BEF;
@@ -465,6 +468,8 @@
         --blissos-dock-item-hover:#2d3340;
         --blissos-dock-item-open:#1f242e;
         --blissos-dock-indicator:#a3acbc;
+        --blissos-dock-separator-hi:rgba(188,205,228,0.34);
+        --blissos-dock-separator-lo:rgba(4,7,12,0.74);
         --blissos-shadow:rgba(0,0,0,0.55);
         --blissos-accent: #4F9BFA; /* Default blue for multicolor base in dark mode */
         --blissos-accent-2: #5FAAFF;
@@ -984,6 +989,23 @@
         align-items:center;
         gap:6px;
       }
+      .blissos-dock-separator{
+        width:2px;
+        height:36px;
+        border-radius:999px;
+        background:linear-gradient(
+          180deg,
+          var(--blissos-dock-separator-hi) 0%,
+          var(--blissos-dock-separator-hi) 32%,
+          var(--blissos-dock-separator-lo) 100%
+        );
+        box-shadow:
+          1px 0 0 rgba(255,255,255,0.24),
+          -1px 0 0 rgba(0,0,0,0.16);
+        opacity:0.94;
+        flex:0 0 auto;
+        pointer-events:none;
+      }
       .blissos-dock-item{
         width:42px;
         height:42px;
@@ -1325,6 +1347,8 @@
         --blissos-dock-item-hover:rgba(255,255,255,0.24);
         --blissos-dock-item-open:rgba(255,255,255,0.34);
         --blissos-dock-indicator:#315c89;
+        --blissos-dock-separator-hi:rgba(250,253,255,0.94);
+        --blissos-dock-separator-lo:rgba(95,126,162,0.5);
         --blissos-shadow:rgba(23,42,76,0.35);
         --blissos-accent:#3f86d3;
         --blissos-accent-2:#5ca2eb;
@@ -1364,6 +1388,8 @@
         --blissos-dock-item-hover:rgba(236,245,255,0.16);
         --blissos-dock-item-open:rgba(236,245,255,0.24);
         --blissos-dock-indicator:#d6ebff;
+        --blissos-dock-separator-hi:rgba(219,238,255,0.58);
+        --blissos-dock-separator-lo:rgba(15,27,44,0.72);
         --blissos-shadow:rgba(0,0,0,0.54);
         --blissos-accent:#5ca9f4;
         --blissos-accent-2:#7abcf8;
@@ -1622,6 +1648,14 @@
         background:linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0));
         pointer-events:none;
       }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-separator{
+        width:2px;
+        height:42px;
+        background:linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(216,233,251,0.78) 45%, rgba(89,120,157,0.62) 100%);
+        box-shadow:
+          1px 0 0 rgba(255,255,255,0.5),
+          -1px 0 0 rgba(46,78,114,0.2);
+      }
       body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item{
         width:48px;
         height:48px;
@@ -1775,6 +1809,12 @@
       }
       body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-inner::before{
         background:linear-gradient(180deg, rgba(227,242,255,0.24), rgba(227,242,255,0));
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-separator{
+        background:linear-gradient(180deg, rgba(211,233,255,0.54) 0%, rgba(146,184,222,0.4) 42%, rgba(12,26,43,0.78) 100%);
+        box-shadow:
+          1px 0 0 rgba(196,221,247,0.25),
+          -1px 0 0 rgba(7,14,24,0.6);
       }
       body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-item{
         background:rgba(236,245,255,0.08);
@@ -5512,6 +5552,13 @@
         flex:0 0 11px;
         color:#d2e3ff;
       }
+      .mp-item-title{
+        min-width:0;
+        padding:0 7px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+      }
       .mp-item-time{
         text-align:right;
         font-variant-numeric:tabular-nums;
@@ -6774,6 +6821,7 @@
         .blissos-dock-cap{ height:36px !important; }
         .blissos-dock-cap.left{ width:14px !important; }
         .blissos-dock-cap.right{ width:16px !important; }
+        .blissos-dock-separator{ height:28px !important; }
         .blissos-dock-item{
           width:36px !important;
           height:36px !important;
@@ -6912,6 +6960,6 @@
       </div>
     </div>
 
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260213-aqua-polish-3"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260217-runtime-pass2-1"></script>
   </body>
 </html>

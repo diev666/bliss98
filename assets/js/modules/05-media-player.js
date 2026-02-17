@@ -20,6 +20,10 @@
         loaded: false,
         seeking: false,
         supportsFlac: true,
+        durationCache: new Map(),
+        durationPending: new Set(),
+        durationFailed: new Set(),
+        durationHydrating: false,
       };
       const MP_FALLBACK_TRACKS = [
         '6 Years.flac',
@@ -66,6 +70,29 @@
         return mpSafeTitleFromFilename(src);
       }
 
+      function mpParseDuration(raw){
+        if(Number.isFinite(raw)){
+          const val = Number(raw);
+          return val >= 0 ? val : null;
+        }
+        if(typeof raw !== 'string') return null;
+        const text = raw.trim();
+        if(!text) return null;
+        if(/^\d+(\.\d+)?$/.test(text)){
+          const sec = Number(text);
+          return sec >= 0 ? sec : null;
+        }
+        const parts = text.split(':').map(p => p.trim());
+        if(parts.some(p => !/^\d+$/.test(p))) return null;
+        if(parts.length === 2){
+          return Number(parts[0]) * 60 + Number(parts[1]);
+        }
+        if(parts.length === 3){
+          return Number(parts[0]) * 3600 + Number(parts[1]) * 60 + Number(parts[2]);
+        }
+        return null;
+      }
+
       function mpNormalizeManifest(data, baseDir){
         if(!Array.isArray(data)) return [];
         return data.map(item => {
@@ -79,14 +106,50 @@
             const raw = String(item.src || item.file);
             const isAbs = /^(https?:)?\//.test(raw);
             const src = (isAbs || raw.startsWith('.')) ? raw : (baseDir + raw);
-            return { src, title: item.title ? String(item.title) : mpResolveTitleFromSrc(raw), kind: 'manifest' };
+            const duration = mpParseDuration(item.duration ?? item.time);
+            return {
+              src,
+              title: item.title ? String(item.title) : mpResolveTitleFromSrc(raw),
+              kind: 'manifest',
+              duration,
+              time: Number.isFinite(duration) ? mpFormatTime(duration) : undefined,
+              artist: item.artist ? String(item.artist) : undefined,
+              album: item.album ? String(item.album) : undefined,
+            };
           }
           return null;
         }).filter(Boolean);
       }
 
+      function mpTrackDurationKey(track){
+        if(!track) return '';
+        if(track.kind === 'local' && track.fileKey){
+          return `local:${track.fileKey}`;
+        }
+        const src = String(track.src || '').trim();
+        if(src) return `src:${src}`;
+        const title = String(track.title || '').trim();
+        return title ? `title:${title}` : '';
+      }
+
+      function mpApplyKnownTrackDurations(){
+        mp.tracks.forEach(track => {
+          if(!track) return;
+          if(Number.isFinite(track.duration) && !track.time){
+            track.time = mpFormatTime(track.duration);
+          }
+          const key = mpTrackDurationKey(track);
+          if(!key || !mp.durationCache.has(key)) return;
+          const cached = mp.durationCache.get(key);
+          if(!Number.isFinite(cached)) return;
+          track.duration = cached;
+          track.time = mpFormatTime(cached);
+        });
+      }
+
       function mpRebuildTracks(){
         mp.tracks = [...mp.manifestTracks, ...mp.imported];
+        mpApplyKnownTrackDurations();
       }
 
       function mpTrackFileKey(file){
@@ -221,6 +284,10 @@
             mp.imported.splice(existingIdx, 1);
           }
           const src = URL.createObjectURL(file);
+          const durationKey = fileKey ? `local:${fileKey}` : '';
+          if(durationKey){
+            mp.durationFailed.delete(durationKey);
+          }
           added.push({
             src,
             title: mpSafeTitleFromFilename(name),
@@ -282,8 +349,41 @@
           const cls = `mp-item${selected ? ' selected' : ''}${active ? ' active' : ''}`;
           const marker = active ? '&#9654;' : '&nbsp;';
           const title = escapeHTML(String(tr.title || ''));
-          return `<button class="${cls}" type="button" data-mp-pick="${i}" title="${title}"><span class="mp-item-mark">${marker}</span><span class="mp-item-title">${title}</span></button>`;
+          const timeLabel = escapeHTML(String(tr.time || '--:--'));
+          const artist = escapeHTML(String(tr.artist || 'DIEV'));
+          const album = escapeHTML(String(tr.album || 'Unknown'));
+          return `
+            <button class="${cls}" type="button" data-mp-pick="${i}" title="${title}">
+              <span class="mp-item-col mp-item-name">
+                <span class="mp-item-check">&#9744;</span>
+                <span class="mp-item-mark">${marker}</span>
+                <span class="mp-item-title">${title}</span>
+              </span>
+              <span class="mp-item-col mp-item-go-col"><span class="mp-item-go">◉</span></span>
+              <span class="mp-item-col mp-item-time">${timeLabel}</span>
+              <span class="mp-item-col mp-item-artist">${artist}</span>
+              <span class="mp-item-col mp-item-album">${album}</span>
+            </button>
+          `;
         }).join('');
+      }
+
+      function mpUpdateStats(els){
+        const stats = els && els.win ? els.win.querySelector('#mpStats') : null;
+        if(!stats) return;
+        const count = mp.tracks.length;
+        const countLabel = `${count} ${count === 1 ? 'song' : 'songs'}`;
+        const totalSeconds = mp.tracks.reduce((acc, track)=>{
+          if(track && Number.isFinite(track.duration) && track.duration > 0){
+            return acc + track.duration;
+          }
+          return acc;
+        }, 0);
+        if(totalSeconds > 0){
+          stats.textContent = `${countLabel}, ${mpFormatTime(totalSeconds)}`;
+          return;
+        }
+        stats.textContent = countLabel;
       }
 
       function mpRender(){
@@ -318,21 +418,44 @@
 
         const cur = mp.tracks[mp.idx];
         if(now) now.textContent = cur ? cur.title : '—';
-        if(toggleBtn) toggleBtn.innerHTML = mp.playing ? `⏸ ${t('player.pause')}` : `▶ ${t('player.play')}`;
+        if(toggleBtn){
+          if(toggleBtn.classList.contains('mp-round-btn')){
+            toggleBtn.textContent = mp.playing ? '⏸' : '▶';
+            toggleBtn.title = mp.playing ? t('player.pause') : t('player.play');
+          } else {
+            toggleBtn.innerHTML = mp.playing ? `⏸ ${t('player.pause')}` : `▶ ${t('player.play')}`;
+          }
+        }
         if(shuffleBtn){
-          shuffleBtn.textContent = t('player.shuffle');
+          if(shuffleBtn.dataset.mpGlyph === '1'){
+            shuffleBtn.textContent = '⤮';
+            shuffleBtn.title = t('player.shuffle');
+          } else {
+            shuffleBtn.textContent = t('player.shuffle');
+          }
           shuffleBtn.classList.toggle('pressed', state.mediaplayer.shuffle);
         }
         if(repeatBtn){
           const repeatKey = `player.repeat.${state.mediaplayer.repeat}`;
-          repeatBtn.textContent = `${t('player.repeat')} ${t(repeatKey)}`;
+          if(repeatBtn.dataset.mpGlyph === '1'){
+            repeatBtn.textContent = state.mediaplayer.repeat === 'one'
+              ? '1↺'
+              : (state.mediaplayer.repeat === 'all' ? '∞↺' : '↺');
+            repeatBtn.title = `${t('player.repeat')} ${t(repeatKey)}`;
+          } else {
+            repeatBtn.textContent = `${t('player.repeat')} ${t(repeatKey)}`;
+          }
           repeatBtn.classList.toggle('pressed', state.mediaplayer.repeat !== 'off');
         }
         if(reimportBtn){
           reimportBtn.classList.toggle('hidden', !state.mediaplayer.needsReimport);
         }
+        mpUpdateStats(els);
         mpRenderList(els);
         mpUpdateTime();
+        if(mp.loaded && mp.tracks.length > 0){
+          mpHydrateTrackDurations();
+        }
       }
 
       function mpApplyVolume(els){
@@ -433,6 +556,101 @@
         return `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
       }
 
+      function mpUpdateTrackTimeCell(idx){
+        const els = mpEls();
+        if(!els || !els.list) return;
+        const cell = els.list.querySelector(`[data-mp-pick="${idx}"] .mp-item-time`);
+        if(!cell) return;
+        const track = mp.tracks[idx];
+        cell.textContent = (track && track.time) ? track.time : '--:--';
+      }
+
+      function mpProbeTrackDuration(track){
+        return new Promise(resolve => {
+          if(!track || !track.src){
+            resolve(null);
+            return;
+          }
+          const probe = new Audio();
+          let settled = false;
+          const done = (value)=>{
+            if(settled) return;
+            settled = true;
+            try{
+              probe.pause();
+              probe.removeAttribute('src');
+              probe.load();
+            } catch {}
+            resolve(value);
+          };
+          const onMeta = ()=>{
+            const duration = Number(probe.duration);
+            if(Number.isFinite(duration) && duration > 0){
+              done(duration);
+            } else {
+              done(null);
+            }
+          };
+          const onError = ()=> done(null);
+          probe.preload = 'metadata';
+          probe.addEventListener('loadedmetadata', onMeta, { once: true });
+          probe.addEventListener('error', onError, { once: true });
+          try{
+            probe.src = track.src;
+          } catch {
+            done(null);
+          }
+        });
+      }
+
+      async function mpHydrateTrackDurations(){
+        if(mp.durationHydrating) return;
+        if(!mp.tracks || mp.tracks.length === 0) return;
+        const unresolved = mp.tracks
+          .map((track, idx) => ({ track, idx }))
+          .filter(({ track }) => track && track.src && !Number.isFinite(track.duration));
+        if(unresolved.length === 0) return;
+
+        mp.durationHydrating = true;
+        let changed = false;
+        try{
+          for(const entry of unresolved){
+            const { track, idx } = entry;
+            const key = mpTrackDurationKey(track);
+            if(!key) continue;
+            if(mp.durationFailed.has(key) || mp.durationPending.has(key)) continue;
+
+            if(mp.durationCache.has(key)){
+              const cached = mp.durationCache.get(key);
+              if(Number.isFinite(cached)){
+                track.duration = cached;
+                track.time = mpFormatTime(cached);
+                mpUpdateTrackTimeCell(idx);
+                changed = true;
+                continue;
+              }
+            }
+
+            mp.durationPending.add(key);
+            const duration = await mpProbeTrackDuration(track);
+            mp.durationPending.delete(key);
+            if(Number.isFinite(duration) && duration > 0){
+              mp.durationCache.set(key, duration);
+              mp.durationFailed.delete(key);
+              track.duration = duration;
+              track.time = mpFormatTime(duration);
+              mpUpdateTrackTimeCell(idx);
+              changed = true;
+            } else {
+              mp.durationFailed.add(key);
+            }
+          }
+        } finally {
+          mp.durationHydrating = false;
+        }
+        if(changed) mpRender();
+      }
+
       function mpUpdateTime(){
         const els = mpEls();
         if(!els) return;
@@ -451,6 +669,19 @@
         }
         if(current) current.textContent = mpFormatTime(cur);
         if(total) total.textContent = dur ? mpFormatTime(dur) : '--:--';
+
+        const activeTrack = mp.tracks[mp.idx];
+        if(activeTrack && dur > 0 && (!Number.isFinite(activeTrack.duration) || Math.abs(activeTrack.duration - dur) > 0.5)){
+          activeTrack.duration = dur;
+          activeTrack.time = mpFormatTime(dur);
+          const key = mpTrackDurationKey(activeTrack);
+          if(key){
+            mp.durationCache.set(key, dur);
+            mp.durationFailed.delete(key);
+          }
+          mpUpdateTrackTimeCell(mp.idx);
+          mpUpdateStats(els);
+        }
       }
 
       function mpSeekTo(value){
@@ -591,6 +822,9 @@
 
       async function mpLoadTracks(force=false){
         if(mp.loadingPromise) return mp.loadingPromise;
+        if(force){
+          mp.durationFailed.clear();
+        }
         if(mp.loaded && !force){
           mpRebuildTracks();
           if(mp.tracks.length > 0){

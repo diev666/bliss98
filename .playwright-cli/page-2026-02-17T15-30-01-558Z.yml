@@ -1,0 +1,18 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - generic [ref=e7]:
+      - heading "BLISS 98" [level=1] [ref=e8]
+      - paragraph [ref=e9]: Enter your name to login
+    - button "Language" [ref=e10] [cursor=pointer]: EN
+  - generic [ref=e11]:
+    - generic [ref=e12]:
+      - generic [ref=e13]: "Name:"
+      - textbox "Name:" [active] [ref=e14]:
+        - /placeholder: Enter your name
+    - generic [ref=e15]:
+      - generic [ref=e16]: "Hint: Ignorance is BLISS"
+      - generic [ref=e17]:
+        - button "Clear" [ref=e18] [cursor=pointer]
+        - button "Enter" [ref=e19] [cursor=pointer]:
+          - strong [ref=e20]: Enter
+  - generic [ref=e21]: © BLISS / DIEV — Bliss 98 OS

@@ -2360,21 +2360,45 @@
       const BLISSOS_ICON_MAP = {
         enabled: true,
         base: './assets/BlissOS/',
+        sourceBase: './assets/icons/',
+        // BlissOS keeps this filename in lowercase on disk.
+        fileOverrides: Object.freeze({
+          'Settings.png': 'settings.png',
+        }),
       };
+
+      const BLISSOS_ICON_REVERSE_MAP = Object.freeze(
+        Object.entries(BLISSOS_ICON_MAP.fileOverrides).reduce((acc, [from, to]) => {
+          acc[to] = from;
+          return acc;
+        }, {})
+      );
+
+      function splitAssetQuery(src){
+        const q = src.indexOf('?');
+        if(q === -1) return { path: src, query: '' };
+        return { path: src.slice(0, q), query: src.slice(q) };
+      }
 
       function getBlissOSAssetPath(src){
         if(!src || typeof src !== 'string') return null;
-        if(src.startsWith('./assets/BlissOS/')) return src;
-        if(src.startsWith('./assets/icons/')){
-          return src.replace('./assets/icons/', './assets/BlissOS/');
+        const { path, query } = splitAssetQuery(src);
+        if(path.startsWith(BLISSOS_ICON_MAP.base)) return path + query;
+        if(path.startsWith(BLISSOS_ICON_MAP.sourceBase)){
+          const file = path.slice(BLISSOS_ICON_MAP.sourceBase.length);
+          const mapped = BLISSOS_ICON_MAP.fileOverrides[file] || file;
+          return `${BLISSOS_ICON_MAP.base}${mapped}${query}`;
         }
         return src;
       }
 
       function getBlissOSFallbackPath(src){
         if(!src || typeof src !== 'string') return null;
-        if(src.startsWith('./assets/BlissOS/')){
-          return src.replace('./assets/BlissOS/', './assets/icons/');
+        const { path, query } = splitAssetQuery(src);
+        if(path.startsWith(BLISSOS_ICON_MAP.base)){
+          const file = path.slice(BLISSOS_ICON_MAP.base.length);
+          const mapped = BLISSOS_ICON_REVERSE_MAP[file] || file;
+          return `${BLISSOS_ICON_MAP.sourceBase}${mapped}${query}`;
         }
         return src;
       }

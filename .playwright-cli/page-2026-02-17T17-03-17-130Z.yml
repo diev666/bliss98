@@ -1,0 +1,301 @@
+- generic [ref=e22]:
+  - menubar "BlissOS Menu Bar" [ref=e23]:
+    - generic [ref=e24]:
+      - button "BlissOS" [ref=e25] [cursor=pointer]:
+        - img [ref=e26]
+      - button "File" [ref=e27] [cursor=pointer]
+      - button "Edit" [ref=e28] [cursor=pointer]
+      - button "View" [ref=e29] [cursor=pointer]
+      - button "Help" [ref=e30] [cursor=pointer]
+    - generic [ref=e31]:
+      - button "Calendar" [ref=e32] [cursor=pointer]: 14:03
+      - generic [ref=e33]: "|"
+      - button "Settings Settings" [ref=e302] [cursor=pointer]:
+        - img "Settings" [ref=e382]
+        - generic [ref=e37]: Settings
+  - toolbar "BlissOS Dock" [ref=e38]:
+    - generic [ref=e304]:
+      - generic [ref=e305]:
+        - button "Clothes" [ref=e306] [cursor=pointer]:
+          - img "Clothes" [ref=e308]
+        - button "Music" [ref=e310] [cursor=pointer]:
+          - img "Music" [ref=e312]
+        - button "Artists" [ref=e314] [cursor=pointer]:
+          - img "Artists" [ref=e316]
+        - button "Games" [ref=e318] [cursor=pointer]:
+          - img "Games" [ref=e320]
+        - button "Videos" [ref=e322] [cursor=pointer]:
+          - img "Videos" [ref=e324]
+        - button "About" [ref=e326] [cursor=pointer]:
+          - img "About" [ref=e328]
+        - button "Contact" [ref=e330] [cursor=pointer]:
+          - img "Contact" [ref=e332]
+        - button "DIEV" [ref=e334] [cursor=pointer]:
+          - img "DIEV" [ref=e336]
+        - button "Settings" [ref=e338] [cursor=pointer]:
+          - img "Settings" [ref=e340]
+      - button "Recycle Bin" [ref=e343] [cursor=pointer]:
+        - img "Recycle Bin" [ref=e345]
+  - generic [ref=e82]:
+    - generic [ref=e83]:
+      - generic [ref=e84]:
+        - img "Recycle Bin" [ref=e86]
+        - generic [ref=e87]: Recycle Bin
+      - generic [ref=e88]:
+        - img "Poetry" [ref=e90]
+        - generic [ref=e91]: Poetry
+      - generic [ref=e92]:
+        - img "Clothes" [ref=e94]
+        - generic [ref=e95]: Clothes
+      - generic [ref=e96]:
+        - img "Music" [ref=e98]
+        - generic [ref=e99]: Music
+      - generic [ref=e100]:
+        - img "BLISS Media Player" [ref=e102]
+        - generic [ref=e103]: BLISS Media Player
+      - generic [ref=e104]:
+        - img "Artists" [ref=e106]
+        - generic [ref=e107]: Artists
+      - generic [ref=e108]:
+        - img "Games" [ref=e110]
+        - generic [ref=e111]: Games
+      - generic [ref=e112]:
+        - img "Videos" [ref=e114]
+        - generic [ref=e115]: Videos
+      - generic [ref=e116]:
+        - img "About" [ref=e118]
+        - generic [ref=e119]: About
+      - generic [ref=e120]:
+        - img "Contact" [ref=e122]
+        - generic [ref=e123]: Contact
+      - generic [ref=e124]:
+        - img "DIEV" [ref=e126]
+        - generic [ref=e127]: DIEV
+      - generic [ref=e128]:
+        - img "Settings" [ref=e130]
+        - generic [ref=e131]: Settings
+    - generic:
+      - generic [ref=e135]:
+        - generic [ref=e136]:
+          - generic [ref=e137]:
+            - generic "Close" [ref=e138] [cursor=pointer]: ×
+            - generic "Minimize" [ref=e139] [cursor=pointer]: _
+            - generic "Fit to content" [ref=e140] [cursor=pointer]: □
+          - generic:
+            - strong: BLISS Media Player
+        - generic [ref=e142]:
+          - generic [ref=e144]:
+            - generic [ref=e145]:
+              - generic [ref=e146]:
+                - button "⏮" [ref=e147]
+                - button "⏸" [ref=e148]
+                - button "⏭" [ref=e149]
+              - generic [ref=e150]:
+                - generic [ref=e151]: Vol
+                - slider [ref=e152]: "0.1"
+            - generic [ref=e154]:
+              - generic [ref=e156]: 6 Years
+              - generic [ref=e158]: 01:03 / 03:03
+              - generic [ref=e159]:
+                - generic [ref=e160]: ◆
+                - slider [ref=e161]: "346"
+                - generic [ref=e162]: •
+            - generic [ref=e163]:
+              - generic [ref=e164]:
+                - searchbox [ref=e167]
+                - button "Browse" [ref=e168]:
+                  - generic [ref=e169]: ◉
+              - generic [ref=e170]:
+                - generic [ref=e171]: Search
+                - generic [ref=e172]: Browse
+          - generic [ref=e173]:
+            - generic [ref=e174]:
+              - generic [ref=e175]: Source
+              - generic [ref=e176]:
+                - button "♪ Library" [ref=e177]:
+                  - generic [ref=e178]: ♪
+                  - generic [ref=e179]: Library
+                - button "◉ Podcasts" [ref=e180]:
+                  - generic [ref=e181]: ◉
+                  - generic [ref=e182]: Podcasts
+                - button "✦ Party Shuffle" [ref=e183]:
+                  - generic [ref=e184]: ✦
+                  - generic [ref=e185]: Party Shuffle
+                - button "◌ Radio" [ref=e186]:
+                  - generic [ref=e187]: ◌
+                  - generic [ref=e188]: Radio
+                - button "▣ Music Store" [ref=e189]:
+                  - generic [ref=e190]: ▣
+                  - generic [ref=e191]: Music Store
+                - button "▸ Recently Played" [ref=e192]:
+                  - generic [ref=e193]: ▸
+                  - generic [ref=e194]: Recently Played
+                - button "▸ Top 25 Most Played" [ref=e195]:
+                  - generic [ref=e196]: ▸
+                  - generic [ref=e197]: Top 25 Most Played
+            - generic [ref=e198]:
+              - generic [ref=e199]:
+                - generic [ref=e200]: Name
+                - generic [ref=e201]: Time
+                - generic [ref=e202]: Artist
+                - generic [ref=e203]: Album
+              - generic [ref=e204]:
+                - button "☐ ▶ 6 Years ◉ 03:03 DIEV Unknown" [ref=e205]:
+                  - generic [ref=e206]:
+                    - generic [ref=e207]: ☐
+                    - generic [ref=e208]: ▶
+                    - generic [ref=e209]: 6 Years
+                  - generic [ref=e210]: ◉
+                  - generic [ref=e211]: 03:03
+                  - generic [ref=e212]: DIEV
+                  - generic [ref=e213]: Unknown
+                - button "☐ Hard Enough ◉ 04:15 DIEV Unknown" [ref=e214]:
+                  - generic [ref=e215]:
+                    - generic [ref=e216]: ☐
+                    - generic [ref=e218]: Hard Enough
+                  - generic [ref=e219]: ◉
+                  - generic [ref=e220]: 04:15
+                  - generic [ref=e221]: DIEV
+                  - generic [ref=e222]: Unknown
+                - button "☐ Sorry For My Rage ◉ 02:38 DIEV Unknown" [ref=e223]:
+                  - generic [ref=e224]:
+                    - generic [ref=e225]: ☐
+                    - generic [ref=e227]: Sorry For My Rage
+                  - generic [ref=e228]: ◉
+                  - generic [ref=e229]: 02:38
+                  - generic [ref=e230]: DIEV
+                  - generic [ref=e231]: Unknown
+                - button "☐ Talking About ◉ 03:14 DIEV Unknown" [ref=e232]:
+                  - generic [ref=e233]:
+                    - generic [ref=e234]: ☐
+                    - generic [ref=e236]: Talking About
+                  - generic [ref=e237]: ◉
+                  - generic [ref=e238]: 03:14
+                  - generic [ref=e239]: DIEV
+                  - generic [ref=e240]: Unknown
+                - button "☐ WOW ◉ 02:54 DIEV Unknown" [ref=e241]:
+                  - generic [ref=e242]:
+                    - generic [ref=e243]: ☐
+                    - generic [ref=e245]: WOW
+                  - generic [ref=e246]: ◉
+                  - generic [ref=e247]: 02:54
+                  - generic [ref=e248]: DIEV
+                  - generic [ref=e249]: Unknown
+          - generic [ref=e250]:
+            - generic [ref=e251]:
+              - button "+" [ref=e252]
+              - button "⤮" [ref=e253]
+              - button "↺" [ref=e254]
+            - generic [ref=e255]: 5 songs, 16:05
+            - generic [ref=e256]:
+              - button "View" [ref=e257]: ▥
+              - button "Star" [ref=e258]: "*"
+              - button "More" [ref=e259]: ▴
+            - generic [ref=e260]: ◢
+      - generic [ref=e261]:
+        - generic [ref=e262]:
+          - generic [ref=e263]:
+            - generic:
+              - generic:
+                - img "Music"
+              - strong: Music
+            - generic [ref=e264]:
+              - generic "Minimize" [ref=e265] [cursor=pointer]: _
+              - generic "Fit to content" [ref=e266] [cursor=pointer]: □
+              - generic "Close" [ref=e267] [cursor=pointer]: ×
+          - generic [ref=e268]:
+            - heading "BLISS — Music" [level=2] [ref=e269]
+            - paragraph [ref=e270]: "Listen everywhere:"
+            - generic [ref=e271]:
+              - button "Spotify Spotify" [ref=e272]:
+                - img "Spotify" [ref=e274]
+                - generic [ref=e275]: Spotify
+              - button "YouTube Music YouTube Music" [ref=e276]:
+                - img "YouTube Music" [ref=e278]
+                - generic [ref=e279]: YouTube Music
+              - button "Apple Music Apple Music" [ref=e280]:
+                - img "Apple Music" [ref=e282]
+                - generic [ref=e283]: Apple Music
+              - button "Amazon Music Amazon Music" [ref=e284]:
+                - img "Amazon Music" [ref=e286]
+                - generic [ref=e287]: Amazon Music
+              - button "SoundCloud SoundCloud" [ref=e288]:
+                - img "SoundCloud" [ref=e290]
+                - generic [ref=e291]: SoundCloud
+              - button "Deezer Deezer" [ref=e292]:
+                - img "Deezer" [ref=e294]
+                - generic [ref=e295]: Deezer
+            - generic [ref=e297]: Music is a beautiful thing, innit?
+          - generic [ref=e298]:
+            - generic [ref=e299]: Ready
+            - generic: Designed by DIEV
+            - generic [ref=e300]: BLISS 98
+        - generic "Resize" [ref=e301]
+      - generic [ref=e347]:
+        - generic [ref=e348]:
+          - generic [ref=e349]:
+            - generic:
+              - generic:
+                - img "Settings"
+              - strong: Settings
+            - generic [ref=e350]:
+              - generic "Minimize" [ref=e351] [cursor=pointer]: _
+              - generic "Fit to content" [ref=e352] [cursor=pointer]: □
+              - generic "Close" [ref=e353] [cursor=pointer]: ×
+          - generic [ref=e354]:
+            - heading "Settings" [level=2] [ref=e355]
+            - generic [ref=e356]:
+              - tablist "Settings" [ref=e357]:
+                - tab "General" [ref=e358] [cursor=pointer]
+                - tab "Language" [ref=e359] [cursor=pointer]
+                - tab "Appearance" [ref=e360] [cursor=pointer]
+                - tab "System" [active] [selected] [ref=e361] [cursor=pointer]
+                - tab "Sounds" [ref=e362] [cursor=pointer]
+                - tab "Performance" [ref=e363] [cursor=pointer]
+              - tabpanel [ref=e383]:
+                - generic [ref=e386]:
+                  - strong [ref=e387]: System
+                  - generic [ref=e388]: System clock and visual effects.
+                - generic [ref=e389]:
+                  - strong [ref=e390]: Choose your OS
+                  - paragraph [ref=e391]: Switch between Bliss98 and BlissOS.
+                  - generic [ref=e392]:
+                    - button "Bliss 98" [ref=e393] [cursor=pointer]
+                    - button "BlissOS" [ref=e394] [cursor=pointer]
+                - generic [ref=e395]:
+                  - strong [ref=e396]: Clock Format
+                  - paragraph [ref=e397]: Choose 24-hour or 12-hour time.
+                  - generic [ref=e398]:
+                    - button "24-hour" [ref=e399] [cursor=pointer]:
+                      - generic [ref=e400]: 24-hour
+                    - button "12-hour" [ref=e401] [cursor=pointer]:
+                      - generic [ref=e402]: 12-hour
+                - generic [ref=e403]:
+                  - strong [ref=e404]: Glow
+                  - paragraph [ref=e405]: Add glow to windows and icons.
+                  - generic [ref=e406]:
+                    - button "On" [ref=e407] [cursor=pointer]:
+                      - generic [ref=e408]: "On"
+                    - button "Off" [ref=e409] [cursor=pointer]:
+                      - generic [ref=e410]: "Off"
+                - generic [ref=e411]:
+                  - strong [ref=e412]: Scanlines
+                  - paragraph [ref=e413]: Add scanline effect to the display.
+                  - generic [ref=e414]:
+                    - button "On" [ref=e415] [cursor=pointer]:
+                      - generic [ref=e416]: "On"
+                    - button "Off" [ref=e417] [cursor=pointer]:
+                      - generic [ref=e418]: "Off"
+                - generic [ref=e419]:
+                  - strong [ref=e420]: Old CRT Effect
+                  - paragraph [ref=e421]: Add CRT curvature, phosphor texture, and screen sweep.
+                  - generic [ref=e422]:
+                    - button "On" [ref=e423] [cursor=pointer]:
+                      - generic [ref=e424]: "On"
+                    - button "Off" [ref=e425] [cursor=pointer]:
+                      - generic [ref=e426]: "Off"
+          - generic [ref=e378]:
+            - generic [ref=e379]: Ready
+            - generic: Designed by DIEV
+            - generic [ref=e380]: BLISS 98
+        - generic "Resize" [ref=e381]

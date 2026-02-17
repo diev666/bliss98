@@ -1,0 +1,13 @@
+### Result
+{
+  "mode": "classic",
+  "hasSeparator": true,
+  "hasTrash": true,
+  "separatorBeforeTrash": true,
+  "separatorHeight": 36,
+  "separatorBg": "linear-gradient(rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.72) 32%, rgba(74, 74, 69, 0.48) 100%)"
+}
+### Ran Playwright code
+```js
+await page.evaluate('() => { const sep = document.querySelector("#blissosDock .blissos-dock-separator"); const trash = document.querySelector("#blissosDock .blissos-dock-right [data-dock-type=\\"trash\\"]"); const style = sep ? getComputedStyle(sep) : null; return { mode: "classic", hasSeparator: !!sep, hasTrash: !!trash, separatorBeforeTrash: !!(sep && trash && sep.getBoundingClientRect().left < trash.getBoundingClientRect().left), separatorHeight: sep ? Math.round(sep.getBoundingClientRect().height) : null, separatorBg: style ? style.backgroundImage : null }; }');
+```

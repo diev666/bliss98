@@ -1,0 +1,2 @@
+[    6429ms] [ERROR] Failed to load resource: net::ERR_CONTENT_LENGTH_MISMATCH @ http://127.0.0.1:4173/assets/icons/applemusic.png:0
+[    6429ms] [ERROR] Failed to load resource: net::ERR_CONTENT_LENGTH_MISMATCH @ http://127.0.0.1:4173/assets/icons/deezer.png:0

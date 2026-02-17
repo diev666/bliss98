@@ -1,0 +1,6 @@
+### Result
+true
+### Ran Playwright code
+```js
+await page.evaluate('() => { if (typeof setOsTheme === "function") setOsTheme("blissos"); if (typeof setBlissOSAqua === "function") setBlissOSAqua(true); if (typeof openApp === "function") openApp("mediaplayer"); return true; }');
+```
