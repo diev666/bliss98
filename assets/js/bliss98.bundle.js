@@ -6387,6 +6387,7 @@ function initClothesWindow(winEl){
     updateBlissOSAquaButtons(win);
     updateBlissosAccentButtons(win);
     updateClockButtons(win);
+    updateFullscreenButtons(win);
     updateOldCrtButtons(win);
     updateSoundUI(win);
     updateDockSettingsUI(win);
@@ -6870,6 +6871,39 @@ function updateDarkModeButtons(root=document){
   });
 }
 
+function isFullscreenEnabled(){
+  return !!document.fullscreenElement;
+}
+
+function updateFullscreenButtons(root=document){
+  const on = isFullscreenEnabled();
+  $$('[data-set-fullscreen]', root).forEach(btn => {
+    const enable = btn.dataset.setFullscreen === 'on';
+    btn.classList.toggle('pressed', enable === on);
+  });
+  $$('[data-toggle-fullscreen]', root).forEach(input => {
+    input.checked = on;
+    input.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+}
+
+function setFullscreen(enabled){
+  const shouldEnable = !!enabled;
+  const isOn = isFullscreenEnabled();
+  if(shouldEnable === isOn){
+    updateFullscreenButtons();
+    return;
+  }
+  const request = shouldEnable
+    ? (document.documentElement && document.documentElement.requestFullscreen
+      ? document.documentElement.requestFullscreen()
+      : Promise.resolve())
+    : (document.exitFullscreen ? document.exitFullscreen() : Promise.resolve());
+  Promise.resolve(request).catch(()=>{}).finally(()=>{
+    updateFullscreenButtons();
+  });
+}
+
 function updateBlissOSDarkButtons(root=document){
   $$('[data-set-blissos-darkmode]', root).forEach(btn => {
     const on = btn.dataset.setBlissosDarkmode === 'on';
@@ -6932,8 +6966,7 @@ function applyBlissOSAqua(){
 
 function setBlissOSAqua(enabled){
   if(state.settings.theme !== 'blissos') return;
-  const turningOn = !!enabled;
-  state.settings.blissosAqua = turningOn;
+  state.settings.blissosAqua = !!enabled;
   if(typeof applyOsTheme === 'function'){
     applyOsTheme();
   } else {
@@ -6944,10 +6977,6 @@ function setBlissOSAqua(enabled){
   const appleMenu = document.getElementById('blissosAppleMenu');
   if(appleMenu && !appleMenu.classList.contains('hidden') && typeof renderBlissOSAppleMenu === 'function'){
     renderBlissOSAppleMenu();
-  }
-  if(turningOn && state.wallpaper !== 'aqua'){
-    applyWallpaper('aqua');
-    return;
   }
   syncOsProfile();
 }
@@ -7672,6 +7701,7 @@ function applyOsProfile(theme){
   updateSoundUI();
   updateDockSettingsUI();
   updateClockButtons();
+  updateFullscreenButtons();
   updateWallpaperButtons();
   updateOsThemeButtons();
 }
@@ -10270,6 +10300,9 @@ function installLongPress(el, getTarget){
           'settings.tab.system': 'System',
           'settings.systemTab': 'System',
           'settings.systemDesc': 'System clock and visual effects.',
+          'settings.fullscreen.title': 'Fullscreen',
+          'settings.fullscreen.on': 'On',
+          'settings.fullscreen.off': 'Off',
           'settings.clock.title': 'Clock Format',
           'settings.clock.desc': 'Choose 24-hour or 12-hour time.',
           'settings.clock.24': '24-hour',
@@ -10841,6 +10874,9 @@ function installLongPress(el, getTarget){
           'settings.tab.system': 'Sistema',
           'settings.systemTab': 'Sistema',
           'settings.systemDesc': 'Relogio e efeitos visuais do sistema.',
+          'settings.fullscreen.title': 'Tela cheia',
+          'settings.fullscreen.on': 'Ligado',
+          'settings.fullscreen.off': 'Desligado',
           'settings.clock.title': 'Formato do relogio',
           'settings.clock.desc': 'Escolha 24 horas ou 12 horas.',
           'settings.clock.24': '24 horas',
@@ -12242,7 +12278,9 @@ function installLongPress(el, getTarget){
           return;
         }
         if(action === 'settings:fullscreen'){
-          if(!document.fullscreenElement){
+          if(typeof setFullscreen === 'function'){
+            setFullscreen(!document.fullscreenElement);
+          } else if(!document.fullscreenElement){
             document.documentElement.requestFullscreen().catch(()=>{});
           } else {
             document.exitFullscreen().catch(()=>{});
@@ -13877,14 +13915,14 @@ Eu sou o buffalo branco extinto`
                 </div>
                 <div class="settings-block blissos-only settings-appearance-quick" id="settingsBlissOSDarkMode">
                   <label class="settings-appearance-toggle settings-aqua-check">
-                    <span>Dark Mode</span>
                     <input type="checkbox" data-toggle-blissos-darkmode />
+                    <span>Dark Mode</span>
                   </label>
                 </div>
                 <div class="settings-block blissos-only settings-appearance-quick" id="settingsBlissOSAqua">
                   <label class="settings-appearance-toggle settings-aqua-check">
-                    <span>BlissOS Aqua</span>
                     <input type="checkbox" data-toggle-blissos-aqua />
+                    <span>BlissOS Aqua</span>
                   </label>
                 </div>
                 <div class="settings-block" id="settingsWallpaper">
@@ -14038,6 +14076,17 @@ Eu sou o buffalo branco extinto`
                     <button class="btn bevel" type="button" data-set-os-theme="bliss98" data-i18n="settings.osTheme.bliss98">Bliss 98</button>
                     <button class="btn bevel" type="button" data-set-os-theme="blissos" data-i18n="settings.osTheme.blissos">BlissOS</button>
                   </div>
+                </div>
+                <div class="settings-block" id="settingsFullscreen">
+                  <strong class="bliss98-only" data-i18n="settings.fullscreen.title">Fullscreen</strong>
+                  <div class="settings-actions bliss98-only">
+                    <button class="btn bevel" type="button" data-set-fullscreen="on"><span data-i18n="settings.fullscreen.on">On</span></button>
+                    <button class="btn bevel" type="button" data-set-fullscreen="off"><span data-i18n="settings.fullscreen.off">Off</span></button>
+                  </div>
+                  <label class="blissos-only settings-appearance-toggle settings-aqua-check settings-system-toggle">
+                    <input type="checkbox" data-toggle-fullscreen />
+                    <span data-i18n="settings.fullscreen.title">Fullscreen</span>
+                  </label>
                 </div>
                 <div class="settings-block" id="settingsClock">
                   <strong data-i18n="settings.clock.title">Clock Format</strong>
@@ -19048,7 +19097,15 @@ function renderBlissOSAppMenu(){
         const blissOsAquaToggle = target && target.closest ? target.closest('[data-toggle-blissos-aqua]') : null;
         if(blissOsAquaToggle){
           setBlissOSAqua(!!blissOsAquaToggle.checked);
+          return;
         }
+        const fullscreenToggle = target && target.closest ? target.closest('[data-toggle-fullscreen]') : null;
+        if(fullscreenToggle){
+          setFullscreen(!!fullscreenToggle.checked);
+        }
+      });
+      document.addEventListener('fullscreenchange', ()=>{
+        updateFullscreenButtons();
       });
 
       function slideStripBy(strip, delta){
@@ -19336,6 +19393,10 @@ function renderBlissOSAppMenu(){
         const darkBtn = target.closest('[data-set-darkmode]');
         if(darkBtn && darkBtn.dataset && darkBtn.dataset.setDarkmode){
           setDarkMode(darkBtn.dataset.setDarkmode === 'on');
+        }
+        const fullscreenBtn = target.closest('[data-set-fullscreen]');
+        if(fullscreenBtn && fullscreenBtn.dataset && fullscreenBtn.dataset.setFullscreen){
+          setFullscreen(fullscreenBtn.dataset.setFullscreen === 'on');
         }
         const blissosDarkBtn = target.closest('[data-set-blissos-darkmode]');
         if(blissosDarkBtn && blissosDarkBtn.dataset && blissosDarkBtn.dataset.setBlissosDarkmode){

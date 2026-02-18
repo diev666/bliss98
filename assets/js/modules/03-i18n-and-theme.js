@@ -234,6 +234,9 @@
           'settings.tab.system': 'System',
           'settings.systemTab': 'System',
           'settings.systemDesc': 'System clock and visual effects.',
+          'settings.fullscreen.title': 'Fullscreen',
+          'settings.fullscreen.on': 'On',
+          'settings.fullscreen.off': 'Off',
           'settings.clock.title': 'Clock Format',
           'settings.clock.desc': 'Choose 24-hour or 12-hour time.',
           'settings.clock.24': '24-hour',
@@ -805,6 +808,9 @@
           'settings.tab.system': 'Sistema',
           'settings.systemTab': 'Sistema',
           'settings.systemDesc': 'Relogio e efeitos visuais do sistema.',
+          'settings.fullscreen.title': 'Tela cheia',
+          'settings.fullscreen.on': 'Ligado',
+          'settings.fullscreen.off': 'Desligado',
           'settings.clock.title': 'Formato do relogio',
           'settings.clock.desc': 'Escolha 24 horas ou 12 horas.',
           'settings.clock.24': '24 horas',
@@ -2206,7 +2212,9 @@
           return;
         }
         if(action === 'settings:fullscreen'){
-          if(!document.fullscreenElement){
+          if(typeof setFullscreen === 'function'){
+            setFullscreen(!document.fullscreenElement);
+          } else if(!document.fullscreenElement){
             document.documentElement.requestFullscreen().catch(()=>{});
           } else {
             document.exitFullscreen().catch(()=>{});

@@ -5106,6 +5106,7 @@ function initClothesWindow(winEl){
     updateBlissOSAquaButtons(win);
     updateBlissosAccentButtons(win);
     updateClockButtons(win);
+    updateFullscreenButtons(win);
     updateOldCrtButtons(win);
     updateSoundUI(win);
     updateDockSettingsUI(win);
@@ -5589,6 +5590,39 @@ function updateDarkModeButtons(root=document){
   });
 }
 
+function isFullscreenEnabled(){
+  return !!document.fullscreenElement;
+}
+
+function updateFullscreenButtons(root=document){
+  const on = isFullscreenEnabled();
+  $$('[data-set-fullscreen]', root).forEach(btn => {
+    const enable = btn.dataset.setFullscreen === 'on';
+    btn.classList.toggle('pressed', enable === on);
+  });
+  $$('[data-toggle-fullscreen]', root).forEach(input => {
+    input.checked = on;
+    input.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+}
+
+function setFullscreen(enabled){
+  const shouldEnable = !!enabled;
+  const isOn = isFullscreenEnabled();
+  if(shouldEnable === isOn){
+    updateFullscreenButtons();
+    return;
+  }
+  const request = shouldEnable
+    ? (document.documentElement && document.documentElement.requestFullscreen
+      ? document.documentElement.requestFullscreen()
+      : Promise.resolve())
+    : (document.exitFullscreen ? document.exitFullscreen() : Promise.resolve());
+  Promise.resolve(request).catch(()=>{}).finally(()=>{
+    updateFullscreenButtons();
+  });
+}
+
 function updateBlissOSDarkButtons(root=document){
   $$('[data-set-blissos-darkmode]', root).forEach(btn => {
     const on = btn.dataset.setBlissosDarkmode === 'on';
@@ -5651,8 +5685,7 @@ function applyBlissOSAqua(){
 
 function setBlissOSAqua(enabled){
   if(state.settings.theme !== 'blissos') return;
-  const turningOn = !!enabled;
-  state.settings.blissosAqua = turningOn;
+  state.settings.blissosAqua = !!enabled;
   if(typeof applyOsTheme === 'function'){
     applyOsTheme();
   } else {
@@ -5663,10 +5696,6 @@ function setBlissOSAqua(enabled){
   const appleMenu = document.getElementById('blissosAppleMenu');
   if(appleMenu && !appleMenu.classList.contains('hidden') && typeof renderBlissOSAppleMenu === 'function'){
     renderBlissOSAppleMenu();
-  }
-  if(turningOn && state.wallpaper !== 'aqua'){
-    applyWallpaper('aqua');
-    return;
   }
   syncOsProfile();
 }
@@ -6391,6 +6420,7 @@ function applyOsProfile(theme){
   updateSoundUI();
   updateDockSettingsUI();
   updateClockButtons();
+  updateFullscreenButtons();
   updateWallpaperButtons();
   updateOsThemeButtons();
 }

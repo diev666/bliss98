@@ -3909,7 +3909,15 @@ function renderBlissOSAppMenu(){
         const blissOsAquaToggle = target && target.closest ? target.closest('[data-toggle-blissos-aqua]') : null;
         if(blissOsAquaToggle){
           setBlissOSAqua(!!blissOsAquaToggle.checked);
+          return;
         }
+        const fullscreenToggle = target && target.closest ? target.closest('[data-toggle-fullscreen]') : null;
+        if(fullscreenToggle){
+          setFullscreen(!!fullscreenToggle.checked);
+        }
+      });
+      document.addEventListener('fullscreenchange', ()=>{
+        updateFullscreenButtons();
       });
 
       function slideStripBy(strip, delta){
@@ -4197,6 +4205,10 @@ function renderBlissOSAppMenu(){
         const darkBtn = target.closest('[data-set-darkmode]');
         if(darkBtn && darkBtn.dataset && darkBtn.dataset.setDarkmode){
           setDarkMode(darkBtn.dataset.setDarkmode === 'on');
+        }
+        const fullscreenBtn = target.closest('[data-set-fullscreen]');
+        if(fullscreenBtn && fullscreenBtn.dataset && fullscreenBtn.dataset.setFullscreen){
+          setFullscreen(fullscreenBtn.dataset.setFullscreen === 'on');
         }
         const blissosDarkBtn = target.closest('[data-set-blissos-darkmode]');
         if(blissosDarkBtn && blissosDarkBtn.dataset && blissosDarkBtn.dataset.setBlissosDarkmode){

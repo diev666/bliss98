@@ -205,7 +205,7 @@
   .blissos-menu-item, .blissos-menu-brand, .blissos-appmenu,
   .wctl, .settings-tab,
   [data-set-theme], [data-set-lang], [data-set-wallpaper], [data-set-animations], [data-set-appopenanim],
-  [data-set-scanlines], [data-set-darkmode], [data-set-blissos-darkmode], [data-set-blissos-aqua], [data-toggle-blissos-darkmode], [data-toggle-blissos-aqua], [data-set-retro],
+  [data-set-scanlines], [data-set-darkmode], [data-set-fullscreen], [data-set-blissos-darkmode], [data-set-blissos-aqua], [data-toggle-fullscreen], [data-toggle-blissos-darkmode], [data-toggle-blissos-aqua], [data-set-retro],
   [data-set-clock], [data-set-oldcrt], [data-set-os-theme], [data-set-titlebar],
   [data-theme-custom], [data-games-tab], [data-music-id], [data-poem-id], [data-trash-id],
   [data-trash-action], [data-modal-action], [data-menu-action], [data-txt-action], [data-folder-nav-id],
@@ -5204,16 +5204,20 @@
         padding-top:12px;
       }
       .settings-appearance-toggle{
-        display:flex;
+        display:inline-flex;
         align-items:center;
-        justify-content:space-between;
-        gap:12px;
-        width:min(320px, 100%);
+        justify-content:flex-start;
+        gap:8px;
+        width:auto;
+        max-width:100%;
         font-weight:700;
       }
       .settings-appearance-toggle input[type="checkbox"]{
         flex:0 0 auto;
         margin:0;
+      }
+      .settings-system-toggle{
+        margin-top:2px;
       }
       .settings-shell-aqua{
         gap:0;

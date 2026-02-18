@@ -1317,14 +1317,14 @@ Eu sou o buffalo branco extinto`
                 </div>
                 <div class="settings-block blissos-only settings-appearance-quick" id="settingsBlissOSDarkMode">
                   <label class="settings-appearance-toggle settings-aqua-check">
-                    <span>Dark Mode</span>
                     <input type="checkbox" data-toggle-blissos-darkmode />
+                    <span>Dark Mode</span>
                   </label>
                 </div>
                 <div class="settings-block blissos-only settings-appearance-quick" id="settingsBlissOSAqua">
                   <label class="settings-appearance-toggle settings-aqua-check">
-                    <span>BlissOS Aqua</span>
                     <input type="checkbox" data-toggle-blissos-aqua />
+                    <span>BlissOS Aqua</span>
                   </label>
                 </div>
                 <div class="settings-block" id="settingsWallpaper">
@@ -1477,6 +1477,13 @@ Eu sou o buffalo branco extinto`
                   <div class="settings-actions">
                     <button class="btn bevel" type="button" data-set-os-theme="bliss98" data-i18n="settings.osTheme.bliss98">Bliss 98</button>
                     <button class="btn bevel" type="button" data-set-os-theme="blissos" data-i18n="settings.osTheme.blissos">BlissOS</button>
+                  </div>
+                </div>
+                <div class="settings-block" id="settingsFullscreen">
+                  <strong data-i18n="settings.fullscreen.title">Fullscreen</strong>
+                  <div class="settings-actions">
+                    <button class="btn bevel" type="button" data-set-fullscreen="on"><span data-i18n="settings.fullscreen.on">On</span></button>
+                    <button class="btn bevel" type="button" data-set-fullscreen="off"><span data-i18n="settings.fullscreen.off">Off</span></button>
                   </div>
                 </div>
                 <div class="settings-block" id="settingsClock">
