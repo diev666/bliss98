@@ -1420,6 +1420,16 @@ Eu sou o buffalo branco extinto`
                     </div>
                   </div>
                   <div class="settings-block settings-dock-block">
+                    <div class="settings-dock-row">
+                      <label class="settings-dock-label" for="settingsDockOpacity" data-i18n="settings.dock.opacity">Opacity:</label>
+                      <input id="settingsDockOpacity" class="retro-slider settings-dock-slider" type="range" min="0" max="100" step="1" data-dock-slider="opacity" />
+                    </div>
+                    <div class="settings-dock-scale tiny">
+                      <span data-i18n="settings.dock.min">Min</span>
+                      <span data-i18n="settings.dock.max">Max</span>
+                    </div>
+                  </div>
+                  <div class="settings-block settings-dock-block">
                     <label class="settings-dock-check settings-dock-autohide">
                       <input type="checkbox" data-dock-toggle="autohide" />
                       <span data-i18n="settings.dock.autohide">Automatically hide and show the Dock</span>

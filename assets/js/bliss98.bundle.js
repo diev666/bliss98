@@ -95,7 +95,9 @@
           dockSize: 58,
           dockMagnification: true,
           dockMagnificationStrength: 60,
+          dockOpacity: 100,
           dockAutoHide: false,
+          showDesktopIcons: true,
           retroGlow: false,
           clock24: true,
           oldCrt: false,
@@ -176,6 +178,9 @@
       function isBliss98(){
         return state.settings.theme !== 'blissos';
       }
+      function shouldAlignDesktopIconsRight(){
+        return state.settings.theme === 'blissos' && !!state.settings.blissosAqua;
+      }
 
       const ICON_POS_KEY = 'bliss98_icon_positions';
       const ICON_SIZE = { w: 92, h: 88 };
@@ -212,6 +217,7 @@
       const DOCK_KEY = 'bliss98_dock_items';
       const GAMES_VIEW_KEY = 'bliss98_games_view';
       const GAMES_BIG_KEY = 'bliss98_games_big';
+      const DESKTOP_ICONS_KEY = 'bliss98_show_desktop_icons';
       const DOCK_MOBILE_MAX_TOTAL = 9;
       const DOCK_MOBILE_MAX_NORMAL = 8;
 const RETRO_KEY = 'bliss98_retro_glow';
@@ -723,6 +729,59 @@ function saveGridSnap(){
   } catch {}
 }
 
+function loadDesktopIconsVisible(){
+  try{
+    const raw = localStorage.getItem(DESKTOP_ICONS_KEY);
+    if(raw === null) return true;
+    return raw !== '0';
+  } catch {
+    return true;
+  }
+}
+
+function saveDesktopIconsVisible(){
+  try{
+    localStorage.setItem(DESKTOP_ICONS_KEY, state.settings.showDesktopIcons === false ? '0' : '1');
+  } catch {}
+}
+
+function applyDesktopIconsVisibility(){
+  const show = state.settings.showDesktopIcons !== false;
+  const area = $('#desktopArea');
+  const grid = $('#iconGrid');
+  if(area){
+    area.dataset.desktopIcons = show ? '1' : '0';
+  }
+  if(grid){
+    grid.style.display = show ? '' : 'none';
+  }
+  document.body.dataset.desktopIcons = show ? '1' : '0';
+  if(!show){
+    state.selectedIconId = null;
+    if(typeof clearAllIconSelection === 'function'){
+      clearAllIconSelection();
+    }
+  }
+}
+
+function setDesktopIconsVisible(enabled){
+  const next = enabled !== false;
+  if(state.settings.showDesktopIcons === next){
+    applyDesktopIconsVisibility();
+    return;
+  }
+  state.settings.showDesktopIcons = next;
+  saveDesktopIconsVisible();
+  applyDesktopIconsVisibility();
+  if(typeof syncOsProfile === 'function'){
+    syncOsProfile();
+  }
+}
+
+function toggleDesktopIconsVisible(){
+  setDesktopIconsVisible(!(state.settings.showDesktopIcons !== false));
+}
+
 function snapToGrid(x, y){
   const stepX = ICON_SIZE.w + ICON_GAP.x;
   const stepY = ICON_SIZE.h + ICON_GAP.y;
@@ -1011,6 +1070,8 @@ function getDefaultIconLayout(){
   const maxX = Math.max(0, Math.floor(width - ICON_SIZE.w - 6));
   const maxY = Math.max(0, Math.floor(height - ICON_SIZE.h - 6));
 
+  const alignRight = !isMobile && shouldAlignDesktopIconsRight();
+
   if(isMobile){
     const cols = Math.max(1, Math.floor((width - 6) / metrics.stepX));
     const rows = Math.max(1, Math.floor((height - 6) / metrics.stepY));
@@ -1033,12 +1094,15 @@ function getDefaultIconLayout(){
     let col = 0;
     let row = 0;
     const maxRows = Math.max(1, Math.floor((height - 6) / metrics.stepY));
+    const usableRows = alignRight ? Math.max(1, maxRows - 1) : maxRows;
+    const cols = Math.max(1, Math.floor((width - 6) / metrics.stepX));
     ordered.forEach(id => {
-      const x = clamp(col * metrics.stepX, 0, maxX);
+      const actualCol = alignRight ? Math.max(0, (cols - 1) - col) : col;
+      const x = clamp(actualCol * metrics.stepX, 0, maxX);
       const y = clamp(row * metrics.stepY, 0, maxY);
       layout[id] = snapToGridClamped(x, y, metrics);
       row += 1;
-      if(row >= maxRows){
+      if(row >= usableRows){
         row = 0;
         col += 1;
       }
@@ -6966,6 +7030,7 @@ function applyBlissOSAqua(){
 
 function setBlissOSAqua(enabled){
   if(state.settings.theme !== 'blissos') return;
+  const wasRightAligned = shouldAlignDesktopIconsRight();
   state.settings.blissosAqua = !!enabled;
   if(typeof applyOsTheme === 'function'){
     applyOsTheme();
@@ -6977,6 +7042,10 @@ function setBlissOSAqua(enabled){
   const appleMenu = document.getElementById('blissosAppleMenu');
   if(appleMenu && !appleMenu.classList.contains('hidden') && typeof renderBlissOSAppleMenu === 'function'){
     renderBlissOSAppleMenu();
+  }
+  const isRightAligned = shouldAlignDesktopIconsRight();
+  if(wasRightAligned !== isRightAligned){
+    arrangeIcons();
   }
   syncOsProfile();
 }
@@ -7177,6 +7246,12 @@ function getDockMagnificationStrengthPercent(){
   return clamp(Math.round(raw), 0, 100);
 }
 
+function getDockOpacityPercent(){
+  const raw = Number(state.settings.dockOpacity);
+  if(!Number.isFinite(raw)) return 100;
+  return clamp(Math.round(raw), 0, 100);
+}
+
 function isDockMagnificationEnabled(){
   return state.settings.dockMagnification !== false;
 }
@@ -7189,6 +7264,7 @@ function updateDockSettingsUI(root=document){
   const size = getDockSizePercent();
   const magnification = isDockMagnificationEnabled();
   const magnificationStrength = getDockMagnificationStrengthPercent();
+  const opacity = getDockOpacityPercent();
   const autoHide = isDockAutoHideEnabled();
 
   $$('[data-dock-slider="size"]', root).forEach(slider => {
@@ -7197,6 +7273,9 @@ function updateDockSettingsUI(root=document){
   $$('[data-dock-slider="magnification"]', root).forEach(slider => {
     slider.value = String(magnificationStrength);
     slider.disabled = !magnification;
+  });
+  $$('[data-dock-slider="opacity"]', root).forEach(slider => {
+    slider.value = String(opacity);
   });
   $$('[data-dock-toggle="magnification"]', root).forEach(input => {
     input.checked = magnification;
@@ -7228,6 +7307,13 @@ function setDockMagnification(enabled){
 
 function setDockMagnificationStrength(value){
   state.settings.dockMagnificationStrength = clamp(Math.round(Number(value) || 0), 0, 100);
+  updateDockSettingsUI();
+  renderBlissOSDock();
+  syncOsProfile();
+}
+
+function setDockOpacity(value){
+  state.settings.dockOpacity = clamp(Math.round(Number(value) || 0), 0, 100);
   updateDockSettingsUI();
   renderBlissOSDock();
   syncOsProfile();
@@ -7569,6 +7655,7 @@ function saveOsTheme(){
 }
 
 function getDefaultOsProfiles(){
+  const desktopIconsVisible = loadDesktopIconsVisible();
   return {
     bliss98: {
       wallpaper: loadWallpaper(),
@@ -7580,7 +7667,9 @@ function getDefaultOsProfiles(){
       dockSize: 58,
       dockMagnification: true,
       dockMagnificationStrength: 60,
+      dockOpacity: 100,
       dockAutoHide: false,
+      showDesktopIcons: desktopIconsVisible,
       retroGlow: loadRetroGlow(),
       scanlines: loadScanlines(),
       clock24: loadClockFormat(),
@@ -7599,7 +7688,9 @@ function getDefaultOsProfiles(){
       dockSize: 58,
       dockMagnification: true,
       dockMagnificationStrength: 60,
+      dockOpacity: 100,
       dockAutoHide: false,
+      showDesktopIcons: desktopIconsVisible,
       retroGlow: false,
       scanlines: false,
       clock24: true,
@@ -7645,7 +7736,9 @@ function syncOsProfile(){
     dockSize: getDockSizePercent(),
     dockMagnification: isDockMagnificationEnabled(),
     dockMagnificationStrength: getDockMagnificationStrengthPercent(),
+    dockOpacity: getDockOpacityPercent(),
     dockAutoHide: isDockAutoHideEnabled(),
+    showDesktopIcons: state.settings.showDesktopIcons !== false,
     retroGlow: state.settings.retroGlow,
     scanlines: state.settings.scanlines,
     clock24: state.settings.clock24,
@@ -7672,7 +7765,9 @@ function applyOsProfile(theme){
   state.settings.dockSize = typeof profile.dockSize === 'number' ? clamp(Math.round(profile.dockSize), 0, 100) : 58;
   state.settings.dockMagnification = profile.dockMagnification !== false;
   state.settings.dockMagnificationStrength = typeof profile.dockMagnificationStrength === 'number' ? clamp(Math.round(profile.dockMagnificationStrength), 0, 100) : 60;
+  state.settings.dockOpacity = typeof profile.dockOpacity === 'number' ? clamp(Math.round(profile.dockOpacity), 0, 100) : 100;
   state.settings.dockAutoHide = !!profile.dockAutoHide;
+  state.settings.showDesktopIcons = profile.showDesktopIcons !== false;
   state.settings.retroGlow = !!profile.retroGlow;
   state.settings.scanlines = !!profile.scanlines;
   state.settings.clock24 = profile.clock24 !== false;
@@ -7704,6 +7799,7 @@ function applyOsProfile(theme){
   updateFullscreenButtons();
   updateWallpaperButtons();
   updateOsThemeButtons();
+  applyDesktopIconsVisibility();
 }
 
 function applyOsTheme(){
@@ -7734,9 +7830,11 @@ function applyOsTheme(){
     applyBlissosAccent(state.settings.blissosAccent);
   }
   applyBlissOSAqua();
+  applyDesktopIconsVisibility();
 }
 
 function setOsTheme(theme){
+  const wasRightAligned = shouldAlignDesktopIconsRight();
   syncOsProfile();
   state.settings.theme = (theme === 'blissos') ? 'blissos' : 'bliss98';
   saveOsTheme();
@@ -7746,6 +7844,10 @@ function setOsTheme(theme){
   }
   applyOsProfile(state.settings.theme);
   applyOsTheme();
+  const isRightAligned = shouldAlignDesktopIconsRight();
+  if(wasRightAligned !== isRightAligned){
+    arrangeIcons();
+  }
   if(document.getElementById('win_settings')) renderSettingsWindow();
 }
 
@@ -8187,6 +8289,7 @@ function isInFolder(id){
 
 function isDesktopVisibleItem(item){
   if(!item || item.parentId != null) return false;
+  if(item.id === 'trash' && state.settings.theme === 'blissos' && !!state.settings.blissosAqua) return false;
   if(item.id !== 'trash' && state.trash.has(item.id)) return false;
   if((state.folders.games || []).includes(item.id)) return false;
   if(item.type === 'app'){
@@ -9808,6 +9911,7 @@ function renderCtxMenu(){
     items.push({ action:'arrange', label:t('ctx.arrange') });
     if(ctxState.parentId == null){
       items.push({ action:'grid', label:t('ctx.grid'), check:gridMark });
+      items.push({ action:'desktopIcons', label:t('ctx.showDesktopIcons'), check:(state.settings.showDesktopIcons !== false) ? '✓' : '' });
       items.push({ action:'wallpaper', label:t('ctx.wallpaper') });
       items.push({ sep:true });
       items.push({ action:'settings', label:t('ctx.settings') });
@@ -9991,6 +10095,10 @@ function handleCtxAction(action){
   if(action === 'grid'){
     state.gridSnap = !state.gridSnap;
     saveGridSnap();
+    renderCtxMenu();
+  }
+  if(action === 'desktopIcons'){
+    setDesktopIconsVisible(!(state.settings.showDesktopIcons !== false));
     renderCtxMenu();
   }
   if(action === 'wallpaper'){
@@ -10242,6 +10350,7 @@ function installLongPress(el, getTarget){
           'ctx.duplicateTxt': 'Duplicate',
           'ctx.arrange': 'Arrange icons',
           'ctx.grid': 'Grid (snap)',
+          'ctx.showDesktopIcons': 'Show Desktop Icons',
           'ctx.wallpaper': 'Wallpaper',
           'ctx.settings': 'Settings',
           'ctx.language': 'Language',
@@ -10292,6 +10401,7 @@ function installLongPress(el, getTarget){
           'settings.dock.small': 'Small',
           'settings.dock.large': 'Large',
           'settings.dock.magnification': 'Magnification:',
+          'settings.dock.opacity': 'Opacity:',
           'settings.dock.min': 'Min',
           'settings.dock.max': 'Max',
           'settings.dock.autohide': 'Automatically hide and show the Dock',
@@ -10816,6 +10926,7 @@ function installLongPress(el, getTarget){
           'ctx.duplicateTxt': 'Duplicar',
           'ctx.arrange': 'Organizar Ícones',
           'ctx.grid': 'Grade (snap)',
+          'ctx.showDesktopIcons': 'Mostrar ícones da Área de Trabalho',
           'ctx.wallpaper': 'Papel de Parede',
           'ctx.settings': 'Configurações',
           'ctx.language': 'Idioma',
@@ -10866,6 +10977,7 @@ function installLongPress(el, getTarget){
           'settings.dock.small': 'Pequeno',
           'settings.dock.large': 'Grande',
           'settings.dock.magnification': 'Ampliacao:',
+          'settings.dock.opacity': 'Opacidade:',
           'settings.dock.min': 'Min',
           'settings.dock.max': 'Max',
           'settings.dock.autohide': 'Ocultar e mostrar o Dock automaticamente',
@@ -11570,6 +11682,7 @@ function installLongPress(el, getTarget){
           if(appId === 'bliss'){
             items.push({ labelKey:'ctx.arrange', action:'global:arrange' });
             items.push({ labelKey:'ctx.grid', action:'global:grid', type:'checkbox', checked: !!state.gridSnap });
+            items.push({ labelKey:'ctx.showDesktopIcons', action:'global:desktopIcons', type:'checkbox', checked: state.settings.showDesktopIcons !== false });
             items.push({ labelKey:'ctx.language', action:'global:language', right: state.lang.toUpperCase() });
           }
           if(appId === 'music'){
@@ -11976,6 +12089,10 @@ function installLongPress(el, getTarget){
           state.gridSnap = !state.gridSnap;
           saveGridSnap();
           renderCtxMenu();
+          return;
+        }
+        if(action === 'global:desktopIcons'){
+          setDesktopIconsVisible(!(state.settings.showDesktopIcons !== false));
           return;
         }
         if(action === 'global:language'){
@@ -14018,6 +14135,16 @@ Eu sou o buffalo branco extinto`
                     </div>
                   </div>
                   <div class="settings-block settings-dock-block">
+                    <div class="settings-dock-row">
+                      <label class="settings-dock-label" for="settingsDockOpacity" data-i18n="settings.dock.opacity">Opacity:</label>
+                      <input id="settingsDockOpacity" class="retro-slider settings-dock-slider" type="range" min="0" max="100" step="1" data-dock-slider="opacity" />
+                    </div>
+                    <div class="settings-dock-scale tiny">
+                      <span data-i18n="settings.dock.min">Min</span>
+                      <span data-i18n="settings.dock.max">Max</span>
+                    </div>
+                  </div>
+                  <div class="settings-block settings-dock-block">
                     <label class="settings-dock-check settings-dock-autohide">
                       <input type="checkbox" data-dock-toggle="autohide" />
                       <span data-i18n="settings.dock.autohide">Automatically hide and show the Dock</span>
@@ -15358,6 +15485,7 @@ function renderIcons(){
   });
 
   grid.appendChild(fragment);
+  applyDesktopIconsVisibility();
   if(iconPosDirty) saveIconPositions(iconPosCache);
   if(fsDirty) saveDesktopFs();
 }
@@ -17437,6 +17565,12 @@ function toggleFitWindow(appId) {
         return clamp(Math.round(raw), 0, 100);
       }
 
+      function getDockRenderOpacityPercent(){
+        const raw = Number(state.settings.dockOpacity);
+        if(!Number.isFinite(raw)) return 100;
+        return clamp(Math.round(raw), 0, 100);
+      }
+
       function isDockRenderAutoHideEnabled(){
         return !!state.settings.dockAutoHide && !isMobileDock() && state.settings.theme === 'blissos';
       }
@@ -17644,6 +17778,7 @@ function renderBlissOSDock(){
   dock.classList.toggle('hidden', !blissos);
   if(!blissos){
     dock.style.removeProperty('--blissos-dock-scale');
+    dock.style.removeProperty('--blissos-dock-opacity');
     clearDockAutoHideTimer();
     dock.classList.remove('dock-autohide');
     dock.classList.remove('dock-visible');
@@ -17657,7 +17792,9 @@ function renderBlissOSDock(){
         const isAquaDock = !!state.settings.blissosAqua;
         const dockSize = getDockRenderSizePercent();
         const sizeT = dockSize / 100;
+        const dockOpacity = getDockRenderOpacityPercent();
         const dockAutoHide = isDockRenderAutoHideEnabled();
+        dock.style.setProperty('--blissos-dock-opacity', String(clamp(dockOpacity / 100, 0, 1)));
         const wasAutoHide = dock.classList.contains('dock-autohide');
         dock.classList.toggle('dock-autohide', dockAutoHide);
         if(dockAutoHide){
@@ -17716,7 +17853,7 @@ function renderBlissOSDock(){
           const label = getDockItemLabel(item);
           return `${item.id}|${item.type}|${item.refId}|${item.iconPath || ''}|${label}|${winId}|${openIds.has(winId) ? 1 : 0}|${win && win.minimized ? 1 : 0}|${state.activeWindowId === winId ? 1 : 0}`;
         }).join('||');
-        const dockSignature = `${state.settings.theme}|${state.settings.blissosAqua ? 'aqua' : 'classic'}|${state.settings.blissosDarkMode ? 'dark' : 'light'}|${state.lang}|${isMobileDock() ? 'mobile' : 'desktop'}|size:${dockSize}|mag:${isDockRenderMagnificationEnabled() ? 1 : 0}|magp:${getDockRenderMagnificationStrength()}|autoh:${dockAutoHide ? 1 : 0}|${dockStateSig}`;
+        const dockSignature = `${state.settings.theme}|${state.settings.blissosAqua ? 'aqua' : 'classic'}|${state.settings.blissosDarkMode ? 'dark' : 'light'}|${state.lang}|${isMobileDock() ? 'mobile' : 'desktop'}|size:${dockSize}|mag:${isDockRenderMagnificationEnabled() ? 1 : 0}|magp:${getDockRenderMagnificationStrength()}|op:${dockOpacity}|autoh:${dockAutoHide ? 1 : 0}|${dockStateSig}`;
         if(dockSignature === blissosDockRenderSignature && dock.firstElementChild){
           return;
         }
@@ -19070,6 +19207,7 @@ function renderBlissOSAppMenu(){
           const val = clamp(parseFloat(dockSlider.value), 0, 100);
           if(dockSlider.dataset.dockSlider === 'size') setDockSize(val);
           if(dockSlider.dataset.dockSlider === 'magnification') setDockMagnificationStrength(val);
+          if(dockSlider.dataset.dockSlider === 'opacity') setDockOpacity(val);
         }
       });
       document.addEventListener('change', (e)=>{

@@ -176,6 +176,7 @@
           'ctx.duplicateTxt': 'Duplicate',
           'ctx.arrange': 'Arrange icons',
           'ctx.grid': 'Grid (snap)',
+          'ctx.showDesktopIcons': 'Show Desktop Icons',
           'ctx.wallpaper': 'Wallpaper',
           'ctx.settings': 'Settings',
           'ctx.language': 'Language',
@@ -226,6 +227,7 @@
           'settings.dock.small': 'Small',
           'settings.dock.large': 'Large',
           'settings.dock.magnification': 'Magnification:',
+          'settings.dock.opacity': 'Opacity:',
           'settings.dock.min': 'Min',
           'settings.dock.max': 'Max',
           'settings.dock.autohide': 'Automatically hide and show the Dock',
@@ -750,6 +752,7 @@
           'ctx.duplicateTxt': 'Duplicar',
           'ctx.arrange': 'Organizar Ícones',
           'ctx.grid': 'Grade (snap)',
+          'ctx.showDesktopIcons': 'Mostrar ícones da Área de Trabalho',
           'ctx.wallpaper': 'Papel de Parede',
           'ctx.settings': 'Configurações',
           'ctx.language': 'Idioma',
@@ -800,6 +803,7 @@
           'settings.dock.small': 'Pequeno',
           'settings.dock.large': 'Grande',
           'settings.dock.magnification': 'Ampliacao:',
+          'settings.dock.opacity': 'Opacidade:',
           'settings.dock.min': 'Min',
           'settings.dock.max': 'Max',
           'settings.dock.autohide': 'Ocultar e mostrar o Dock automaticamente',
@@ -1504,6 +1508,7 @@
           if(appId === 'bliss'){
             items.push({ labelKey:'ctx.arrange', action:'global:arrange' });
             items.push({ labelKey:'ctx.grid', action:'global:grid', type:'checkbox', checked: !!state.gridSnap });
+            items.push({ labelKey:'ctx.showDesktopIcons', action:'global:desktopIcons', type:'checkbox', checked: state.settings.showDesktopIcons !== false });
             items.push({ labelKey:'ctx.language', action:'global:language', right: state.lang.toUpperCase() });
           }
           if(appId === 'music'){
@@ -1910,6 +1915,10 @@
           state.gridSnap = !state.gridSnap;
           saveGridSnap();
           renderCtxMenu();
+          return;
+        }
+        if(action === 'global:desktopIcons'){
+          setDesktopIconsVisible(!(state.settings.showDesktopIcons !== false));
           return;
         }
         if(action === 'global:language'){

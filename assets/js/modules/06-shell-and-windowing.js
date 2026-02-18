@@ -174,6 +174,7 @@ function renderIcons(){
   });
 
   grid.appendChild(fragment);
+  applyDesktopIconsVisibility();
   if(iconPosDirty) saveIconPositions(iconPosCache);
   if(fsDirty) saveDesktopFs();
 }
@@ -2253,6 +2254,12 @@ function toggleFitWindow(appId) {
         return clamp(Math.round(raw), 0, 100);
       }
 
+      function getDockRenderOpacityPercent(){
+        const raw = Number(state.settings.dockOpacity);
+        if(!Number.isFinite(raw)) return 100;
+        return clamp(Math.round(raw), 0, 100);
+      }
+
       function isDockRenderAutoHideEnabled(){
         return !!state.settings.dockAutoHide && !isMobileDock() && state.settings.theme === 'blissos';
       }
@@ -2460,6 +2467,7 @@ function renderBlissOSDock(){
   dock.classList.toggle('hidden', !blissos);
   if(!blissos){
     dock.style.removeProperty('--blissos-dock-scale');
+    dock.style.removeProperty('--blissos-dock-opacity');
     clearDockAutoHideTimer();
     dock.classList.remove('dock-autohide');
     dock.classList.remove('dock-visible');
@@ -2473,7 +2481,9 @@ function renderBlissOSDock(){
         const isAquaDock = !!state.settings.blissosAqua;
         const dockSize = getDockRenderSizePercent();
         const sizeT = dockSize / 100;
+        const dockOpacity = getDockRenderOpacityPercent();
         const dockAutoHide = isDockRenderAutoHideEnabled();
+        dock.style.setProperty('--blissos-dock-opacity', String(clamp(dockOpacity / 100, 0, 1)));
         const wasAutoHide = dock.classList.contains('dock-autohide');
         dock.classList.toggle('dock-autohide', dockAutoHide);
         if(dockAutoHide){
@@ -2532,7 +2542,7 @@ function renderBlissOSDock(){
           const label = getDockItemLabel(item);
           return `${item.id}|${item.type}|${item.refId}|${item.iconPath || ''}|${label}|${winId}|${openIds.has(winId) ? 1 : 0}|${win && win.minimized ? 1 : 0}|${state.activeWindowId === winId ? 1 : 0}`;
         }).join('||');
-        const dockSignature = `${state.settings.theme}|${state.settings.blissosAqua ? 'aqua' : 'classic'}|${state.settings.blissosDarkMode ? 'dark' : 'light'}|${state.lang}|${isMobileDock() ? 'mobile' : 'desktop'}|size:${dockSize}|mag:${isDockRenderMagnificationEnabled() ? 1 : 0}|magp:${getDockRenderMagnificationStrength()}|autoh:${dockAutoHide ? 1 : 0}|${dockStateSig}`;
+        const dockSignature = `${state.settings.theme}|${state.settings.blissosAqua ? 'aqua' : 'classic'}|${state.settings.blissosDarkMode ? 'dark' : 'light'}|${state.lang}|${isMobileDock() ? 'mobile' : 'desktop'}|size:${dockSize}|mag:${isDockRenderMagnificationEnabled() ? 1 : 0}|magp:${getDockRenderMagnificationStrength()}|op:${dockOpacity}|autoh:${dockAutoHide ? 1 : 0}|${dockStateSig}`;
         if(dockSignature === blissosDockRenderSignature && dock.firstElementChild){
           return;
         }
@@ -3886,6 +3896,7 @@ function renderBlissOSAppMenu(){
           const val = clamp(parseFloat(dockSlider.value), 0, 100);
           if(dockSlider.dataset.dockSlider === 'size') setDockSize(val);
           if(dockSlider.dataset.dockSlider === 'magnification') setDockMagnificationStrength(val);
+          if(dockSlider.dataset.dockSlider === 'opacity') setDockOpacity(val);
         }
       });
       document.addEventListener('change', (e)=>{

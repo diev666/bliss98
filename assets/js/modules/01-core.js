@@ -91,7 +91,9 @@
           dockSize: 58,
           dockMagnification: true,
           dockMagnificationStrength: 60,
+          dockOpacity: 100,
           dockAutoHide: false,
+          showDesktopIcons: true,
           retroGlow: false,
           clock24: true,
           oldCrt: false,
@@ -172,6 +174,9 @@
       function isBliss98(){
         return state.settings.theme !== 'blissos';
       }
+      function shouldAlignDesktopIconsRight(){
+        return state.settings.theme === 'blissos' && !!state.settings.blissosAqua;
+      }
 
       const ICON_POS_KEY = 'bliss98_icon_positions';
       const ICON_SIZE = { w: 92, h: 88 };
@@ -208,6 +213,7 @@
       const DOCK_KEY = 'bliss98_dock_items';
       const GAMES_VIEW_KEY = 'bliss98_games_view';
       const GAMES_BIG_KEY = 'bliss98_games_big';
+      const DESKTOP_ICONS_KEY = 'bliss98_show_desktop_icons';
       const DOCK_MOBILE_MAX_TOTAL = 9;
       const DOCK_MOBILE_MAX_NORMAL = 8;
 const RETRO_KEY = 'bliss98_retro_glow';
@@ -719,6 +725,59 @@ function saveGridSnap(){
   } catch {}
 }
 
+function loadDesktopIconsVisible(){
+  try{
+    const raw = localStorage.getItem(DESKTOP_ICONS_KEY);
+    if(raw === null) return true;
+    return raw !== '0';
+  } catch {
+    return true;
+  }
+}
+
+function saveDesktopIconsVisible(){
+  try{
+    localStorage.setItem(DESKTOP_ICONS_KEY, state.settings.showDesktopIcons === false ? '0' : '1');
+  } catch {}
+}
+
+function applyDesktopIconsVisibility(){
+  const show = state.settings.showDesktopIcons !== false;
+  const area = $('#desktopArea');
+  const grid = $('#iconGrid');
+  if(area){
+    area.dataset.desktopIcons = show ? '1' : '0';
+  }
+  if(grid){
+    grid.style.display = show ? '' : 'none';
+  }
+  document.body.dataset.desktopIcons = show ? '1' : '0';
+  if(!show){
+    state.selectedIconId = null;
+    if(typeof clearAllIconSelection === 'function'){
+      clearAllIconSelection();
+    }
+  }
+}
+
+function setDesktopIconsVisible(enabled){
+  const next = enabled !== false;
+  if(state.settings.showDesktopIcons === next){
+    applyDesktopIconsVisibility();
+    return;
+  }
+  state.settings.showDesktopIcons = next;
+  saveDesktopIconsVisible();
+  applyDesktopIconsVisibility();
+  if(typeof syncOsProfile === 'function'){
+    syncOsProfile();
+  }
+}
+
+function toggleDesktopIconsVisible(){
+  setDesktopIconsVisible(!(state.settings.showDesktopIcons !== false));
+}
+
 function snapToGrid(x, y){
   const stepX = ICON_SIZE.w + ICON_GAP.x;
   const stepY = ICON_SIZE.h + ICON_GAP.y;
@@ -1007,6 +1066,8 @@ function getDefaultIconLayout(){
   const maxX = Math.max(0, Math.floor(width - ICON_SIZE.w - 6));
   const maxY = Math.max(0, Math.floor(height - ICON_SIZE.h - 6));
 
+  const alignRight = !isMobile && shouldAlignDesktopIconsRight();
+
   if(isMobile){
     const cols = Math.max(1, Math.floor((width - 6) / metrics.stepX));
     const rows = Math.max(1, Math.floor((height - 6) / metrics.stepY));
@@ -1029,12 +1090,15 @@ function getDefaultIconLayout(){
     let col = 0;
     let row = 0;
     const maxRows = Math.max(1, Math.floor((height - 6) / metrics.stepY));
+    const usableRows = alignRight ? Math.max(1, maxRows - 1) : maxRows;
+    const cols = Math.max(1, Math.floor((width - 6) / metrics.stepX));
     ordered.forEach(id => {
-      const x = clamp(col * metrics.stepX, 0, maxX);
+      const actualCol = alignRight ? Math.max(0, (cols - 1) - col) : col;
+      const x = clamp(actualCol * metrics.stepX, 0, maxX);
       const y = clamp(row * metrics.stepY, 0, maxY);
       layout[id] = snapToGridClamped(x, y, metrics);
       row += 1;
-      if(row >= maxRows){
+      if(row >= usableRows){
         row = 0;
         col += 1;
       }
