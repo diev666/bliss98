@@ -14078,15 +14078,11 @@ Eu sou o buffalo branco extinto`
                   </div>
                 </div>
                 <div class="settings-block" id="settingsFullscreen">
-                  <strong class="bliss98-only" data-i18n="settings.fullscreen.title">Fullscreen</strong>
-                  <div class="settings-actions bliss98-only">
+                  <strong data-i18n="settings.fullscreen.title">Fullscreen</strong>
+                  <div class="settings-actions">
                     <button class="btn bevel" type="button" data-set-fullscreen="on"><span data-i18n="settings.fullscreen.on">On</span></button>
                     <button class="btn bevel" type="button" data-set-fullscreen="off"><span data-i18n="settings.fullscreen.off">Off</span></button>
                   </div>
-                  <label class="blissos-only settings-appearance-toggle settings-aqua-check settings-system-toggle">
-                    <input type="checkbox" data-toggle-fullscreen />
-                    <span data-i18n="settings.fullscreen.title">Fullscreen</span>
-                  </label>
                 </div>
                 <div class="settings-block" id="settingsClock">
                   <strong data-i18n="settings.clock.title">Clock Format</strong>
