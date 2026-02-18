@@ -2215,6 +2215,192 @@ function toggleFitWindow(appId) {
 
       let taskButtonsRenderSignature = '';
       let blissosDockRenderSignature = '';
+      const LEOPARD_DOCK_RADIUS = 132;
+      const LEOPARD_DOCK_MAX_SCALE = 0.42;
+      const LEOPARD_DOCK_MAX_LIFT = 9;
+      const DOCK_DEFAULT_SIZE = 58;
+      const DOCK_DEFAULT_MAGNIFICATION = 60;
+      const DOCK_AUTOHIDE_EDGE = 36;
+      const DOCK_AUTOHIDE_HIDE_DELAY = 520;
+      let dockAutoHideFxBound = false;
+      let dockAutoHideHideTimer = 0;
+      let dockAutoHideVisible = true;
+
+      function getDockRenderSizePercent(){
+        const raw = Number(state.settings.dockSize);
+        if(!Number.isFinite(raw)) return DOCK_DEFAULT_SIZE;
+        return clamp(Math.round(raw), 0, 100);
+      }
+
+      function getAquaDockScaleForSize(sizePercent){
+        const pct = clamp(Math.round(Number(sizePercent) || 0), 0, 100);
+        const pivot = DOCK_DEFAULT_SIZE;
+        if(pct <= pivot){
+          const t = pivot > 0 ? (pct / pivot) : 1;
+          return 0.62 + (0.38 * t);
+        }
+        const t = (pct - pivot) / Math.max(1, 100 - pivot);
+        return 1 + (0.42 * t);
+      }
+
+      function isDockRenderMagnificationEnabled(){
+        return state.settings.dockMagnification !== false;
+      }
+
+      function getDockRenderMagnificationStrength(){
+        const raw = Number(state.settings.dockMagnificationStrength);
+        if(!Number.isFinite(raw)) return DOCK_DEFAULT_MAGNIFICATION;
+        return clamp(Math.round(raw), 0, 100);
+      }
+
+      function isDockRenderAutoHideEnabled(){
+        return !!state.settings.dockAutoHide && !isMobileDock() && state.settings.theme === 'blissos';
+      }
+
+      function clearDockAutoHideTimer(){
+        if(dockAutoHideHideTimer){
+          clearTimeout(dockAutoHideHideTimer);
+          dockAutoHideHideTimer = 0;
+        }
+      }
+
+      function setDockAutoHideVisible(dock, visible){
+        if(!dock) return;
+        dockAutoHideVisible = !!visible;
+        const autoHideOn = dock.classList.contains('dock-autohide');
+        dock.classList.toggle('dock-visible', !autoHideOn || dockAutoHideVisible);
+      }
+
+      function scheduleDockAutoHide(dock, delay = DOCK_AUTOHIDE_HIDE_DELAY){
+        if(!dock || !dock.classList.contains('dock-autohide')) return;
+        clearDockAutoHideTimer();
+        dockAutoHideHideTimer = setTimeout(() => {
+          if(!dock.classList.contains('dock-autohide')) return;
+          setDockAutoHideVisible(dock, false);
+        }, Math.max(0, delay));
+      }
+
+      function revealDockAutoHide(dock, opts = {}){
+        if(!dock || !dock.classList.contains('dock-autohide')) return;
+        clearDockAutoHideTimer();
+        setDockAutoHideVisible(dock, true);
+        if(opts.hold) return;
+        scheduleDockAutoHide(dock, DOCK_AUTOHIDE_HIDE_DELAY + 160);
+      }
+
+      function bindDockAutoHideFx(dock){
+        if(!dock || dock.dataset.dockAutoHideBound === '1') return;
+        dock.dataset.dockAutoHideBound = '1';
+        dock.addEventListener('pointerenter', ()=>{
+          revealDockAutoHide(dock, { hold: true });
+        });
+        dock.addEventListener('pointerleave', ()=>{
+          scheduleDockAutoHide(dock, 300);
+        });
+        if(dockAutoHideFxBound) return;
+        dockAutoHideFxBound = true;
+        document.addEventListener('pointermove', (e)=>{
+          const activeDock = $('#blissosDock');
+          if(!activeDock || activeDock.classList.contains('hidden') || !activeDock.classList.contains('dock-autohide')){
+            return;
+          }
+          const target = getEventTargetEl(e);
+          const overDock = !!(target && target.closest && target.closest('#blissosDock'));
+          if(overDock){
+            revealDockAutoHide(activeDock, { hold: true });
+            return;
+          }
+          const nearBottom = (window.innerHeight - e.clientY) <= DOCK_AUTOHIDE_EDGE;
+          if(nearBottom){
+            revealDockAutoHide(activeDock);
+          } else if(dockAutoHideVisible){
+            scheduleDockAutoHide(activeDock, 260);
+          }
+        }, { passive:true });
+      }
+
+      function isLeopardDockActive(){
+        return state.settings.theme === 'blissos' && !!state.settings.blissosAqua && !isMobileDock() && isDockRenderMagnificationEnabled();
+      }
+
+      function getLeopardDockItems(inner){
+        if(!inner) return [];
+        return Array.from(inner.querySelectorAll('.blissos-dock-item')).filter(item =>
+          !item.classList.contains('dock-preview-slot') &&
+          !item.classList.contains('dock-dragging') &&
+          !item.classList.contains('dock-removing')
+        );
+      }
+
+      function resetLeopardDockMagnification(inner){
+        getLeopardDockItems(inner).forEach(item => {
+          item.style.removeProperty('--dock-scale');
+          item.style.removeProperty('--dock-lift');
+          item.style.removeProperty('--dock-bright');
+          item.style.removeProperty('--dock-reflect');
+        });
+      }
+
+      function applyLeopardDockMagnification(inner, clientX){
+        if(!inner || typeof clientX !== 'number') return;
+        if(!isDockRenderMagnificationEnabled()){
+          resetLeopardDockMagnification(inner);
+          return;
+        }
+        if(inner.classList.contains('dock-reorder-active') || inner.classList.contains('dock-drop-preview')){
+          resetLeopardDockMagnification(inner);
+          return;
+        }
+        const intensity = getDockRenderMagnificationStrength() / 100;
+        const maxScale = LEOPARD_DOCK_MAX_SCALE * (0.05 + (0.95 * intensity));
+        const maxLift = LEOPARD_DOCK_MAX_LIFT * (0.05 + (0.95 * intensity));
+        const radius = LEOPARD_DOCK_RADIUS * (0.6 + (0.8 * intensity));
+        const items = getLeopardDockItems(inner);
+        items.forEach(item => {
+          const rect = item.getBoundingClientRect();
+          const center = rect.left + (rect.width / 2);
+          const distance = Math.abs(clientX - center);
+          const t = Math.max(0, 1 - (distance / radius));
+          const eased = t * t * (3 - (2 * t));
+          const scale = 1 + (maxScale * eased);
+          const lift = maxLift * eased;
+          const bright = 1 + ((0.08 + (0.16 * intensity)) * eased);
+          const reflect = (0.06 + (0.08 * intensity)) + ((0.14 + (0.24 * intensity)) * eased);
+          item.style.setProperty('--dock-scale', scale.toFixed(3));
+          item.style.setProperty('--dock-lift', `${lift.toFixed(2)}px`);
+          item.style.setProperty('--dock-bright', bright.toFixed(3));
+          item.style.setProperty('--dock-reflect', reflect.toFixed(3));
+        });
+      }
+
+      function bindLeopardDockFx(inner){
+        if(!inner || inner.dataset.leopardDockFxBound === '1') return;
+        inner.dataset.leopardDockFxBound = '1';
+        const handleMove = (e)=>{
+          if(!isLeopardDockActive()){
+            resetLeopardDockMagnification(inner);
+            return;
+          }
+          applyLeopardDockMagnification(inner, e.clientX);
+        };
+        const handleLeave = ()=>{
+          resetLeopardDockMagnification(inner);
+        };
+        inner.addEventListener('pointermove', handleMove);
+        inner.addEventListener('pointerdown', handleMove);
+        inner.addEventListener('pointerleave', handleLeave);
+        inner.addEventListener('pointercancel', handleLeave);
+      }
+
+      function triggerLeopardDockBounce(btn){
+        if(!btn || !isLeopardDockActive()) return;
+        btn.classList.remove('dock-launching');
+        void btn.offsetWidth;
+        btn.classList.add('dock-launching');
+        setTimeout(() => {
+          btn.classList.remove('dock-launching');
+        }, 760);
+      }
 
       function buildTaskButtonsSignature(wins){
         const parts = wins.map(w => {
@@ -2273,12 +2459,47 @@ function renderBlissOSDock(){
   const blissos = state.settings.theme === 'blissos';
   dock.classList.toggle('hidden', !blissos);
   if(!blissos){
+    dock.style.removeProperty('--blissos-dock-scale');
+    clearDockAutoHideTimer();
+    dock.classList.remove('dock-autohide');
+    dock.classList.remove('dock-visible');
+    dockAutoHideVisible = true;
     if(blissosDockRenderSignature !== 'hidden'){
       dock.innerHTML = '';
       blissosDockRenderSignature = 'hidden';
     }
     return;
   }
+        const isAquaDock = !!state.settings.blissosAqua;
+        const dockSize = getDockRenderSizePercent();
+        const sizeT = dockSize / 100;
+        const dockAutoHide = isDockRenderAutoHideEnabled();
+        const wasAutoHide = dock.classList.contains('dock-autohide');
+        dock.classList.toggle('dock-autohide', dockAutoHide);
+        if(dockAutoHide){
+          bindDockAutoHideFx(dock);
+          if(!wasAutoHide){
+            setDockAutoHideVisible(dock, false);
+            scheduleDockAutoHide(dock, 240);
+          } else {
+            setDockAutoHideVisible(dock, dockAutoHideVisible);
+          }
+        } else {
+          clearDockAutoHideTimer();
+          setDockAutoHideVisible(dock, true);
+        }
+        const buildDockItemMarkup = (iconHtml, dockIconBox) => {
+          const iconSpan = `<span class="dock-icon pixel" style="width:${dockIconBox}px;height:${dockIconBox}px;display:flex;align-items:center;justify-content:center;">${iconHtml}</span>`;
+          if(!isAquaDock){
+            return `${iconSpan}<span class="dock-indicator"></span>`;
+          }
+          return `
+            ${iconSpan}
+            <span class="dock-reflection pixel" aria-hidden="true" style="width:${dockIconBox}px;height:${dockIconBox}px;display:flex;align-items:center;justify-content:center;">${iconHtml}</span>
+            <span class="dock-tooltip" aria-hidden="true"></span>
+            <span class="dock-indicator"></span>
+          `;
+        };
         const openIds = new Set(Array.from(state.windows.values()).map(w => w.id));
         const normalized = normalizeDockItems(state.dockItems || []);
         const dockChanged = normalized.length !== state.dockItems.length || normalized.some((item, idx) => {
@@ -2311,9 +2532,40 @@ function renderBlissOSDock(){
           const label = getDockItemLabel(item);
           return `${item.id}|${item.type}|${item.refId}|${item.iconPath || ''}|${label}|${winId}|${openIds.has(winId) ? 1 : 0}|${win && win.minimized ? 1 : 0}|${state.activeWindowId === winId ? 1 : 0}`;
         }).join('||');
-        const dockSignature = `${state.settings.theme}|${state.settings.blissosStyle || ''}|${state.settings.blissosMode || ''}|${state.lang}|${isMobileDock() ? 'mobile' : 'desktop'}|${dockStateSig}`;
+        const dockSignature = `${state.settings.theme}|${state.settings.blissosAqua ? 'aqua' : 'classic'}|${state.settings.blissosDarkMode ? 'dark' : 'light'}|${state.lang}|${isMobileDock() ? 'mobile' : 'desktop'}|size:${dockSize}|mag:${isDockRenderMagnificationEnabled() ? 1 : 0}|magp:${getDockRenderMagnificationStrength()}|autoh:${dockAutoHide ? 1 : 0}|${dockStateSig}`;
         if(dockSignature === blissosDockRenderSignature && dock.firstElementChild){
           return;
+        }
+        const isAquaDesktopDock = isAquaDock && !isMobileDock();
+        if(isAquaDesktopDock){
+          const aquaScale = getAquaDockScaleForSize(dockSize);
+          dock.style.setProperty('--blissos-dock-scale', aquaScale.toFixed(3));
+        } else {
+          dock.style.removeProperty('--blissos-dock-scale');
+        }
+        let dockIconSize = 28;
+        let dockIconBox = 32;
+        let dockItemWidth = 40;
+        let dockItemHeight = 40;
+        if(isAquaDock){
+          if(isMobileDock()){
+            dockIconSize = Math.round(24 + (8 * sizeT));
+            dockIconBox = Math.round(dockIconSize + 6);
+            dockItemWidth = dockIconBox + 5;
+            dockItemHeight = dockIconBox + 2;
+          } else {
+            dockIconSize = 48;
+            dockIconBox = 56;
+            dockItemWidth = 64;
+            dockItemHeight = 54;
+          }
+        } else {
+          const minIcon = isMobileDock() ? 20 : 20;
+          const maxIcon = isMobileDock() ? 30 : 34;
+          dockIconSize = Math.round(minIcon + ((maxIcon - minIcon) * sizeT));
+          dockIconBox = Math.round(dockIconSize + (isMobileDock() ? 2 : 4));
+          dockItemWidth = dockIconBox + (isMobileDock() ? 4 : 8);
+          dockItemHeight = dockItemWidth;
         }
         blissosDockRenderSignature = dockSignature;
         normalItems.forEach(item => {
@@ -2321,6 +2573,8 @@ function renderBlissOSDock(){
           const win = winId ? state.windows.get(winId) : null;
           const btn = document.createElement('button');
           btn.className = 'blissos-dock-item';
+          btn.style.width = `${dockItemWidth}px`;
+          btn.style.height = `${dockItemHeight}px`;
           btn.type = 'button';
           btn.dataset.dockWinId = winId || '';
           btn.dataset.dockType = item.type;
@@ -2329,10 +2583,10 @@ function renderBlissOSDock(){
           if(win && win.minimized) btn.classList.add('minimized');
           const label = getDockItemLabel(item);
           btn.title = label;
-          btn.innerHTML = `
-            <span class="pixel" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">${getDockItemIconHtml(item, 28)}</span>
-            <span class="dock-indicator"></span>
-          `;
+          const iconHtml = getDockItemIconHtml(item, dockIconSize);
+          btn.innerHTML = buildDockItemMarkup(iconHtml, dockIconBox);
+          const tooltip = btn.querySelector('.dock-tooltip');
+          if(tooltip) tooltip.textContent = label;
           btn.addEventListener('click', (e)=>{
             e.stopPropagation();
             if(btn.dataset.dragged === '1'){
@@ -2341,13 +2595,16 @@ function renderBlissOSDock(){
             }
             if(win){
               if(win.minimized){
+                triggerLeopardDockBounce(btn);
                 restoreWindow(winId);
               } else if(state.activeWindowId === winId){
                 minimizeApp(winId);
               } else {
+                triggerLeopardDockBounce(btn);
                 focusWindow(winId);
               }
             } else if(item.refId){
+              triggerLeopardDockBounce(btn);
               openIconById(item.refId);
             }
           });
@@ -2370,6 +2627,8 @@ function renderBlissOSDock(){
           const win = winId ? state.windows.get(winId) : null;
           const btn = document.createElement('button');
           btn.className = 'blissos-dock-item';
+          btn.style.width = `${dockItemWidth}px`;
+          btn.style.height = `${dockItemHeight}px`;
           btn.type = 'button';
           btn.dataset.dockWinId = winId || '';
           btn.dataset.dockType = 'trash';
@@ -2378,10 +2637,10 @@ function renderBlissOSDock(){
           if(win && win.minimized) btn.classList.add('minimized');
           const label = getDockItemLabel(trashItem);
           btn.title = label;
-          btn.innerHTML = `
-            <span class="pixel" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">${getDockItemIconHtml(trashItem, 28)}</span>
-            <span class="dock-indicator"></span>
-          `;
+          const trashIconHtml = getDockItemIconHtml(trashItem, dockIconSize);
+          btn.innerHTML = buildDockItemMarkup(trashIconHtml, dockIconBox);
+          const trashTooltip = btn.querySelector('.dock-tooltip');
+          if(trashTooltip) trashTooltip.textContent = label;
           btn.addEventListener('click', (e)=>{
             e.stopPropagation();
             if(btn.dataset.dragged === '1'){
@@ -2390,13 +2649,16 @@ function renderBlissOSDock(){
             }
             if(win){
               if(win.minimized){
+                triggerLeopardDockBounce(btn);
                 restoreWindow(winId);
               } else if(state.activeWindowId === winId){
                 minimizeApp(winId);
               } else {
+                triggerLeopardDockBounce(btn);
                 focusWindow(winId);
               }
             } else {
+              triggerLeopardDockBounce(btn);
               openIconById('trash');
             }
           });
@@ -2409,6 +2671,8 @@ function renderBlissOSDock(){
         }
         dock.innerHTML = '';
         dock.appendChild(inner);
+        bindLeopardDockFx(inner);
+        bindDockAutoHideFx(dock);
       }
 
 function closeBlissOSMenu(){
@@ -2437,6 +2701,7 @@ function renderBlissOSAppleMenu(){
     { id:'general', icon:'./assets/icons/computer.png', labelKey:'settings.tab.general' },
     { id:'language', icon:'./assets/icons/language.png', labelKey:'settings.tab.language' },
     { id:'appearance', icon:'./assets/icons/appearance.png', labelKey:'settings.tab.appearance' },
+    { id:'dock', icon:'./assets/icons/dock.png', labelKey:'settings.tab.dock' },
     { id:'sound', icon:'./assets/icons/Sound.png', labelKey:'settings.tab.sound' },
     { id:'system', icon:'./assets/icons/computer.png', labelKey:'settings.tab.system' },
     { id:'performance', icon:'./assets/icons/performance.png', labelKey:'settings.tab.performance' },
@@ -2463,7 +2728,7 @@ function renderBlissOSAppleMenu(){
 
   menu.innerHTML = `
     <button class="menu-item" type="button" data-blissos-action="about">
-      <span class="menu-icon">${getThemedIconHtml({ icon:'info', id:'about', iconFile:'./assets/BlissOS/info.png' }, t('blissos.menu.about'), 16)}</span>
+      <span class="menu-icon">${getThemedIconHtml({ icon:'info', id:'about', iconFile:'./assets/icons/About.png' }, t('blissos.menu.about'), 16)}</span>
       <span class="menu-label" data-i18n="blissos.menu.about">${t('blissos.menu.about')}</span>
     </button>
     <div class="menu-sep" role="separator"></div>
@@ -2496,7 +2761,7 @@ function getActiveAppId(){
 
 function getAppDisplay(appId){
   if(appId === 'bliss'){
-    const iconHtml = `<img class="pixel" src="./assets/siteicon/bliss.png" data-fallback-src="./assets/siteicon/bliss.png" width="16" height="16" alt="" style="display:block;" />`;
+    const iconHtml = getThemedIconHtml({ icon:'app', id:'bliss', iconFile:'./assets/icons/bliss.png' }, 'Bliss', 16);
     return { label:'Bliss', iconHtml };
   }
   if(appId && state.windows.has(appId)){
@@ -2518,6 +2783,13 @@ function getAppDisplay(appId){
 
 function updateBlissOSActiveApp(){
   if(state.settings.theme !== 'blissos') return;
+  const brandIconEl = document.querySelector('.blissos-menu-brand img');
+  if(brandIconEl){
+    const brandSrc = getIconFor('./assets/icons/bliss.png', 'blissos');
+    if(typeof brandSrc === 'string' && !brandSrc.trim().startsWith('<svg')){
+      brandIconEl.src = brandSrc;
+    }
+  }
   const appId = getActiveAppId();
   const iconEl = $('#blissosAppMenuIcon');
   const labelEl = $('#blissosAppMenuLabel');
@@ -3102,6 +3374,7 @@ function bindDockDrag(btn, item, midEl, innerEl){
     ghostEl = null;
     if(btn) btn.classList.remove('dock-dragging', 'dock-removing');
     if(innerEl) innerEl.classList.remove('dock-reorder-active');
+    resetLeopardDockMagnification(innerEl);
     clearDockDropPreview();
     setDockDropHighlight(false);
   };
@@ -3116,6 +3389,7 @@ function bindDockDrag(btn, item, midEl, innerEl){
     dragging = true;
     btn.classList.add('dock-dragging');
     innerEl.classList.add('dock-reorder-active');
+    resetLeopardDockMagnification(innerEl);
     btn.dataset.dragged = '1';
     const visible = Array.from(midEl.querySelectorAll('.blissos-dock-item'))
       .filter(el => el.dataset.dockType !== 'trash' && !el.classList.contains('dock-preview-slot'));
@@ -3606,6 +3880,35 @@ function renderBlissOSAppMenu(){
           if(soundSlider.dataset.soundSlider === 'master') setMasterVolume(val);
           if(soundSlider.dataset.soundSlider === 'system') setSystemVolume(val);
           if(soundSlider.dataset.soundSlider === 'music') setMusicVolume(val);
+        }
+        const dockSlider = target && target.closest ? target.closest('[data-dock-slider]') : null;
+        if(dockSlider && dockSlider.dataset && dockSlider.dataset.dockSlider){
+          const val = clamp(parseFloat(dockSlider.value), 0, 100);
+          if(dockSlider.dataset.dockSlider === 'size') setDockSize(val);
+          if(dockSlider.dataset.dockSlider === 'magnification') setDockMagnificationStrength(val);
+        }
+      });
+      document.addEventListener('change', (e)=>{
+        const target = getEventTargetEl(e);
+        const dockToggle = target && target.closest ? target.closest('[data-dock-toggle]') : null;
+        if(dockToggle && dockToggle.dataset){
+          if(dockToggle.dataset.dockToggle === 'magnification'){
+            setDockMagnification(!!dockToggle.checked);
+            return;
+          }
+          if(dockToggle.dataset.dockToggle === 'autohide'){
+            setDockAutoHide(!!dockToggle.checked);
+            return;
+          }
+        }
+        const blissOsDarkToggle = target && target.closest ? target.closest('[data-toggle-blissos-darkmode]') : null;
+        if(blissOsDarkToggle){
+          setBlissOSDarkMode(!!blissOsDarkToggle.checked);
+          return;
+        }
+        const blissOsAquaToggle = target && target.closest ? target.closest('[data-toggle-blissos-aqua]') : null;
+        if(blissOsAquaToggle){
+          setBlissOSAqua(!!blissOsAquaToggle.checked);
         }
       });
 

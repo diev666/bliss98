@@ -4924,11 +4924,16 @@ function initClothesWindow(winEl){
       function initSettingsTabs(winEl){
   const win = winEl || document.getElementById('win_settings');
   if(!win) return;
+  const shell = win.querySelector('.settings-shell');
   const tabs = Array.from(win.querySelectorAll('.settings-tab'));
   const panels = Array.from(win.querySelectorAll('.settings-panel'));
   if(!tabs.length || !panels.length) return;
   const panelMap = new Map(panels.map(p => [p.dataset.tab, p]));
+  const isBlissOsPrefs = state.settings.theme === 'blissos';
+  const isAquaPrefs = isBlissOsPrefs && !!state.settings.blissosAqua;
+  const usesBlissOsPrefsShell = isBlissOsPrefs;
   let fitRunToken = 0;
+  const aquaHistory = { stack:['home'], index:0 };
 
   function ensureSettingsNoHorizontalOverflow(tabId, token, pass = 0){
     if(state.isMobile) return;
@@ -4943,6 +4948,139 @@ function initClothesWindow(winEl){
     smartFitWindow(win, 'tabChange').then(()=>{
       ensureSettingsNoHorizontalOverflow(tabId, token, pass + 1);
     });
+  }
+
+  const getTabLabel = (tabId)=>{
+    const tabBtn = tabs.find(tab => tab.dataset.tab === tabId);
+    return tabBtn ? tabBtn.textContent.trim() : tabId;
+  };
+
+  const getTabIconMarkup = (tabId)=>{
+    const panel = panelMap.get(tabId);
+    const iconImg = panel ? (panel.querySelector('.settings-panel-icon img') || panel.querySelector('.settings-logo img')) : null;
+    if(iconImg){
+      const src = iconImg.getAttribute('src') || './assets/icons/Settings.png';
+      const iconName = iconImg.dataset ? iconImg.dataset.settingsIcon : '';
+      const iconAttr = iconName ? ` data-settings-icon="${iconName}"` : '';
+      return `<img class="pixel" src="${src}"${iconAttr} width="52" height="52" alt="" />`;
+    }
+    return `<img class="pixel" src="./assets/icons/Settings.png" data-settings-icon="Settings.png" width="52" height="52" alt="" />`;
+  };
+
+  const aquaGroups = [
+    { id:'personal', title:t('settings.aqua.category.personal'), tabs:['appearance', 'language', 'dock'] },
+    { id:'system', title:t('settings.aqua.category.system'), tabs:['general', 'sound', 'system', 'performance'] },
+  ];
+
+  const ensureAquaLayout = ()=>{
+    if(!usesBlissOsPrefsShell || !shell) return null;
+    if(shell.dataset.settingsAquaEnhanced === '1'){
+      shell.dataset.settingsMode = isAquaPrefs ? 'aqua' : 'classic';
+      return {
+        toolbar: shell.querySelector('[data-settings-aqua-toolbar]'),
+        home: shell.querySelector('[data-settings-home]'),
+        pages: shell.querySelector('.settings-panels'),
+      };
+    }
+    shell.dataset.settingsAquaEnhanced = '1';
+    shell.dataset.settingsMode = isAquaPrefs ? 'aqua' : 'classic';
+    shell.dataset.settingsView = 'home';
+    shell.classList.add('settings-shell-aqua');
+
+    const tabsEl = shell.querySelector('.settings-tabs');
+    const pagesEl = shell.querySelector('.settings-panels');
+    if(tabsEl) tabsEl.classList.add('settings-tabs-aqua-hidden');
+
+    const toolbar = document.createElement('div');
+    toolbar.className = 'settings-aqua-toolbar';
+    toolbar.dataset.settingsAquaToolbar = '1';
+    toolbar.innerHTML = `
+      <div class="settings-aqua-nav" role="group" aria-label="${escapeHTML(t('settings.aqua.nav'))}">
+        <button class="btn bevel settings-aqua-nav-btn" type="button" data-settings-nav="back" aria-label="${escapeHTML(t('settings.aqua.back'))}">&#9664;</button>
+        <button class="btn bevel settings-aqua-nav-btn" type="button" data-settings-nav="forward" aria-label="${escapeHTML(t('settings.aqua.forward'))}">&#9654;</button>
+      </div>
+      <button class="btn bevel settings-aqua-showall" type="button" data-settings-show-all="1">${escapeHTML(t('settings.aqua.showAll'))}</button>
+      <label class="settings-aqua-search" aria-label="${escapeHTML(t('settings.aqua.searchAria'))}">
+        <span class="settings-aqua-search-icon" aria-hidden="true"></span>
+        <input type="search" class="bevel-in" data-settings-search="1" placeholder="${escapeHTML(t('settings.aqua.searchPlaceholder'))}" />
+      </label>
+    `;
+
+    const home = document.createElement('div');
+    home.className = 'settings-aqua-home';
+    home.dataset.settingsHome = '1';
+    home.innerHTML = aquaGroups.map(group => {
+      const tiles = group.tabs
+        .filter(tabId => panelMap.has(tabId))
+        .map(tabId => `
+          <button class="settings-aqua-item" type="button" data-settings-open="${tabId}">
+            <span class="settings-aqua-item-icon">${getTabIconMarkup(tabId)}</span>
+            <span class="settings-aqua-item-label">${escapeHTML(getTabLabel(tabId))}</span>
+          </button>
+        `).join('');
+      if(!tiles) return '';
+      return `
+        <section class="settings-aqua-group" data-settings-group="${group.id}">
+          <h3 class="settings-aqua-group-title">${escapeHTML(group.title)}</h3>
+          <div class="settings-aqua-grid">${tiles}</div>
+        </section>
+      `;
+    }).join('');
+
+    const insertBeforeEl = tabsEl || pagesEl || null;
+    shell.insertBefore(toolbar, insertBeforeEl);
+    shell.insertBefore(home, insertBeforeEl);
+    if(typeof applySettingsIcons === 'function') applySettingsIcons(win);
+    return { toolbar, home, pages: pagesEl };
+  };
+
+  const aquaRefs = ensureAquaLayout();
+  const aquaHome = aquaRefs ? aquaRefs.home : null;
+  const aquaPages = aquaRefs ? aquaRefs.pages : null;
+  const aquaToolbar = aquaRefs ? aquaRefs.toolbar : null;
+  const aquaBackBtn = aquaToolbar ? aquaToolbar.querySelector('[data-settings-nav="back"]') : null;
+  const aquaForwardBtn = aquaToolbar ? aquaToolbar.querySelector('[data-settings-nav="forward"]') : null;
+  const aquaShowAllBtn = aquaToolbar ? aquaToolbar.querySelector('[data-settings-show-all]') : null;
+  const aquaSearchInput = aquaToolbar ? aquaToolbar.querySelector('[data-settings-search]') : null;
+  const aquaTiles = aquaHome ? Array.from(aquaHome.querySelectorAll('[data-settings-open]')) : [];
+  const aquaGroupsEls = aquaHome ? Array.from(aquaHome.querySelectorAll('[data-settings-group]')) : [];
+
+  function runAquaTransition(el, cls){
+    if(!el || !cls) return;
+    const all = ['settings-aqua-enter-home', 'settings-aqua-enter-forward', 'settings-aqua-enter-back'];
+    all.forEach(name => el.classList.remove(name));
+    void el.offsetWidth;
+    el.classList.add(cls);
+    setTimeout(()=>{
+      el.classList.remove(cls);
+    }, 260);
+  }
+
+  function updateAquaNavButtons(){
+    if(!usesBlissOsPrefsShell) return;
+    if(aquaBackBtn) aquaBackBtn.disabled = aquaHistory.index <= 0;
+    if(aquaForwardBtn) aquaForwardBtn.disabled = aquaHistory.index >= (aquaHistory.stack.length - 1);
+  }
+
+  function pushAquaHistory(token){
+    if(!usesBlissOsPrefsShell) return;
+    const currentToken = aquaHistory.stack[aquaHistory.index];
+    if(currentToken === token) return;
+    aquaHistory.stack = aquaHistory.stack.slice(0, aquaHistory.index + 1);
+    aquaHistory.stack.push(token);
+    aquaHistory.index = aquaHistory.stack.length - 1;
+    updateAquaNavButtons();
+  }
+
+  function setAquaView(view, opts = {}){
+    if(!usesBlissOsPrefsShell || !shell) return;
+    shell.dataset.settingsView = view;
+    if(opts.silent) return;
+    if(view === 'home'){
+      runAquaTransition(aquaHome, opts.direction === 'back' ? 'settings-aqua-enter-back' : 'settings-aqua-enter-home');
+    } else {
+      runAquaTransition(aquaPages, opts.direction === 'back' ? 'settings-aqua-enter-back' : 'settings-aqua-enter-forward');
+    }
   }
 
   const activate = (tabId, opts = {})=>{
@@ -4970,18 +5108,27 @@ function initClothesWindow(winEl){
     updateClockButtons(win);
     updateOldCrtButtons(win);
     updateSoundUI(win);
+    updateDockSettingsUI(win);
     const content = win.querySelector('.content');
-      if(content){
-        content.dataset.fitKey = `settings:${tabId}`;
-        const isBlissOsDesktop = !state.isMobile && state.settings.theme === 'blissos';
-        if(tabId === 'appearance'){
-          content.dataset.fitMinW = isBlissOsDesktop ? '620' : '560';
-        } else if(isBlissOsDesktop){
-          content.dataset.fitMinW = '600';
-        } else {
-          delete content.dataset.fitMinW;
-        }
+    if(content){
+      content.dataset.fitKey = `settings:${tabId}`;
+      const isBlissOsDesktop = !state.isMobile && state.settings.theme === 'blissos';
+      if(usesBlissOsPrefsShell && isBlissOsDesktop){
+        content.dataset.fitMinW = (tabId === 'appearance')
+          ? (isAquaPrefs ? '760' : '700')
+          : (isAquaPrefs ? '700' : '620');
+      } else if(tabId === 'appearance'){
+        content.dataset.fitMinW = isBlissOsDesktop ? '620' : '560';
+      } else if(isBlissOsDesktop){
+        content.dataset.fitMinW = '600';
+      } else {
+        delete content.dataset.fitMinW;
       }
+    }
+    if(usesBlissOsPrefsShell){
+      setAquaView('panel', opts);
+      if(!opts.fromHistory) pushAquaHistory(`panel:${tabId}`);
+    }
     smartFitWindow(win, 'tabChange').then(()=>{
       ensureSettingsNoHorizontalOverflow(tabId, token);
     });
@@ -4990,10 +5137,41 @@ function initClothesWindow(winEl){
     }
   };
 
-  const current = (state.settings.tab && panelMap.has(state.settings.tab))
-    ? state.settings.tab
-    : tabs[0].dataset.tab;
-  activate(current, { silent: true });
+  const showAquaHome = (opts = {})=>{
+    if(!usesBlissOsPrefsShell) return;
+    const token = ++fitRunToken;
+    tabs.forEach(tab => {
+      tab.setAttribute('aria-selected', 'false');
+      tab.tabIndex = -1;
+    });
+    panels.forEach(panel => panel.classList.remove('active'));
+    setAquaView('home', opts);
+    if(!opts.fromHistory) pushAquaHistory('home');
+    const content = win.querySelector('.content');
+    if(content){
+      content.dataset.fitKey = 'settings:home';
+      if(!state.isMobile) content.dataset.fitMinW = '760';
+    }
+    smartFitWindow(win, 'tabChange').then(()=>{
+      ensureSettingsNoHorizontalOverflow('home', token);
+    });
+    updateAquaNavButtons();
+    if(!opts.silent){
+      playSfx('tabChange');
+    }
+  };
+
+  function openAquaHistoryToken(token, direction){
+    if(!usesBlissOsPrefsShell || !token) return;
+    if(token === 'home'){
+      showAquaHome({ fromHistory:true, direction, silent:false });
+      return;
+    }
+    if(token.startsWith('panel:')){
+      const tabId = token.slice(6);
+      activate(tabId, { fromHistory:true, direction, silent:false });
+    }
+  }
 
   const bindWallpaperSlider = ()=>{
     const sliders = Array.from(win.querySelectorAll('[data-wallpaper-slider]'));
@@ -5081,18 +5259,104 @@ function initClothesWindow(winEl){
     });
   });
 
+  if(usesBlissOsPrefsShell){
+    if(aquaShowAllBtn){
+      aquaShowAllBtn.addEventListener('click', ()=>{
+        showAquaHome({ direction:'back' });
+      });
+    }
+    if(aquaBackBtn){
+      aquaBackBtn.addEventListener('click', ()=>{
+        if(aquaHistory.index <= 0) return;
+        aquaHistory.index -= 1;
+        updateAquaNavButtons();
+        openAquaHistoryToken(aquaHistory.stack[aquaHistory.index], 'back');
+      });
+    }
+    if(aquaForwardBtn){
+      aquaForwardBtn.addEventListener('click', ()=>{
+        if(aquaHistory.index >= aquaHistory.stack.length - 1) return;
+        aquaHistory.index += 1;
+        updateAquaNavButtons();
+        openAquaHistoryToken(aquaHistory.stack[aquaHistory.index], 'forward');
+      });
+    }
+    aquaTiles.forEach(tile => {
+      const tabId = tile.dataset.settingsOpen;
+      tile.addEventListener('click', ()=>{
+        activate(tabId, { direction:'forward' });
+      });
+    });
+
+    const filterAquaTiles = ()=>{
+      if(!aquaSearchInput) return null;
+      const query = (aquaSearchInput.value || '').trim().toLowerCase();
+      let firstVisible = null;
+      aquaTiles.forEach(tile => {
+        const labelEl = tile.querySelector('.settings-aqua-item-label');
+        const label = (labelEl ? labelEl.textContent : tile.textContent || '').trim().toLowerCase();
+        const visible = !query || label.includes(query);
+        tile.classList.toggle('hidden', !visible);
+        if(visible && !firstVisible) firstVisible = tile;
+      });
+      aquaGroupsEls.forEach(groupEl => {
+        const hasVisible = !!groupEl.querySelector('.settings-aqua-item:not(.hidden)');
+        groupEl.classList.toggle('hidden', !hasVisible);
+      });
+      return firstVisible;
+    };
+
+    if(aquaSearchInput){
+      aquaSearchInput.addEventListener('input', ()=>{
+        if(shell && shell.dataset.settingsView !== 'home'){
+          showAquaHome({ silent:true, fromHistory:true });
+        }
+        filterAquaTiles();
+      });
+      aquaSearchInput.addEventListener('keydown', (e)=>{
+        if(e.key !== 'Enter') return;
+        const firstVisible = filterAquaTiles();
+        if(!firstVisible) return;
+        e.preventDefault();
+        firstVisible.click();
+      });
+    }
+
+    const requestedTab = (state.settings.pendingOpenTab && panelMap.has(state.settings.pendingOpenTab))
+      ? state.settings.pendingOpenTab
+      : '';
+    state.settings.pendingOpenTab = '';
+    if(requestedTab){
+      activate(requestedTab, { silent:true, direction:'forward' });
+      aquaHistory.stack = ['home', `panel:${requestedTab}`];
+      aquaHistory.index = 1;
+    } else {
+      showAquaHome({ silent:true, fromHistory:true });
+      aquaHistory.stack = ['home'];
+      aquaHistory.index = 0;
+    }
+    updateAquaNavButtons();
+  } else {
+    const current = (state.settings.tab && panelMap.has(state.settings.tab))
+      ? state.settings.tab
+      : tabs[0].dataset.tab;
+    const requestedTab = (state.settings.pendingOpenTab && panelMap.has(state.settings.pendingOpenTab))
+      ? state.settings.pendingOpenTab
+      : current;
+    state.settings.pendingOpenTab = '';
+    activate(requestedTab, { silent: true });
+  }
+
   // Event listeners for BlissOS accent color buttons
   $$('[data-set-blissos-accent]', win).forEach(btn => {
     btn.addEventListener('click', ()=>{
       const accent = btn.dataset.setBlissosAccent;
       setBlissosAccent(accent);
-      // Update pressed state for accent buttons
       $$('[data-set-blissos-accent]', win).forEach(ab => {
         ab.classList.toggle('pressed', ab.dataset.setBlissosAccent === state.settings.blissosAccent);
       });
     });
   });
-  // Initial pressed state for accent buttons
   $$('[data-set-blissos-accent]', win).forEach(ab => {
     ab.classList.toggle('pressed', ab.dataset.setBlissosAccent === state.settings.blissosAccent);
   });
@@ -5100,10 +5364,15 @@ function initClothesWindow(winEl){
 
 function openSettingsAndTab(tabId, scrollId){
   state.settings.tab = tabId || 'general';
+  state.settings.pendingOpenTab = tabId || '';
   openApp('settings');
   setTimeout(()=>{
     const winEl = document.getElementById('win_settings');
     if(winEl) initSettingsTabs(winEl);
+    if(winEl && tabId){
+      const tabBtn = winEl.querySelector(`.settings-tab[data-tab="${tabId}"]`);
+      if(tabBtn) tabBtn.click();
+    }
     if(winEl && scrollId){
       const target = winEl.querySelector(`#${scrollId}`);
       if(target && target.scrollIntoView){
@@ -5325,12 +5594,20 @@ function updateBlissOSDarkButtons(root=document){
     const on = btn.dataset.setBlissosDarkmode === 'on';
     btn.classList.toggle('pressed', on === state.settings.blissosDarkMode);
   });
+  $$('[data-toggle-blissos-darkmode]', root).forEach(input => {
+    input.checked = !!state.settings.blissosDarkMode;
+    input.setAttribute('aria-checked', state.settings.blissosDarkMode ? 'true' : 'false');
+  });
 }
 
 function updateBlissOSAquaButtons(root=document){
   $$('[data-set-blissos-aqua]', root).forEach(btn => {
     const on = btn.dataset.setBlissosAqua === 'on';
     btn.classList.toggle('pressed', on === state.settings.blissosAqua);
+  });
+  $$('[data-toggle-blissos-aqua]', root).forEach(input => {
+    input.checked = !!state.settings.blissosAqua;
+    input.setAttribute('aria-checked', state.settings.blissosAqua ? 'true' : 'false');
   });
 }
 
@@ -5362,6 +5639,13 @@ function setBlissOSDarkMode(enabled){
 function applyBlissOSAqua(){
   const isBlissOS = state.settings.theme === 'blissos';
   document.body.dataset.blissosStyle = (isBlissOS && state.settings.blissosAqua) ? 'aqua' : 'classic';
+  const brandIconEl = document.querySelector('.blissos-menu-brand img');
+  if(isBlissOS && brandIconEl){
+    const brandSrc = getIconFor('./assets/icons/bliss.png', 'blissos');
+    if(typeof brandSrc === 'string' && !brandSrc.trim().startsWith('<svg')){
+      brandIconEl.src = brandSrc;
+    }
+  }
   updateBlissOSAquaButtons();
 }
 
@@ -5369,7 +5653,17 @@ function setBlissOSAqua(enabled){
   if(state.settings.theme !== 'blissos') return;
   const turningOn = !!enabled;
   state.settings.blissosAqua = turningOn;
-  applyBlissOSAqua();
+  if(typeof applyOsTheme === 'function'){
+    applyOsTheme();
+  } else {
+    applyBlissOSAqua();
+    if(typeof renderBlissOSDock === 'function') renderBlissOSDock();
+  }
+  if(typeof applySettingsIcons === 'function') applySettingsIcons();
+  const appleMenu = document.getElementById('blissosAppleMenu');
+  if(appleMenu && !appleMenu.classList.contains('hidden') && typeof renderBlissOSAppleMenu === 'function'){
+    renderBlissOSAppleMenu();
+  }
   if(turningOn && state.wallpaper !== 'aqua'){
     applyWallpaper('aqua');
     return;
@@ -5558,6 +5852,81 @@ function setSystemSoundsEnabled(enabled){
   saveSystemSoundsEnabled();
   applySoundVolumes();
   updateSoundUI();
+  syncOsProfile();
+}
+
+function getDockSizePercent(){
+  const raw = Number(state.settings.dockSize);
+  if(!Number.isFinite(raw)) return 58;
+  return clamp(Math.round(raw), 0, 100);
+}
+
+function getDockMagnificationStrengthPercent(){
+  const raw = Number(state.settings.dockMagnificationStrength);
+  if(!Number.isFinite(raw)) return 60;
+  return clamp(Math.round(raw), 0, 100);
+}
+
+function isDockMagnificationEnabled(){
+  return state.settings.dockMagnification !== false;
+}
+
+function isDockAutoHideEnabled(){
+  return !!state.settings.dockAutoHide;
+}
+
+function updateDockSettingsUI(root=document){
+  const size = getDockSizePercent();
+  const magnification = isDockMagnificationEnabled();
+  const magnificationStrength = getDockMagnificationStrengthPercent();
+  const autoHide = isDockAutoHideEnabled();
+
+  $$('[data-dock-slider="size"]', root).forEach(slider => {
+    slider.value = String(size);
+  });
+  $$('[data-dock-slider="magnification"]', root).forEach(slider => {
+    slider.value = String(magnificationStrength);
+    slider.disabled = !magnification;
+  });
+  $$('[data-dock-toggle="magnification"]', root).forEach(input => {
+    input.checked = magnification;
+    input.setAttribute('aria-checked', magnification ? 'true' : 'false');
+  });
+  $$('[data-dock-toggle="autohide"]', root).forEach(input => {
+    input.checked = autoHide;
+    input.setAttribute('aria-checked', autoHide ? 'true' : 'false');
+  });
+  $$('[data-dock-slider="magnification"]', root).forEach(slider => {
+    const row = slider.closest('.settings-dock-row-toggle');
+    if(row) row.classList.toggle('disabled', !magnification);
+  });
+}
+
+function setDockSize(value){
+  state.settings.dockSize = clamp(Math.round(Number(value) || 0), 0, 100);
+  updateDockSettingsUI();
+  renderBlissOSDock();
+  syncOsProfile();
+}
+
+function setDockMagnification(enabled){
+  state.settings.dockMagnification = !!enabled;
+  updateDockSettingsUI();
+  renderBlissOSDock();
+  syncOsProfile();
+}
+
+function setDockMagnificationStrength(value){
+  state.settings.dockMagnificationStrength = clamp(Math.round(Number(value) || 0), 0, 100);
+  updateDockSettingsUI();
+  renderBlissOSDock();
+  syncOsProfile();
+}
+
+function setDockAutoHide(enabled){
+  state.settings.dockAutoHide = !!enabled;
+  updateDockSettingsUI();
+  renderBlissOSDock();
   syncOsProfile();
 }
 
@@ -5898,6 +6267,10 @@ function getDefaultOsProfiles(){
       darkMode: loadDarkMode(),
       blissosDarkMode: false,
       blissosAqua: false,
+      dockSize: 58,
+      dockMagnification: true,
+      dockMagnificationStrength: 60,
+      dockAutoHide: false,
       retroGlow: loadRetroGlow(),
       scanlines: loadScanlines(),
       clock24: loadClockFormat(),
@@ -5913,6 +6286,10 @@ function getDefaultOsProfiles(){
       darkMode: false,
       blissosDarkMode: false,
       blissosAqua: false,
+      dockSize: 58,
+      dockMagnification: true,
+      dockMagnificationStrength: 60,
+      dockAutoHide: false,
       retroGlow: false,
       scanlines: false,
       clock24: true,
@@ -5955,6 +6332,10 @@ function syncOsProfile(){
     darkMode: state.settings.darkMode,
     blissosDarkMode: state.settings.blissosDarkMode,
     blissosAqua: state.settings.blissosAqua,
+    dockSize: getDockSizePercent(),
+    dockMagnification: isDockMagnificationEnabled(),
+    dockMagnificationStrength: getDockMagnificationStrengthPercent(),
+    dockAutoHide: isDockAutoHideEnabled(),
     retroGlow: state.settings.retroGlow,
     scanlines: state.settings.scanlines,
     clock24: state.settings.clock24,
@@ -5978,6 +6359,10 @@ function applyOsProfile(theme){
   state.settings.darkMode = !!profile.darkMode;
   state.settings.blissosDarkMode = !!profile.blissosDarkMode;
   state.settings.blissosAqua = !!profile.blissosAqua;
+  state.settings.dockSize = typeof profile.dockSize === 'number' ? clamp(Math.round(profile.dockSize), 0, 100) : 58;
+  state.settings.dockMagnification = profile.dockMagnification !== false;
+  state.settings.dockMagnificationStrength = typeof profile.dockMagnificationStrength === 'number' ? clamp(Math.round(profile.dockMagnificationStrength), 0, 100) : 60;
+  state.settings.dockAutoHide = !!profile.dockAutoHide;
   state.settings.retroGlow = !!profile.retroGlow;
   state.settings.scanlines = !!profile.scanlines;
   state.settings.clock24 = profile.clock24 !== false;
@@ -6004,6 +6389,7 @@ function applyOsProfile(theme){
   applyOldCrt();
   applySoundVolumes();
   updateSoundUI();
+  updateDockSettingsUI();
   updateClockButtons();
   updateWallpaperButtons();
   updateOsThemeButtons();

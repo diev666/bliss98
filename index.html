@@ -205,7 +205,7 @@
   .blissos-menu-item, .blissos-menu-brand, .blissos-appmenu,
   .wctl, .settings-tab,
   [data-set-theme], [data-set-lang], [data-set-wallpaper], [data-set-animations], [data-set-appopenanim],
-  [data-set-scanlines], [data-set-darkmode], [data-set-blissos-darkmode], [data-set-blissos-aqua], [data-set-retro],
+  [data-set-scanlines], [data-set-darkmode], [data-set-blissos-darkmode], [data-set-blissos-aqua], [data-toggle-blissos-darkmode], [data-toggle-blissos-aqua], [data-set-retro],
   [data-set-clock], [data-set-oldcrt], [data-set-os-theme], [data-set-titlebar],
   [data-theme-custom], [data-games-tab], [data-music-id], [data-poem-id], [data-trash-id],
   [data-trash-action], [data-modal-action], [data-menu-action], [data-txt-action], [data-folder-nav-id],
@@ -602,15 +602,42 @@
         border-bottom:1px solid var(--blissos-border);
         position:relative;
       }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .titlebar::before,
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .titlebar::after{
+        content:"";
+        position:absolute;
+        top:0;
+        bottom:0;
+        pointer-events:none;
+        z-index:2;
+        background:var(--blissos-titlebar-base);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .titlebar::before{
+        left:0;
+        width:44px;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .titlebar::after{
+        right:0;
+        width:74px;
+      }
       body[data-theme="blissos"] .window:focus-within .titlebar,
       body[data-theme="blissos"] .window[data-active="1"] .titlebar{
         background:
           repeating-linear-gradient(180deg, var(--blissos-titlebar-line-hi) 0 1px, var(--blissos-titlebar-line-lo) 1px 2px),
           var(--blissos-titlebar-active);
       }
-      body[data-theme="blissos"] .titlebar .title-left strong{
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .window:focus-within .titlebar::before,
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .window[data-active="1"] .titlebar::before,
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .window:focus-within .titlebar::after,
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .window[data-active="1"] .titlebar::after{
+        background:var(--blissos-titlebar-active);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .titlebar .title-left strong{
         font-size:11px;
         font-weight:600;
+        max-width:100%;
+        overflow:visible;
+        text-overflow:clip;
       }
       body[data-theme="blissos"] .title-left img{
         display:none;
@@ -624,17 +651,45 @@
         left:6px;
         right:6px;
         height:14px;
-        z-index:2;
+        z-index:4;
       }
-      body[data-theme="blissos"] .title-left{
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .title-left{
         order:1;
-        flex:1;
+        flex:none;
+        width:fit-content;
+        max-width:calc(100% - 120px);
         justify-content:center;
         text-align:center;
         position:absolute;
+        left:50%;
+        right:auto;
+        transform:translateX(-50%);
+        top:0;
+        bottom:0;
+        padding:0 8px;
+        box-sizing:border-box;
+        pointer-events:none;
+        overflow:hidden;
+        z-index:3;
+        background:var(--blissos-titlebar-base);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .window:focus-within .title-left,
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .window[data-active="1"] .title-left{
+        background:var(--blissos-titlebar-active);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) :is(#win_games, #win_dope-skate) .titlebar::before,
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) :is(#win_games, #win_dope-skate) .titlebar::after{
+        display:none;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) :is(#win_games, #win_dope-skate) .title-left{
         left:0;
         right:0;
-        pointer-events:none;
+        transform:none;
+        width:auto;
+        max-width:none;
+        padding:0;
+        background:transparent;
+        z-index:2;
       }
       body[data-theme="blissos"] .wctl{
         width:18px;
@@ -921,18 +976,35 @@
       }
 
       .blissos-dock{
+        --blissos-dock-scale:1;
         position:fixed;
         left:50%;
-        transform:translateX(-50%);
+        transform:translateX(-50%) scale(var(--blissos-dock-scale));
+        transform-origin:50% 100%;
         bottom:env(safe-area-inset-bottom);
         padding:0;
         z-index:1000;
         display:flex;
         justify-content:center;
         align-items:center;
+        transition:transform .26s cubic-bezier(.2,.72,.2,1), opacity .22s ease;
+        will-change:transform, opacity;
       }
       .blissos-dock.hidden{
         display:none !important;
+      }
+      .blissos-dock.dock-autohide{
+        opacity:1;
+      }
+      .blissos-dock.dock-autohide:not(.dock-visible){
+        transform:translate3d(-50%, calc(100% - 6px), 0) scale(var(--blissos-dock-scale));
+        opacity:0.02;
+        pointer-events:none;
+      }
+      .blissos-dock.dock-autohide.dock-visible{
+        transform:translate3d(-50%, 0, 0) scale(var(--blissos-dock-scale));
+        opacity:1;
+        pointer-events:auto;
       }
 
       .blissos-dock-inner{
@@ -1030,6 +1102,12 @@
       .blissos-dock-item .pixel{
         transition:transform .22s cubic-bezier(.2,.7,.2,1), opacity .22s cubic-bezier(.2,.7,.2,1);
       }
+      .blissos-dock-item .dock-reflection{
+        display:none !important;
+      }
+      .blissos-dock-item .dock-tooltip{
+        display:none !important;
+      }
       .blissos-dock-item:hover{
         background:var(--blissos-dock-item-hover);
         transform:translateY(-2px) scale(1.04);
@@ -1111,6 +1189,14 @@
       @keyframes dockSlotBreathe{
         from{ transform:scale(0.88); }
         to{ transform:scale(0.98); }
+      }
+      @keyframes leopardDockBounce{
+        0%{ transform:translateY(-4px); }
+        24%{ transform:translateY(-18px); }
+        46%{ transform:translateY(-6px); }
+        66%{ transform:translateY(-12px); }
+        84%{ transform:translateY(-7px); }
+        100%{ transform:translateY(-4px); }
       }
       /* A ghost element used for the genie animation */
       .dock-genie-ghost{
@@ -1341,14 +1427,14 @@
         --blissos-scroll-thumb:#a8bdd9;
         --blissos-scroll-button:#c3d2e6;
         --blissos-scroll-arrow:#2d4f78;
-        --blissos-dock-bg:#d7e5f8;
-        --blissos-dock-bg-glass:rgba(219,233,251,0.74);
-        --blissos-dock-item:rgba(255,255,255,0.08);
-        --blissos-dock-item-hover:rgba(255,255,255,0.24);
-        --blissos-dock-item-open:rgba(255,255,255,0.34);
-        --blissos-dock-indicator:#315c89;
-        --blissos-dock-separator-hi:rgba(250,253,255,0.94);
-        --blissos-dock-separator-lo:rgba(95,126,162,0.5);
+        --blissos-dock-bg:#d9d2e3;
+        --blissos-dock-bg-glass:rgba(214,205,229,0.7);
+        --blissos-dock-item:rgba(255,255,255,0.07);
+        --blissos-dock-item-hover:rgba(255,255,255,0.2);
+        --blissos-dock-item-open:rgba(255,255,255,0.28);
+        --blissos-dock-indicator:#dff1ff;
+        --blissos-dock-separator-hi:rgba(252,247,255,0.95);
+        --blissos-dock-separator-lo:rgba(94,87,112,0.56);
         --blissos-shadow:rgba(23,42,76,0.35);
         --blissos-accent:#3f86d3;
         --blissos-accent-2:#5ca2eb;
@@ -1382,14 +1468,14 @@
         --blissos-scroll-thumb:#4f6f98;
         --blissos-scroll-button:#3f5775;
         --blissos-scroll-arrow:#d3e4fa;
-        --blissos-dock-bg:#2f4867;
-        --blissos-dock-bg-glass:rgba(46,74,107,0.72);
+        --blissos-dock-bg:#3c4457;
+        --blissos-dock-bg-glass:rgba(47,53,68,0.74);
         --blissos-dock-item:rgba(236,245,255,0.06);
         --blissos-dock-item-hover:rgba(236,245,255,0.16);
         --blissos-dock-item-open:rgba(236,245,255,0.24);
-        --blissos-dock-indicator:#d6ebff;
-        --blissos-dock-separator-hi:rgba(219,238,255,0.58);
-        --blissos-dock-separator-lo:rgba(15,27,44,0.72);
+        --blissos-dock-indicator:#e5ebff;
+        --blissos-dock-separator-hi:rgba(223,229,248,0.6);
+        --blissos-dock-separator-lo:rgba(11,14,23,0.78);
         --blissos-shadow:rgba(0,0,0,0.54);
         --blissos-accent:#5ca9f4;
         --blissos-accent-2:#7abcf8;
@@ -1398,6 +1484,42 @@
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] #desktop{
         background-color:var(--blissos-desktop);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] ::-webkit-scrollbar{
+        width:15px;
+        height:15px;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] ::-webkit-scrollbar-button{
+        display:none;
+        width:0;
+        height:0;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] ::-webkit-scrollbar-track{
+        border:1px solid rgba(125,145,172,0.55);
+        border-radius:999px;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(245,248,253,0.98) 38%, rgba(229,236,246,0.98) 100%);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.95),
+          inset 0 -1px 0 rgba(120,138,163,0.28);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] ::-webkit-scrollbar-thumb{
+        border:1px solid rgba(53,119,186,0.9);
+        border-radius:999px;
+        background:
+          linear-gradient(180deg, rgba(200,239,255,0.98) 0%, rgba(128,203,251,0.98) 48%, rgba(42,147,228,0.98) 100%);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.86),
+          inset 0 -1px 0 rgba(20,83,138,0.55),
+          0 0 0 1px rgba(183,223,252,0.45);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] ::-webkit-scrollbar-thumb:hover{
+        background:
+          linear-gradient(180deg, rgba(214,246,255,0.98) 0%, rgba(143,213,252,0.98) 48%, rgba(53,157,235,0.98) 100%);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] ::-webkit-scrollbar-thumb:active{
+        background:
+          linear-gradient(180deg, rgba(169,226,252,0.98) 0%, rgba(88,177,241,0.98) 52%, rgba(28,130,212,0.98) 100%);
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .desktop-area{
         inset:24px 0 82px 0;
@@ -1623,60 +1745,212 @@
         color:#ffffff;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock{
-        bottom:calc(env(safe-area-inset-bottom) + 8px);
+        bottom:calc(env(safe-area-inset-bottom) + 2px);
+        perspective:none;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-inner{
-        height:60px;
-        padding:8px 14px;
-        border-radius:18px;
-        border:1px solid rgba(103,129,164,0.88);
-        background:
-          linear-gradient(180deg, rgba(255,255,255,0.86) 0%, rgba(232,242,255,0.78) 45%, rgba(178,204,235,0.68) 46%, rgba(198,218,242,0.74) 100%);
-        box-shadow:
-          0 14px 28px rgba(11,30,58,0.36),
-          inset 0 1px 0 rgba(255,255,255,0.86),
-          inset 0 -1px 0 rgba(53,88,129,0.3);
+        height:68px;
+        min-height:68px;
+        padding:0 16px;
+        border-radius:0;
+        border:0;
+        background:none;
+        box-shadow:none;
+        backdrop-filter:none;
+        overflow:visible;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-inner > *{
+        position:relative;
+        z-index:4;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-inner::before{
         content:"";
         position:absolute;
-        left:10px;
-        right:10px;
-        top:3px;
-        height:42%;
-        border-radius:14px;
-        background:linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0));
+        left:6px;
+        right:6px;
+        bottom:0;
+        height:10px;
+        border-radius:50%;
+        background:radial-gradient(ellipse at center, rgba(120,102,173,0.28) 0%, rgba(120,102,173,0) 78%);
+        filter:blur(0.4px);
         pointer-events:none;
+        z-index:0;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-inner::after{
+        content:"";
+        position:absolute;
+        left:-20px;
+        right:-20px;
+        bottom:2px;
+        height:48px;
+        clip-path:polygon(4.4% 0, 95.6% 0, 98.2% 100%, 1.8% 100%);
+        border-radius:2px;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.58) 0%, rgba(236,229,250,0.52) 22%, rgba(206,196,231,0.52) 100%),
+          repeating-linear-gradient(90deg, rgba(255,255,255,0.22) 0 14px, rgba(197,186,224,0.11) 14px 28px);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.72),
+          inset 0 -1px 0 rgba(160,145,197,0.42);
+        pointer-events:none;
+        z-index:1;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-mid,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-right{
+        align-items:flex-end;
+        gap:8px;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-right{
+        margin-left:8px;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-separator{
-        width:2px;
-        height:42px;
-        background:linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(216,233,251,0.78) 45%, rgba(89,120,157,0.62) 100%);
+        width:20px;
+        height:46px;
+        margin-bottom:-5px;
+        align-self:flex-end;
+        position:relative;
+        overflow:hidden;
+        border-radius:0;
+        clip-path:polygon(0 100%, 100% 100%, 66% 0, 34% 0);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.58) 0%, rgba(236,229,250,0.52) 22%, rgba(206,196,231,0.52) 100%),
+          linear-gradient(90deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 24%, rgba(255,255,255,0) 76%, rgba(48,40,57,0.32) 100%);
         box-shadow:
-          1px 0 0 rgba(255,255,255,0.5),
-          -1px 0 0 rgba(46,78,114,0.2);
+          inset 1px 0 0 rgba(248,249,252,0.36),
+          inset -1px 0 0 rgba(42,45,58,0.44);
+        opacity:0.8;
+        -webkit-mask-image:repeating-linear-gradient(
+          180deg,
+          rgba(0,0,0,0) 0 2px,
+          rgba(0,0,0,1) 2px 9px
+        );
+        mask-image:repeating-linear-gradient(
+          180deg,
+          rgba(0,0,0,0) 0 2px,
+          rgba(0,0,0,1) 2px 9px
+        );
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item{
-        width:48px;
-        height:48px;
-        border:1px solid transparent;
-        border-radius:12px;
-        background:rgba(255,255,255,0.06);
+        --dock-scale:1;
+        --dock-lift:0px;
+        --dock-bright:1;
+        width:60px;
+        height:52px;
+        padding:0;
+        border:0;
+        border-radius:0;
+        background:transparent;
+        display:flex;
+        align-items:flex-end;
+        justify-content:center;
+        overflow:visible;
+        filter:brightness(var(--dock-bright));
+        transition:
+          filter .12s cubic-bezier(.22,.74,.21,1.03);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item::before{
+        content:none;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item .dock-icon{
+        width:54px !important;
+        height:54px !important;
+        transform:translate3d(0, calc((-10px) - var(--dock-lift)), 0) scale(var(--dock-scale));
+        transition:transform .12s cubic-bezier(.22,.74,.21,1.03), filter .12s cubic-bezier(.22,.74,.21,1.03);
+        position:relative;
+        z-index:4;
+        filter:drop-shadow(0 3px 2px rgba(0,0,0,0.28));
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item .dock-reflection{
+        display:flex !important;
+        position:absolute;
+        left:50%;
+        bottom: -80px;
+        transform:translateX(-50%) scaleY(-1);
+        transform-origin:50% 0;
+        opacity:0.42;
+        pointer-events:none;
+        z-index:2;
+        overflow:hidden;
+        clip-path:inset(calc(18% + 11px) 0 0 0);
+        filter:blur(0.08px) saturate(0.86);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item .dock-reflection img,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item .dock-reflection svg{
+        width:100%;
+        height:100%;
+        transform:scale(0.84, 0.72);
+        transform-origin:50% 0;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item .dock-tooltip{
+        display:inline-flex !important;
+        align-items:center;
+        justify-content:center;
+        position:absolute;
+        left:50%;
+        bottom:calc(100% + 24px + var(--dock-lift, 0px));
+        transform:translateX(-50%) translateY(4px);
+        padding:2px 12px 3px;
+        border-radius:999px;
+        background:linear-gradient(180deg, rgba(48,48,48,0.98) 0%, rgba(10,10,10,0.98) 100%);
+        color:#fff;
+        font-size:11px;
+        font-weight:700;
+        letter-spacing:0.15px;
+        white-space:nowrap;
+        text-shadow:0 1px 0 rgba(0,0,0,0.4);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.14),
+          0 4px 10px rgba(0,0,0,0.48);
+        opacity:0;
+        pointer-events:none;
+        z-index:12;
+        transition:opacity .12s ease, transform .12s ease;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item .dock-tooltip::after{
+        content:"";
+        position:absolute;
+        left:50%;
+        top:100%;
+        transform:translateX(-50%);
+        width:0;
+        height:0;
+        border-left:6px solid transparent;
+        border-right:6px solid transparent;
+        border-top:6px solid rgba(10,10,10,0.98);
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item:hover{
-        background:rgba(255,255,255,0.26);
-        border-color:rgba(255,255,255,0.45);
-        transform:translateY(-5px) scale(1.14);
+        --dock-scale:1.08;
+        --dock-lift:7px;
+        --dock-bright:1.04;
+        background:transparent;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item:hover .dock-tooltip,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item:focus-visible .dock-tooltip{
+        opacity:1;
+        transform:translateX(-50%) translateY(0);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item:hover .dock-reflection{
+        opacity:0.5;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item.open{
-        background:rgba(255,255,255,0.34);
-        border-color:rgba(255,255,255,0.52);
+        background:transparent;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item .dock-indicator{
-        width:8px;
-        height:8px;
-        border-radius:50%;
-        background:radial-gradient(circle at 35% 30%, #f5fbff 0%, #7faedb 45%, #3e6697 100%);
+        left:50%;
+        bottom:0;
+        width:14px;
+        height:3px;
+        border-radius:999px;
+        transform:translateX(-50%) scale(0.95);
+        background:radial-gradient(circle at 50% 40%, rgba(252,252,255,0.98) 0%, rgba(213,225,255,0.9) 44%, rgba(140,158,231,0.24) 82%, rgba(30,29,48,0) 100%);
+        box-shadow:0 0 7px rgba(177,191,255,0.48);
+        z-index:4;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item.open .dock-indicator,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item.minimized .dock-indicator{
+        opacity:1;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item.dock-launching .dock-icon{
+        animation:leopardDockBounce .76s cubic-bezier(.2,.88,.22,1);
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .ctx-menu,
       body[data-theme="blissos"][data-blissos-style="aqua"] .menu-drop,
@@ -1698,6 +1972,27 @@
       body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-apple-menu .menu-sep,
       body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-appmenu-drop .menu-sep{
         background:#9fb0c5;
+      }
+      body[data-theme="blissos"] #win_settings .content > h2{
+        display:none;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] #win_settings .content{
+        padding:0;
+        background:#e7e8ec;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] #win_settings .titlebar{
+        border-bottom:1px solid #8f939b;
+        background:
+          linear-gradient(180deg, rgba(252,252,253,0.98) 0%, rgba(230,231,235,0.97) 48%, rgba(206,209,216,0.97) 100%),
+          repeating-linear-gradient(180deg, rgba(255,255,255,0.5) 0 1px, rgba(126,132,143,0.14) 1px 2px);
+        color:#2a3240;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] #win_settings.window:focus-within .titlebar,
+      body[data-theme="blissos"][data-blissos-style="aqua"] #win_settings.window[data-active="1"] .titlebar{
+        background:
+          linear-gradient(180deg, rgba(252,252,253,0.99) 0%, rgba(236,237,241,0.98) 48%, rgba(214,217,223,0.98) 100%),
+          repeating-linear-gradient(180deg, rgba(255,255,255,0.52) 0 1px, rgba(118,124,136,0.15) 1px 2px);
+        color:#1f2835;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] #win_settings .settings-panel[data-tab="language"] [data-set-lang] .kbd{
         display:none;
@@ -1799,37 +2094,56 @@
         background:#5c7598;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-inner{
-        border-color:rgba(108,140,180,0.86);
-        background:
-          linear-gradient(180deg, rgba(68,101,139,0.88) 0%, rgba(46,73,106,0.86) 47%, rgba(33,53,79,0.9) 48%, rgba(39,61,90,0.9) 100%);
-        box-shadow:
-          0 14px 28px rgba(0,0,0,0.58),
-          inset 0 1px 0 rgba(197,223,255,0.2),
-          inset 0 -1px 0 rgba(4,10,18,0.56);
+        border:0;
+        background:none;
+        box-shadow:none;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-inner::before{
-        background:linear-gradient(180deg, rgba(227,242,255,0.24), rgba(227,242,255,0));
+        content:none;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-inner::after{
+        content:none;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-separator{
-        background:linear-gradient(180deg, rgba(211,233,255,0.54) 0%, rgba(146,184,222,0.4) 42%, rgba(12,26,43,0.78) 100%);
+        background:
+          linear-gradient(180deg, rgba(177,182,196,0.18) 0%, rgba(136,141,156,0.28) 30%, rgba(92,96,111,0.46) 62%, rgba(41,44,56,0.78) 100%),
+          linear-gradient(90deg, rgba(226,230,241,0.24) 0%, rgba(226,230,241,0) 24%, rgba(226,230,241,0) 76%, rgba(5,7,13,0.5) 100%);
         box-shadow:
-          1px 0 0 rgba(196,221,247,0.25),
-          -1px 0 0 rgba(7,14,24,0.6);
+          inset 1px 0 0 rgba(224,230,246,0.28),
+          inset -1px 0 0 rgba(7,10,17,0.74);
       }
       body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-item{
-        background:rgba(236,245,255,0.08);
-        border-color:rgba(205,227,255,0.08);
+        --dock-bright:1.02;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-item::before{
+        content:none;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-item:hover{
-        background:rgba(236,245,255,0.2);
-        border-color:rgba(205,227,255,0.35);
+        --dock-bright:1.09;
       }
-      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-item.open{
-        background:rgba(236,245,255,0.28);
-        border-color:rgba(205,227,255,0.44);
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-item .dock-icon{
+        filter:
+          drop-shadow(0 4px 2px rgba(0,0,0,0.54))
+          drop-shadow(0 12px 10px rgba(138,150,219,0.24));
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-item .dock-reflection{
+        opacity:0.32;
+        filter:blur(0.12px) saturate(0.8);
       }
       body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-item .dock-indicator{
-        background:radial-gradient(circle at 35% 30%, #f1f9ff 0%, #9ec7ef 45%, #4f7fac 100%);
+        background:radial-gradient(circle at 50% 38%, rgba(243,248,255,0.98) 0%, rgba(190,210,255,0.9) 38%, rgba(104,136,222,0.36) 80%, rgba(14,17,33,0) 100%);
+        box-shadow:0 0 10px rgba(128,170,255,0.56);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-inner::before{
+        background:radial-gradient(ellipse at center, rgba(70,88,132,0.42) 0%, rgba(70,88,132,0) 78%);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .blissos-dock-inner::after{
+        background:
+          linear-gradient(180deg, rgba(192,208,244,0.38) 0%, rgba(124,142,189,0.34) 22%, rgba(70,87,133,0.44) 100%),
+          repeating-linear-gradient(90deg, rgba(204,223,255,0.16) 0 14px, rgba(74,95,144,0.16) 14px 28px);
+        box-shadow:
+          inset 0 1px 0 rgba(225,235,255,0.44),
+          inset 0 -1px 0 rgba(19,30,55,0.56);
       }
       .btn:active{ filter:brightness(0.97); }
       .btn.pressed{
@@ -2819,10 +3133,10 @@
         text-shadow:0 1px 0 rgba(0,0,0,0.4);
       }
       :is(#win_games, #win_dope-skate) .titlebar .wctl{
-        background:rgba(0,0,0,0.25);
-        border:1px solid rgba(255,255,255,0.18);
-        color:#f7efe4;
-        box-shadow:none;
+        background:rgba(0,0,0,0.25) !important;
+        border:1px solid rgba(255,255,255,0.18) !important;
+        color:#f7efe4 !important;
+        box-shadow:none !important;
       }
       :is(#win_games, #win_dope-skate) .menubar{
         background:
@@ -4835,10 +5149,589 @@
         gap:8px;
         flex-wrap:wrap;
       }
+      .settings-dock-layout{
+        max-width:620px;
+        margin:0 auto;
+      }
+      .settings-dock-block{
+        padding-top:12px;
+      }
+      .settings-dock-row{
+        display:flex;
+        align-items:center;
+        gap:12px;
+      }
+      .settings-dock-row-toggle{
+        align-items:center;
+      }
+      .settings-dock-label{
+        min-width:96px;
+        font-weight:700;
+      }
+      .settings-dock-slider{
+        flex:1 1 auto;
+        width:auto;
+      }
+      .settings-dock-scale{
+        display:flex;
+        justify-content:space-between;
+        padding-left:108px;
+        margin-top:8px;
+        opacity:0.82;
+      }
+      .settings-dock-check{
+        display:inline-flex;
+        align-items:center;
+        gap:7px;
+        font-weight:700;
+        user-select:none;
+      }
+      .settings-dock-check input[type="checkbox"]{
+        width:15px;
+        height:15px;
+        margin:0;
+      }
+      .settings-dock-row-toggle.disabled{
+        opacity:0.56;
+      }
+      .settings-dock-row-toggle.disabled .settings-dock-slider{
+        pointer-events:none;
+      }
+      .settings-dock-autohide{
+        font-weight:600;
+      }
+      .settings-appearance-quick{
+        padding-top:12px;
+      }
+      .settings-appearance-toggle{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        width:min(320px, 100%);
+        font-weight:700;
+      }
+      .settings-appearance-toggle input[type="checkbox"]{
+        flex:0 0 auto;
+        margin:0;
+      }
+      .settings-shell-aqua{
+        gap:0;
+      }
+      .settings-tabs.settings-tabs-aqua-hidden{
+        display:none;
+      }
+      .settings-aqua-toolbar{
+        display:flex;
+        align-items:center;
+        gap:8px;
+        padding:6px 10px;
+        border:0;
+        border-bottom:1px solid #9ea4af;
+        border-radius:0;
+        background:linear-gradient(180deg, #dbdde2 0%, #c7cbd3 52%, #bdc2cb 100%);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,0.84);
+      }
+      .settings-aqua-nav{
+        display:inline-flex;
+        border:1px solid #8f959f;
+        border-radius:4px;
+        overflow:hidden;
+        background:linear-gradient(180deg, #f7f8fa 0%, #d6d9df 100%);
+      }
+      .settings-aqua-nav-btn{
+        min-width:34px;
+        height:28px;
+        border:0 !important;
+        border-right:1px solid #8f959f !important;
+        box-shadow:none !important;
+        border-radius:0 !important;
+        background:transparent !important;
+        color:#3a4659 !important;
+        font-size:12px;
+        justify-content:center;
+      }
+      .settings-aqua-nav-btn:last-child{
+        border-right:0 !important;
+      }
+      .settings-aqua-nav-btn:disabled{
+        opacity:0.42;
+        cursor:default;
+      }
+      .settings-aqua-showall{
+        height:28px;
+        min-width:108px;
+        justify-content:center;
+        font-weight:700;
+        border-radius:6px !important;
+      }
+      .settings-aqua-search{
+        margin-left:auto;
+        height:28px;
+        min-width:220px;
+        max-width:280px;
+        display:flex;
+        align-items:center;
+        gap:6px;
+        border:1px solid #8d95a0;
+        border-radius:999px;
+        padding:0 10px;
+        background:linear-gradient(180deg, #fdfdff 0%, #eceef2 100%);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.9),
+          0 0 0 1px rgba(159,170,184,0.12);
+      }
+      .settings-aqua-search-icon{
+        width:12px;
+        height:12px;
+        display:inline-block;
+        position:relative;
+        color:#4a596f;
+      }
+      .settings-aqua-search-icon::before{
+        content:"";
+        position:absolute;
+        left:0;
+        top:0;
+        width:7px;
+        height:7px;
+        border:2px solid currentColor;
+        border-radius:50%;
+      }
+      .settings-aqua-search-icon::after{
+        content:"";
+        position:absolute;
+        right:0;
+        bottom:0;
+        width:5px;
+        height:2px;
+        border-radius:999px;
+        background:currentColor;
+        transform:rotate(42deg);
+        transform-origin:right center;
+      }
+      .settings-aqua-search input{
+        border:0 !important;
+        box-shadow:none !important;
+        background:transparent !important;
+        outline:0;
+        width:100%;
+        min-width:0;
+        font:inherit;
+        color:inherit;
+        padding:0;
+      }
+      .settings-aqua-home{
+        border:0;
+        border-radius:0;
+        background:#e7e8ec;
+        min-height:340px;
+        padding:10px 14px 12px;
+        overflow:auto;
+      }
+      .settings-aqua-group + .settings-aqua-group{
+        margin-top:12px;
+        padding-top:10px;
+        border-top:1px solid rgba(101,121,148,0.25);
+      }
+      .settings-aqua-group-title{
+        margin:0 0 8px;
+        font-size:16px;
+        font-weight:700;
+        color:#25374e;
+      }
+      .settings-aqua-grid{
+        display:grid;
+        grid-template-columns:repeat(auto-fill, minmax(116px, 1fr));
+        gap:10px 12px;
+      }
+      .settings-aqua-item{
+        border:0;
+        background:transparent;
+        border-radius:7px;
+        padding:8px 6px;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:5px;
+        color:#263a52;
+        cursor:pointer;
+      }
+      .settings-aqua-item:hover{
+        background:rgba(92,139,196,0.16);
+      }
+      .settings-aqua-item:focus-visible{
+        outline:1px solid rgba(76,132,198,0.86);
+        outline-offset:1px;
+        background:rgba(92,139,196,0.18);
+      }
+      .settings-aqua-item-icon{
+        width:56px;
+        height:56px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      }
+      .settings-aqua-item-icon img{
+        width:52px;
+        height:52px;
+        object-fit:contain;
+        display:block;
+      }
+      .settings-aqua-item-label{
+        font-size:11px;
+        line-height:1.2;
+        text-align:center;
+        min-height:26px;
+      }
+      .settings-shell-aqua .settings-panels{
+        padding:0;
+      }
+      .settings-shell-aqua .settings-panel{
+        border:0;
+        border-radius:0;
+        box-shadow:none;
+        min-height:340px;
+        background:#e7e8ec;
+      }
+      .settings-shell-aqua[data-settings-view="home"] .settings-panels{
+        display:none;
+      }
+      .settings-shell-aqua[data-settings-view="panel"] .settings-aqua-home{
+        display:none;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-shell-aqua{
+        gap:0;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-aqua-toolbar{
+        display:flex;
+        align-items:center;
+        gap:8px;
+        padding:8px 10px;
+        border:1px solid var(--panel-border);
+        border-bottom:none;
+        border-radius:0;
+        background:var(--task);
+        box-shadow:inset 1px 1px var(--shadow-white), inset -1px -1px var(--shadow-dark);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-aqua-nav{
+        display:inline-flex;
+        border:1px solid var(--panel-border);
+        border-radius:0;
+        overflow:hidden;
+        background:var(--panel-bg);
+        box-shadow:inset 1px 1px var(--shadow-white), inset -1px -1px var(--shadow-dark);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-aqua-nav-btn{
+        min-width:34px;
+        height:28px;
+        border:0 !important;
+        border-right:1px solid var(--panel-border) !important;
+        box-shadow:none !important;
+        border-radius:0 !important;
+        background:transparent !important;
+        color:var(--content-text) !important;
+        font-size:12px;
+        justify-content:center;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-aqua-nav-btn:last-child{
+        border-right:0 !important;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-aqua-nav-btn:disabled{
+        opacity:0.4;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-aqua-showall{
+        height:28px;
+        min-width:108px;
+        border-radius:0 !important;
+        font-weight:600;
+        justify-content:center;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-aqua-search{
+        margin-left:auto;
+        height:28px;
+        min-width:220px;
+        max-width:280px;
+        display:flex;
+        align-items:center;
+        gap:6px;
+        border:1px solid var(--panel-border);
+        border-radius:0;
+        padding:0 8px;
+        background:var(--panel-bg);
+        box-shadow:inset 1px 1px var(--shadow-dark), inset -1px -1px var(--shadow-white);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-aqua-search-icon{
+        color:var(--btn-text);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-aqua-search input{
+        border:0 !important;
+        box-shadow:none !important;
+        background:transparent !important;
+        outline:0;
+        width:100%;
+        min-width:0;
+        color:var(--content-text);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-aqua-home,
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-shell-aqua .settings-panel{
+        border:1px solid var(--panel-border);
+        border-top:none;
+        border-radius:0;
+        box-shadow:inset 1px 1px var(--shadow-white), inset -1px -1px var(--shadow-dark);
+        background:var(--panel-bg);
+        min-height:340px;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-aqua-home{
+        padding:12px 14px;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-aqua-group + .settings-aqua-group{
+        margin-top:12px;
+        padding-top:12px;
+        border-top:1px solid var(--sep);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-aqua-group-title{
+        margin:0 0 10px;
+        font-size:17px;
+        color:var(--content-text);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-aqua-grid{
+        display:grid;
+        grid-template-columns:repeat(auto-fill, minmax(120px, 1fr));
+        gap:10px 12px;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-aqua-item{
+        border:1px solid transparent;
+        border-radius:0;
+        background:transparent;
+        padding:8px 6px;
+        color:var(--content-text);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-aqua-item:hover{
+        border-color:var(--panel-border);
+        background:var(--task);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-aqua-item:focus-visible{
+        outline:1px dotted var(--selection-border);
+        outline-offset:-3px;
+        border-color:var(--selection-border);
+        background:var(--selection-bg);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-aqua-item-label{
+        font-size:12px;
+        line-height:1.25;
+        color:inherit;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .settings-panel[data-tab="dock"] .settings-dock-layout{
+        max-width:760px;
+        margin:2px auto 0;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .settings-panel[data-tab="dock"] .settings-panel-header{
+        max-width:760px;
+        margin:0 auto 10px;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .settings-panel[data-tab="dock"] .settings-dock-row{
+        display:grid;
+        grid-template-columns:170px minmax(280px, 1fr);
+        align-items:center;
+        column-gap:14px;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .settings-panel[data-tab="dock"] .settings-dock-label{
+        min-width:0;
+        text-align:right;
+        justify-self:end;
+        color:#20384f;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .settings-panel[data-tab="dock"] .settings-dock-check{
+        min-width:170px;
+        justify-self:end;
+        justify-content:flex-end;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .settings-panel[data-tab="dock"] .settings-dock-check span{
+        color:#20384f;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .settings-panel[data-tab="dock"] .settings-dock-slider{
+        width:100%;
+        margin:0;
+        height:8px;
+        border:1px solid #8a9fbc;
+        border-radius:999px;
+        background:
+          linear-gradient(180deg, #fefeff 0%, #d9e6f6 44%, #c8d8ec 100%),
+          linear-gradient(90deg, rgba(255,255,255,0.45), rgba(255,255,255,0));
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.9),
+          inset 0 -1px 0 rgba(120,149,189,0.38);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .settings-panel[data-tab="dock"] .settings-dock-slider::-webkit-slider-thumb{
+        -webkit-appearance:none;
+        appearance:none;
+        width:18px;
+        height:24px;
+        border:1px solid #4f7fb4;
+        border-radius:10px;
+        background:
+          radial-gradient(circle at 50% 16%, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0) 52%),
+          linear-gradient(180deg, #f8fdff 0%, #c9e5ff 40%, #89b9ea 100%);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.95),
+          inset 0 -1px 0 rgba(63,112,171,0.5),
+          0 1px 1px rgba(20,36,58,0.36);
+        cursor:pointer;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .settings-panel[data-tab="dock"] .settings-dock-slider::-moz-range-thumb{
+        width:18px;
+        height:24px;
+        border:1px solid #4f7fb4;
+        border-radius:10px;
+        background:
+          radial-gradient(circle at 50% 16%, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0) 52%),
+          linear-gradient(180deg, #f8fdff 0%, #c9e5ff 40%, #89b9ea 100%);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.95),
+          inset 0 -1px 0 rgba(63,112,171,0.5),
+          0 1px 1px rgba(20,36,58,0.36);
+        cursor:pointer;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .settings-panel[data-tab="dock"] .settings-dock-scale{
+        margin-top:8px;
+        padding-left:184px;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .settings-panel[data-tab="dock"] .settings-dock-autohide{
+        width:100%;
+        justify-content:center;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .settings-aqua-check{
+        color:#20384f;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .settings-panel[data-tab="dock"] .settings-dock-check input[type="checkbox"],
+      body[data-theme="blissos"][data-blissos-style="aqua"] .settings-aqua-check input[type="checkbox"]{
+        -webkit-appearance:none;
+        appearance:none;
+        width:20px;
+        height:20px;
+        border:1px solid #6f8fb8;
+        border-radius:5px;
+        background:
+          radial-gradient(circle at 50% 10%, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0) 58%),
+          linear-gradient(180deg, #f6fbff 0%, #d6e8fb 48%, #b8d3f1 100%);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.92),
+          inset 0 -1px 0 rgba(113,144,186,0.34),
+          0 1px 0 rgba(255,255,255,0.55);
+        position:relative;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .settings-panel[data-tab="dock"] .settings-dock-check input[type="checkbox"]::after,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .settings-aqua-check input[type="checkbox"]::after{
+        content:"";
+        position:absolute;
+        left:6px;
+        top:3px;
+        width:6px;
+        height:10px;
+        border-right:2px solid #111111;
+        border-bottom:2px solid #111111;
+        transform:rotate(40deg) scale(0);
+        transform-origin:center;
+        transition:transform .12s ease;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .settings-panel[data-tab="dock"] .settings-dock-check input[type="checkbox"]:checked::after,
+      body[data-theme="blissos"][data-blissos-style="aqua"] .settings-aqua-check input[type="checkbox"]:checked::after{
+        transform:rotate(40deg) scale(1);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-panel[data-tab="dock"] .settings-dock-layout{
+        max-width:640px;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-panel[data-tab="dock"] .settings-dock-label{
+        min-width:102px;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-panel[data-tab="dock"] .settings-dock-slider{
+        height:8px;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .settings-panel[data-tab="dock"] .settings-dock-check input[type="checkbox"]{
+        width:14px;
+        height:14px;
+        border:1px solid var(--panel-border);
+      }
+      .settings-aqua-enter-home{
+        animation:settingsAquaEnterHome .24s ease-out;
+      }
+      .settings-aqua-enter-forward{
+        animation:settingsAquaEnterForward .24s ease-out;
+      }
+      .settings-aqua-enter-back{
+        animation:settingsAquaEnterBack .24s ease-out;
+      }
+      @keyframes settingsAquaEnterHome{
+        from{ opacity:0; transform:translateY(8px) scale(0.99); }
+        to{ opacity:1; transform:translateY(0) scale(1); }
+      }
+      @keyframes settingsAquaEnterForward{
+        from{ opacity:0; transform:translateX(24px) scale(0.99); }
+        to{ opacity:1; transform:translateX(0) scale(1); }
+      }
+      @keyframes settingsAquaEnterBack{
+        from{ opacity:0; transform:translateX(-24px) scale(0.99); }
+        to{ opacity:1; transform:translateX(0) scale(1); }
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .settings-aqua-toolbar{
+        border-color:#49607e;
+        background:linear-gradient(180deg, #3e5573 0%, #2f445d 100%);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .settings-aqua-home,
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .settings-shell-aqua .settings-panel{
+        border-color:#49607e;
+        background:#273a52;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .settings-aqua-group-title,
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .settings-aqua-item{
+        color:#deebff;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .settings-panel[data-tab="dock"] .settings-dock-label,
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .settings-panel[data-tab="dock"] .settings-dock-check span,
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .settings-aqua-check{
+        color:#deebff;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .settings-panel[data-tab="dock"] .settings-dock-slider{
+        border-color:#6482a8;
+        background:linear-gradient(180deg, #415d80 0%, #2e4563 100%);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .settings-panel[data-tab="dock"] .settings-dock-check input[type="checkbox"],
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .settings-aqua-check input[type="checkbox"]{
+        border-color:#6482a8;
+        background:linear-gradient(180deg, #415d80 0%, #2e4563 100%);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .settings-panel[data-tab="dock"] .settings-dock-check input[type="checkbox"]::after,
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .settings-aqua-check input[type="checkbox"]::after{
+        border-right-color:#111111;
+        border-bottom-color:#111111;
+      }
       @media (max-width: 520px){
         .settings-general{flex-direction:column;}
         .settings-logo{width:100%; height:72px;}
         .settings-panel-header{align-items:flex-start;}
+        .settings-dock-row{
+          flex-direction:column;
+          align-items:flex-start;
+          gap:8px;
+        }
+        .settings-dock-scale{
+          padding-left:0;
+        }
+        body[data-theme="blissos"][data-blissos-style="aqua"] .settings-panel[data-tab="dock"] .settings-dock-row{
+          grid-template-columns:1fr;
+          row-gap:8px;
+        }
+        body[data-theme="blissos"][data-blissos-style="aqua"] .settings-panel[data-tab="dock"] .settings-dock-label,
+        body[data-theme="blissos"][data-blissos-style="aqua"] .settings-panel[data-tab="dock"] .settings-dock-check{
+          justify-self:start;
+          justify-content:flex-start;
+          text-align:left;
+          min-width:0;
+        }
+        body[data-theme="blissos"][data-blissos-style="aqua"] .settings-panel[data-tab="dock"] .settings-dock-scale{
+          padding-left:0;
+        }
       }
       .clothes-grid{
         display:grid;
@@ -5952,6 +6845,25 @@
           var(--blissos-titlebar-active);
         color:var(--blissos-text);
         text-shadow:none;
+        position:relative;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-app-titlebar::before,
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-app-titlebar::after{
+        content:"";
+        position:absolute;
+        top:0;
+        bottom:0;
+        pointer-events:none;
+        z-index:2;
+        background:var(--blissos-titlebar-active);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-app-titlebar::before{
+        left:0;
+        width:44px;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-app-titlebar::after{
+        right:0;
+        width:74px;
       }
       body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-app-titlebar .title-controls{
         left:6px;
@@ -5994,6 +6906,16 @@
       }
       body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-app-titlebar .title-left{
         max-width:calc(100% - 146px);
+        background:var(--blissos-titlebar-active);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-app-titlebar .title-left strong{
+        overflow:visible;
+        text-overflow:clip;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-app-titlebar .title-left .win-title-icon{
+        width:16px;
+        height:16px;
+        display:inline-flex;
       }
       body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_mediaplayer .mp-mini{
         border:1px solid var(--blissos-border);
@@ -6960,6 +7882,6 @@
       </div>
     </div>
 
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260217-runtime-pass2-1"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260218-dock-settings-26"></script>
   </body>
 </html>

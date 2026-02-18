@@ -88,6 +88,10 @@
           darkMode: false,
           blissosDarkMode: false,
           blissosAqua: false,
+          dockSize: 58,
+          dockMagnification: true,
+          dockMagnificationStrength: 60,
+          dockAutoHide: false,
           retroGlow: false,
           clock24: true,
           oldCrt: false,
@@ -312,9 +316,18 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
         {
           id: 'clouds',
           labelKey: 'wallpaper.clouds',
-          background: 'linear-gradient(180deg, #9ad0ff 0%, #cfe9ff 45%, #f7fbff 100%)',
+          background: 'url("./assets/wallpapers/clouds.png")',
           size: 'cover',
-          repeat: 'no-repeat'
+          repeat: 'no-repeat',
+          position: 'center'
+        },
+        {
+          id: 'galaxy',
+          labelKey: 'wallpaper.galaxy',
+          background: 'url("./assets/wallpapers/galaxy.png")',
+          size: 'cover',
+          repeat: 'no-repeat',
+          position: 'center'
         },
         {
           id: 'diev',
@@ -809,6 +822,53 @@ function getIconLabel(app){
   return state.iconLabels[app.id] || t(app.titleKey);
 }
 
+const AQUA_ICON_MAP = {
+  'about.png': 'About.png',
+  'art.png': 'Art.png',
+  'bliss mediaplayer.png': 'BLISS mediaplayer.png',
+  'clothes.png': 'Clothes.png',
+  'diev.png': 'DIEV.png',
+  'games.png': 'Games.png',
+  'videos.png': 'Videos.png',
+  'music.png': 'music.png',
+  'poetry.png': 'poetry.png',
+  'poetry2.png': 'poetry2.png',
+  'settings.png': 'settings.png',
+  'contact.png': 'contact.png',
+  'computer.png': 'computer.png',
+  'language.png': 'language.png',
+  'appearance.png': 'appearance.png',
+  'system.png': 'settings.png',
+  'sound.png': 'Sound.png',
+  'performance.png': 'performance.png',
+  'dock.png': 'dock.png',
+  'logout.png': 'logout.png',
+  'folder.png': 'folder.png',
+  'txt.png': 'txt.png',
+  'trash.png': 'trash.png',
+  'trash1.png': 'trash.png',
+  'trash2.png': 'trash2.png',
+  'bliss.png': 'bliss.png',
+};
+
+function isAquaIconThemeActive(theme){
+  return theme === 'blissos' && !!state.settings.blissosAqua;
+}
+
+function getAquaIconPath(iconPath, theme){
+  if(!isAquaIconThemeActive(theme) || typeof iconPath !== 'string') return '';
+  let clean = iconPath.trim();
+  if(!clean) return '';
+  try{
+    clean = decodeURIComponent(clean);
+  } catch {}
+  clean = clean.split('#')[0].split('?')[0];
+  const slash = clean.lastIndexOf('/');
+  const base = (slash >= 0 ? clean.slice(slash + 1) : clean).toLowerCase();
+  const mapped = AQUA_ICON_MAP[base];
+  return mapped ? encodeURI(`./assets/aqua/${mapped}`) : '';
+}
+
 function getIconFor(key, osMode){
   const theme = osMode || state.settings.theme || 'bliss98';
   const resolved = (typeof key === 'function') ? key() : key;
@@ -818,7 +878,13 @@ function getIconFor(key, osMode){
     if(trimmed.startsWith('<svg')) return trimmed;
     const looksLikePath = trimmed.startsWith('./') || trimmed.startsWith('../') || trimmed.startsWith('/') || trimmed.startsWith('data:') || trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.includes('/assets/');
     if(looksLikePath){
-      return (theme === 'blissos') ? getBlissOSAssetPath(trimmed) : trimmed;
+      if(theme === 'blissos'){
+        const aquaPath = getAquaIconPath(trimmed, theme);
+        if(aquaPath) return aquaPath;
+        if(isAquaIconThemeActive(theme)) return trimmed;
+        return getBlissOSAssetPath(trimmed);
+      }
+      return trimmed;
     }
     return iconSVG(trimmed, theme);
   }
@@ -834,7 +900,7 @@ function getThemedIconHtml(item, label, size=32){
     return icon;
   }
   const src = (typeof icon === 'string') ? icon : '';
-  const fallback = theme === 'blissos' ? getBlissOSFallbackPath(src) : '';
+  const fallback = (theme === 'blissos' && !isAquaIconThemeActive(theme)) ? getBlissOSFallbackPath(src) : '';
   const fbAttr = fallback ? ` data-fallback-src="${fallback}"` : '';
   const idAttr = item && item.id ? ` data-app-id="${item.id}"` : '';
   return `<img class="pixel" src="${src}"${fbAttr}${idAttr} width="${size}" height="${size}" alt="${label}" style="display:block;" />`;

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 170" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="shell" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f8f6fd"/>
+      <stop offset="0.38" stop-color="#efeaf7"/>
+      <stop offset="0.72" stop-color="#e0d9ec"/>
+      <stop offset="1" stop-color="#d2cade"/>
+    </linearGradient>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.78"/>
+      <stop offset="0.62" stop-color="#ffffff" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ede7f5"/>
+      <stop offset="0.6" stop-color="#ddd4e9"/>
+      <stop offset="1" stop-color="#cdc3dd"/>
+    </linearGradient>
+    <pattern id="diag" width="28" height="28" patternUnits="userSpaceOnUse" patternTransform="skewX(-14)">
+      <rect width="28" height="28" fill="none"/>
+      <rect width="12" height="28" fill="#ffffff" fill-opacity="0.12"/>
+      <rect x="12" width="16" height="28" fill="#c7bed8" fill-opacity="0.16"/>
+    </pattern>
+    <path id="shellPath" d="M28 1H1572C1587 1 1598 12 1599 26V138L1566 169H34L1 138V26C2 12 13 1 28 1Z"/>
+    <clipPath id="shellClip">
+      <use href="#shellPath"/>
+    </clipPath>
+  </defs>
+
+  <use href="#shellPath" fill="url(#shell)" stroke="#bcb3cf" stroke-width="2"/>
+
+  <g clip-path="url(#shellClip)">
+    <rect x="20" y="8" width="1560" height="46" rx="20" fill="url(#gloss)"/>
+    <path d="M58 86H1542" stroke="#ffffff" stroke-opacity="0.44" stroke-width="1.2"/>
+
+    <path d="M132 95H1468L1450 164H150Z" fill="url(#face)"/>
+    <path d="M132 95H1468L1450 164H150Z" fill="url(#diag)" opacity="0.58"/>
+
+    <path d="M132 95H1468" stroke="#ffffff" stroke-opacity="0.24" stroke-width="1"/>
+    <path d="M150 164H1450" stroke="#bfb5d2" stroke-opacity="0.42" stroke-width="1"/>
+  </g>
+</svg>

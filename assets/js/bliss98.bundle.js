@@ -92,6 +92,10 @@
           darkMode: false,
           blissosDarkMode: false,
           blissosAqua: false,
+          dockSize: 58,
+          dockMagnification: true,
+          dockMagnificationStrength: 60,
+          dockAutoHide: false,
           retroGlow: false,
           clock24: true,
           oldCrt: false,
@@ -316,9 +320,18 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
         {
           id: 'clouds',
           labelKey: 'wallpaper.clouds',
-          background: 'linear-gradient(180deg, #9ad0ff 0%, #cfe9ff 45%, #f7fbff 100%)',
+          background: 'url("./assets/wallpapers/clouds.png")',
           size: 'cover',
-          repeat: 'no-repeat'
+          repeat: 'no-repeat',
+          position: 'center'
+        },
+        {
+          id: 'galaxy',
+          labelKey: 'wallpaper.galaxy',
+          background: 'url("./assets/wallpapers/galaxy.png")',
+          size: 'cover',
+          repeat: 'no-repeat',
+          position: 'center'
         },
         {
           id: 'diev',
@@ -813,6 +826,53 @@ function getIconLabel(app){
   return state.iconLabels[app.id] || t(app.titleKey);
 }
 
+const AQUA_ICON_MAP = {
+  'about.png': 'About.png',
+  'art.png': 'Art.png',
+  'bliss mediaplayer.png': 'BLISS mediaplayer.png',
+  'clothes.png': 'Clothes.png',
+  'diev.png': 'DIEV.png',
+  'games.png': 'Games.png',
+  'videos.png': 'Videos.png',
+  'music.png': 'music.png',
+  'poetry.png': 'poetry.png',
+  'poetry2.png': 'poetry2.png',
+  'settings.png': 'settings.png',
+  'contact.png': 'contact.png',
+  'computer.png': 'computer.png',
+  'language.png': 'language.png',
+  'appearance.png': 'appearance.png',
+  'system.png': 'settings.png',
+  'sound.png': 'Sound.png',
+  'performance.png': 'performance.png',
+  'dock.png': 'dock.png',
+  'logout.png': 'logout.png',
+  'folder.png': 'folder.png',
+  'txt.png': 'txt.png',
+  'trash.png': 'trash.png',
+  'trash1.png': 'trash.png',
+  'trash2.png': 'trash2.png',
+  'bliss.png': 'bliss.png',
+};
+
+function isAquaIconThemeActive(theme){
+  return theme === 'blissos' && !!state.settings.blissosAqua;
+}
+
+function getAquaIconPath(iconPath, theme){
+  if(!isAquaIconThemeActive(theme) || typeof iconPath !== 'string') return '';
+  let clean = iconPath.trim();
+  if(!clean) return '';
+  try{
+    clean = decodeURIComponent(clean);
+  } catch {}
+  clean = clean.split('#')[0].split('?')[0];
+  const slash = clean.lastIndexOf('/');
+  const base = (slash >= 0 ? clean.slice(slash + 1) : clean).toLowerCase();
+  const mapped = AQUA_ICON_MAP[base];
+  return mapped ? encodeURI(`./assets/aqua/${mapped}`) : '';
+}
+
 function getIconFor(key, osMode){
   const theme = osMode || state.settings.theme || 'bliss98';
   const resolved = (typeof key === 'function') ? key() : key;
@@ -822,7 +882,13 @@ function getIconFor(key, osMode){
     if(trimmed.startsWith('<svg')) return trimmed;
     const looksLikePath = trimmed.startsWith('./') || trimmed.startsWith('../') || trimmed.startsWith('/') || trimmed.startsWith('data:') || trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.includes('/assets/');
     if(looksLikePath){
-      return (theme === 'blissos') ? getBlissOSAssetPath(trimmed) : trimmed;
+      if(theme === 'blissos'){
+        const aquaPath = getAquaIconPath(trimmed, theme);
+        if(aquaPath) return aquaPath;
+        if(isAquaIconThemeActive(theme)) return trimmed;
+        return getBlissOSAssetPath(trimmed);
+      }
+      return trimmed;
     }
     return iconSVG(trimmed, theme);
   }
@@ -838,7 +904,7 @@ function getThemedIconHtml(item, label, size=32){
     return icon;
   }
   const src = (typeof icon === 'string') ? icon : '';
-  const fallback = theme === 'blissos' ? getBlissOSFallbackPath(src) : '';
+  const fallback = (theme === 'blissos' && !isAquaIconThemeActive(theme)) ? getBlissOSFallbackPath(src) : '';
   const fbAttr = fallback ? ` data-fallback-src="${fallback}"` : '';
   const idAttr = item && item.id ? ` data-app-id="${item.id}"` : '';
   return `<img class="pixel" src="${src}"${fbAttr}${idAttr} width="${size}" height="${size}" alt="${label}" style="display:block;" />`;
@@ -6139,11 +6205,16 @@ function initClothesWindow(winEl){
       function initSettingsTabs(winEl){
   const win = winEl || document.getElementById('win_settings');
   if(!win) return;
+  const shell = win.querySelector('.settings-shell');
   const tabs = Array.from(win.querySelectorAll('.settings-tab'));
   const panels = Array.from(win.querySelectorAll('.settings-panel'));
   if(!tabs.length || !panels.length) return;
   const panelMap = new Map(panels.map(p => [p.dataset.tab, p]));
+  const isBlissOsPrefs = state.settings.theme === 'blissos';
+  const isAquaPrefs = isBlissOsPrefs && !!state.settings.blissosAqua;
+  const usesBlissOsPrefsShell = isBlissOsPrefs;
   let fitRunToken = 0;
+  const aquaHistory = { stack:['home'], index:0 };
 
   function ensureSettingsNoHorizontalOverflow(tabId, token, pass = 0){
     if(state.isMobile) return;
@@ -6158,6 +6229,139 @@ function initClothesWindow(winEl){
     smartFitWindow(win, 'tabChange').then(()=>{
       ensureSettingsNoHorizontalOverflow(tabId, token, pass + 1);
     });
+  }
+
+  const getTabLabel = (tabId)=>{
+    const tabBtn = tabs.find(tab => tab.dataset.tab === tabId);
+    return tabBtn ? tabBtn.textContent.trim() : tabId;
+  };
+
+  const getTabIconMarkup = (tabId)=>{
+    const panel = panelMap.get(tabId);
+    const iconImg = panel ? (panel.querySelector('.settings-panel-icon img') || panel.querySelector('.settings-logo img')) : null;
+    if(iconImg){
+      const src = iconImg.getAttribute('src') || './assets/icons/Settings.png';
+      const iconName = iconImg.dataset ? iconImg.dataset.settingsIcon : '';
+      const iconAttr = iconName ? ` data-settings-icon="${iconName}"` : '';
+      return `<img class="pixel" src="${src}"${iconAttr} width="52" height="52" alt="" />`;
+    }
+    return `<img class="pixel" src="./assets/icons/Settings.png" data-settings-icon="Settings.png" width="52" height="52" alt="" />`;
+  };
+
+  const aquaGroups = [
+    { id:'personal', title:t('settings.aqua.category.personal'), tabs:['appearance', 'language', 'dock'] },
+    { id:'system', title:t('settings.aqua.category.system'), tabs:['general', 'sound', 'system', 'performance'] },
+  ];
+
+  const ensureAquaLayout = ()=>{
+    if(!usesBlissOsPrefsShell || !shell) return null;
+    if(shell.dataset.settingsAquaEnhanced === '1'){
+      shell.dataset.settingsMode = isAquaPrefs ? 'aqua' : 'classic';
+      return {
+        toolbar: shell.querySelector('[data-settings-aqua-toolbar]'),
+        home: shell.querySelector('[data-settings-home]'),
+        pages: shell.querySelector('.settings-panels'),
+      };
+    }
+    shell.dataset.settingsAquaEnhanced = '1';
+    shell.dataset.settingsMode = isAquaPrefs ? 'aqua' : 'classic';
+    shell.dataset.settingsView = 'home';
+    shell.classList.add('settings-shell-aqua');
+
+    const tabsEl = shell.querySelector('.settings-tabs');
+    const pagesEl = shell.querySelector('.settings-panels');
+    if(tabsEl) tabsEl.classList.add('settings-tabs-aqua-hidden');
+
+    const toolbar = document.createElement('div');
+    toolbar.className = 'settings-aqua-toolbar';
+    toolbar.dataset.settingsAquaToolbar = '1';
+    toolbar.innerHTML = `
+      <div class="settings-aqua-nav" role="group" aria-label="${escapeHTML(t('settings.aqua.nav'))}">
+        <button class="btn bevel settings-aqua-nav-btn" type="button" data-settings-nav="back" aria-label="${escapeHTML(t('settings.aqua.back'))}">&#9664;</button>
+        <button class="btn bevel settings-aqua-nav-btn" type="button" data-settings-nav="forward" aria-label="${escapeHTML(t('settings.aqua.forward'))}">&#9654;</button>
+      </div>
+      <button class="btn bevel settings-aqua-showall" type="button" data-settings-show-all="1">${escapeHTML(t('settings.aqua.showAll'))}</button>
+      <label class="settings-aqua-search" aria-label="${escapeHTML(t('settings.aqua.searchAria'))}">
+        <span class="settings-aqua-search-icon" aria-hidden="true"></span>
+        <input type="search" class="bevel-in" data-settings-search="1" placeholder="${escapeHTML(t('settings.aqua.searchPlaceholder'))}" />
+      </label>
+    `;
+
+    const home = document.createElement('div');
+    home.className = 'settings-aqua-home';
+    home.dataset.settingsHome = '1';
+    home.innerHTML = aquaGroups.map(group => {
+      const tiles = group.tabs
+        .filter(tabId => panelMap.has(tabId))
+        .map(tabId => `
+          <button class="settings-aqua-item" type="button" data-settings-open="${tabId}">
+            <span class="settings-aqua-item-icon">${getTabIconMarkup(tabId)}</span>
+            <span class="settings-aqua-item-label">${escapeHTML(getTabLabel(tabId))}</span>
+          </button>
+        `).join('');
+      if(!tiles) return '';
+      return `
+        <section class="settings-aqua-group" data-settings-group="${group.id}">
+          <h3 class="settings-aqua-group-title">${escapeHTML(group.title)}</h3>
+          <div class="settings-aqua-grid">${tiles}</div>
+        </section>
+      `;
+    }).join('');
+
+    const insertBeforeEl = tabsEl || pagesEl || null;
+    shell.insertBefore(toolbar, insertBeforeEl);
+    shell.insertBefore(home, insertBeforeEl);
+    if(typeof applySettingsIcons === 'function') applySettingsIcons(win);
+    return { toolbar, home, pages: pagesEl };
+  };
+
+  const aquaRefs = ensureAquaLayout();
+  const aquaHome = aquaRefs ? aquaRefs.home : null;
+  const aquaPages = aquaRefs ? aquaRefs.pages : null;
+  const aquaToolbar = aquaRefs ? aquaRefs.toolbar : null;
+  const aquaBackBtn = aquaToolbar ? aquaToolbar.querySelector('[data-settings-nav="back"]') : null;
+  const aquaForwardBtn = aquaToolbar ? aquaToolbar.querySelector('[data-settings-nav="forward"]') : null;
+  const aquaShowAllBtn = aquaToolbar ? aquaToolbar.querySelector('[data-settings-show-all]') : null;
+  const aquaSearchInput = aquaToolbar ? aquaToolbar.querySelector('[data-settings-search]') : null;
+  const aquaTiles = aquaHome ? Array.from(aquaHome.querySelectorAll('[data-settings-open]')) : [];
+  const aquaGroupsEls = aquaHome ? Array.from(aquaHome.querySelectorAll('[data-settings-group]')) : [];
+
+  function runAquaTransition(el, cls){
+    if(!el || !cls) return;
+    const all = ['settings-aqua-enter-home', 'settings-aqua-enter-forward', 'settings-aqua-enter-back'];
+    all.forEach(name => el.classList.remove(name));
+    void el.offsetWidth;
+    el.classList.add(cls);
+    setTimeout(()=>{
+      el.classList.remove(cls);
+    }, 260);
+  }
+
+  function updateAquaNavButtons(){
+    if(!usesBlissOsPrefsShell) return;
+    if(aquaBackBtn) aquaBackBtn.disabled = aquaHistory.index <= 0;
+    if(aquaForwardBtn) aquaForwardBtn.disabled = aquaHistory.index >= (aquaHistory.stack.length - 1);
+  }
+
+  function pushAquaHistory(token){
+    if(!usesBlissOsPrefsShell) return;
+    const currentToken = aquaHistory.stack[aquaHistory.index];
+    if(currentToken === token) return;
+    aquaHistory.stack = aquaHistory.stack.slice(0, aquaHistory.index + 1);
+    aquaHistory.stack.push(token);
+    aquaHistory.index = aquaHistory.stack.length - 1;
+    updateAquaNavButtons();
+  }
+
+  function setAquaView(view, opts = {}){
+    if(!usesBlissOsPrefsShell || !shell) return;
+    shell.dataset.settingsView = view;
+    if(opts.silent) return;
+    if(view === 'home'){
+      runAquaTransition(aquaHome, opts.direction === 'back' ? 'settings-aqua-enter-back' : 'settings-aqua-enter-home');
+    } else {
+      runAquaTransition(aquaPages, opts.direction === 'back' ? 'settings-aqua-enter-back' : 'settings-aqua-enter-forward');
+    }
   }
 
   const activate = (tabId, opts = {})=>{
@@ -6185,18 +6389,27 @@ function initClothesWindow(winEl){
     updateClockButtons(win);
     updateOldCrtButtons(win);
     updateSoundUI(win);
+    updateDockSettingsUI(win);
     const content = win.querySelector('.content');
-      if(content){
-        content.dataset.fitKey = `settings:${tabId}`;
-        const isBlissOsDesktop = !state.isMobile && state.settings.theme === 'blissos';
-        if(tabId === 'appearance'){
-          content.dataset.fitMinW = isBlissOsDesktop ? '620' : '560';
-        } else if(isBlissOsDesktop){
-          content.dataset.fitMinW = '600';
-        } else {
-          delete content.dataset.fitMinW;
-        }
+    if(content){
+      content.dataset.fitKey = `settings:${tabId}`;
+      const isBlissOsDesktop = !state.isMobile && state.settings.theme === 'blissos';
+      if(usesBlissOsPrefsShell && isBlissOsDesktop){
+        content.dataset.fitMinW = (tabId === 'appearance')
+          ? (isAquaPrefs ? '760' : '700')
+          : (isAquaPrefs ? '700' : '620');
+      } else if(tabId === 'appearance'){
+        content.dataset.fitMinW = isBlissOsDesktop ? '620' : '560';
+      } else if(isBlissOsDesktop){
+        content.dataset.fitMinW = '600';
+      } else {
+        delete content.dataset.fitMinW;
       }
+    }
+    if(usesBlissOsPrefsShell){
+      setAquaView('panel', opts);
+      if(!opts.fromHistory) pushAquaHistory(`panel:${tabId}`);
+    }
     smartFitWindow(win, 'tabChange').then(()=>{
       ensureSettingsNoHorizontalOverflow(tabId, token);
     });
@@ -6205,10 +6418,41 @@ function initClothesWindow(winEl){
     }
   };
 
-  const current = (state.settings.tab && panelMap.has(state.settings.tab))
-    ? state.settings.tab
-    : tabs[0].dataset.tab;
-  activate(current, { silent: true });
+  const showAquaHome = (opts = {})=>{
+    if(!usesBlissOsPrefsShell) return;
+    const token = ++fitRunToken;
+    tabs.forEach(tab => {
+      tab.setAttribute('aria-selected', 'false');
+      tab.tabIndex = -1;
+    });
+    panels.forEach(panel => panel.classList.remove('active'));
+    setAquaView('home', opts);
+    if(!opts.fromHistory) pushAquaHistory('home');
+    const content = win.querySelector('.content');
+    if(content){
+      content.dataset.fitKey = 'settings:home';
+      if(!state.isMobile) content.dataset.fitMinW = '760';
+    }
+    smartFitWindow(win, 'tabChange').then(()=>{
+      ensureSettingsNoHorizontalOverflow('home', token);
+    });
+    updateAquaNavButtons();
+    if(!opts.silent){
+      playSfx('tabChange');
+    }
+  };
+
+  function openAquaHistoryToken(token, direction){
+    if(!usesBlissOsPrefsShell || !token) return;
+    if(token === 'home'){
+      showAquaHome({ fromHistory:true, direction, silent:false });
+      return;
+    }
+    if(token.startsWith('panel:')){
+      const tabId = token.slice(6);
+      activate(tabId, { fromHistory:true, direction, silent:false });
+    }
+  }
 
   const bindWallpaperSlider = ()=>{
     const sliders = Array.from(win.querySelectorAll('[data-wallpaper-slider]'));
@@ -6296,18 +6540,104 @@ function initClothesWindow(winEl){
     });
   });
 
+  if(usesBlissOsPrefsShell){
+    if(aquaShowAllBtn){
+      aquaShowAllBtn.addEventListener('click', ()=>{
+        showAquaHome({ direction:'back' });
+      });
+    }
+    if(aquaBackBtn){
+      aquaBackBtn.addEventListener('click', ()=>{
+        if(aquaHistory.index <= 0) return;
+        aquaHistory.index -= 1;
+        updateAquaNavButtons();
+        openAquaHistoryToken(aquaHistory.stack[aquaHistory.index], 'back');
+      });
+    }
+    if(aquaForwardBtn){
+      aquaForwardBtn.addEventListener('click', ()=>{
+        if(aquaHistory.index >= aquaHistory.stack.length - 1) return;
+        aquaHistory.index += 1;
+        updateAquaNavButtons();
+        openAquaHistoryToken(aquaHistory.stack[aquaHistory.index], 'forward');
+      });
+    }
+    aquaTiles.forEach(tile => {
+      const tabId = tile.dataset.settingsOpen;
+      tile.addEventListener('click', ()=>{
+        activate(tabId, { direction:'forward' });
+      });
+    });
+
+    const filterAquaTiles = ()=>{
+      if(!aquaSearchInput) return null;
+      const query = (aquaSearchInput.value || '').trim().toLowerCase();
+      let firstVisible = null;
+      aquaTiles.forEach(tile => {
+        const labelEl = tile.querySelector('.settings-aqua-item-label');
+        const label = (labelEl ? labelEl.textContent : tile.textContent || '').trim().toLowerCase();
+        const visible = !query || label.includes(query);
+        tile.classList.toggle('hidden', !visible);
+        if(visible && !firstVisible) firstVisible = tile;
+      });
+      aquaGroupsEls.forEach(groupEl => {
+        const hasVisible = !!groupEl.querySelector('.settings-aqua-item:not(.hidden)');
+        groupEl.classList.toggle('hidden', !hasVisible);
+      });
+      return firstVisible;
+    };
+
+    if(aquaSearchInput){
+      aquaSearchInput.addEventListener('input', ()=>{
+        if(shell && shell.dataset.settingsView !== 'home'){
+          showAquaHome({ silent:true, fromHistory:true });
+        }
+        filterAquaTiles();
+      });
+      aquaSearchInput.addEventListener('keydown', (e)=>{
+        if(e.key !== 'Enter') return;
+        const firstVisible = filterAquaTiles();
+        if(!firstVisible) return;
+        e.preventDefault();
+        firstVisible.click();
+      });
+    }
+
+    const requestedTab = (state.settings.pendingOpenTab && panelMap.has(state.settings.pendingOpenTab))
+      ? state.settings.pendingOpenTab
+      : '';
+    state.settings.pendingOpenTab = '';
+    if(requestedTab){
+      activate(requestedTab, { silent:true, direction:'forward' });
+      aquaHistory.stack = ['home', `panel:${requestedTab}`];
+      aquaHistory.index = 1;
+    } else {
+      showAquaHome({ silent:true, fromHistory:true });
+      aquaHistory.stack = ['home'];
+      aquaHistory.index = 0;
+    }
+    updateAquaNavButtons();
+  } else {
+    const current = (state.settings.tab && panelMap.has(state.settings.tab))
+      ? state.settings.tab
+      : tabs[0].dataset.tab;
+    const requestedTab = (state.settings.pendingOpenTab && panelMap.has(state.settings.pendingOpenTab))
+      ? state.settings.pendingOpenTab
+      : current;
+    state.settings.pendingOpenTab = '';
+    activate(requestedTab, { silent: true });
+  }
+
   // Event listeners for BlissOS accent color buttons
   $$('[data-set-blissos-accent]', win).forEach(btn => {
     btn.addEventListener('click', ()=>{
       const accent = btn.dataset.setBlissosAccent;
       setBlissosAccent(accent);
-      // Update pressed state for accent buttons
       $$('[data-set-blissos-accent]', win).forEach(ab => {
         ab.classList.toggle('pressed', ab.dataset.setBlissosAccent === state.settings.blissosAccent);
       });
     });
   });
-  // Initial pressed state for accent buttons
   $$('[data-set-blissos-accent]', win).forEach(ab => {
     ab.classList.toggle('pressed', ab.dataset.setBlissosAccent === state.settings.blissosAccent);
   });
@@ -6315,10 +6645,15 @@ function initClothesWindow(winEl){
 
 function openSettingsAndTab(tabId, scrollId){
   state.settings.tab = tabId || 'general';
+  state.settings.pendingOpenTab = tabId || '';
   openApp('settings');
   setTimeout(()=>{
     const winEl = document.getElementById('win_settings');
     if(winEl) initSettingsTabs(winEl);
+    if(winEl && tabId){
+      const tabBtn = winEl.querySelector(`.settings-tab[data-tab="${tabId}"]`);
+      if(tabBtn) tabBtn.click();
+    }
     if(winEl && scrollId){
       const target = winEl.querySelector(`#${scrollId}`);
       if(target && target.scrollIntoView){
@@ -6540,12 +6875,20 @@ function updateBlissOSDarkButtons(root=document){
     const on = btn.dataset.setBlissosDarkmode === 'on';
     btn.classList.toggle('pressed', on === state.settings.blissosDarkMode);
   });
+  $$('[data-toggle-blissos-darkmode]', root).forEach(input => {
+    input.checked = !!state.settings.blissosDarkMode;
+    input.setAttribute('aria-checked', state.settings.blissosDarkMode ? 'true' : 'false');
+  });
 }
 
 function updateBlissOSAquaButtons(root=document){
   $$('[data-set-blissos-aqua]', root).forEach(btn => {
     const on = btn.dataset.setBlissosAqua === 'on';
     btn.classList.toggle('pressed', on === state.settings.blissosAqua);
+  });
+  $$('[data-toggle-blissos-aqua]', root).forEach(input => {
+    input.checked = !!state.settings.blissosAqua;
+    input.setAttribute('aria-checked', state.settings.blissosAqua ? 'true' : 'false');
   });
 }
 
@@ -6577,6 +6920,13 @@ function setBlissOSDarkMode(enabled){
 function applyBlissOSAqua(){
   const isBlissOS = state.settings.theme === 'blissos';
   document.body.dataset.blissosStyle = (isBlissOS && state.settings.blissosAqua) ? 'aqua' : 'classic';
+  const brandIconEl = document.querySelector('.blissos-menu-brand img');
+  if(isBlissOS && brandIconEl){
+    const brandSrc = getIconFor('./assets/icons/bliss.png', 'blissos');
+    if(typeof brandSrc === 'string' && !brandSrc.trim().startsWith('<svg')){
+      brandIconEl.src = brandSrc;
+    }
+  }
   updateBlissOSAquaButtons();
 }
 
@@ -6584,7 +6934,17 @@ function setBlissOSAqua(enabled){
   if(state.settings.theme !== 'blissos') return;
   const turningOn = !!enabled;
   state.settings.blissosAqua = turningOn;
-  applyBlissOSAqua();
+  if(typeof applyOsTheme === 'function'){
+    applyOsTheme();
+  } else {
+    applyBlissOSAqua();
+    if(typeof renderBlissOSDock === 'function') renderBlissOSDock();
+  }
+  if(typeof applySettingsIcons === 'function') applySettingsIcons();
+  const appleMenu = document.getElementById('blissosAppleMenu');
+  if(appleMenu && !appleMenu.classList.contains('hidden') && typeof renderBlissOSAppleMenu === 'function'){
+    renderBlissOSAppleMenu();
+  }
   if(turningOn && state.wallpaper !== 'aqua'){
     applyWallpaper('aqua');
     return;
@@ -6773,6 +7133,81 @@ function setSystemSoundsEnabled(enabled){
   saveSystemSoundsEnabled();
   applySoundVolumes();
   updateSoundUI();
+  syncOsProfile();
+}
+
+function getDockSizePercent(){
+  const raw = Number(state.settings.dockSize);
+  if(!Number.isFinite(raw)) return 58;
+  return clamp(Math.round(raw), 0, 100);
+}
+
+function getDockMagnificationStrengthPercent(){
+  const raw = Number(state.settings.dockMagnificationStrength);
+  if(!Number.isFinite(raw)) return 60;
+  return clamp(Math.round(raw), 0, 100);
+}
+
+function isDockMagnificationEnabled(){
+  return state.settings.dockMagnification !== false;
+}
+
+function isDockAutoHideEnabled(){
+  return !!state.settings.dockAutoHide;
+}
+
+function updateDockSettingsUI(root=document){
+  const size = getDockSizePercent();
+  const magnification = isDockMagnificationEnabled();
+  const magnificationStrength = getDockMagnificationStrengthPercent();
+  const autoHide = isDockAutoHideEnabled();
+
+  $$('[data-dock-slider="size"]', root).forEach(slider => {
+    slider.value = String(size);
+  });
+  $$('[data-dock-slider="magnification"]', root).forEach(slider => {
+    slider.value = String(magnificationStrength);
+    slider.disabled = !magnification;
+  });
+  $$('[data-dock-toggle="magnification"]', root).forEach(input => {
+    input.checked = magnification;
+    input.setAttribute('aria-checked', magnification ? 'true' : 'false');
+  });
+  $$('[data-dock-toggle="autohide"]', root).forEach(input => {
+    input.checked = autoHide;
+    input.setAttribute('aria-checked', autoHide ? 'true' : 'false');
+  });
+  $$('[data-dock-slider="magnification"]', root).forEach(slider => {
+    const row = slider.closest('.settings-dock-row-toggle');
+    if(row) row.classList.toggle('disabled', !magnification);
+  });
+}
+
+function setDockSize(value){
+  state.settings.dockSize = clamp(Math.round(Number(value) || 0), 0, 100);
+  updateDockSettingsUI();
+  renderBlissOSDock();
+  syncOsProfile();
+}
+
+function setDockMagnification(enabled){
+  state.settings.dockMagnification = !!enabled;
+  updateDockSettingsUI();
+  renderBlissOSDock();
+  syncOsProfile();
+}
+
+function setDockMagnificationStrength(value){
+  state.settings.dockMagnificationStrength = clamp(Math.round(Number(value) || 0), 0, 100);
+  updateDockSettingsUI();
+  renderBlissOSDock();
+  syncOsProfile();
+}
+
+function setDockAutoHide(enabled){
+  state.settings.dockAutoHide = !!enabled;
+  updateDockSettingsUI();
+  renderBlissOSDock();
   syncOsProfile();
 }
 
@@ -7113,6 +7548,10 @@ function getDefaultOsProfiles(){
       darkMode: loadDarkMode(),
       blissosDarkMode: false,
       blissosAqua: false,
+      dockSize: 58,
+      dockMagnification: true,
+      dockMagnificationStrength: 60,
+      dockAutoHide: false,
       retroGlow: loadRetroGlow(),
       scanlines: loadScanlines(),
       clock24: loadClockFormat(),
@@ -7128,6 +7567,10 @@ function getDefaultOsProfiles(){
       darkMode: false,
       blissosDarkMode: false,
       blissosAqua: false,
+      dockSize: 58,
+      dockMagnification: true,
+      dockMagnificationStrength: 60,
+      dockAutoHide: false,
       retroGlow: false,
       scanlines: false,
       clock24: true,
@@ -7170,6 +7613,10 @@ function syncOsProfile(){
     darkMode: state.settings.darkMode,
     blissosDarkMode: state.settings.blissosDarkMode,
     blissosAqua: state.settings.blissosAqua,
+    dockSize: getDockSizePercent(),
+    dockMagnification: isDockMagnificationEnabled(),
+    dockMagnificationStrength: getDockMagnificationStrengthPercent(),
+    dockAutoHide: isDockAutoHideEnabled(),
     retroGlow: state.settings.retroGlow,
     scanlines: state.settings.scanlines,
     clock24: state.settings.clock24,
@@ -7193,6 +7640,10 @@ function applyOsProfile(theme){
   state.settings.darkMode = !!profile.darkMode;
   state.settings.blissosDarkMode = !!profile.blissosDarkMode;
   state.settings.blissosAqua = !!profile.blissosAqua;
+  state.settings.dockSize = typeof profile.dockSize === 'number' ? clamp(Math.round(profile.dockSize), 0, 100) : 58;
+  state.settings.dockMagnification = profile.dockMagnification !== false;
+  state.settings.dockMagnificationStrength = typeof profile.dockMagnificationStrength === 'number' ? clamp(Math.round(profile.dockMagnificationStrength), 0, 100) : 60;
+  state.settings.dockAutoHide = !!profile.dockAutoHide;
   state.settings.retroGlow = !!profile.retroGlow;
   state.settings.scanlines = !!profile.scanlines;
   state.settings.clock24 = profile.clock24 !== false;
@@ -7219,6 +7670,7 @@ function applyOsProfile(theme){
   applyOldCrt();
   applySoundVolumes();
   updateSoundUI();
+  updateDockSettingsUI();
   updateClockButtons();
   updateWallpaperButtons();
   updateOsThemeButtons();
@@ -9780,6 +10232,7 @@ function installLongPress(el, getTarget){
           'settings.tab.general': 'General',
           'settings.tab.language': 'Language',
           'settings.tab.appearance': 'Appearance',
+          'settings.tab.dock': 'Dock',
           'settings.tab.sound': 'Sounds',
           'settings.tab.system': 'System',
           'settings.tab.performance': 'Performance',
@@ -9804,6 +10257,14 @@ function installLongPress(el, getTarget){
           'settings.sound.system': 'System Sounds',
           'settings.sound.toggleOn': 'On',
           'settings.sound.toggleOff': 'Off',
+          'settings.dock.desc': 'Adjust Dock size, magnification, and visibility.',
+          'settings.dock.size': 'Size:',
+          'settings.dock.small': 'Small',
+          'settings.dock.large': 'Large',
+          'settings.dock.magnification': 'Magnification:',
+          'settings.dock.min': 'Min',
+          'settings.dock.max': 'Max',
+          'settings.dock.autohide': 'Automatically hide and show the Dock',
           'settings.osTheme.title': 'Choose your OS',
           'settings.osTheme.desc': 'Switch between Bliss98 and BlissOS.',
           'settings.tab.system': 'System',
@@ -9856,6 +10317,14 @@ function installLongPress(el, getTarget){
           'settings.appOpenAnim.off': 'Off',
           'settings.wallpaperTab': 'Wallpaper',
           'settings.wallpaperDesc': 'Choose a wallpaper for your desktop.',
+          'settings.aqua.nav': 'Settings navigation',
+          'settings.aqua.back': 'Back',
+          'settings.aqua.forward': 'Forward',
+          'settings.aqua.showAll': 'Show All',
+          'settings.aqua.searchAria': 'Search settings',
+          'settings.aqua.searchPlaceholder': 'Search',
+          'settings.aqua.category.personal': 'Personal',
+          'settings.aqua.category.system': 'System',
           'settings.scanlinesTab': 'Scanlines',
           'settings.scanlinesDesc': 'Add scanline effect to the display.',
           'settings.scanlines.on': 'On',
@@ -10084,6 +10553,7 @@ function installLongPress(el, getTarget){
           'wallpaper.aqua': 'Aqua',
           'wallpaper.bliss': 'Sunrise',
           'wallpaper.clouds': 'Clouds',
+          'wallpaper.galaxy': 'Galaxy',
           'wallpaper.diev': 'Grid',
           'wallpaper.tot': 'Pink Tot',
           'wallpaper.matrix': 'Matrix',
@@ -10333,6 +10803,7 @@ function installLongPress(el, getTarget){
           'settings.tab.general': 'Geral',
           'settings.tab.language': 'Idioma',
           'settings.tab.appearance': 'Aparência',
+          'settings.tab.dock': 'Dock',
           'settings.tab.sound': 'Sons',
           'settings.tab.system': 'Sistema',
           'settings.tab.performance': 'Performance',
@@ -10357,6 +10828,14 @@ function installLongPress(el, getTarget){
           'settings.sound.system': 'Sons do sistema',
           'settings.sound.toggleOn': 'On',
           'settings.sound.toggleOff': 'Off',
+          'settings.dock.desc': 'Ajuste tamanho, ampliacao e visibilidade do Dock.',
+          'settings.dock.size': 'Tamanho:',
+          'settings.dock.small': 'Pequeno',
+          'settings.dock.large': 'Grande',
+          'settings.dock.magnification': 'Ampliacao:',
+          'settings.dock.min': 'Min',
+          'settings.dock.max': 'Max',
+          'settings.dock.autohide': 'Ocultar e mostrar o Dock automaticamente',
           'settings.osTheme.title': 'Escolha seu OS',
           'settings.osTheme.desc': 'Alterna entre Bliss98 e BlissOS.',
           'settings.tab.system': 'Sistema',
@@ -10409,6 +10888,14 @@ function installLongPress(el, getTarget){
           'settings.appOpenAnim.off': 'Desligado',
           'settings.wallpaperTab': 'Papel de parede',
           'settings.wallpaperDesc': 'Escolha um papel de parede para o desktop.',
+          'settings.aqua.nav': 'Navegação das configurações',
+          'settings.aqua.back': 'Voltar',
+          'settings.aqua.forward': 'Avançar',
+          'settings.aqua.showAll': 'Mostrar tudo',
+          'settings.aqua.searchAria': 'Buscar configurações',
+          'settings.aqua.searchPlaceholder': 'Buscar',
+          'settings.aqua.category.personal': 'Pessoal',
+          'settings.aqua.category.system': 'Sistema',
           'settings.scanlinesTab': 'Scanlines',
           'settings.scanlinesDesc': 'Adicione efeito de scanlines na tela.',
           'settings.scanlines.on': 'Ligado',
@@ -10637,6 +11124,7 @@ function installLongPress(el, getTarget){
           'wallpaper.aqua': 'Aqua',
           'wallpaper.bliss': 'Nascer do Sol',
           'wallpaper.clouds': 'Nuvens',
+          'wallpaper.galaxy': 'Galáxia',
           'wallpaper.diev': 'Grid',
           'wallpaper.tot': 'Tot (Rosa)',
           'wallpaper.matrix': 'Matrix',
@@ -12003,8 +12491,9 @@ function installLongPress(el, getTarget){
           if(!name) return;
           const base = `./assets/icons/${name}`;
           if(themed){
-            const bliss = getBlissOSAssetPath(base);
-            setImageWithFallback(img, bliss, base);
+            const themedIcon = getIconFor(base, 'blissos');
+            const fallback = isAquaIconThemeActive('blissos') ? base : getBlissOSFallbackPath(themedIcon);
+            setImageWithFallback(img, themedIcon, fallback || base);
           } else {
             const bliss = getBlissOSAssetPath(base);
             setImageWithFallback(img, base, bliss);
@@ -12580,6 +13069,7 @@ Eu sou o buffalo branco extinto`
                 <div class="wctl bevel" title="${t('win.maximize')}" data-action="max">&#x25A1;</div>
               </div>
               <div class="title-left">
+                <span class="win-title-icon" data-win-title-icon="1" style="width:16px;height:16px;display:inline-flex;">${getThemedIconHtml((APPS.find(app => app.id === 'mediaplayer') || { id:'mediaplayer', icon:'music', iconFile:'./assets/icons/BLISS%20mediaplayer.png' }), t('app.mediaplayer'), 16)}</span>
                 <strong data-i18n="app.mediaplayer">${t('app.mediaplayer')}</strong>
               </div>
             </div>
@@ -13149,6 +13639,7 @@ Eu sou o buffalo branco extinto`
               <button class="settings-tab" type="button" role="tab" data-tab="general" aria-controls="settingsPanel_general" data-i18n="settings.tab.general">General</button>
               <button class="settings-tab" type="button" role="tab" data-tab="language" aria-controls="settingsPanel_language" data-i18n="settings.tab.language">Language</button>
               <button class="settings-tab" type="button" role="tab" data-tab="appearance" aria-controls="settingsPanel_appearance" data-i18n="settings.tab.appearance">Appearance</button>
+              ${isBlissOS() ? `<button class="settings-tab" type="button" role="tab" data-tab="dock" aria-controls="settingsPanel_dock" data-i18n="settings.tab.dock">Dock</button>` : ''}
               <button class="settings-tab" type="button" role="tab" data-tab="system" aria-controls="settingsPanel_system" data-i18n="settings.tab.system">System</button>
               <button class="settings-tab" type="button" role="tab" data-tab="sound" aria-controls="settingsPanel_sound" data-i18n="settings.tab.sound">Sounds</button>
               <button class="settings-tab" type="button" role="tab" data-tab="performance" aria-controls="settingsPanel_performance" data-i18n="settings.tab.performance">Performance</button>
@@ -13384,21 +13875,17 @@ Eu sou o buffalo branco extinto`
                     <button class="btn bevel" type="button" data-set-darkmode="off"><span data-i18n="settings.darkMode.off">Off</span></button>
                   </div>
                 </div>
-                <div class="settings-block blissos-only" id="settingsBlissOSDarkMode">
-                  <strong data-i18n="settings.blissosDark.title">BlissOS Dark Mode</strong>
-                  <p style="margin:6px 0 10px 0;" data-i18n="settings.blissosDark.desc">Enables a dark Mac OS 9 inspired look for BlissOS.</p>
-                  <div class="settings-actions">
-                    <button class="btn bevel" type="button" data-set-blissos-darkmode="on"><span data-i18n="settings.blissosDark.on">On</span></button>
-                    <button class="btn bevel" type="button" data-set-blissos-darkmode="off"><span data-i18n="settings.blissosDark.off">Off</span></button>
-                  </div>
+                <div class="settings-block blissos-only settings-appearance-quick" id="settingsBlissOSDarkMode">
+                  <label class="settings-appearance-toggle settings-aqua-check">
+                    <span>Dark Mode</span>
+                    <input type="checkbox" data-toggle-blissos-darkmode />
+                  </label>
                 </div>
-                <div class="settings-block blissos-only" id="settingsBlissOSAqua">
-                  <strong data-i18n="settings.blissosAqua.title">BlissOS Aqua Theme</strong>
-                  <p style="margin:6px 0 10px 0;" data-i18n="settings.blissosAqua.desc">Enable the classic Apple Aqua look for BlissOS.</p>
-                  <div class="settings-actions">
-                    <button class="btn bevel" type="button" data-set-blissos-aqua="on"><span data-i18n="settings.blissosAqua.on">On</span></button>
-                    <button class="btn bevel" type="button" data-set-blissos-aqua="off"><span data-i18n="settings.blissosAqua.off">Off</span></button>
-                  </div>
+                <div class="settings-block blissos-only settings-appearance-quick" id="settingsBlissOSAqua">
+                  <label class="settings-appearance-toggle settings-aqua-check">
+                    <span>BlissOS Aqua</span>
+                    <input type="checkbox" data-toggle-blissos-aqua />
+                  </label>
                 </div>
                 <div class="settings-block" id="settingsWallpaper">
                   <strong data-i18n="settings.wallpaperTab">Wallpaper</strong>
@@ -13424,8 +13911,12 @@ Eu sou o buffalo branco extinto`
                           <span class="wallpaper-card-label" data-i18n="wallpaper.bliss">Sunrise</span>
                         </button>
                         <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="clouds">
-                          <span class="wallpaper-card-thumb" style="background:linear-gradient(180deg, #9ad0ff 0%, #cfe9ff 45%, #f7fbff 100%);"></span>
+                          <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/clouds.png') center/cover no-repeat;"></span>
                           <span class="wallpaper-card-label" data-i18n="wallpaper.clouds">Clouds</span>
+                        </button>
+                        <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="galaxy">
+                          <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/galaxy.png') center/cover no-repeat;"></span>
+                          <span class="wallpaper-card-label" data-i18n="wallpaper.galaxy">Galaxy</span>
                         </button>
                         <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="diev">
                           <span class="wallpaper-card-thumb" style="background:repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 6px), repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 6px), linear-gradient(135deg, #0a2333, #114b6a);"></span>
@@ -13453,6 +13944,50 @@ Eu sou o buffalo branco extinto`
                   </div>
                 </div>
               </div>
+              ${isBlissOS() ? `
+              <div class="settings-panel" role="tabpanel" data-tab="dock" id="settingsPanel_dock">
+                <div class="settings-panel-header">
+                  <div class="settings-panel-icon">
+                    <img class="pixel" src="./assets/BlissOS/dock.png" data-settings-icon="dock.png" width="48" height="48" alt="" />
+                  </div>
+                  <div>
+                    <strong data-i18n="settings.tab.dock">Dock</strong>
+                    <div class="tiny" data-i18n="settings.dock.desc">Adjust Dock size, magnification, and visibility.</div>
+                  </div>
+                </div>
+                <div class="settings-dock-layout">
+                  <div class="settings-block settings-dock-block">
+                    <div class="settings-dock-row">
+                      <label class="settings-dock-label" for="settingsDockSize" data-i18n="settings.dock.size">Size:</label>
+                      <input id="settingsDockSize" class="retro-slider settings-dock-slider" type="range" min="0" max="100" step="1" data-dock-slider="size" />
+                    </div>
+                    <div class="settings-dock-scale tiny">
+                      <span data-i18n="settings.dock.small">Small</span>
+                      <span data-i18n="settings.dock.large">Large</span>
+                    </div>
+                  </div>
+                  <div class="settings-block settings-dock-block">
+                    <div class="settings-dock-row settings-dock-row-toggle">
+                      <label class="settings-dock-check">
+                        <input type="checkbox" data-dock-toggle="magnification" />
+                        <span data-i18n="settings.dock.magnification">Magnification:</span>
+                      </label>
+                      <input class="retro-slider settings-dock-slider" type="range" min="0" max="100" step="1" data-dock-slider="magnification" />
+                    </div>
+                    <div class="settings-dock-scale tiny">
+                      <span data-i18n="settings.dock.min">Min</span>
+                      <span data-i18n="settings.dock.max">Max</span>
+                    </div>
+                  </div>
+                  <div class="settings-block settings-dock-block">
+                    <label class="settings-dock-check settings-dock-autohide">
+                      <input type="checkbox" data-dock-toggle="autohide" />
+                      <span data-i18n="settings.dock.autohide">Automatically hide and show the Dock</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              ` : ''}
               <div class="settings-panel" role="tabpanel" data-tab="sound" id="settingsPanel_sound">
                 <div class="settings-panel-header">
                   <div class="settings-panel-icon">
@@ -13489,7 +14024,7 @@ Eu sou o buffalo branco extinto`
               <div class="settings-panel" role="tabpanel" data-tab="system" id="settingsPanel_system">
                 <div class="settings-panel-header">
                   <div class="settings-panel-icon">
-                    <img class="pixel" src="./assets/icons/Settings.png" data-settings-icon="Settings.png" width="48" height="48" alt="" />
+                    <img class="pixel" src="./assets/icons/system.png" data-settings-icon="system.png" width="48" height="48" alt="" />
                   </div>
                   <div>
                     <strong data-i18n="settings.systemTab">System</strong>
@@ -16819,6 +17354,192 @@ function toggleFitWindow(appId) {
 
       let taskButtonsRenderSignature = '';
       let blissosDockRenderSignature = '';
+      const LEOPARD_DOCK_RADIUS = 132;
+      const LEOPARD_DOCK_MAX_SCALE = 0.42;
+      const LEOPARD_DOCK_MAX_LIFT = 9;
+      const DOCK_DEFAULT_SIZE = 58;
+      const DOCK_DEFAULT_MAGNIFICATION = 60;
+      const DOCK_AUTOHIDE_EDGE = 36;
+      const DOCK_AUTOHIDE_HIDE_DELAY = 520;
+      let dockAutoHideFxBound = false;
+      let dockAutoHideHideTimer = 0;
+      let dockAutoHideVisible = true;
+
+      function getDockRenderSizePercent(){
+        const raw = Number(state.settings.dockSize);
+        if(!Number.isFinite(raw)) return DOCK_DEFAULT_SIZE;
+        return clamp(Math.round(raw), 0, 100);
+      }
+
+      function getAquaDockScaleForSize(sizePercent){
+        const pct = clamp(Math.round(Number(sizePercent) || 0), 0, 100);
+        const pivot = DOCK_DEFAULT_SIZE;
+        if(pct <= pivot){
+          const t = pivot > 0 ? (pct / pivot) : 1;
+          return 0.62 + (0.38 * t);
+        }
+        const t = (pct - pivot) / Math.max(1, 100 - pivot);
+        return 1 + (0.42 * t);
+      }
+
+      function isDockRenderMagnificationEnabled(){
+        return state.settings.dockMagnification !== false;
+      }
+
+      function getDockRenderMagnificationStrength(){
+        const raw = Number(state.settings.dockMagnificationStrength);
+        if(!Number.isFinite(raw)) return DOCK_DEFAULT_MAGNIFICATION;
+        return clamp(Math.round(raw), 0, 100);
+      }
+
+      function isDockRenderAutoHideEnabled(){
+        return !!state.settings.dockAutoHide && !isMobileDock() && state.settings.theme === 'blissos';
+      }
+
+      function clearDockAutoHideTimer(){
+        if(dockAutoHideHideTimer){
+          clearTimeout(dockAutoHideHideTimer);
+          dockAutoHideHideTimer = 0;
+        }
+      }
+
+      function setDockAutoHideVisible(dock, visible){
+        if(!dock) return;
+        dockAutoHideVisible = !!visible;
+        const autoHideOn = dock.classList.contains('dock-autohide');
+        dock.classList.toggle('dock-visible', !autoHideOn || dockAutoHideVisible);
+      }
+
+      function scheduleDockAutoHide(dock, delay = DOCK_AUTOHIDE_HIDE_DELAY){
+        if(!dock || !dock.classList.contains('dock-autohide')) return;
+        clearDockAutoHideTimer();
+        dockAutoHideHideTimer = setTimeout(() => {
+          if(!dock.classList.contains('dock-autohide')) return;
+          setDockAutoHideVisible(dock, false);
+        }, Math.max(0, delay));
+      }
+
+      function revealDockAutoHide(dock, opts = {}){
+        if(!dock || !dock.classList.contains('dock-autohide')) return;
+        clearDockAutoHideTimer();
+        setDockAutoHideVisible(dock, true);
+        if(opts.hold) return;
+        scheduleDockAutoHide(dock, DOCK_AUTOHIDE_HIDE_DELAY + 160);
+      }
+
+      function bindDockAutoHideFx(dock){
+        if(!dock || dock.dataset.dockAutoHideBound === '1') return;
+        dock.dataset.dockAutoHideBound = '1';
+        dock.addEventListener('pointerenter', ()=>{
+          revealDockAutoHide(dock, { hold: true });
+        });
+        dock.addEventListener('pointerleave', ()=>{
+          scheduleDockAutoHide(dock, 300);
+        });
+        if(dockAutoHideFxBound) return;
+        dockAutoHideFxBound = true;
+        document.addEventListener('pointermove', (e)=>{
+          const activeDock = $('#blissosDock');
+          if(!activeDock || activeDock.classList.contains('hidden') || !activeDock.classList.contains('dock-autohide')){
+            return;
+          }
+          const target = getEventTargetEl(e);
+          const overDock = !!(target && target.closest && target.closest('#blissosDock'));
+          if(overDock){
+            revealDockAutoHide(activeDock, { hold: true });
+            return;
+          }
+          const nearBottom = (window.innerHeight - e.clientY) <= DOCK_AUTOHIDE_EDGE;
+          if(nearBottom){
+            revealDockAutoHide(activeDock);
+          } else if(dockAutoHideVisible){
+            scheduleDockAutoHide(activeDock, 260);
+          }
+        }, { passive:true });
+      }
+
+      function isLeopardDockActive(){
+        return state.settings.theme === 'blissos' && !!state.settings.blissosAqua && !isMobileDock() && isDockRenderMagnificationEnabled();
+      }
+
+      function getLeopardDockItems(inner){
+        if(!inner) return [];
+        return Array.from(inner.querySelectorAll('.blissos-dock-item')).filter(item =>
+          !item.classList.contains('dock-preview-slot') &&
+          !item.classList.contains('dock-dragging') &&
+          !item.classList.contains('dock-removing')
+        );
+      }
+
+      function resetLeopardDockMagnification(inner){
+        getLeopardDockItems(inner).forEach(item => {
+          item.style.removeProperty('--dock-scale');
+          item.style.removeProperty('--dock-lift');
+          item.style.removeProperty('--dock-bright');
+          item.style.removeProperty('--dock-reflect');
+        });
+      }
+
+      function applyLeopardDockMagnification(inner, clientX){
+        if(!inner || typeof clientX !== 'number') return;
+        if(!isDockRenderMagnificationEnabled()){
+          resetLeopardDockMagnification(inner);
+          return;
+        }
+        if(inner.classList.contains('dock-reorder-active') || inner.classList.contains('dock-drop-preview')){
+          resetLeopardDockMagnification(inner);
+          return;
+        }
+        const intensity = getDockRenderMagnificationStrength() / 100;
+        const maxScale = LEOPARD_DOCK_MAX_SCALE * (0.05 + (0.95 * intensity));
+        const maxLift = LEOPARD_DOCK_MAX_LIFT * (0.05 + (0.95 * intensity));
+        const radius = LEOPARD_DOCK_RADIUS * (0.6 + (0.8 * intensity));
+        const items = getLeopardDockItems(inner);
+        items.forEach(item => {
+          const rect = item.getBoundingClientRect();
+          const center = rect.left + (rect.width / 2);
+          const distance = Math.abs(clientX - center);
+          const t = Math.max(0, 1 - (distance / radius));
+          const eased = t * t * (3 - (2 * t));
+          const scale = 1 + (maxScale * eased);
+          const lift = maxLift * eased;
+          const bright = 1 + ((0.08 + (0.16 * intensity)) * eased);
+          const reflect = (0.06 + (0.08 * intensity)) + ((0.14 + (0.24 * intensity)) * eased);
+          item.style.setProperty('--dock-scale', scale.toFixed(3));
+          item.style.setProperty('--dock-lift', `${lift.toFixed(2)}px`);
+          item.style.setProperty('--dock-bright', bright.toFixed(3));
+          item.style.setProperty('--dock-reflect', reflect.toFixed(3));
+        });
+      }
+
+      function bindLeopardDockFx(inner){
+        if(!inner || inner.dataset.leopardDockFxBound === '1') return;
+        inner.dataset.leopardDockFxBound = '1';
+        const handleMove = (e)=>{
+          if(!isLeopardDockActive()){
+            resetLeopardDockMagnification(inner);
+            return;
+          }
+          applyLeopardDockMagnification(inner, e.clientX);
+        };
+        const handleLeave = ()=>{
+          resetLeopardDockMagnification(inner);
+        };
+        inner.addEventListener('pointermove', handleMove);
+        inner.addEventListener('pointerdown', handleMove);
+        inner.addEventListener('pointerleave', handleLeave);
+        inner.addEventListener('pointercancel', handleLeave);
+      }
+
+      function triggerLeopardDockBounce(btn){
+        if(!btn || !isLeopardDockActive()) return;
+        btn.classList.remove('dock-launching');
+        void btn.offsetWidth;
+        btn.classList.add('dock-launching');
+        setTimeout(() => {
+          btn.classList.remove('dock-launching');
+        }, 760);
+      }
 
       function buildTaskButtonsSignature(wins){
         const parts = wins.map(w => {
@@ -16877,12 +17598,47 @@ function renderBlissOSDock(){
   const blissos = state.settings.theme === 'blissos';
   dock.classList.toggle('hidden', !blissos);
   if(!blissos){
+    dock.style.removeProperty('--blissos-dock-scale');
+    clearDockAutoHideTimer();
+    dock.classList.remove('dock-autohide');
+    dock.classList.remove('dock-visible');
+    dockAutoHideVisible = true;
     if(blissosDockRenderSignature !== 'hidden'){
       dock.innerHTML = '';
       blissosDockRenderSignature = 'hidden';
     }
     return;
   }
+        const isAquaDock = !!state.settings.blissosAqua;
+        const dockSize = getDockRenderSizePercent();
+        const sizeT = dockSize / 100;
+        const dockAutoHide = isDockRenderAutoHideEnabled();
+        const wasAutoHide = dock.classList.contains('dock-autohide');
+        dock.classList.toggle('dock-autohide', dockAutoHide);
+        if(dockAutoHide){
+          bindDockAutoHideFx(dock);
+          if(!wasAutoHide){
+            setDockAutoHideVisible(dock, false);
+            scheduleDockAutoHide(dock, 240);
+          } else {
+            setDockAutoHideVisible(dock, dockAutoHideVisible);
+          }
+        } else {
+          clearDockAutoHideTimer();
+          setDockAutoHideVisible(dock, true);
+        }
+        const buildDockItemMarkup = (iconHtml, dockIconBox) => {
+          const iconSpan = `<span class="dock-icon pixel" style="width:${dockIconBox}px;height:${dockIconBox}px;display:flex;align-items:center;justify-content:center;">${iconHtml}</span>`;
+          if(!isAquaDock){
+            return `${iconSpan}<span class="dock-indicator"></span>`;
+          }
+          return `
+            ${iconSpan}
+            <span class="dock-reflection pixel" aria-hidden="true" style="width:${dockIconBox}px;height:${dockIconBox}px;display:flex;align-items:center;justify-content:center;">${iconHtml}</span>
+            <span class="dock-tooltip" aria-hidden="true"></span>
+            <span class="dock-indicator"></span>
+          `;
+        };
         const openIds = new Set(Array.from(state.windows.values()).map(w => w.id));
         const normalized = normalizeDockItems(state.dockItems || []);
         const dockChanged = normalized.length !== state.dockItems.length || normalized.some((item, idx) => {
@@ -16915,9 +17671,40 @@ function renderBlissOSDock(){
           const label = getDockItemLabel(item);
           return `${item.id}|${item.type}|${item.refId}|${item.iconPath || ''}|${label}|${winId}|${openIds.has(winId) ? 1 : 0}|${win && win.minimized ? 1 : 0}|${state.activeWindowId === winId ? 1 : 0}`;
         }).join('||');
-        const dockSignature = `${state.settings.theme}|${state.settings.blissosStyle || ''}|${state.settings.blissosMode || ''}|${state.lang}|${isMobileDock() ? 'mobile' : 'desktop'}|${dockStateSig}`;
+        const dockSignature = `${state.settings.theme}|${state.settings.blissosAqua ? 'aqua' : 'classic'}|${state.settings.blissosDarkMode ? 'dark' : 'light'}|${state.lang}|${isMobileDock() ? 'mobile' : 'desktop'}|size:${dockSize}|mag:${isDockRenderMagnificationEnabled() ? 1 : 0}|magp:${getDockRenderMagnificationStrength()}|autoh:${dockAutoHide ? 1 : 0}|${dockStateSig}`;
         if(dockSignature === blissosDockRenderSignature && dock.firstElementChild){
           return;
+        }
+        const isAquaDesktopDock = isAquaDock && !isMobileDock();
+        if(isAquaDesktopDock){
+          const aquaScale = getAquaDockScaleForSize(dockSize);
+          dock.style.setProperty('--blissos-dock-scale', aquaScale.toFixed(3));
+        } else {
+          dock.style.removeProperty('--blissos-dock-scale');
+        }
+        let dockIconSize = 28;
+        let dockIconBox = 32;
+        let dockItemWidth = 40;
+        let dockItemHeight = 40;
+        if(isAquaDock){
+          if(isMobileDock()){
+            dockIconSize = Math.round(24 + (8 * sizeT));
+            dockIconBox = Math.round(dockIconSize + 6);
+            dockItemWidth = dockIconBox + 5;
+            dockItemHeight = dockIconBox + 2;
+          } else {
+            dockIconSize = 48;
+            dockIconBox = 56;
+            dockItemWidth = 64;
+            dockItemHeight = 54;
+          }
+        } else {
+          const minIcon = isMobileDock() ? 20 : 20;
+          const maxIcon = isMobileDock() ? 30 : 34;
+          dockIconSize = Math.round(minIcon + ((maxIcon - minIcon) * sizeT));
+          dockIconBox = Math.round(dockIconSize + (isMobileDock() ? 2 : 4));
+          dockItemWidth = dockIconBox + (isMobileDock() ? 4 : 8);
+          dockItemHeight = dockItemWidth;
         }
         blissosDockRenderSignature = dockSignature;
         normalItems.forEach(item => {
@@ -16925,6 +17712,8 @@ function renderBlissOSDock(){
           const win = winId ? state.windows.get(winId) : null;
           const btn = document.createElement('button');
           btn.className = 'blissos-dock-item';
+          btn.style.width = `${dockItemWidth}px`;
+          btn.style.height = `${dockItemHeight}px`;
           btn.type = 'button';
           btn.dataset.dockWinId = winId || '';
           btn.dataset.dockType = item.type;
@@ -16933,10 +17722,10 @@ function renderBlissOSDock(){
           if(win && win.minimized) btn.classList.add('minimized');
           const label = getDockItemLabel(item);
           btn.title = label;
-          btn.innerHTML = `
-            <span class="pixel" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">${getDockItemIconHtml(item, 28)}</span>
-            <span class="dock-indicator"></span>
-          `;
+          const iconHtml = getDockItemIconHtml(item, dockIconSize);
+          btn.innerHTML = buildDockItemMarkup(iconHtml, dockIconBox);
+          const tooltip = btn.querySelector('.dock-tooltip');
+          if(tooltip) tooltip.textContent = label;
           btn.addEventListener('click', (e)=>{
             e.stopPropagation();
             if(btn.dataset.dragged === '1'){
@@ -16945,13 +17734,16 @@ function renderBlissOSDock(){
             }
             if(win){
               if(win.minimized){
+                triggerLeopardDockBounce(btn);
                 restoreWindow(winId);
               } else if(state.activeWindowId === winId){
                 minimizeApp(winId);
               } else {
+                triggerLeopardDockBounce(btn);
                 focusWindow(winId);
               }
             } else if(item.refId){
+              triggerLeopardDockBounce(btn);
               openIconById(item.refId);
             }
           });
@@ -16974,6 +17766,8 @@ function renderBlissOSDock(){
           const win = winId ? state.windows.get(winId) : null;
           const btn = document.createElement('button');
           btn.className = 'blissos-dock-item';
+          btn.style.width = `${dockItemWidth}px`;
+          btn.style.height = `${dockItemHeight}px`;
           btn.type = 'button';
           btn.dataset.dockWinId = winId || '';
           btn.dataset.dockType = 'trash';
@@ -16982,10 +17776,10 @@ function renderBlissOSDock(){
           if(win && win.minimized) btn.classList.add('minimized');
           const label = getDockItemLabel(trashItem);
           btn.title = label;
-          btn.innerHTML = `
-            <span class="pixel" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">${getDockItemIconHtml(trashItem, 28)}</span>
-            <span class="dock-indicator"></span>
-          `;
+          const trashIconHtml = getDockItemIconHtml(trashItem, dockIconSize);
+          btn.innerHTML = buildDockItemMarkup(trashIconHtml, dockIconBox);
+          const trashTooltip = btn.querySelector('.dock-tooltip');
+          if(trashTooltip) trashTooltip.textContent = label;
           btn.addEventListener('click', (e)=>{
             e.stopPropagation();
             if(btn.dataset.dragged === '1'){
@@ -16994,13 +17788,16 @@ function renderBlissOSDock(){
             }
             if(win){
               if(win.minimized){
+                triggerLeopardDockBounce(btn);
                 restoreWindow(winId);
               } else if(state.activeWindowId === winId){
                 minimizeApp(winId);
               } else {
+                triggerLeopardDockBounce(btn);
                 focusWindow(winId);
               }
             } else {
+              triggerLeopardDockBounce(btn);
               openIconById('trash');
             }
           });
@@ -17013,6 +17810,8 @@ function renderBlissOSDock(){
         }
         dock.innerHTML = '';
         dock.appendChild(inner);
+        bindLeopardDockFx(inner);
+        bindDockAutoHideFx(dock);
       }
 
 function closeBlissOSMenu(){
@@ -17041,6 +17840,7 @@ function renderBlissOSAppleMenu(){
     { id:'general', icon:'./assets/icons/computer.png', labelKey:'settings.tab.general' },
     { id:'language', icon:'./assets/icons/language.png', labelKey:'settings.tab.language' },
     { id:'appearance', icon:'./assets/icons/appearance.png', labelKey:'settings.tab.appearance' },
+    { id:'dock', icon:'./assets/icons/dock.png', labelKey:'settings.tab.dock' },
     { id:'sound', icon:'./assets/icons/Sound.png', labelKey:'settings.tab.sound' },
     { id:'system', icon:'./assets/icons/computer.png', labelKey:'settings.tab.system' },
     { id:'performance', icon:'./assets/icons/performance.png', labelKey:'settings.tab.performance' },
@@ -17067,7 +17867,7 @@ function renderBlissOSAppleMenu(){
 
   menu.innerHTML = `
     <button class="menu-item" type="button" data-blissos-action="about">
-      <span class="menu-icon">${getThemedIconHtml({ icon:'info', id:'about', iconFile:'./assets/BlissOS/info.png' }, t('blissos.menu.about'), 16)}</span>
+      <span class="menu-icon">${getThemedIconHtml({ icon:'info', id:'about', iconFile:'./assets/icons/About.png' }, t('blissos.menu.about'), 16)}</span>
       <span class="menu-label" data-i18n="blissos.menu.about">${t('blissos.menu.about')}</span>
     </button>
     <div class="menu-sep" role="separator"></div>
@@ -17100,7 +17900,7 @@ function getActiveAppId(){
 
 function getAppDisplay(appId){
   if(appId === 'bliss'){
-    const iconHtml = `<img class="pixel" src="./assets/siteicon/bliss.png" data-fallback-src="./assets/siteicon/bliss.png" width="16" height="16" alt="" style="display:block;" />`;
+    const iconHtml = getThemedIconHtml({ icon:'app', id:'bliss', iconFile:'./assets/icons/bliss.png' }, 'Bliss', 16);
     return { label:'Bliss', iconHtml };
   }
   if(appId && state.windows.has(appId)){
@@ -17122,6 +17922,13 @@ function getAppDisplay(appId){
 
 function updateBlissOSActiveApp(){
   if(state.settings.theme !== 'blissos') return;
+  const brandIconEl = document.querySelector('.blissos-menu-brand img');
+  if(brandIconEl){
+    const brandSrc = getIconFor('./assets/icons/bliss.png', 'blissos');
+    if(typeof brandSrc === 'string' && !brandSrc.trim().startsWith('<svg')){
+      brandIconEl.src = brandSrc;
+    }
+  }
   const appId = getActiveAppId();
   const iconEl = $('#blissosAppMenuIcon');
   const labelEl = $('#blissosAppMenuLabel');
@@ -17706,6 +18513,7 @@ function bindDockDrag(btn, item, midEl, innerEl){
     ghostEl = null;
     if(btn) btn.classList.remove('dock-dragging', 'dock-removing');
     if(innerEl) innerEl.classList.remove('dock-reorder-active');
+    resetLeopardDockMagnification(innerEl);
     clearDockDropPreview();
     setDockDropHighlight(false);
   };
@@ -17720,6 +18528,7 @@ function bindDockDrag(btn, item, midEl, innerEl){
     dragging = true;
     btn.classList.add('dock-dragging');
     innerEl.classList.add('dock-reorder-active');
+    resetLeopardDockMagnification(innerEl);
     btn.dataset.dragged = '1';
     const visible = Array.from(midEl.querySelectorAll('.blissos-dock-item'))
       .filter(el => el.dataset.dockType !== 'trash' && !el.classList.contains('dock-preview-slot'));
@@ -18210,6 +19019,35 @@ function renderBlissOSAppMenu(){
           if(soundSlider.dataset.soundSlider === 'master') setMasterVolume(val);
           if(soundSlider.dataset.soundSlider === 'system') setSystemVolume(val);
           if(soundSlider.dataset.soundSlider === 'music') setMusicVolume(val);
+        }
+        const dockSlider = target && target.closest ? target.closest('[data-dock-slider]') : null;
+        if(dockSlider && dockSlider.dataset && dockSlider.dataset.dockSlider){
+          const val = clamp(parseFloat(dockSlider.value), 0, 100);
+          if(dockSlider.dataset.dockSlider === 'size') setDockSize(val);
+          if(dockSlider.dataset.dockSlider === 'magnification') setDockMagnificationStrength(val);
+        }
+      });
+      document.addEventListener('change', (e)=>{
+        const target = getEventTargetEl(e);
+        const dockToggle = target && target.closest ? target.closest('[data-dock-toggle]') : null;
+        if(dockToggle && dockToggle.dataset){
+          if(dockToggle.dataset.dockToggle === 'magnification'){
+            setDockMagnification(!!dockToggle.checked);
+            return;
+          }
+          if(dockToggle.dataset.dockToggle === 'autohide'){
+            setDockAutoHide(!!dockToggle.checked);
+            return;
+          }
+        }
+        const blissOsDarkToggle = target && target.closest ? target.closest('[data-toggle-blissos-darkmode]') : null;
+        if(blissOsDarkToggle){
+          setBlissOSDarkMode(!!blissOsDarkToggle.checked);
+          return;
+        }
+        const blissOsAquaToggle = target && target.closest ? target.closest('[data-toggle-blissos-aqua]') : null;
+        if(blissOsAquaToggle){
+          setBlissOSAqua(!!blissOsAquaToggle.checked);
         }
       });
 

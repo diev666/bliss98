@@ -509,6 +509,7 @@ Eu sou o buffalo branco extinto`
                 <div class="wctl bevel" title="${t('win.maximize')}" data-action="max">&#x25A1;</div>
               </div>
               <div class="title-left">
+                <span class="win-title-icon" data-win-title-icon="1" style="width:16px;height:16px;display:inline-flex;">${getThemedIconHtml((APPS.find(app => app.id === 'mediaplayer') || { id:'mediaplayer', icon:'music', iconFile:'./assets/icons/BLISS%20mediaplayer.png' }), t('app.mediaplayer'), 16)}</span>
                 <strong data-i18n="app.mediaplayer">${t('app.mediaplayer')}</strong>
               </div>
             </div>
@@ -1078,6 +1079,7 @@ Eu sou o buffalo branco extinto`
               <button class="settings-tab" type="button" role="tab" data-tab="general" aria-controls="settingsPanel_general" data-i18n="settings.tab.general">General</button>
               <button class="settings-tab" type="button" role="tab" data-tab="language" aria-controls="settingsPanel_language" data-i18n="settings.tab.language">Language</button>
               <button class="settings-tab" type="button" role="tab" data-tab="appearance" aria-controls="settingsPanel_appearance" data-i18n="settings.tab.appearance">Appearance</button>
+              ${isBlissOS() ? `<button class="settings-tab" type="button" role="tab" data-tab="dock" aria-controls="settingsPanel_dock" data-i18n="settings.tab.dock">Dock</button>` : ''}
               <button class="settings-tab" type="button" role="tab" data-tab="system" aria-controls="settingsPanel_system" data-i18n="settings.tab.system">System</button>
               <button class="settings-tab" type="button" role="tab" data-tab="sound" aria-controls="settingsPanel_sound" data-i18n="settings.tab.sound">Sounds</button>
               <button class="settings-tab" type="button" role="tab" data-tab="performance" aria-controls="settingsPanel_performance" data-i18n="settings.tab.performance">Performance</button>
@@ -1313,21 +1315,17 @@ Eu sou o buffalo branco extinto`
                     <button class="btn bevel" type="button" data-set-darkmode="off"><span data-i18n="settings.darkMode.off">Off</span></button>
                   </div>
                 </div>
-                <div class="settings-block blissos-only" id="settingsBlissOSDarkMode">
-                  <strong data-i18n="settings.blissosDark.title">BlissOS Dark Mode</strong>
-                  <p style="margin:6px 0 10px 0;" data-i18n="settings.blissosDark.desc">Enables a dark Mac OS 9 inspired look for BlissOS.</p>
-                  <div class="settings-actions">
-                    <button class="btn bevel" type="button" data-set-blissos-darkmode="on"><span data-i18n="settings.blissosDark.on">On</span></button>
-                    <button class="btn bevel" type="button" data-set-blissos-darkmode="off"><span data-i18n="settings.blissosDark.off">Off</span></button>
-                  </div>
+                <div class="settings-block blissos-only settings-appearance-quick" id="settingsBlissOSDarkMode">
+                  <label class="settings-appearance-toggle settings-aqua-check">
+                    <span>Dark Mode</span>
+                    <input type="checkbox" data-toggle-blissos-darkmode />
+                  </label>
                 </div>
-                <div class="settings-block blissos-only" id="settingsBlissOSAqua">
-                  <strong data-i18n="settings.blissosAqua.title">BlissOS Aqua Theme</strong>
-                  <p style="margin:6px 0 10px 0;" data-i18n="settings.blissosAqua.desc">Enable the classic Apple Aqua look for BlissOS.</p>
-                  <div class="settings-actions">
-                    <button class="btn bevel" type="button" data-set-blissos-aqua="on"><span data-i18n="settings.blissosAqua.on">On</span></button>
-                    <button class="btn bevel" type="button" data-set-blissos-aqua="off"><span data-i18n="settings.blissosAqua.off">Off</span></button>
-                  </div>
+                <div class="settings-block blissos-only settings-appearance-quick" id="settingsBlissOSAqua">
+                  <label class="settings-appearance-toggle settings-aqua-check">
+                    <span>BlissOS Aqua</span>
+                    <input type="checkbox" data-toggle-blissos-aqua />
+                  </label>
                 </div>
                 <div class="settings-block" id="settingsWallpaper">
                   <strong data-i18n="settings.wallpaperTab">Wallpaper</strong>
@@ -1353,8 +1351,12 @@ Eu sou o buffalo branco extinto`
                           <span class="wallpaper-card-label" data-i18n="wallpaper.bliss">Sunrise</span>
                         </button>
                         <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="clouds">
-                          <span class="wallpaper-card-thumb" style="background:linear-gradient(180deg, #9ad0ff 0%, #cfe9ff 45%, #f7fbff 100%);"></span>
+                          <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/clouds.png') center/cover no-repeat;"></span>
                           <span class="wallpaper-card-label" data-i18n="wallpaper.clouds">Clouds</span>
+                        </button>
+                        <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="galaxy">
+                          <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/galaxy.png') center/cover no-repeat;"></span>
+                          <span class="wallpaper-card-label" data-i18n="wallpaper.galaxy">Galaxy</span>
                         </button>
                         <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="diev">
                           <span class="wallpaper-card-thumb" style="background:repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 6px), repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 6px), linear-gradient(135deg, #0a2333, #114b6a);"></span>
@@ -1382,6 +1384,50 @@ Eu sou o buffalo branco extinto`
                   </div>
                 </div>
               </div>
+              ${isBlissOS() ? `
+              <div class="settings-panel" role="tabpanel" data-tab="dock" id="settingsPanel_dock">
+                <div class="settings-panel-header">
+                  <div class="settings-panel-icon">
+                    <img class="pixel" src="./assets/BlissOS/dock.png" data-settings-icon="dock.png" width="48" height="48" alt="" />
+                  </div>
+                  <div>
+                    <strong data-i18n="settings.tab.dock">Dock</strong>
+                    <div class="tiny" data-i18n="settings.dock.desc">Adjust Dock size, magnification, and visibility.</div>
+                  </div>
+                </div>
+                <div class="settings-dock-layout">
+                  <div class="settings-block settings-dock-block">
+                    <div class="settings-dock-row">
+                      <label class="settings-dock-label" for="settingsDockSize" data-i18n="settings.dock.size">Size:</label>
+                      <input id="settingsDockSize" class="retro-slider settings-dock-slider" type="range" min="0" max="100" step="1" data-dock-slider="size" />
+                    </div>
+                    <div class="settings-dock-scale tiny">
+                      <span data-i18n="settings.dock.small">Small</span>
+                      <span data-i18n="settings.dock.large">Large</span>
+                    </div>
+                  </div>
+                  <div class="settings-block settings-dock-block">
+                    <div class="settings-dock-row settings-dock-row-toggle">
+                      <label class="settings-dock-check">
+                        <input type="checkbox" data-dock-toggle="magnification" />
+                        <span data-i18n="settings.dock.magnification">Magnification:</span>
+                      </label>
+                      <input class="retro-slider settings-dock-slider" type="range" min="0" max="100" step="1" data-dock-slider="magnification" />
+                    </div>
+                    <div class="settings-dock-scale tiny">
+                      <span data-i18n="settings.dock.min">Min</span>
+                      <span data-i18n="settings.dock.max">Max</span>
+                    </div>
+                  </div>
+                  <div class="settings-block settings-dock-block">
+                    <label class="settings-dock-check settings-dock-autohide">
+                      <input type="checkbox" data-dock-toggle="autohide" />
+                      <span data-i18n="settings.dock.autohide">Automatically hide and show the Dock</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              ` : ''}
               <div class="settings-panel" role="tabpanel" data-tab="sound" id="settingsPanel_sound">
                 <div class="settings-panel-header">
                   <div class="settings-panel-icon">
@@ -1418,7 +1464,7 @@ Eu sou o buffalo branco extinto`
               <div class="settings-panel" role="tabpanel" data-tab="system" id="settingsPanel_system">
                 <div class="settings-panel-header">
                   <div class="settings-panel-icon">
-                    <img class="pixel" src="./assets/icons/Settings.png" data-settings-icon="Settings.png" width="48" height="48" alt="" />
+                    <img class="pixel" src="./assets/icons/system.png" data-settings-icon="system.png" width="48" height="48" alt="" />
                   </div>
                   <div>
                     <strong data-i18n="settings.systemTab">System</strong>

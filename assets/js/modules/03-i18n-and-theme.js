@@ -196,6 +196,7 @@
           'settings.tab.general': 'General',
           'settings.tab.language': 'Language',
           'settings.tab.appearance': 'Appearance',
+          'settings.tab.dock': 'Dock',
           'settings.tab.sound': 'Sounds',
           'settings.tab.system': 'System',
           'settings.tab.performance': 'Performance',
@@ -220,6 +221,14 @@
           'settings.sound.system': 'System Sounds',
           'settings.sound.toggleOn': 'On',
           'settings.sound.toggleOff': 'Off',
+          'settings.dock.desc': 'Adjust Dock size, magnification, and visibility.',
+          'settings.dock.size': 'Size:',
+          'settings.dock.small': 'Small',
+          'settings.dock.large': 'Large',
+          'settings.dock.magnification': 'Magnification:',
+          'settings.dock.min': 'Min',
+          'settings.dock.max': 'Max',
+          'settings.dock.autohide': 'Automatically hide and show the Dock',
           'settings.osTheme.title': 'Choose your OS',
           'settings.osTheme.desc': 'Switch between Bliss98 and BlissOS.',
           'settings.tab.system': 'System',
@@ -272,6 +281,14 @@
           'settings.appOpenAnim.off': 'Off',
           'settings.wallpaperTab': 'Wallpaper',
           'settings.wallpaperDesc': 'Choose a wallpaper for your desktop.',
+          'settings.aqua.nav': 'Settings navigation',
+          'settings.aqua.back': 'Back',
+          'settings.aqua.forward': 'Forward',
+          'settings.aqua.showAll': 'Show All',
+          'settings.aqua.searchAria': 'Search settings',
+          'settings.aqua.searchPlaceholder': 'Search',
+          'settings.aqua.category.personal': 'Personal',
+          'settings.aqua.category.system': 'System',
           'settings.scanlinesTab': 'Scanlines',
           'settings.scanlinesDesc': 'Add scanline effect to the display.',
           'settings.scanlines.on': 'On',
@@ -500,6 +517,7 @@
           'wallpaper.aqua': 'Aqua',
           'wallpaper.bliss': 'Sunrise',
           'wallpaper.clouds': 'Clouds',
+          'wallpaper.galaxy': 'Galaxy',
           'wallpaper.diev': 'Grid',
           'wallpaper.tot': 'Pink Tot',
           'wallpaper.matrix': 'Matrix',
@@ -749,6 +767,7 @@
           'settings.tab.general': 'Geral',
           'settings.tab.language': 'Idioma',
           'settings.tab.appearance': 'Aparência',
+          'settings.tab.dock': 'Dock',
           'settings.tab.sound': 'Sons',
           'settings.tab.system': 'Sistema',
           'settings.tab.performance': 'Performance',
@@ -773,6 +792,14 @@
           'settings.sound.system': 'Sons do sistema',
           'settings.sound.toggleOn': 'On',
           'settings.sound.toggleOff': 'Off',
+          'settings.dock.desc': 'Ajuste tamanho, ampliacao e visibilidade do Dock.',
+          'settings.dock.size': 'Tamanho:',
+          'settings.dock.small': 'Pequeno',
+          'settings.dock.large': 'Grande',
+          'settings.dock.magnification': 'Ampliacao:',
+          'settings.dock.min': 'Min',
+          'settings.dock.max': 'Max',
+          'settings.dock.autohide': 'Ocultar e mostrar o Dock automaticamente',
           'settings.osTheme.title': 'Escolha seu OS',
           'settings.osTheme.desc': 'Alterna entre Bliss98 e BlissOS.',
           'settings.tab.system': 'Sistema',
@@ -825,6 +852,14 @@
           'settings.appOpenAnim.off': 'Desligado',
           'settings.wallpaperTab': 'Papel de parede',
           'settings.wallpaperDesc': 'Escolha um papel de parede para o desktop.',
+          'settings.aqua.nav': 'Navegação das configurações',
+          'settings.aqua.back': 'Voltar',
+          'settings.aqua.forward': 'Avançar',
+          'settings.aqua.showAll': 'Mostrar tudo',
+          'settings.aqua.searchAria': 'Buscar configurações',
+          'settings.aqua.searchPlaceholder': 'Buscar',
+          'settings.aqua.category.personal': 'Pessoal',
+          'settings.aqua.category.system': 'Sistema',
           'settings.scanlinesTab': 'Scanlines',
           'settings.scanlinesDesc': 'Adicione efeito de scanlines na tela.',
           'settings.scanlines.on': 'Ligado',
@@ -1053,6 +1088,7 @@
           'wallpaper.aqua': 'Aqua',
           'wallpaper.bliss': 'Nascer do Sol',
           'wallpaper.clouds': 'Nuvens',
+          'wallpaper.galaxy': 'Galáxia',
           'wallpaper.diev': 'Grid',
           'wallpaper.tot': 'Tot (Rosa)',
           'wallpaper.matrix': 'Matrix',
@@ -2419,8 +2455,9 @@
           if(!name) return;
           const base = `./assets/icons/${name}`;
           if(themed){
-            const bliss = getBlissOSAssetPath(base);
-            setImageWithFallback(img, bliss, base);
+            const themedIcon = getIconFor(base, 'blissos');
+            const fallback = isAquaIconThemeActive('blissos') ? base : getBlissOSFallbackPath(themedIcon);
+            setImageWithFallback(img, themedIcon, fallback || base);
           } else {
             const bliss = getBlissOSAssetPath(base);
             setImageWithFallback(img, base, bliss);
