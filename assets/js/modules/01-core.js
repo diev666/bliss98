@@ -913,6 +913,11 @@ const AQUA_ICON_MAP = {
   'settings.png': 'settings.png',
   'contact.png': 'contact.png',
   'computer.png': 'computer.png',
+  'desktop.png': 'desktop.png',
+  'applications.png': 'applications.png',
+  'documents.png': 'documents.png',
+  'hd.png': 'hd.png',
+  'recents.png': 'recents.png',
   'language.png': 'language.png',
   'appearance.png': 'appearance.png',
   'system.png': 'settings.png',
@@ -1278,23 +1283,9 @@ function hardDeleteTrashContents(){
   updateTrashIconUI();
 }
 
-function emptyTrash(opts = {}){
+function emptyTrash(){
   if(state.trash.size === 0) return;
-  if(opts.confirm === false){
-    hardDeleteTrashContents();
-    return;
-  }
-  showModal({
-    title: t('dialog.trash.confirmTitle'),
-    body: `<p style="margin:0;">${t('dialog.trash.confirmBody')}</p>`,
-    actions: [
-      { label: t('dialog.trash.deleteAction'), action: 'confirm', primary: true },
-      { label: t('common.cancel'), action: 'close' }
-    ]
-  });
-  modalState.onConfirm = ()=>{
-    emptyTrash({ confirm: false });
-  };
+  hardDeleteTrashContents();
 }
 
 function renderTrashWindow(){

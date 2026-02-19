@@ -917,6 +917,11 @@ const AQUA_ICON_MAP = {
   'settings.png': 'settings.png',
   'contact.png': 'contact.png',
   'computer.png': 'computer.png',
+  'desktop.png': 'desktop.png',
+  'applications.png': 'applications.png',
+  'documents.png': 'documents.png',
+  'hd.png': 'hd.png',
+  'recents.png': 'recents.png',
   'language.png': 'language.png',
   'appearance.png': 'appearance.png',
   'system.png': 'settings.png',
@@ -1282,23 +1287,9 @@ function hardDeleteTrashContents(){
   updateTrashIconUI();
 }
 
-function emptyTrash(opts = {}){
+function emptyTrash(){
   if(state.trash.size === 0) return;
-  if(opts.confirm === false){
-    hardDeleteTrashContents();
-    return;
-  }
-  showModal({
-    title: t('dialog.trash.confirmTitle'),
-    body: `<p style="margin:0;">${t('dialog.trash.confirmBody')}</p>`,
-    actions: [
-      { label: t('dialog.trash.deleteAction'), action: 'confirm', primary: true },
-      { label: t('common.cancel'), action: 'close' }
-    ]
-  });
-  modalState.onConfirm = ()=>{
-    emptyTrash({ confirm: false });
-  };
+  hardDeleteTrashContents();
 }
 
 function renderTrashWindow(){
@@ -7833,6 +7824,7 @@ function applyOsTheme(){
   renderStartMenu();
   refreshOpenFolderWindows();
   refreshOpenTxtWindows();
+  refreshOpenSeekerWindows();
   renderTaskButtons();
   updateBlissOSActiveApp();
   updateOpenWindowTitleIcons();
@@ -8391,9 +8383,10 @@ function isDescendantFolder(targetId, ancestorId){
   return false;
 }
 
-function canMoveItemToFolder(itemId, folderId){
+function canPlaceItemInFolder(itemId, folderId, opts = {}){
   if(!itemId) return false;
-  if(state.trash.has(itemId)) return false;
+  const allowTrashed = !!opts.allowTrashed;
+  if(!allowTrashed && state.trash.has(itemId)) return false;
   if(folderId == null) return true;
   const folder = getFsItem(folderId);
   if(!folder || folder.type !== 'folder') return false;
@@ -8410,6 +8403,10 @@ function canMoveItemToFolder(itemId, folderId){
   }
   if(item.type === 'folder' && isDescendantFolder(folderId, itemId)) return false;
   return true;
+}
+
+function canMoveItemToFolder(itemId, folderId){
+  return canPlaceItemInFolder(itemId, folderId, { allowTrashed: false });
 }
 
 function moveItemToFolder(itemId, folderId, opts = {}){
@@ -8480,15 +8477,144 @@ function getDropTargetElement(x, y, dragEls){
   return target;
 }
 
-function getFolderDropTargetAt(x, y, dragEls, draggedIds){
+function getFolderDropTargetAt(x, y, dragEls, draggedIds, opts = {}){
   if(!dragEls || dragEls.length === 0) return null;
   const target = getDropTargetElement(x, y, dragEls);
   const folderEl = target && target.closest ? target.closest('.icon[data-item-type="folder"]') : null;
   if(!folderEl || !folderEl.dataset) return null;
   const folderId = folderEl.dataset.appId;
   if(!folderId) return null;
-  const canMoveAll = (draggedIds || []).every(id => canMoveItemToFolder(id, folderId));
+  const canMoveAll = (draggedIds || []).every(id => canPlaceItemInFolder(id, folderId, { allowTrashed: !!opts.allowTrashed }));
   return canMoveAll ? { id: folderId, el: folderEl } : null;
+}
+
+function normalizeDraggedFsIds(ids){
+  const out = [];
+  const seen = new Set();
+  (ids || []).forEach(id => {
+    if(!id || id === 'trash' || seen.has(id)) return;
+    const item = getFsItem(id) || ensureFsItemForApp(id, { save: false });
+    if(!item) return;
+    seen.add(id);
+    out.push(id);
+  });
+  return out;
+}
+
+function moveDraggedItemsToFolderTarget(ids, folderId, opts = {}){
+  const filtered = normalizeDraggedFsIds(ids);
+  if(!filtered.length) return false;
+  const iconPosCache = opts.iconPosCache || loadIconPositions();
+  const basePreferred = opts.preferredPos || null;
+  let movedAny = false;
+  let restoredAny = false;
+  filtered.forEach((id, idx) => {
+    if(!canPlaceItemInFolder(id, folderId, { allowTrashed: true })) return;
+    if(state.trash.has(id)){
+      state.trash.delete(id);
+      restoredAny = true;
+    }
+    const preferred = basePreferred
+      ? {
+          x: Math.max(0, Math.floor(basePreferred.x + (idx * 16))),
+          y: Math.max(0, Math.floor(basePreferred.y + (idx * 14))),
+        }
+      : { x: 16 + (idx * 16), y: 16 + (idx * 14) };
+    if(moveItemToFolder(id, folderId, {
+      force: true,
+      save: false,
+      iconPosCache,
+      preferredPos: preferred,
+      containerEl: opts.containerEl || null,
+    })){
+      movedAny = true;
+    }
+  });
+  if(restoredAny){
+    playSfx('trashRestore');
+    saveTrash();
+  }
+  if(movedAny){
+    saveIconPositions(iconPosCache);
+    saveDesktopFs();
+  }
+  if(restoredAny || movedAny){
+    renderIcons();
+    refreshOpenFolderWindows();
+    renderTrashWindow();
+    updateTrashIconUI();
+  }
+  return restoredAny || movedAny;
+}
+
+function seekerSectionAcceptsDrag(sectionId){
+  const section = normalizeSeekerSection(sectionId);
+  return section === 'trash' || !!getSeekerFolderIdFromSection(section);
+}
+
+function clearSeekerDropPreview(){
+  const win = document.getElementById('win_seeker');
+  if(!win) return;
+  win.querySelectorAll('.seeker-drop-target').forEach(el => el.classList.remove('seeker-drop-target'));
+}
+
+function setSeekerDropPreview(target){
+  clearSeekerDropPreview();
+  if(!target || !target.el) return;
+  target.el.classList.add('seeker-drop-target');
+}
+
+function getSeekerDropTargetAt(x, y, dragEls, draggedIds){
+  const ids = normalizeDraggedFsIds(draggedIds);
+  if(!ids.length || !dragEls || dragEls.length === 0) return null;
+  const target = getDropTargetElement(x, y, dragEls);
+  if(!target || !target.closest) return null;
+  const win = target.closest('#win_seeker');
+  if(!win || win.classList.contains('hidden')) return null;
+  const shell = win.querySelector('[data-seeker-shell="1"]');
+  if(!shell) return null;
+  const section = normalizeSeekerSection(ensureSeekerState().section || 'desktop');
+
+  const trashSideItem = target.closest('.seeker-side-item[data-seeker-open="trash"]');
+  if(trashSideItem){
+    return { kind: 'trash', section, shell, el: trashSideItem };
+  }
+
+  if(!seekerSectionAcceptsDrag(section)) return null;
+
+  if(section === 'trash'){
+    const main = shell.querySelector('.seeker-main');
+    if(main && (main.contains(target) || target === main)){
+      return { kind: 'trash', section, shell, el: main };
+    }
+    return null;
+  }
+
+  const currentFolderId = getSeekerFolderIdFromSection(section);
+  if(!currentFolderId) return null;
+
+  const itemEl = target.closest('[data-seeker-item]');
+  if(itemEl && shell.contains(itemEl)){
+    const key = itemEl.dataset ? itemEl.dataset.seekerItem : '';
+    const items = Array.isArray(shell._seekerItems) ? shell._seekerItems : [];
+    const entry = items.find(it => it.key === key);
+    if(entry && entry.kind === 'folder'){
+      const canAll = ids.every(id => canPlaceItemInFolder(id, entry.id, { allowTrashed: true }));
+      if(canAll){
+        return { kind: 'folder', folderId: entry.id, section, shell, el: itemEl };
+      }
+    }
+  }
+
+  const itemsHost = shell.querySelector('[data-seeker-items="1"]');
+  if(itemsHost && (itemsHost.contains(target) || target.closest('.seeker-main'))){
+    const canAll = ids.every(id => canPlaceItemInFolder(id, currentFolderId, { allowTrashed: true }));
+    if(canAll){
+      return { kind: 'folder', folderId: currentFolderId, section, shell, el: itemsHost };
+    }
+  }
+
+  return null;
 }
 
 function getRelativeIconPosFromClient(containerEl, clientX, clientY){
@@ -9212,6 +9338,14 @@ function rememberSeekerRecent(entry, opts = {}){
 }
 
 const SEEKER_FOLDER_PREFIX = 'folder:';
+const SEEKER_COMPUTER_SECTION = 'device-macintosh';
+const SEEKER_COMPUTER_HD_SECTION = 'computer-hd';
+
+function getSeekerComputerLabel(){
+  const user = (state.user || '').trim();
+  if(!user) return t('seeker.device.macintosh');
+  return `${user}'s Computer`;
+}
 
 function getSeekerSectionForFolderId(folderId){
   const folder = getFsItem(folderId);
@@ -9243,28 +9377,78 @@ function getSeekerSectionMeta(sectionId){
       icon: getFolderIconPath(),
     };
   }
-  if(section === 'device-macintosh'){
-    return { id:'device-macintosh', title:t('seeker.device.macintosh'), icon:'./assets/icons/computer.png' };
+  if(section === SEEKER_COMPUTER_SECTION){
+    return { id:SEEKER_COMPUTER_SECTION, title:getSeekerComputerLabel(), icon:'./assets/icons/computer.png' };
   }
-  if(section === 'device-efi'){
-    return { id:'device-efi', title:t('seeker.device.efi'), icon:'./assets/icons/computer.png' };
-  }
-  if(section === 'device-idisk'){
-    return { id:'device-idisk', title:t('seeker.device.idisk'), icon:'./assets/icons/folder.png' };
+  if(section === SEEKER_COMPUTER_HD_SECTION){
+    return { id:SEEKER_COMPUTER_HD_SECTION, title:'HD', icon:'./assets/icons/hd.png' };
   }
   if(section === 'applications'){
-    return { id:'applications', title:t('seeker.section.applications'), icon:'./assets/icons/seeker.png' };
+    return { id:'applications', title:t('seeker.section.applications'), icon:'./assets/icons/applications.png' };
   }
   if(section === 'documents'){
-    return { id:'documents', title:t('seeker.section.documents'), icon:'./assets/icons/txt.png' };
+    return { id:'documents', title:t('seeker.section.documents'), icon:'./assets/icons/documents.png' };
   }
   if(section === 'trash'){
     return { id:'trash', title:t('seeker.section.trash'), icon:getTrashIconFile() };
   }
   if(section === 'recent'){
-    return { id:'recent', title:t('seeker.section.recent'), icon:'./assets/icons/Settings.png' };
+    return { id:'recent', title:t('seeker.section.recent'), icon:'./assets/icons/recents.png' };
   }
-  return { id:'desktop', title:t('seeker.section.desktop'), icon:'./assets/icons/computer.png' };
+  return { id:'desktop', title:t('seeker.section.desktop'), icon:'./assets/icons/desktop.png' };
+}
+
+function getSeekerSidebarIconSpec(sectionId){
+  const section = normalizeSeekerSection(sectionId || 'desktop');
+  if(section === SEEKER_COMPUTER_SECTION){
+    return {
+      id: 'seeker-device-mac',
+      icon: 'app',
+      iconFile: './assets/icons/computer.png',
+      label: getSeekerComputerLabel(),
+    };
+  }
+  if(section === 'desktop'){
+    return {
+      id: 'seeker-place-desktop',
+      icon: 'app',
+      iconFile: './assets/icons/desktop.png',
+      label: t('seeker.section.desktop'),
+    };
+  }
+  if(section === 'applications'){
+    return {
+      id: 'seeker-place-apps',
+      icon: 'app',
+      iconFile: './assets/icons/applications.png',
+      label: t('seeker.section.applications'),
+    };
+  }
+  if(section === 'documents'){
+    return {
+      id: 'seeker-place-docs',
+      icon: 'file',
+      iconFile: './assets/icons/documents.png',
+      label: t('seeker.section.documents'),
+    };
+  }
+  if(section === 'trash'){
+    return {
+      id: 'seeker-place-trash',
+      icon: 'trash',
+      iconFile: getTrashIconFile,
+      label: t('seeker.section.trash'),
+    };
+  }
+  if(section === 'recent'){
+    return {
+      id: 'seeker-place-recent',
+      icon: 'settings',
+      iconFile: './assets/icons/recents.png',
+      label: t('seeker.section.recent'),
+    };
+  }
+  return null;
 }
 
 function normalizeSeekerSection(sectionId){
@@ -9278,9 +9462,8 @@ function normalizeSeekerSection(sectionId){
     return `${SEEKER_FOLDER_PREFIX}${plainFolder.id}`;
   }
   if(
-    token === 'device-macintosh' ||
-    token === 'device-efi' ||
-    token === 'device-idisk' ||
+    token === SEEKER_COMPUTER_SECTION ||
+    token === SEEKER_COMPUTER_HD_SECTION ||
     token === 'applications' ||
     token === 'documents' ||
     token === 'trash' ||
@@ -9333,6 +9516,24 @@ function buildSeekerPoemItem(poem){
   };
 }
 
+function buildSeekerComputerHdItem(){
+  const label = 'HD';
+  return {
+    key: `virtual:${SEEKER_COMPUTER_HD_SECTION}`,
+    kind: 'virtual',
+    id: SEEKER_COMPUTER_HD_SECTION,
+    label,
+    subtitle: '',
+    openSection: SEEKER_COMPUTER_HD_SECTION,
+    iconHtml: getThemedIconHtml({ id:'seeker-hd', icon:'folder', iconFile:'./assets/icons/hd.png' }, label, 48),
+  };
+}
+
+function getSeekerComputerItems(){
+  const hd = buildSeekerComputerHdItem();
+  return hd ? [hd] : [];
+}
+
 function getSeekerDesktopItems(){
   const items = getRenderableFsChildren(null)
     .filter(isDesktopVisibleItem)
@@ -9356,6 +9557,30 @@ function getSeekerDocumentsItems(){
     .filter(Boolean);
   const poems = POEMS.map(buildSeekerPoemItem).filter(Boolean);
   return docs.concat(poems).sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function getSeekerComputerHdItems(){
+  const apps = APPS
+    .filter(app => app && app.id !== 'trash' && app.id !== 'dope-skate')
+    .map(buildSeekerAppItem)
+    .filter(Boolean);
+  const fsItems = Object.values(state.fs.items || {})
+    .filter(item => item && !state.trash.has(item.id) && (
+      item.type === 'folder' ||
+      item.type === 'txt' ||
+      item.type === 'virtual'
+    ))
+    .map(buildSeekerFsItem)
+    .filter(Boolean);
+  const poems = POEMS.map(buildSeekerPoemItem).filter(Boolean);
+  const merged = [];
+  const seen = new Set();
+  apps.concat(fsItems, poems).forEach(item => {
+    if(!item || !item.key || seen.has(item.key)) return;
+    seen.add(item.key);
+    merged.push(item);
+  });
+  return merged.sort((a, b) => a.label.localeCompare(b.label));
 }
 
 function getSeekerTrashItems(){
@@ -9487,9 +9712,8 @@ function getSeekerItemsBySection(sectionId){
   const section = normalizeSeekerSection(sectionId);
   const folderId = getSeekerFolderIdFromSection(section);
   if(folderId) return getSeekerFolderItems(folderId);
-  if(section === 'device-macintosh') return getSeekerDesktopItems();
-  if(section === 'device-efi') return getSeekerApplicationsItems();
-  if(section === 'device-idisk') return getSeekerDocumentsItems();
+  if(section === SEEKER_COMPUTER_SECTION) return getSeekerComputerItems();
+  if(section === SEEKER_COMPUTER_HD_SECTION) return getSeekerComputerHdItems();
   if(section === 'applications') return getSeekerApplicationsItems();
   if(section === 'documents') return getSeekerDocumentsItems();
   if(section === 'trash') return getSeekerTrashItems();
@@ -9526,6 +9750,161 @@ function moveSeekerHistory(delta){
   refreshOpenSeekerWindows();
 }
 
+function getFsIdFromSeekerEntry(entry){
+  if(!entry) return null;
+  if(entry.kind === 'folder' || entry.kind === 'txt' || entry.kind === 'app' || entry.kind === 'virtual'){
+    return entry.id || null;
+  }
+  return null;
+}
+
+function makeSeekerItemDraggable(itemEl, shell){
+  if(!itemEl || !shell || itemEl.dataset.seekerDragBound === '1') return;
+  itemEl.dataset.seekerDragBound = '1';
+
+  let down = false;
+  let dragging = false;
+  let pointerId = null;
+  let startX = 0;
+  let startY = 0;
+  let ghost = null;
+  let dragId = null;
+  let lastEvent = null;
+  const dragLayer = $('#dragLayer');
+
+  const cleanup = ()=>{
+    itemEl.removeEventListener('pointermove', onPointerMove);
+    itemEl.removeEventListener('pointerup', onPointerUp);
+    itemEl.removeEventListener('pointercancel', onPointerUp);
+    window.removeEventListener('blur', onWindowBlur);
+    if(ghost && dragLayer){
+      ghost.remove();
+      ghost = null;
+      dragLayer.classList.remove('active');
+    }
+    clearSeekerDropPreview();
+    dragging = false;
+    pointerId = null;
+    dragId = null;
+  };
+
+  const endDrag = (e, cancel = false)=>{
+    if(!down) return;
+    if(pointerId !== null && e && e.pointerId !== pointerId) return;
+    down = false;
+    try{ itemEl.releasePointerCapture(pointerId); } catch {}
+
+    const eventRef = e || lastEvent;
+    const didDrag = dragging;
+
+    if(didDrag && !cancel && eventRef && dragId){
+      const ids = [dragId];
+      const dragEls = [];
+      if(ghost) dragEls.push(ghost);
+      dragEls.push(itemEl);
+
+      if(isOverTrashWindow(eventRef.clientX, eventRef.clientY) || isOverTrash(eventRef.clientX, eventRef.clientY)){
+        moveIconsToTrash(ids);
+      } else {
+        const seekerTarget = getSeekerDropTargetAt(eventRef.clientX, eventRef.clientY, dragEls, ids);
+        if(seekerTarget){
+          if(seekerTarget.kind === 'trash'){
+            moveIconsToTrash(ids);
+          } else if(seekerTarget.kind === 'folder'){
+            moveDraggedItemsToFolderTarget(ids, seekerTarget.folderId, {
+              preferredPos: { x: 20, y: 20 },
+            });
+          }
+        } else {
+          const folderTarget = getFolderDropTargetAt(eventRef.clientX, eventRef.clientY, dragEls, ids, { allowTrashed: true });
+          if(folderTarget){
+            moveDraggedItemsToFolderTarget(ids, folderTarget.id, {
+              preferredPos: { x: 20, y: 20 },
+            });
+          } else {
+            const targetEl = getDropTargetElement(eventRef.clientX, eventRef.clientY, dragEls);
+            const overWindow = targetEl && targetEl.closest ? targetEl.closest('.window') : null;
+            if(isOverDesktopArea(eventRef.clientX, eventRef.clientY) && !overWindow){
+              const preferred = getDesktopPosFromClient(eventRef.clientX, eventRef.clientY);
+              moveDraggedItemsToFolderTarget(ids, null, { preferredPos: preferred });
+            }
+          }
+        }
+      }
+      itemEl.dataset.dragged = '1';
+    }
+
+    cleanup();
+  };
+
+  const onWindowBlur = ()=> endDrag(lastEvent, true);
+
+  const onPointerMove = (e)=>{
+    if(!down) return;
+    if(pointerId !== null && e.pointerId !== pointerId) return;
+    lastEvent = e;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    if(!dragging && (Math.abs(dx) + Math.abs(dy) > 4)){
+      dragging = true;
+      if(dragLayer){
+        dragLayer.classList.add('active');
+        ghost = itemEl.cloneNode(true);
+        ghost.classList.add('folder-drag-ghost', 'seeker-drag-ghost');
+        const rect = itemEl.getBoundingClientRect();
+        ghost.style.width = `${Math.max(110, Math.round(rect.width))}px`;
+        dragLayer.appendChild(ghost);
+      }
+    }
+    if(!dragging) return;
+    if(ghost){
+      const area = $('#desktopArea').getBoundingClientRect();
+      ghost.style.left = `${Math.round(e.clientX - area.left - 54)}px`;
+      ghost.style.top = `${Math.round(e.clientY - area.top - 28)}px`;
+    }
+    if(dragId){
+      const dragEls = [];
+      if(ghost) dragEls.push(ghost);
+      dragEls.push(itemEl);
+      const seekerTarget = getSeekerDropTargetAt(e.clientX, e.clientY, dragEls, [dragId]);
+      setSeekerDropPreview(seekerTarget);
+    }
+    e.preventDefault();
+  };
+
+  const onPointerUp = (e)=> endDrag(e, false);
+
+  const onPointerDown = (e)=>{
+    if(e.pointerType === 'mouse' && e.button !== 0) return;
+    const section = normalizeSeekerSection(ensureSeekerState().section || 'desktop');
+    if(!seekerSectionAcceptsDrag(section)) return;
+    const key = itemEl.dataset ? itemEl.dataset.seekerItem : '';
+    const items = Array.isArray(shell._seekerItems) ? shell._seekerItems : [];
+    const entry = items.find(it => it.key === key);
+    const nextId = getFsIdFromSeekerEntry(entry);
+    if(!nextId || nextId === 'trash') return;
+
+    down = true;
+    dragging = false;
+    pointerId = e.pointerId;
+    startX = e.clientX;
+    startY = e.clientY;
+    lastEvent = e;
+    dragId = nextId;
+    itemEl.dataset.dragged = '0';
+
+    try{ itemEl.setPointerCapture(pointerId); } catch {}
+    itemEl.addEventListener('pointermove', onPointerMove);
+    itemEl.addEventListener('pointerup', onPointerUp);
+    itemEl.addEventListener('pointercancel', onPointerUp);
+    window.addEventListener('blur', onWindowBlur);
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  itemEl.addEventListener('pointerdown', onPointerDown);
+}
+
 function openSeekerSection(sectionId, opts = {}){
   const winEl = openApp('seeker', opts);
   updateSeekerHistory(sectionId);
@@ -9537,6 +9916,14 @@ function openSeekerItem(item){
   if(!item) return;
   if(item.kind === 'app'){
     openApp(item.id);
+    return;
+  }
+  if(item.kind === 'virtual'){
+    if(item.openSection){
+      openSeekerSection(item.openSection);
+      return;
+    }
+    openIconById(item.id);
     return;
   }
   if(item.kind === 'folder'){
@@ -9597,14 +9984,23 @@ function renderSeekerWindow(winEl){
   if(locationIcon){
     locationIcon.innerHTML = getThemedIconHtml({ id:`seeker-loc-${meta.id}`, icon:'folder', iconFile:meta.icon }, meta.title, 16);
   }
-  const trashSideIcon = shell.querySelector('[data-seeker-open="trash"] .seeker-side-icon');
-  if(trashSideIcon){
-    trashSideIcon.innerHTML = getThemedIconHtml(
-      { id:'seeker-place-trash', icon:'trash', iconFile:getTrashIconFile },
-      t('seeker.section.trash'),
-      16
-    );
-  }
+  shell.querySelectorAll('.seeker-side-item[data-seeker-open]').forEach(btn => {
+    const token = normalizeSeekerSection((btn.dataset && btn.dataset.seekerOpen) || 'desktop');
+    const spec = getSeekerSidebarIconSpec(token);
+    if(!spec) return;
+    const iconHost = btn.querySelector('.seeker-side-icon');
+    if(iconHost){
+      iconHost.innerHTML = getThemedIconHtml(
+        { id: spec.id, icon: spec.icon, iconFile: spec.iconFile },
+        spec.label,
+        16
+      );
+    }
+    const computerLabel = btn.querySelector('[data-seeker-device-mac-label="1"]');
+    if(computerLabel && token === SEEKER_COMPUTER_SECTION){
+      computerLabel.textContent = spec.label;
+    }
+  });
 
   if(itemsHost){
     itemsHost.classList.toggle('seeker-items-list', seeker.view === 'list');
@@ -9629,6 +10025,9 @@ function renderSeekerWindow(winEl){
         </button>
       `).join('');
     }
+    itemsHost.querySelectorAll('[data-seeker-item]').forEach(itemEl => {
+      makeSeekerItemDraggable(itemEl, shell);
+    });
   }
 
   if(statusEl){
@@ -9692,6 +10091,10 @@ function initSeekerWindow(winEl){
 
       const itemBtn = target.closest('[data-seeker-item]');
       if(itemBtn && itemBtn.dataset){
+        if(itemBtn.dataset.dragged === '1'){
+          itemBtn.dataset.dragged = '0';
+          return;
+        }
         const key = itemBtn.dataset.seekerItem;
         const items = Array.isArray(shell._seekerItems) ? shell._seekerItems : [];
         const item = items.find(it => it.key === key);
@@ -9704,6 +10107,10 @@ function initSeekerWindow(winEl){
       if(!target || !target.closest) return;
       const itemBtn = target.closest('[data-seeker-item]');
       if(!itemBtn || !itemBtn.dataset) return;
+      if(itemBtn.dataset.dragged === '1'){
+        itemBtn.dataset.dragged = '0';
+        return;
+      }
       const key = itemBtn.dataset.seekerItem;
       const items = Array.isArray(shell._seekerItems) ? shell._seekerItems : [];
       const item = items.find(it => it.key === key);
@@ -10280,8 +10687,6 @@ function installLongPress(el, getTarget){
           'seeker.group.places': 'Places',
           'seeker.group.searchFor': 'Search For',
           'seeker.device.macintosh': 'Macintosh',
-          'seeker.device.efi': 'EFI-LEGACY',
-          'seeker.device.idisk': 'iDisk',
           'seeker.section.desktop': 'Desktop',
           'seeker.section.applications': 'Applications',
           'seeker.section.documents': 'Documents',
@@ -10641,9 +11046,6 @@ function installLongPress(el, getTarget){
           'dialog.trash.restore': 'Restore',
           'dialog.trash.restoreAll': 'Restore All',
           'dialog.trash.emptyAction': 'Empty Trash',
-          'dialog.trash.confirmTitle': 'Delete items?',
-          'dialog.trash.confirmBody': 'Items in the Trash will be permanently deleted.',
-          'dialog.trash.deleteAction': 'Delete',
 
           'wallpaper.classic': 'Classic Teal',
           'wallpaper.blissos': 'BlissOS',
@@ -10881,8 +11283,6 @@ function installLongPress(el, getTarget){
           'seeker.group.places': 'Locais',
           'seeker.group.searchFor': 'Buscar por',
           'seeker.device.macintosh': 'Macintosh',
-          'seeker.device.efi': 'EFI-LEGACY',
-          'seeker.device.idisk': 'iDisk',
           'seeker.section.desktop': 'Desktop',
           'seeker.section.applications': 'Aplicativos',
           'seeker.section.documents': 'Documentos',
@@ -11242,9 +11642,6 @@ function installLongPress(el, getTarget){
           'dialog.trash.restore': 'Restaurar',
           'dialog.trash.restoreAll': 'Restaurar tudo',
           'dialog.trash.emptyAction': 'Esvaziar Lixeira',
-          'dialog.trash.confirmTitle': 'Excluir itens?',
-          'dialog.trash.confirmBody': 'Os itens na lixeira serão excluídos permanentemente.',
-          'dialog.trash.deleteAction': 'Excluir',
 
           'wallpaper.classic': 'Teal clássico',
           'wallpaper.blissos': 'BlissOS',
@@ -13155,45 +13552,37 @@ Eu sou o buffalo branco extinto`
               <aside class="seeker-sidebar">
                 <section class="seeker-group">
                   <h3 class="seeker-group-title" data-i18n="seeker.group.devices">${t('seeker.group.devices')}</h3>
-                  <button class="seeker-side-item" type="button" data-seeker-open="device-macintosh" data-seeker-kind="device">
-                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-device-mac', icon:'app', iconFile:'./assets/icons/computer.png' }, t('seeker.device.macintosh'), 16)}</span>
-                    <span data-i18n="seeker.device.macintosh">${t('seeker.device.macintosh')}</span>
-                  </button>
-                  <button class="seeker-side-item" type="button" data-seeker-open="device-efi" data-seeker-kind="device">
-                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-device-efi', icon:'app', iconFile:'./assets/icons/computer.png' }, t('seeker.device.efi'), 16)}</span>
-                    <span data-i18n="seeker.device.efi">${t('seeker.device.efi')}</span>
-                  </button>
-                  <button class="seeker-side-item" type="button" data-seeker-open="device-idisk" data-seeker-kind="device">
-                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-device-idisk', icon:'folder', iconFile:'./assets/icons/folder.png' }, t('seeker.device.idisk'), 16)}</span>
-                    <span data-i18n="seeker.device.idisk">${t('seeker.device.idisk')}</span>
-                  </button>
-                </section>
+	                  <button class="seeker-side-item" type="button" data-seeker-open="device-macintosh" data-seeker-kind="device">
+	                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-device-mac', icon:'app', iconFile:'./assets/icons/computer.png' }, t('seeker.device.macintosh'), 16)}</span>
+	                    <span data-seeker-device-mac-label="1">${escapeHTML(getSeekerComputerLabel())}</span>
+	                  </button>
+	                </section>
                 <section class="seeker-group">
                   <h3 class="seeker-group-title" data-i18n="seeker.group.places">${t('seeker.group.places')}</h3>
-                  <button class="seeker-side-item" type="button" data-seeker-open="desktop">
-                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-place-desktop', icon:'app', iconFile:'./assets/icons/computer.png' }, t('seeker.section.desktop'), 16)}</span>
-                    <span data-i18n="seeker.section.desktop">${t('seeker.section.desktop')}</span>
-                  </button>
-                  <button class="seeker-side-item" type="button" data-seeker-open="applications">
-                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-place-apps', icon:'app', iconFile:'./assets/icons/seeker.png' }, t('seeker.section.applications'), 16)}</span>
-                    <span data-i18n="seeker.section.applications">${t('seeker.section.applications')}</span>
-                  </button>
-                  <button class="seeker-side-item" type="button" data-seeker-open="documents">
-                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-place-docs', icon:'file', iconFile:'./assets/icons/txt.png' }, t('seeker.section.documents'), 16)}</span>
-                    <span data-i18n="seeker.section.documents">${t('seeker.section.documents')}</span>
-                  </button>
+	                  <button class="seeker-side-item" type="button" data-seeker-open="desktop">
+	                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-place-desktop', icon:'app', iconFile:'./assets/icons/desktop.png' }, t('seeker.section.desktop'), 16)}</span>
+	                    <span data-i18n="seeker.section.desktop">${t('seeker.section.desktop')}</span>
+	                  </button>
+	                  <button class="seeker-side-item" type="button" data-seeker-open="applications">
+	                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-place-apps', icon:'app', iconFile:'./assets/icons/applications.png' }, t('seeker.section.applications'), 16)}</span>
+	                    <span data-i18n="seeker.section.applications">${t('seeker.section.applications')}</span>
+	                  </button>
+	                  <button class="seeker-side-item" type="button" data-seeker-open="documents">
+	                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-place-docs', icon:'file', iconFile:'./assets/icons/documents.png' }, t('seeker.section.documents'), 16)}</span>
+	                    <span data-i18n="seeker.section.documents">${t('seeker.section.documents')}</span>
+	                  </button>
                   <button class="seeker-side-item" type="button" data-seeker-open="trash">
                     <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-place-trash', icon:'trash', iconFile:getTrashIconFile }, t('seeker.section.trash'), 16)}</span>
                     <span data-i18n="seeker.section.trash">${t('seeker.section.trash')}</span>
                   </button>
                 </section>
-                <section class="seeker-group">
-                  <h3 class="seeker-group-title" data-i18n="seeker.group.searchFor">${t('seeker.group.searchFor')}</h3>
-                  <button class="seeker-side-item" type="button" data-seeker-open="recent">
-                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-place-recent', icon:'settings', iconFile:'./assets/icons/Settings.png' }, t('seeker.section.recent'), 16)}</span>
-                    <span data-i18n="seeker.section.recent">${t('seeker.section.recent')}</span>
-                  </button>
-                </section>
+	                <section class="seeker-group">
+	                  <h3 class="seeker-group-title" data-i18n="seeker.group.searchFor">${t('seeker.group.searchFor')}</h3>
+	                  <button class="seeker-side-item" type="button" data-seeker-open="recent">
+	                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-place-recent', icon:'settings', iconFile:'./assets/icons/recents.png' }, t('seeker.section.recent'), 16)}</span>
+	                    <span data-i18n="seeker.section.recent">${t('seeker.section.recent')}</span>
+	                  </button>
+	                </section>
               </aside>
               <section class="seeker-main">
                 <div class="seeker-main-header">
@@ -15579,89 +15968,102 @@ function renderIcons(){
 
           document.body.classList.remove('dragging');
 
-          if(dragging && !cancel && e){
-            const ids = startPositions.map(p => p.id);
-            const dragEls = startPositions.map(p => p.el);
-            const iconPosCache = loadIconPositions();
-            ids.forEach(id => { ensureFsItemForApp(id, { save: false }); });
+	          if(dragging && !cancel && e){
+	            const ids = startPositions.map(p => p.id);
+	            const dragEls = startPositions.map(p => p.el);
+	            const iconPosCache = loadIconPositions();
+	            ids.forEach(id => { ensureFsItemForApp(id, { save: false }); });
 
             if(isOverTrashWindow(e.clientX, e.clientY) || isOverTrash(e.clientX, e.clientY)){
               restoreGroupLayer();
               moveIconsToTrash(ids);
-            } else if(isOverGamesWindow(e.clientX, e.clientY)){
-              addToFolder('games', ids);
-              ids.forEach(id => { delete iconPosCache[id]; });
-              debounceIconSave(()=> saveIconPositions(iconPosCache));
-              restoreGroupLayer();
-              renderIcons();
-              renderGamesWindow();
-            } else {
-              const dockTarget = getDockDropTargetAt(e.clientX, e.clientY);
-              if(dockTarget){
-                restoreGroupLayer();
-                const entries = ids.map(id => {
-                  if(id === 'trash') return { type:'trash', refId:'trash' };
-                  const fsItem = getFsItem(id);
-                  if(fsItem && (fsItem.type === 'folder' || fsItem.type === 'txt')) return { type: fsItem.type, refId: id };
-                  return { type:'app', refId: id };
-                });
-                addDockItemsAt(entries, dockTarget.index);
-              } else {
-                const folderTarget = getFolderDropTargetAt(e.clientX, e.clientY, dragEls, ids);
-                if(folderTarget){
-                  restoreGroupLayer();
-                  let moved = false;
-                  ids.forEach(id => {
-                    if(moveItemToFolder(id, folderTarget.id, { save: false, iconPosCache, preferredPos: { x: 0, y: 0 } })){
-                      moved = true;
-                    }
-                  });
-                  saveIconPositions(iconPosCache);
-                  saveDesktopFs();
-                  renderIcons();
-                  if(moved) refreshOpenFolderWindows();
-                } else {
-                  restoreGroupLayer();
-                  const metrics = getGridMetrics();
-                  const occupied = state.gridSnap
-                    ? buildOccupiedFromFs(null, ids, metrics, { visibleOnly: true })
-                    : null;
-                  let fsDirty = false;
-                  let iconPosDirty = false;
+	            } else if(isOverGamesWindow(e.clientX, e.clientY)){
+	              addToFolder('games', ids);
+	              ids.forEach(id => { delete iconPosCache[id]; });
+	              debounceIconSave(()=> saveIconPositions(iconPosCache));
+	              restoreGroupLayer();
+	              renderIcons();
+	              renderGamesWindow();
+	            } else {
+	              const dockTarget = getDockDropTargetAt(e.clientX, e.clientY);
+	              if(dockTarget){
+	                restoreGroupLayer();
+	                const entries = ids.map(id => {
+	                  if(id === 'trash') return { type:'trash', refId:'trash' };
+	                  const fsItem = getFsItem(id);
+	                  if(fsItem && (fsItem.type === 'folder' || fsItem.type === 'txt')) return { type: fsItem.type, refId: id };
+	                  return { type:'app', refId: id };
+	                });
+	                addDockItemsAt(entries, dockTarget.index);
+	              } else {
+	                const seekerTarget = getSeekerDropTargetAt(e.clientX, e.clientY, dragEls, ids);
+	                if(seekerTarget){
+	                  restoreGroupLayer();
+	                  if(seekerTarget.kind === 'trash'){
+	                    moveIconsToTrash(ids);
+	                  } else if(seekerTarget.kind === 'folder'){
+	                    moveDraggedItemsToFolderTarget(ids, seekerTarget.folderId, {
+	                      iconPosCache,
+	                      preferredPos: { x: 20, y: 20 },
+	                    });
+	                  }
+	                } else {
+	                  const folderTarget = getFolderDropTargetAt(e.clientX, e.clientY, dragEls, ids);
+	                  if(folderTarget){
+	                    restoreGroupLayer();
+	                    let moved = false;
+	                    ids.forEach(id => {
+	                      if(moveItemToFolder(id, folderTarget.id, { save: false, iconPosCache, preferredPos: { x: 0, y: 0 } })){
+	                        moved = true;
+	                      }
+	                    });
+	                    saveIconPositions(iconPosCache);
+	                    saveDesktopFs();
+	                    renderIcons();
+	                    if(moved) refreshOpenFolderWindows();
+	                  } else {
+	                    restoreGroupLayer();
+	                    const metrics = getGridMetrics();
+	                    const occupied = state.gridSnap
+	                      ? buildOccupiedFromFs(null, ids, metrics, { visibleOnly: true })
+	                      : null;
+	                    let fsDirty = false;
+	                    let iconPosDirty = false;
 
-                  startPositions.forEach(p => {
-                    const dx = e.clientX - startX;
-                    const dy = e.clientY - startY;
-                    let x = p.x + dx;
-                    let y = p.y + dy;
-                    let placed;
-                    if(state.gridSnap){
-                      placed = placeOnFreeCell(x, y, occupied, metrics);
-                    } else {
-                      const clamped = clampIconPos(x, y);
-                      placed = { x: clamped.x, y: clamped.y };
-                    }
-                    p.el.style.left = placed.x + 'px';
-                    p.el.style.top = placed.y + 'px';
-                    p.el.style.transform = '';
-                    const current = getFsItem(p.id);
-                    const changed = !current || current.parentId != null || current.x !== placed.x || current.y !== placed.y;
-                    if(changed){
-                      upsertFsItem({ id: p.id, parentId: null, x: placed.x, y: placed.y }, { save: false, syncIconPos: true, iconPosCache });
-                      fsDirty = true;
-                      if(isAppLikeItem(current || { type: p.el.dataset.itemType })) iconPosDirty = true;
-                    }
-                    p.el.dataset.dragged = '1';
-                  });
+	                    startPositions.forEach(p => {
+	                      const dx = e.clientX - startX;
+	                      const dy = e.clientY - startY;
+	                      let x = p.x + dx;
+	                      let y = p.y + dy;
+	                      let placed;
+	                      if(state.gridSnap){
+	                        placed = placeOnFreeCell(x, y, occupied, metrics);
+	                      } else {
+	                        const clamped = clampIconPos(x, y);
+	                        placed = { x: clamped.x, y: clamped.y };
+	                      }
+	                      p.el.style.left = placed.x + 'px';
+	                      p.el.style.top = placed.y + 'px';
+	                      p.el.style.transform = '';
+	                      const current = getFsItem(p.id);
+	                      const changed = !current || current.parentId != null || current.x !== placed.x || current.y !== placed.y;
+	                      if(changed){
+	                        upsertFsItem({ id: p.id, parentId: null, x: placed.x, y: placed.y }, { save: false, syncIconPos: true, iconPosCache });
+	                        fsDirty = true;
+	                        if(isAppLikeItem(current || { type: p.el.dataset.itemType })) iconPosDirty = true;
+	                      }
+	                      p.el.dataset.dragged = '1';
+	                    });
 
-                  if(iconPosDirty) debounceIconSave(()=> saveIconPositions(iconPosCache));
-                  if(fsDirty) saveDesktopFs();
-                }
-              }
-            }
-          } else if(dragging){
-            restoreGroupLayer();
-          }
+	                    if(iconPosDirty) debounceIconSave(()=> saveIconPositions(iconPosCache));
+	                    if(fsDirty) saveDesktopFs();
+	                  }
+	                }
+	              }
+	            }
+	          } else if(dragging){
+	            restoreGroupLayer();
+	          }
 
           if(dragging){
             startPositions.forEach(p => {
@@ -15669,12 +16071,13 @@ function renderIcons(){
               p.el.dataset.dragged = '1';
             });
           }
-          clearDockDropPreview();
-          setDockDropHighlight(false);
+	          clearDockDropPreview();
+	          setDockDropHighlight(false);
+	          clearSeekerDropPreview();
 
-          dragging = false;
-          pointerId = null;
-        };
+	          dragging = false;
+	          pointerId = null;
+	        };
         const onPointerDown = (e)=>{
           if($('#desktop').classList.contains('hidden')) return;
           if(e.pointerType === 'mouse' && e.button !== 0) return;
@@ -15783,19 +16186,21 @@ function renderIcons(){
           startPositions.forEach(p => {
             p.el.style.transform = `translate(${dx}px, ${dy}px)`;
           });
-          if(isBlissOS()){
-            const dockTarget = getDockDropTargetAt(e.clientX, e.clientY);
-            if(dockTarget){
-              setDockDropPreview(dockTarget.index);
-              setDockDropHighlight(true);
-            } else {
-              clearDockDropPreview();
-              setDockDropHighlight(false);
-            }
-          }
+	          if(isBlissOS()){
+	            const dockTarget = getDockDropTargetAt(e.clientX, e.clientY);
+	            if(dockTarget){
+	              setDockDropPreview(dockTarget.index);
+	              setDockDropHighlight(true);
+	            } else {
+	              clearDockDropPreview();
+	              setDockDropHighlight(false);
+	            }
+	          }
+	          const seekerTarget = getSeekerDropTargetAt(e.clientX, e.clientY, group, startPositions.map(p => p.id));
+	          setSeekerDropPreview(seekerTarget);
 
-          e.preventDefault();
-        };
+	          e.preventDefault();
+	        };
 
         const onPointerUp = (e)=>{
           endDrag(e, false);
@@ -16544,6 +16949,46 @@ function getMediaPlayerRect(){
   return { left, top, width, height };
 }
 
+function getSeekerRect(areaRect = null){
+  const area = areaRect || $('#desktopArea').getBoundingClientRect();
+  const margin = state.isMobile ? 10 : 18;
+  const maxWidth = Math.max(320, area.width - margin * 2);
+  const maxHeight = Math.max(260, area.height - margin * 2);
+  const targetWidth = state.isMobile
+    ? Math.max(300, area.width - 12)
+    : Math.max(980, Math.floor(area.width * 0.58));
+  const targetHeight = state.isMobile
+    ? Math.max(320, area.height - 14)
+    : Math.max(700, Math.floor(area.height * 0.70));
+  const width = clamp(
+    targetWidth,
+    state.isMobile ? 280 : 860,
+    Math.min(maxWidth, state.isMobile ? maxWidth : 1380)
+  );
+  const height = clamp(
+    targetHeight,
+    state.isMobile ? 260 : 560,
+    Math.min(maxHeight, state.isMobile ? maxHeight : 920)
+  );
+  const left = Math.round(clamp((area.width - width) / 2, margin, Math.max(margin, area.width - width - margin)));
+  const topSeed = state.isMobile ? ((area.height - height) / 2) : ((area.height - height) / 2 - 10);
+  const top = Math.round(clamp(topSeed, margin, Math.max(margin, area.height - height - margin)));
+  return { left, top, width, height };
+}
+
+function applySeekerMinimumRect(rect, areaRect = null){
+  if(!rect) return rect;
+  const area = areaRect || $('#desktopArea').getBoundingClientRect();
+  const preferred = getSeekerRect(area);
+  const minWidth = Math.min(preferred.width, Math.max(760, Math.floor(area.width * 0.46)));
+  const minHeight = Math.min(preferred.height, Math.max(500, Math.floor(area.height * 0.50)));
+  return {
+    ...rect,
+    width: Math.max(rect.width, minWidth),
+    height: Math.max(rect.height, minHeight),
+  };
+}
+
 function getViewportRectForWindow(appId){
   const w = state.windows.get(appId);
   if(!w) return null;
@@ -16795,7 +17240,10 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
         let rect = defaultWindowRect();
         const area = $('#desktopArea').getBoundingClientRect();
         const mobileDopeSkate = appId === 'dope-skate' && typeof isMobileGameMode === 'function' && isMobileGameMode();
-        const savedRect = (appId === 'about' || appId === 'dope-skate') ? null : getSavedWindowRect(appId);
+        const savedRectRaw = (appId === 'about' || appId === 'dope-skate') ? null : getSavedWindowRect(appId);
+        const savedRect = (appId === 'seeker' && savedRectRaw)
+          ? applySeekerMinimumRect(savedRectRaw, area)
+          : savedRectRaw;
         if(mobileDopeSkate){
           rect = normalizeWindowRect({
             left: 0,
@@ -16805,6 +17253,8 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
           }, area, 0);
         } else if(appId === 'mediaplayer'){
           rect = normalizeWindowRect(getMediaPlayerRect(), area, 16);
+        } else if(appId === 'seeker' && !savedRect){
+          rect = normalizeWindowRect(getSeekerRect(area), area, 16);
         } else if(savedRect){
           rect = normalizeWindowRect(savedRect, area, 16);
         } else {
@@ -17187,6 +17637,14 @@ function toggleFitWindow(appId) {
             aboutContent.dataset.fitMinW = state.isMobile ? '280' : '360';
             aboutContent.dataset.fitMinH = state.isMobile ? '340' : '420';
             aboutContent.dataset.fitKey = `about-${state.isMobile ? 'mobile' : 'desktop'}`;
+          }
+        }
+        if(appId === 'seeker'){
+          const seekerContent = el.querySelector('.content');
+          if(seekerContent){
+            seekerContent.dataset.fitMinW = state.isMobile ? '300' : '980';
+            seekerContent.dataset.fitMinH = state.isMobile ? '320' : '700';
+            seekerContent.dataset.fitKey = `seeker-${state.isMobile ? 'mobile' : 'desktop'}`;
           }
         }
         if(appId === 'mediaplayer'){

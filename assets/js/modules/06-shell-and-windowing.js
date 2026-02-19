@@ -233,89 +233,102 @@ function renderIcons(){
 
           document.body.classList.remove('dragging');
 
-          if(dragging && !cancel && e){
-            const ids = startPositions.map(p => p.id);
-            const dragEls = startPositions.map(p => p.el);
-            const iconPosCache = loadIconPositions();
-            ids.forEach(id => { ensureFsItemForApp(id, { save: false }); });
+	          if(dragging && !cancel && e){
+	            const ids = startPositions.map(p => p.id);
+	            const dragEls = startPositions.map(p => p.el);
+	            const iconPosCache = loadIconPositions();
+	            ids.forEach(id => { ensureFsItemForApp(id, { save: false }); });
 
             if(isOverTrashWindow(e.clientX, e.clientY) || isOverTrash(e.clientX, e.clientY)){
               restoreGroupLayer();
               moveIconsToTrash(ids);
-            } else if(isOverGamesWindow(e.clientX, e.clientY)){
-              addToFolder('games', ids);
-              ids.forEach(id => { delete iconPosCache[id]; });
-              debounceIconSave(()=> saveIconPositions(iconPosCache));
-              restoreGroupLayer();
-              renderIcons();
-              renderGamesWindow();
-            } else {
-              const dockTarget = getDockDropTargetAt(e.clientX, e.clientY);
-              if(dockTarget){
-                restoreGroupLayer();
-                const entries = ids.map(id => {
-                  if(id === 'trash') return { type:'trash', refId:'trash' };
-                  const fsItem = getFsItem(id);
-                  if(fsItem && (fsItem.type === 'folder' || fsItem.type === 'txt')) return { type: fsItem.type, refId: id };
-                  return { type:'app', refId: id };
-                });
-                addDockItemsAt(entries, dockTarget.index);
-              } else {
-                const folderTarget = getFolderDropTargetAt(e.clientX, e.clientY, dragEls, ids);
-                if(folderTarget){
-                  restoreGroupLayer();
-                  let moved = false;
-                  ids.forEach(id => {
-                    if(moveItemToFolder(id, folderTarget.id, { save: false, iconPosCache, preferredPos: { x: 0, y: 0 } })){
-                      moved = true;
-                    }
-                  });
-                  saveIconPositions(iconPosCache);
-                  saveDesktopFs();
-                  renderIcons();
-                  if(moved) refreshOpenFolderWindows();
-                } else {
-                  restoreGroupLayer();
-                  const metrics = getGridMetrics();
-                  const occupied = state.gridSnap
-                    ? buildOccupiedFromFs(null, ids, metrics, { visibleOnly: true })
-                    : null;
-                  let fsDirty = false;
-                  let iconPosDirty = false;
+	            } else if(isOverGamesWindow(e.clientX, e.clientY)){
+	              addToFolder('games', ids);
+	              ids.forEach(id => { delete iconPosCache[id]; });
+	              debounceIconSave(()=> saveIconPositions(iconPosCache));
+	              restoreGroupLayer();
+	              renderIcons();
+	              renderGamesWindow();
+	            } else {
+	              const dockTarget = getDockDropTargetAt(e.clientX, e.clientY);
+	              if(dockTarget){
+	                restoreGroupLayer();
+	                const entries = ids.map(id => {
+	                  if(id === 'trash') return { type:'trash', refId:'trash' };
+	                  const fsItem = getFsItem(id);
+	                  if(fsItem && (fsItem.type === 'folder' || fsItem.type === 'txt')) return { type: fsItem.type, refId: id };
+	                  return { type:'app', refId: id };
+	                });
+	                addDockItemsAt(entries, dockTarget.index);
+	              } else {
+	                const seekerTarget = getSeekerDropTargetAt(e.clientX, e.clientY, dragEls, ids);
+	                if(seekerTarget){
+	                  restoreGroupLayer();
+	                  if(seekerTarget.kind === 'trash'){
+	                    moveIconsToTrash(ids);
+	                  } else if(seekerTarget.kind === 'folder'){
+	                    moveDraggedItemsToFolderTarget(ids, seekerTarget.folderId, {
+	                      iconPosCache,
+	                      preferredPos: { x: 20, y: 20 },
+	                    });
+	                  }
+	                } else {
+	                  const folderTarget = getFolderDropTargetAt(e.clientX, e.clientY, dragEls, ids);
+	                  if(folderTarget){
+	                    restoreGroupLayer();
+	                    let moved = false;
+	                    ids.forEach(id => {
+	                      if(moveItemToFolder(id, folderTarget.id, { save: false, iconPosCache, preferredPos: { x: 0, y: 0 } })){
+	                        moved = true;
+	                      }
+	                    });
+	                    saveIconPositions(iconPosCache);
+	                    saveDesktopFs();
+	                    renderIcons();
+	                    if(moved) refreshOpenFolderWindows();
+	                  } else {
+	                    restoreGroupLayer();
+	                    const metrics = getGridMetrics();
+	                    const occupied = state.gridSnap
+	                      ? buildOccupiedFromFs(null, ids, metrics, { visibleOnly: true })
+	                      : null;
+	                    let fsDirty = false;
+	                    let iconPosDirty = false;
 
-                  startPositions.forEach(p => {
-                    const dx = e.clientX - startX;
-                    const dy = e.clientY - startY;
-                    let x = p.x + dx;
-                    let y = p.y + dy;
-                    let placed;
-                    if(state.gridSnap){
-                      placed = placeOnFreeCell(x, y, occupied, metrics);
-                    } else {
-                      const clamped = clampIconPos(x, y);
-                      placed = { x: clamped.x, y: clamped.y };
-                    }
-                    p.el.style.left = placed.x + 'px';
-                    p.el.style.top = placed.y + 'px';
-                    p.el.style.transform = '';
-                    const current = getFsItem(p.id);
-                    const changed = !current || current.parentId != null || current.x !== placed.x || current.y !== placed.y;
-                    if(changed){
-                      upsertFsItem({ id: p.id, parentId: null, x: placed.x, y: placed.y }, { save: false, syncIconPos: true, iconPosCache });
-                      fsDirty = true;
-                      if(isAppLikeItem(current || { type: p.el.dataset.itemType })) iconPosDirty = true;
-                    }
-                    p.el.dataset.dragged = '1';
-                  });
+	                    startPositions.forEach(p => {
+	                      const dx = e.clientX - startX;
+	                      const dy = e.clientY - startY;
+	                      let x = p.x + dx;
+	                      let y = p.y + dy;
+	                      let placed;
+	                      if(state.gridSnap){
+	                        placed = placeOnFreeCell(x, y, occupied, metrics);
+	                      } else {
+	                        const clamped = clampIconPos(x, y);
+	                        placed = { x: clamped.x, y: clamped.y };
+	                      }
+	                      p.el.style.left = placed.x + 'px';
+	                      p.el.style.top = placed.y + 'px';
+	                      p.el.style.transform = '';
+	                      const current = getFsItem(p.id);
+	                      const changed = !current || current.parentId != null || current.x !== placed.x || current.y !== placed.y;
+	                      if(changed){
+	                        upsertFsItem({ id: p.id, parentId: null, x: placed.x, y: placed.y }, { save: false, syncIconPos: true, iconPosCache });
+	                        fsDirty = true;
+	                        if(isAppLikeItem(current || { type: p.el.dataset.itemType })) iconPosDirty = true;
+	                      }
+	                      p.el.dataset.dragged = '1';
+	                    });
 
-                  if(iconPosDirty) debounceIconSave(()=> saveIconPositions(iconPosCache));
-                  if(fsDirty) saveDesktopFs();
-                }
-              }
-            }
-          } else if(dragging){
-            restoreGroupLayer();
-          }
+	                    if(iconPosDirty) debounceIconSave(()=> saveIconPositions(iconPosCache));
+	                    if(fsDirty) saveDesktopFs();
+	                  }
+	                }
+	              }
+	            }
+	          } else if(dragging){
+	            restoreGroupLayer();
+	          }
 
           if(dragging){
             startPositions.forEach(p => {
@@ -323,12 +336,13 @@ function renderIcons(){
               p.el.dataset.dragged = '1';
             });
           }
-          clearDockDropPreview();
-          setDockDropHighlight(false);
+	          clearDockDropPreview();
+	          setDockDropHighlight(false);
+	          clearSeekerDropPreview();
 
-          dragging = false;
-          pointerId = null;
-        };
+	          dragging = false;
+	          pointerId = null;
+	        };
         const onPointerDown = (e)=>{
           if($('#desktop').classList.contains('hidden')) return;
           if(e.pointerType === 'mouse' && e.button !== 0) return;
@@ -437,19 +451,21 @@ function renderIcons(){
           startPositions.forEach(p => {
             p.el.style.transform = `translate(${dx}px, ${dy}px)`;
           });
-          if(isBlissOS()){
-            const dockTarget = getDockDropTargetAt(e.clientX, e.clientY);
-            if(dockTarget){
-              setDockDropPreview(dockTarget.index);
-              setDockDropHighlight(true);
-            } else {
-              clearDockDropPreview();
-              setDockDropHighlight(false);
-            }
-          }
+	          if(isBlissOS()){
+	            const dockTarget = getDockDropTargetAt(e.clientX, e.clientY);
+	            if(dockTarget){
+	              setDockDropPreview(dockTarget.index);
+	              setDockDropHighlight(true);
+	            } else {
+	              clearDockDropPreview();
+	              setDockDropHighlight(false);
+	            }
+	          }
+	          const seekerTarget = getSeekerDropTargetAt(e.clientX, e.clientY, group, startPositions.map(p => p.id));
+	          setSeekerDropPreview(seekerTarget);
 
-          e.preventDefault();
-        };
+	          e.preventDefault();
+	        };
 
         const onPointerUp = (e)=>{
           endDrag(e, false);
@@ -1198,6 +1214,46 @@ function getMediaPlayerRect(){
   return { left, top, width, height };
 }
 
+function getSeekerRect(areaRect = null){
+  const area = areaRect || $('#desktopArea').getBoundingClientRect();
+  const margin = state.isMobile ? 10 : 18;
+  const maxWidth = Math.max(320, area.width - margin * 2);
+  const maxHeight = Math.max(260, area.height - margin * 2);
+  const targetWidth = state.isMobile
+    ? Math.max(300, area.width - 12)
+    : Math.max(980, Math.floor(area.width * 0.58));
+  const targetHeight = state.isMobile
+    ? Math.max(320, area.height - 14)
+    : Math.max(700, Math.floor(area.height * 0.70));
+  const width = clamp(
+    targetWidth,
+    state.isMobile ? 280 : 860,
+    Math.min(maxWidth, state.isMobile ? maxWidth : 1380)
+  );
+  const height = clamp(
+    targetHeight,
+    state.isMobile ? 260 : 560,
+    Math.min(maxHeight, state.isMobile ? maxHeight : 920)
+  );
+  const left = Math.round(clamp((area.width - width) / 2, margin, Math.max(margin, area.width - width - margin)));
+  const topSeed = state.isMobile ? ((area.height - height) / 2) : ((area.height - height) / 2 - 10);
+  const top = Math.round(clamp(topSeed, margin, Math.max(margin, area.height - height - margin)));
+  return { left, top, width, height };
+}
+
+function applySeekerMinimumRect(rect, areaRect = null){
+  if(!rect) return rect;
+  const area = areaRect || $('#desktopArea').getBoundingClientRect();
+  const preferred = getSeekerRect(area);
+  const minWidth = Math.min(preferred.width, Math.max(760, Math.floor(area.width * 0.46)));
+  const minHeight = Math.min(preferred.height, Math.max(500, Math.floor(area.height * 0.50)));
+  return {
+    ...rect,
+    width: Math.max(rect.width, minWidth),
+    height: Math.max(rect.height, minHeight),
+  };
+}
+
 function getViewportRectForWindow(appId){
   const w = state.windows.get(appId);
   if(!w) return null;
@@ -1449,7 +1505,10 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
         let rect = defaultWindowRect();
         const area = $('#desktopArea').getBoundingClientRect();
         const mobileDopeSkate = appId === 'dope-skate' && typeof isMobileGameMode === 'function' && isMobileGameMode();
-        const savedRect = (appId === 'about' || appId === 'dope-skate') ? null : getSavedWindowRect(appId);
+        const savedRectRaw = (appId === 'about' || appId === 'dope-skate') ? null : getSavedWindowRect(appId);
+        const savedRect = (appId === 'seeker' && savedRectRaw)
+          ? applySeekerMinimumRect(savedRectRaw, area)
+          : savedRectRaw;
         if(mobileDopeSkate){
           rect = normalizeWindowRect({
             left: 0,
@@ -1459,6 +1518,8 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
           }, area, 0);
         } else if(appId === 'mediaplayer'){
           rect = normalizeWindowRect(getMediaPlayerRect(), area, 16);
+        } else if(appId === 'seeker' && !savedRect){
+          rect = normalizeWindowRect(getSeekerRect(area), area, 16);
         } else if(savedRect){
           rect = normalizeWindowRect(savedRect, area, 16);
         } else {
@@ -1841,6 +1902,14 @@ function toggleFitWindow(appId) {
             aboutContent.dataset.fitMinW = state.isMobile ? '280' : '360';
             aboutContent.dataset.fitMinH = state.isMobile ? '340' : '420';
             aboutContent.dataset.fitKey = `about-${state.isMobile ? 'mobile' : 'desktop'}`;
+          }
+        }
+        if(appId === 'seeker'){
+          const seekerContent = el.querySelector('.content');
+          if(seekerContent){
+            seekerContent.dataset.fitMinW = state.isMobile ? '300' : '980';
+            seekerContent.dataset.fitMinH = state.isMobile ? '320' : '700';
+            seekerContent.dataset.fitKey = `seeker-${state.isMobile ? 'mobile' : 'desktop'}`;
           }
         }
         if(appId === 'mediaplayer'){

@@ -483,45 +483,37 @@ Eu sou o buffalo branco extinto`
               <aside class="seeker-sidebar">
                 <section class="seeker-group">
                   <h3 class="seeker-group-title" data-i18n="seeker.group.devices">${t('seeker.group.devices')}</h3>
-                  <button class="seeker-side-item" type="button" data-seeker-open="device-macintosh" data-seeker-kind="device">
-                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-device-mac', icon:'app', iconFile:'./assets/icons/computer.png' }, t('seeker.device.macintosh'), 16)}</span>
-                    <span data-i18n="seeker.device.macintosh">${t('seeker.device.macintosh')}</span>
-                  </button>
-                  <button class="seeker-side-item" type="button" data-seeker-open="device-efi" data-seeker-kind="device">
-                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-device-efi', icon:'app', iconFile:'./assets/icons/computer.png' }, t('seeker.device.efi'), 16)}</span>
-                    <span data-i18n="seeker.device.efi">${t('seeker.device.efi')}</span>
-                  </button>
-                  <button class="seeker-side-item" type="button" data-seeker-open="device-idisk" data-seeker-kind="device">
-                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-device-idisk', icon:'folder', iconFile:'./assets/icons/folder.png' }, t('seeker.device.idisk'), 16)}</span>
-                    <span data-i18n="seeker.device.idisk">${t('seeker.device.idisk')}</span>
-                  </button>
-                </section>
+	                  <button class="seeker-side-item" type="button" data-seeker-open="device-macintosh" data-seeker-kind="device">
+	                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-device-mac', icon:'app', iconFile:'./assets/icons/computer.png' }, t('seeker.device.macintosh'), 16)}</span>
+	                    <span data-seeker-device-mac-label="1">${escapeHTML(getSeekerComputerLabel())}</span>
+	                  </button>
+	                </section>
                 <section class="seeker-group">
                   <h3 class="seeker-group-title" data-i18n="seeker.group.places">${t('seeker.group.places')}</h3>
-                  <button class="seeker-side-item" type="button" data-seeker-open="desktop">
-                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-place-desktop', icon:'app', iconFile:'./assets/icons/computer.png' }, t('seeker.section.desktop'), 16)}</span>
-                    <span data-i18n="seeker.section.desktop">${t('seeker.section.desktop')}</span>
-                  </button>
-                  <button class="seeker-side-item" type="button" data-seeker-open="applications">
-                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-place-apps', icon:'app', iconFile:'./assets/icons/seeker.png' }, t('seeker.section.applications'), 16)}</span>
-                    <span data-i18n="seeker.section.applications">${t('seeker.section.applications')}</span>
-                  </button>
-                  <button class="seeker-side-item" type="button" data-seeker-open="documents">
-                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-place-docs', icon:'file', iconFile:'./assets/icons/txt.png' }, t('seeker.section.documents'), 16)}</span>
-                    <span data-i18n="seeker.section.documents">${t('seeker.section.documents')}</span>
-                  </button>
+	                  <button class="seeker-side-item" type="button" data-seeker-open="desktop">
+	                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-place-desktop', icon:'app', iconFile:'./assets/icons/desktop.png' }, t('seeker.section.desktop'), 16)}</span>
+	                    <span data-i18n="seeker.section.desktop">${t('seeker.section.desktop')}</span>
+	                  </button>
+	                  <button class="seeker-side-item" type="button" data-seeker-open="applications">
+	                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-place-apps', icon:'app', iconFile:'./assets/icons/applications.png' }, t('seeker.section.applications'), 16)}</span>
+	                    <span data-i18n="seeker.section.applications">${t('seeker.section.applications')}</span>
+	                  </button>
+	                  <button class="seeker-side-item" type="button" data-seeker-open="documents">
+	                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-place-docs', icon:'file', iconFile:'./assets/icons/documents.png' }, t('seeker.section.documents'), 16)}</span>
+	                    <span data-i18n="seeker.section.documents">${t('seeker.section.documents')}</span>
+	                  </button>
                   <button class="seeker-side-item" type="button" data-seeker-open="trash">
                     <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-place-trash', icon:'trash', iconFile:getTrashIconFile }, t('seeker.section.trash'), 16)}</span>
                     <span data-i18n="seeker.section.trash">${t('seeker.section.trash')}</span>
                   </button>
                 </section>
-                <section class="seeker-group">
-                  <h3 class="seeker-group-title" data-i18n="seeker.group.searchFor">${t('seeker.group.searchFor')}</h3>
-                  <button class="seeker-side-item" type="button" data-seeker-open="recent">
-                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-place-recent', icon:'settings', iconFile:'./assets/icons/Settings.png' }, t('seeker.section.recent'), 16)}</span>
-                    <span data-i18n="seeker.section.recent">${t('seeker.section.recent')}</span>
-                  </button>
-                </section>
+	                <section class="seeker-group">
+	                  <h3 class="seeker-group-title" data-i18n="seeker.group.searchFor">${t('seeker.group.searchFor')}</h3>
+	                  <button class="seeker-side-item" type="button" data-seeker-open="recent">
+	                    <span class="seeker-side-icon">${getThemedIconHtml({ id:'seeker-place-recent', icon:'settings', iconFile:'./assets/icons/recents.png' }, t('seeker.section.recent'), 16)}</span>
+	                    <span data-i18n="seeker.section.recent">${t('seeker.section.recent')}</span>
+	                  </button>
+	                </section>
               </aside>
               <section class="seeker-main">
                 <div class="seeker-main-header">
