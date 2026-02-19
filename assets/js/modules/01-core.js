@@ -144,6 +144,14 @@
           currentId: null,
           readLang: 'en',
         },
+        seeker: {
+          section: 'desktop',
+          view: 'icons',
+          search: '',
+          history: ['desktop'],
+          historyIndex: 0,
+          recent: [],
+        },
         menuOpen: null,
         activeAppId: 'bliss',
         hiddenApps: new Set(),
@@ -877,8 +885,18 @@ function placeOnFreeCell(x, y, occupied, metrics){
   };
 }
 
+function getAppThemeTitle(app){
+  if(!app) return '';
+  if(app.id === 'seeker'){
+    return state.settings.theme === 'blissos'
+      ? t('app.seeker.short')
+      : t('app.seeker.file');
+  }
+  return t(app.titleKey);
+}
+
 function getIconLabel(app){
-  return state.iconLabels[app.id] || t(app.titleKey);
+  return state.iconLabels[app.id] || getAppThemeTitle(app);
 }
 
 const AQUA_ICON_MAP = {
@@ -901,6 +919,7 @@ const AQUA_ICON_MAP = {
   'sound.png': 'Sound.png',
   'performance.png': 'performance.png',
   'dock.png': 'dock.png',
+  'seeker.png': 'seeker.png',
   'logout.png': 'logout.png',
   'folder.png': 'folder.png',
   'txt.png': 'txt.png',
@@ -1055,7 +1074,7 @@ function getDefaultIconLayout(){
   const height = area.height > (ICON_SIZE.h + 6) ? area.height : fallbackHeight;
   const metrics = getGridMetricsForSize(width, height);
   const isMobile = width <= 520;
-  const order = ['settings','games','about','videos','mediaplayer','diev','art','contact','poetry','music','clothes'];
+  const order = ['seeker','settings','games','about','videos','mediaplayer','diev','art','contact','poetry','music','clothes'];
   const available = APPS.filter(app => app.showOnDesktop !== false && app.id !== 'trash' && !state.trash.has(app.id) && !isInFolder(app.id));
   const availableIds = new Set(available.map(app => app.id));
   const ordered = order.filter(id => availableIds.has(id)).concat(
@@ -1233,7 +1252,6 @@ function hardDeleteItem(itemId, iconPosCache){
       const it = getFsItem(id);
       if(!it) return;
       if(it.type === 'txt') closeApp(getTxtWindowId(id));
-      if(it.type === 'folder') closeApp(getFolderWindowId(id));
       delete state.fs.items[id];
       state.trash.delete(id);
     });
@@ -1287,15 +1305,8 @@ function renderTrashWindow(){
   content.innerHTML = CONTENT.trash();
   applyI18nTo(win);
   content.classList.toggle('trash-empty', state.trash.size === 0);
-  const items = win.querySelectorAll('[data-trash-id]');
-  items.forEach(item => {
-    const id = item.dataset.trashId;
-    item.classList.toggle('selected', state.trashSelection.has(id));
-  });
-  const restoreBtn = win.querySelector('[data-trash-action="restore"]');
-  const restoreAllBtn = win.querySelector('[data-trash-action="restoreAll"]');
-  if(restoreBtn) restoreBtn.disabled = state.trash.size === 0;
-  if(restoreAllBtn) restoreAllBtn.disabled = state.trash.size === 0;
+  const emptyBtn = win.querySelector('[data-trash-action="empty"]');
+  if(emptyBtn) emptyBtn.disabled = state.trash.size === 0;
   smartFitWindow(win, 'tabChange');
 }
 

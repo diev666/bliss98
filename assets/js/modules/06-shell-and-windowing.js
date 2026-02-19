@@ -261,18 +261,12 @@ function renderIcons(){
                 });
                 addDockItemsAt(entries, dockTarget.index);
               } else {
-                const folderWindowTarget = getFolderWindowDropTargetAt(e.clientX, e.clientY, dragEls, ids);
-                if(folderWindowTarget){
+                const folderTarget = getFolderDropTargetAt(e.clientX, e.clientY, dragEls, ids);
+                if(folderTarget){
                   restoreGroupLayer();
-                  const preferred = getRelativeIconPosFromClient(folderWindowTarget.containerEl, e.clientX, e.clientY);
                   let moved = false;
                   ids.forEach(id => {
-                    if(moveItemToFolder(id, folderWindowTarget.folderId, {
-                      save: false,
-                      iconPosCache,
-                      containerEl: folderWindowTarget.containerEl,
-                      preferredPos: preferred,
-                    })){
+                    if(moveItemToFolder(id, folderTarget.id, { save: false, iconPosCache, preferredPos: { x: 0, y: 0 } })){
                       moved = true;
                     }
                   });
@@ -281,56 +275,41 @@ function renderIcons(){
                   renderIcons();
                   if(moved) refreshOpenFolderWindows();
                 } else {
-                  const folderTarget = getFolderDropTargetAt(e.clientX, e.clientY, dragEls, ids);
-                  if(folderTarget){
-                    restoreGroupLayer();
-                    let moved = false;
-                    ids.forEach(id => {
-                      if(moveItemToFolder(id, folderTarget.id, { save: false, iconPosCache, preferredPos: { x: 0, y: 0 } })){
-                        moved = true;
-                      }
-                    });
-                    saveIconPositions(iconPosCache);
-                    saveDesktopFs();
-                    renderIcons();
-                    if(moved) refreshOpenFolderWindows();
-                  } else {
-                    restoreGroupLayer();
-                    const metrics = getGridMetrics();
-                    const occupied = state.gridSnap
-                      ? buildOccupiedFromFs(null, ids, metrics, { visibleOnly: true })
-                      : null;
-                    let fsDirty = false;
-                    let iconPosDirty = false;
+                  restoreGroupLayer();
+                  const metrics = getGridMetrics();
+                  const occupied = state.gridSnap
+                    ? buildOccupiedFromFs(null, ids, metrics, { visibleOnly: true })
+                    : null;
+                  let fsDirty = false;
+                  let iconPosDirty = false;
 
-                    startPositions.forEach(p => {
-                      const dx = e.clientX - startX;
-                      const dy = e.clientY - startY;
-                      let x = p.x + dx;
-                      let y = p.y + dy;
-                      let placed;
-                      if(state.gridSnap){
-                        placed = placeOnFreeCell(x, y, occupied, metrics);
-                      } else {
-                        const clamped = clampIconPos(x, y);
-                        placed = { x: clamped.x, y: clamped.y };
-                      }
-                      p.el.style.left = placed.x + 'px';
-                      p.el.style.top = placed.y + 'px';
-                      p.el.style.transform = '';
-                      const current = getFsItem(p.id);
-                      const changed = !current || current.parentId != null || current.x !== placed.x || current.y !== placed.y;
-                      if(changed){
-                        upsertFsItem({ id: p.id, parentId: null, x: placed.x, y: placed.y }, { save: false, syncIconPos: true, iconPosCache });
-                        fsDirty = true;
-                        if(isAppLikeItem(current || { type: p.el.dataset.itemType })) iconPosDirty = true;
-                      }
-                      p.el.dataset.dragged = '1';
-                    });
+                  startPositions.forEach(p => {
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    let x = p.x + dx;
+                    let y = p.y + dy;
+                    let placed;
+                    if(state.gridSnap){
+                      placed = placeOnFreeCell(x, y, occupied, metrics);
+                    } else {
+                      const clamped = clampIconPos(x, y);
+                      placed = { x: clamped.x, y: clamped.y };
+                    }
+                    p.el.style.left = placed.x + 'px';
+                    p.el.style.top = placed.y + 'px';
+                    p.el.style.transform = '';
+                    const current = getFsItem(p.id);
+                    const changed = !current || current.parentId != null || current.x !== placed.x || current.y !== placed.y;
+                    if(changed){
+                      upsertFsItem({ id: p.id, parentId: null, x: placed.x, y: placed.y }, { save: false, syncIconPos: true, iconPosCache });
+                      fsDirty = true;
+                      if(isAppLikeItem(current || { type: p.el.dataset.itemType })) iconPosDirty = true;
+                    }
+                    p.el.dataset.dragged = '1';
+                  });
 
-                    if(iconPosDirty) debounceIconSave(()=> saveIconPositions(iconPosCache));
-                    if(fsDirty) saveDesktopFs();
-                  }
+                  if(iconPosDirty) debounceIconSave(()=> saveIconPositions(iconPosCache));
+                  if(fsDirty) saveDesktopFs();
                 }
               }
             }
@@ -651,11 +630,12 @@ function renderIcons(){
         list.textContent = '';
         const fragment = document.createDocumentFragment();
         APPS.filter(app => app.showInStart !== false).forEach(app => {
+          const label = getIconLabel(app);
           const item = document.createElement('div');
           item.className = 'menu-item';
           item.innerHTML = `
-            <div style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;">${getThemedIconHtml(app, t(app.titleKey), 16)}</div>
-            <div>${t(app.titleKey)}</div>
+            <div style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;">${getThemedIconHtml(app, label, 16)}</div>
+            <div>${label}</div>
           `;
           item.addEventListener('click', ()=>{ openApp(app.id); closeStartMenu(); });
           fragment.appendChild(item);
@@ -1440,6 +1420,16 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
       function openApp(appId, opts = {}){
         const app = APPS.find(a=>a.id===appId);
         if(!app) return null;
+        if(appId === 'trash'){
+          if(state.windows.has('trash')) closeApp('trash');
+          if(typeof openSeekerSection === 'function'){
+            return openSeekerSection('trash', opts);
+          }
+          return openApp('seeker', opts);
+        }
+        if(appId !== 'seeker' && typeof rememberSeekerRecent === 'function'){
+          rememberSeekerRecent({ kind:'app', id:appId });
+        }
         const deferReveal = !!opts.deferReveal;
 
         if(state.windows.has(appId)){
@@ -1477,7 +1467,7 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
         const iconFile = typeof app.iconFile === 'function' ? app.iconFile() : app.iconFile;
         const wstate = {
           id: appId,
-          title: t(app.titleKey),
+          title: getIconLabel(app),
           titleKey: app.titleKey,
           icon: app.icon,
           iconFile: iconFile || null,
@@ -1810,7 +1800,6 @@ function toggleFitWindow(appId) {
         const bodyHTML = typeof wstate.contentHTML === 'function'
           ? wstate.contentHTML()
           : (CONTENT[appId] ? CONTENT[appId]() : `<h2>${wstate.title}</h2><p>Sem conteúdo.</p>`);
-        const folderPathbar = wstate.kind === 'folder' ? `<div class="folder-pathbar" data-folder-pathbar="1"></div>` : '';
 
         el.innerHTML = `
           <div class="frame bevel">
@@ -1827,10 +1816,7 @@ function toggleFitWindow(appId) {
             </div>
             ${appId === 'trash'
               ? `<div class="trash-actions">
-                  <button class="btn bevel" type="button" data-trash-action="restore">${t('dialog.trash.restore')}</button>
-                  <button class="btn bevel" type="button" data-trash-action="restoreAll">${t('dialog.trash.restoreAll')}</button>
                   <button class="btn bevel" type="button" data-trash-action="empty">${t('dialog.trash.emptyAction')}</button>
-                  <button class="btn bevel" type="button" data-trash-action="help">${t('menu.help.controls')}</button>
                 </div>`
               : `<div class="menubar">
                   <span data-menu="file" data-i18n="menubar.file">${t('menubar.file')}</span>
@@ -1840,7 +1826,6 @@ function toggleFitWindow(appId) {
                 </div>
                 <div class="menu-drop hidden"></div>`}
             <div class="content">${bodyHTML}</div>
-            ${folderPathbar}
             <div class="statusbar">
               <span data-i18n="status.ready">${t('status.ready')}</span>
               <span class="status-center" data-i18n="about.footer">${t('about.footer')}</span>
@@ -1929,7 +1914,7 @@ function toggleFitWindow(appId) {
         if(appId === 'games') { setTimeout(()=>initGamesWindow(el), 0); }
         if(appId === 'dope-skate') { setTimeout(()=>initDopeSkateWindow(el), 0); }
         if(appId === 'videos') { setTimeout(()=>initVideosWindow(el), 0); }
-        if(wstate.kind === 'folder') { setTimeout(()=>renderFolderWindow(appId, wstate.folderNavId || wstate.folderId), 0); }
+        if(appId === 'seeker') { setTimeout(()=>initSeekerWindow(el), 0); }
         if(wstate.kind === 'txt') { setTimeout(()=>renderTxtFileWindow(appId), 0); }
 
         $('#windows').appendChild(el);
@@ -2359,9 +2344,13 @@ function toggleFitWindow(appId) {
           return;
         }
         const intensity = getDockRenderMagnificationStrength() / 100;
-        const maxScale = LEOPARD_DOCK_MAX_SCALE * (0.05 + (0.95 * intensity));
-        const maxLift = LEOPARD_DOCK_MAX_LIFT * (0.05 + (0.95 * intensity));
-        const radius = LEOPARD_DOCK_RADIUS * (0.6 + (0.8 * intensity));
+        // Boost only the top-end of the slider so MAX magnification feels stronger.
+        const maxBoost = 1 + (0.5 * intensity * intensity);
+        const liftBoost = 1 + (0.35 * intensity * intensity);
+        const radiusBoost = 1 + (0.12 * intensity * intensity);
+        const maxScale = LEOPARD_DOCK_MAX_SCALE * (0.05 + (0.95 * intensity)) * maxBoost;
+        const maxLift = LEOPARD_DOCK_MAX_LIFT * (0.05 + (0.95 * intensity)) * liftBoost;
+        const radius = LEOPARD_DOCK_RADIUS * (0.6 + (0.8 * intensity)) * radiusBoost;
         const items = getLeopardDockItems(inner);
         items.forEach(item => {
           const rect = item.getBoundingClientRect();
@@ -2657,20 +2646,8 @@ function renderBlissOSDock(){
               btn.dataset.dragged = '0';
               return;
             }
-            if(win){
-              if(win.minimized){
-                triggerLeopardDockBounce(btn);
-                restoreWindow(winId);
-              } else if(state.activeWindowId === winId){
-                minimizeApp(winId);
-              } else {
-                triggerLeopardDockBounce(btn);
-                focusWindow(winId);
-              }
-            } else {
-              triggerLeopardDockBounce(btn);
-              openIconById('trash');
-            }
+            triggerLeopardDockBounce(btn);
+            openIconById('trash');
           });
           btn.addEventListener('contextmenu', (e)=>{
             e.preventDefault();
@@ -2773,14 +2750,6 @@ function getAppDisplay(appId){
   if(appId === 'bliss'){
     const iconHtml = getThemedIconHtml({ icon:'app', id:'bliss', iconFile:'./assets/icons/bliss.png' }, 'Bliss', 16);
     return { label:'Bliss', iconHtml };
-  }
-  if(appId && state.windows.has(appId)){
-    const wstate = state.windows.get(appId);
-    if(wstate && wstate.kind === 'folder'){
-      const label = wstate.title || t('fs.newFolderName');
-      const iconHtml = getThemedIconHtml(wstate, label, 16);
-      return { label, iconHtml };
-    }
   }
   const app = getAppById(appId);
   if(!app){
@@ -3021,10 +2990,42 @@ function getDockItemEl(appId){
   return document.querySelector(`#blissosDock [data-dock-win-id="${appId}"]`);
 }
 
-const DEFAULT_DOCK_ORDER = ['clothes','music','art','games','videos','about','contact','diev','settings','trash'];
+const DEFAULT_DOCK_ORDER = ['seeker','clothes','music','art','games','videos','about','contact','diev','settings','trash'];
 
 function isTrashDockItem(item){
   return !!item && (item.type === 'trash' || (item.type === 'app' && item.refId === 'trash'));
+}
+
+function isSeekerDockItem(item){
+  return !!item && item.type === 'app' && item.refId === 'seeker';
+}
+
+function isDockItemLocked(item){
+  return !!item && (
+    isTrashDockItem(item) ||
+    isSeekerDockItem(item) ||
+    item.nonRemovable === true ||
+    item.nonReorderable === true ||
+    item.pinned === 'left' ||
+    item.pinned === 'right'
+  );
+}
+
+function getDockMinInsertIndex(items){
+  const list = Array.isArray(items) ? items : [];
+  return (list.length > 0 && isSeekerDockItem(list[0])) ? 1 : 0;
+}
+
+function createSeekerDockItem(){
+  return {
+    id: getDockItemKey('app', 'seeker'),
+    type: 'app',
+    refId: 'seeker',
+    pinned: 'left',
+    nonRemovable: true,
+    nonReorderable: true,
+    iconPath: getDockItemIconPath('app', 'seeker'),
+  };
 }
 
 function createTrashDockItem(){
@@ -3040,8 +3041,24 @@ function createTrashDockItem(){
 }
 
 function ensureTrashDockItem(items){
-  const list = Array.isArray(items) ? items.filter(it => !isTrashDockItem(it)) : [];
-  let trash = Array.isArray(items) ? items.find(isTrashDockItem) : null;
+  const source = Array.isArray(items) ? items : [];
+  const list = source.filter(it => !isTrashDockItem(it) && !isSeekerDockItem(it));
+  let seeker = source.find(isSeekerDockItem);
+  if(getAppById('seeker')){
+    if(!seeker) seeker = createSeekerDockItem();
+    seeker = {
+      ...seeker,
+      id: getDockItemKey('app', 'seeker'),
+      type: 'app',
+      refId: 'seeker',
+      pinned: 'left',
+      nonRemovable: true,
+      nonReorderable: true,
+      iconPath: getDockItemIconPath('app', 'seeker'),
+    };
+    list.unshift(seeker);
+  }
+  let trash = source.find(isTrashDockItem);
   if(!trash) trash = createTrashDockItem();
   trash = {
     ...trash,
@@ -3070,8 +3087,8 @@ function getDefaultDockItems(){
 
 function getDockWindowIdForItem(item){
   if(!item) return '';
-  if(isTrashDockItem(item)) return 'trash';
-  if(item.type === 'folder') return getFolderWindowId(item.refId);
+  if(isTrashDockItem(item)) return 'seeker';
+  if(item.type === 'folder') return 'seeker';
   if(item.type === 'txt') return getTxtWindowId(item.refId);
   return item.refId || '';
 }
@@ -3212,6 +3229,7 @@ function addDockItem(type, refId){
 }
 
 function removeDockItem(type, refId){
+  if(type === 'app' && refId === 'seeker') return false;
   if(type === 'trash' || refId === 'trash') return false;
   const key = getDockItemKey(type, refId);
   const before = state.dockItems.length;
@@ -3294,11 +3312,14 @@ function getDockInsertIndexFromClientX(clientX, excludeEl){
       !el.classList.contains('dock-preview-slot') &&
       !el.classList.contains('dock-removing')
     );
+  const minInsertIndex = getDockMinInsertIndex(items.map(el => ({ type: el.dataset.dockType, refId: el.dataset.refId })));
   for(let i = 0; i < items.length; i++){
     const rect = items[i].getBoundingClientRect();
-    if(clientX < rect.left + rect.width / 2) return i;
+    if(clientX < rect.left + rect.width / 2){
+      return clamp(i, minInsertIndex, items.length);
+    }
   }
-  return items.length;
+  return clamp(items.length, minInsertIndex, items.length);
 }
 
 function getDockDropTargetAt(x, y){
@@ -3315,6 +3336,7 @@ function addDockItemsAt(entries, index){
   if(!Array.isArray(entries) || entries.length === 0) return false;
   let changed = false;
   let normal = getDockItemsWithoutTrash();
+  const minInsertIndex = getDockMinInsertIndex(normal);
   if(isMobileDock()){
     const pendingKeys = new Set();
     let pendingAdds = 0;
@@ -3335,7 +3357,7 @@ function addDockItemsAt(entries, index){
       return false;
     }
   }
-  let insertAt = clamp(index, 0, normal.length);
+  let insertAt = clamp(index, minInsertIndex, normal.length);
   entries.forEach(entry => {
     if(!entry) return;
     const type = entry.type === 'trash' || entry.refId === 'trash' ? 'trash' : entry.type;
@@ -3347,6 +3369,7 @@ function addDockItemsAt(entries, index){
       }
       return;
     }
+    if(type === 'app' && refId === 'seeker') return;
     if(isDockItemPresent(type, refId)) return;
     if(!isDockableItem(type, refId)) return;
     const item = {
@@ -3466,10 +3489,11 @@ function bindDockDrag(btn, item, midEl, innerEl){
     const hasOverflow = isMobileDock() && normal.length > DOCK_MOBILE_MAX_NORMAL;
     const visible = hasOverflow ? normal.slice(0, DOCK_MOBILE_MAX_NORMAL) : normal.slice();
     const hidden = hasOverflow ? normal.slice(DOCK_MOBILE_MAX_NORMAL) : [];
+    const minInsertIndex = getDockMinInsertIndex(visible);
     const fromIndex = visible.findIndex(it => (it.id || getDockItemKey(it.type, it.refId)) === key);
     if(fromIndex !== -1){
       const moved = visible.splice(fromIndex, 1)[0];
-      const insertAt = clamp(targetIndex >= 0 ? targetIndex : fromIndex, 0, visible.length);
+      const insertAt = clamp(targetIndex >= 0 ? targetIndex : fromIndex, minInsertIndex, visible.length);
       visible.splice(insertAt, 0, moved);
       state.dockItems = ensureTrashDockItem(visible.concat(hidden));
       saveDockItems();
@@ -3483,7 +3507,7 @@ function bindDockDrag(btn, item, midEl, innerEl){
 
   btn.addEventListener('pointerdown', (e)=>{
     if(e.pointerType === 'mouse' && e.button !== 0) return;
-    if(isTrashDockItem(item)) return;
+    if(isDockItemLocked(item)) return;
     down = true;
     dragging = false;
     pointerId = e.pointerId;
@@ -4001,37 +4025,9 @@ function renderBlissOSAppMenu(){
           return;
         }
 
-        const trashItem = target.closest('[data-trash-id]');
-        if(trashItem){
-          const id = trashItem.dataset.trashId;
-          if(e.ctrlKey || e.metaKey){
-            if(state.trashSelection.has(id)) state.trashSelection.delete(id);
-            else state.trashSelection.add(id);
-          } else {
-            state.trashSelection = new Set([id]);
-          }
-          renderTrashWindow();
-          return;
-        }
-
         const trashBtn = target.closest('[data-trash-action]');
         if(trashBtn && trashBtn.dataset){
           const action = trashBtn.dataset.trashAction;
-          if(action === 'help'){
-            showMessage('dialog.controls.title', 'dialog.controls.body');
-            return;
-          }
-          if(action === 'restore'){
-            const ids = state.trashSelection.size ? Array.from(state.trashSelection) : [];
-            if(ids.length){
-              restoreFromTrash(ids);
-              state.trashSelection = new Set();
-            }
-          }
-          if(action === 'restoreAll'){
-            restoreFromTrash(Array.from(state.trash));
-            state.trashSelection = new Set();
-          }
           if(action === 'empty'){
             emptyTrash();
             state.trashSelection = new Set();

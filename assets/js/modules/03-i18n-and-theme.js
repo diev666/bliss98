@@ -43,8 +43,11 @@
           'app.diev': 'DIEV',
           'app.settings': 'Settings',
           'app.poetry': 'Poetry',
-          'app.trash': 'Recycle Bin',
+          'app.trash': 'Trash',
           'app.mediaplayer': 'BLISS Media Player',
+          'app.seeker': 'File Seeker',
+          'app.seeker.file': 'File Seeker',
+          'app.seeker.short': 'Seeker',
           'games.snake': 'Snake',
           'games.dopeSkate': 'Dope Skate (beta)',
           'games.back': 'Back',
@@ -162,12 +165,34 @@
 
           'menu.logoff': 'Log off…',
 
+          'seeker.nav': 'Seeker navigation',
+          'seeker.back': 'Back',
+          'seeker.forward': 'Forward',
+          'seeker.view': 'View mode',
+          'seeker.view.icons': 'Icons',
+          'seeker.view.list': 'List',
+          'seeker.search': 'Search in Seeker',
+          'seeker.search.placeholder': 'Search',
+          'seeker.group.devices': 'Devices',
+          'seeker.group.places': 'Places',
+          'seeker.group.searchFor': 'Search For',
+          'seeker.device.macintosh': 'Macintosh',
+          'seeker.device.efi': 'EFI-LEGACY',
+          'seeker.device.idisk': 'iDisk',
+          'seeker.section.desktop': 'Desktop',
+          'seeker.section.applications': 'Applications',
+          'seeker.section.documents': 'Documents',
+          'seeker.section.trash': 'Trash',
+          'seeker.section.recent': 'Recent Opened',
+          'seeker.empty': 'No items found.',
+          'seeker.itemLabel': 'items',
+
           'ctx.open': 'Open',
           'ctx.rename': 'Rename',
           'ctx.crop': 'Crop',
           'ctx.copy': 'Copy',
-          'ctx.moveTrash': 'Move to Recycle Bin',
-          'ctx.emptyTrash': 'Empty Recycle Bin',
+          'ctx.moveTrash': 'Move to Trash',
+          'ctx.emptyTrash': 'Empty Trash',
           'ctx.addDock': 'Add to Dock',
           'ctx.removeDock': 'Remove from Dock',
           'ctx.alreadyDock': 'Already in Dock',
@@ -509,12 +534,12 @@
           'dialog.rename.confirm': 'Rename',
           'dialog.loginEmpty.title': 'Enter your name',
           'dialog.loginEmpty.body': 'Please type a name to continue.',
-          'dialog.trash.empty': 'Recycle Bin is empty.',
+          'dialog.trash.empty': 'Trash is empty.',
           'dialog.trash.restore': 'Restore',
           'dialog.trash.restoreAll': 'Restore All',
-          'dialog.trash.emptyAction': 'Empty Recycle Bin',
+          'dialog.trash.emptyAction': 'Empty Trash',
           'dialog.trash.confirmTitle': 'Delete items?',
-          'dialog.trash.confirmBody': 'Items in the Recycle Bin will be permanently deleted.',
+          'dialog.trash.confirmBody': 'Items in the Trash will be permanently deleted.',
           'dialog.trash.deleteAction': 'Delete',
 
           'wallpaper.classic': 'Classic Teal',
@@ -625,6 +650,9 @@
           'app.poetry': 'Poesias',
           'app.trash': 'Lixeira',
           'app.mediaplayer': 'BLISS Media Player',
+          'app.seeker': 'File Seeker',
+          'app.seeker.file': 'File Seeker',
+          'app.seeker.short': 'Seeker',
           'games.snake': 'Snake',
           'games.dopeSkate': 'Dope Skate (beta)',
           'games.back': 'Voltar',
@@ -737,6 +765,28 @@
           'snake.playAgain': 'Jogar novamente',
 
           'menu.logoff': 'Sair…',
+
+          'seeker.nav': 'Navegacao do Seeker',
+          'seeker.back': 'Voltar',
+          'seeker.forward': 'Avancar',
+          'seeker.view': 'Modo de visualizacao',
+          'seeker.view.icons': 'Icones',
+          'seeker.view.list': 'Lista',
+          'seeker.search': 'Buscar no Seeker',
+          'seeker.search.placeholder': 'Buscar',
+          'seeker.group.devices': 'Dispositivos',
+          'seeker.group.places': 'Locais',
+          'seeker.group.searchFor': 'Buscar por',
+          'seeker.device.macintosh': 'Macintosh',
+          'seeker.device.efi': 'EFI-LEGACY',
+          'seeker.device.idisk': 'iDisk',
+          'seeker.section.desktop': 'Desktop',
+          'seeker.section.applications': 'Aplicativos',
+          'seeker.section.documents': 'Documentos',
+          'seeker.section.trash': 'Lixeira',
+          'seeker.section.recent': 'Abertos recentes',
+          'seeker.empty': 'Nenhum item encontrado.',
+          'seeker.itemLabel': 'itens',
 
           'ctx.open': 'Abrir',
           'ctx.rename': 'Renomear',
@@ -1391,21 +1441,12 @@
         const items = [];
         const addSep = () => { if(items.length && items[items.length-1].type !== 'sep') items.push({ type:'sep' }); };
         const isTxtWin = isTxtWindowId(appId);
-        const isFolderWin = isFolderWindowId(appId);
 
         if(menuKey === 'file'){
           if(isTxtWin){
             items.push({ labelKey:'menu.txt.new', action:'txt:new' });
             items.push({ labelKey:'menu.txt.save', action:'txt:save' });
             items.push({ labelKey:'menu.txt.duplicate', action:'txt:duplicate' });
-            addSep();
-            items.push({ labelKey:'menu.file.close', action:'global:close' });
-            items.push({ labelKey:'menu.file.logoff', action:'global:logoff' });
-            return items;
-          }
-          if(isFolderWin){
-            items.push({ labelKey:'ctx.newTextFile', action:'fs:newTxtInFolder' });
-            items.push({ labelKey:'ctx.newFolder', action:'fs:newFolderInFolder' });
             addSep();
             items.push({ labelKey:'menu.file.close', action:'global:close' });
             items.push({ labelKey:'menu.file.logoff', action:'global:logoff' });
@@ -1849,7 +1890,6 @@
         if(action === 'global:about') return false;
         if(action === 'settings:wallpaper') return false;
         if(action === 'fs:newTxtDesktop') return false;
-        if(action === 'fs:newTxtInFolder') return false;
         return true;
       }
 
@@ -1937,21 +1977,6 @@
         }
         if(action === 'fs:newFolderDesktop'){
           createFolder({ parentId: null });
-          return;
-        }
-        if((action === 'fs:newTxtInFolder' || action === 'fs:newFolderInFolder') && winId && isFolderWindowId(winId)){
-          const wstate = state.windows.get(winId);
-          if(!wstate) return;
-          const parentId = wstate.folderNavId === DESKTOP_NAV_ID
-            ? null
-            : (normalizeFolderNavId(wstate.folderNavId) || wstate.folderId);
-          const containerEl = resolveFolderContainer(parentId, null);
-          if(action === 'fs:newTxtInFolder'){
-            const created = createTxtFile({ parentId, containerEl });
-            if(created) openTxtFileWindow(created.id);
-          } else {
-            createFolder({ parentId, containerEl });
-          }
           return;
         }
 
@@ -2353,7 +2378,7 @@
         // Update stored titles and the DOM titlebars
         state.windows.forEach((w, id) => {
           const app = APPS.find(a => a.id === id);
-          const title = app ? t(app.titleKey) : (w.titleKey ? t(w.titleKey) : id);
+          const title = app ? getIconLabel(app) : (w.titleKey ? t(w.titleKey) : id);
           w.title = title;
           const winEl = document.getElementById(`win_${id}`);
           if(winEl){
@@ -2405,6 +2430,9 @@
           }
           if(id === 'videos'){
             initVideosWindow(winEl);
+          }
+          if(id === 'seeker'){
+            initSeekerWindow(winEl);
           }
         }
       });
