@@ -1391,12 +1391,6 @@ Eu sou o buffalo branco extinto`
                     <span>Dark Mode</span>
                   </label>
                 </div>
-                <div class="settings-block blissos-only settings-appearance-quick" id="settingsBlissOSAqua">
-                  <label class="settings-appearance-toggle settings-aqua-check">
-                    <input type="checkbox" data-toggle-blissos-aqua />
-                    <span>BlissOS Aqua</span>
-                  </label>
-                </div>
                 <div class="settings-block" id="settingsWallpaper">
                   <strong data-i18n="settings.wallpaperTab">Wallpaper</strong>
                   <p style="margin:6px 0 10px 0;" data-i18n="settings.wallpaperDesc">Choose a wallpaper for your desktop.</p>
@@ -1557,6 +1551,7 @@ Eu sou o buffalo branco extinto`
                   <div class="settings-actions">
                     <button class="btn bevel" type="button" data-set-os-theme="bliss98" data-i18n="settings.osTheme.bliss98">Bliss 98</button>
                     <button class="btn bevel" type="button" data-set-os-theme="blissos" data-i18n="settings.osTheme.blissos">BlissOS</button>
+                    <button class="btn bevel" type="button" data-set-os-theme="blissaqua" data-i18n="settings.osTheme.blissaqua">Bliss Aqua</button>
                   </div>
                 </div>
                 <div class="settings-block" id="settingsFullscreen">

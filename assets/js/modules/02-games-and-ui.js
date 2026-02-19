@@ -5464,7 +5464,10 @@ function arrangeIcons(parentId = null, containerEl = null){
 }
 
 function resetIconPositions(){
-  try{ localStorage.removeItem(ICON_POS_KEY); } catch {}
+  try{
+    localStorage.removeItem(`${ICON_POS_KEY}_${getCurrentOsThemeChoice()}`);
+    localStorage.removeItem(ICON_POS_KEY);
+  } catch {}
   arrangeIcons();
 }
 
@@ -5635,13 +5638,14 @@ function updateBlissOSDarkButtons(root=document){
 }
 
 function updateBlissOSAquaButtons(root=document){
+  const enabled = getCurrentOsThemeChoice() === 'blissaqua';
   $$('[data-set-blissos-aqua]', root).forEach(btn => {
     const on = btn.dataset.setBlissosAqua === 'on';
-    btn.classList.toggle('pressed', on === state.settings.blissosAqua);
+    btn.classList.toggle('pressed', on === enabled);
   });
   $$('[data-toggle-blissos-aqua]', root).forEach(input => {
-    input.checked = !!state.settings.blissosAqua;
-    input.setAttribute('aria-checked', state.settings.blissosAqua ? 'true' : 'false');
+    input.checked = !!enabled;
+    input.setAttribute('aria-checked', enabled ? 'true' : 'false');
   });
 }
 
@@ -5672,7 +5676,8 @@ function setBlissOSDarkMode(enabled){
 
 function applyBlissOSAqua(){
   const isBlissOS = state.settings.theme === 'blissos';
-  document.body.dataset.blissosStyle = (isBlissOS && state.settings.blissosAqua) ? 'aqua' : 'classic';
+  const isAqua = getCurrentOsThemeChoice() === 'blissaqua';
+  document.body.dataset.blissosStyle = (isBlissOS && isAqua) ? 'aqua' : 'classic';
   const brandIconEl = document.querySelector('.blissos-menu-brand img');
   if(isBlissOS && brandIconEl){
     const brandSrc = getIconFor('./assets/icons/bliss.png', 'blissos');
@@ -5684,25 +5689,8 @@ function applyBlissOSAqua(){
 }
 
 function setBlissOSAqua(enabled){
-  if(state.settings.theme !== 'blissos') return;
-  const wasRightAligned = shouldAlignDesktopIconsRight();
-  state.settings.blissosAqua = !!enabled;
-  if(typeof applyOsTheme === 'function'){
-    applyOsTheme();
-  } else {
-    applyBlissOSAqua();
-    if(typeof renderBlissOSDock === 'function') renderBlissOSDock();
-  }
-  if(typeof applySettingsIcons === 'function') applySettingsIcons();
-  const appleMenu = document.getElementById('blissosAppleMenu');
-  if(appleMenu && !appleMenu.classList.contains('hidden') && typeof renderBlissOSAppleMenu === 'function'){
-    renderBlissOSAppleMenu();
-  }
-  const isRightAligned = shouldAlignDesktopIconsRight();
-  if(wasRightAligned !== isRightAligned){
-    arrangeIcons();
-  }
-  syncOsProfile();
+  const choice = enabled ? 'blissaqua' : 'blissos';
+  setOsTheme(choice);
 }
 
 function loadScanlines(){
@@ -6113,8 +6101,9 @@ function loadWallpaper(){
       }
 
       function updateOsThemeButtons(root=document){
+        const current = getCurrentOsThemeChoice();
         $$('[data-set-os-theme]', root).forEach(btn => {
-          btn.classList.toggle('pressed', btn.dataset.setOsTheme === state.settings.theme);
+          btn.classList.toggle('pressed', btn.dataset.setOsTheme === current);
         });
       }
 
@@ -6153,7 +6142,7 @@ function saveGamesBigIcons(){
 function loadOsTheme(){
   try{
     const raw = localStorage.getItem(OS_THEME_KEY);
-    return raw === 'blissos' ? 'blissos' : 'bliss98';
+    return normalizeOsThemeChoice(raw || 'bliss98');
   } catch {
     return 'bliss98';
   }
@@ -6162,7 +6151,21 @@ function loadOsTheme(){
 function getSavedOsTheme(){
   try{
     const raw = localStorage.getItem(OS_THEME_KEY);
-    if(raw === 'blissos' || raw === 'bliss98') return raw;
+    if(raw === 'blissos'){
+      try{
+        const profilesRaw = localStorage.getItem(OS_PROFILE_KEY);
+        if(profilesRaw){
+          const parsed = JSON.parse(profilesRaw);
+          if(parsed && parsed.blissos && parsed.blissos.blissosAqua){
+            return 'blissaqua';
+          }
+        }
+      } catch {}
+    }
+    const normalized = normalizeOsThemeChoice(raw || '');
+    if(normalized !== 'bliss98' || raw === 'bliss98') return normalized;
+    if(raw === 'bliss98') return 'bliss98';
+    if(raw === 'blissos') return 'blissos';
   } catch {}
   return null;
 }
@@ -6305,7 +6308,7 @@ const BLISSOS_ACCENT_COLORS = {
 
 function saveOsTheme(){
   try{
-    localStorage.setItem(OS_THEME_KEY, state.settings.theme);
+    localStorage.setItem(OS_THEME_KEY, getCurrentOsThemeChoice());
   } catch {}
 }
 
@@ -6354,6 +6357,27 @@ function getDefaultOsProfiles(){
       systemVolume: loadSystemVolume(),
       systemSoundsEnabled: loadSystemSoundsEnabled(),
     },
+    blissaqua: {
+      wallpaper: 'aqua',
+      themePreset: 'default',
+      titlebar: 'defaultBlue',
+      darkMode: false,
+      blissosDarkMode: false,
+      blissosAqua: true,
+      dockSize: 58,
+      dockMagnification: true,
+      dockMagnificationStrength: 60,
+      dockOpacity: 100,
+      dockAutoHide: false,
+      showDesktopIcons: desktopIconsVisible,
+      retroGlow: false,
+      scanlines: false,
+      clock24: true,
+      oldCrt: false,
+      masterVolume: loadMasterVolume(),
+      systemVolume: loadSystemVolume(),
+      systemSoundsEnabled: loadSystemSoundsEnabled(),
+    },
   };
 }
 
@@ -6363,9 +6387,16 @@ function loadOsProfiles(){
     if(raw){
       const parsed = JSON.parse(raw);
       const defaults = getDefaultOsProfiles();
+      const legacyBlissos = parsed && parsed.blissos ? parsed.blissos : {};
+      const migratedBlissAqua = (parsed && parsed.blissaqua) ? parsed.blissaqua : (
+        legacyBlissos && legacyBlissos.blissosAqua
+          ? { ...legacyBlissos, blissosAqua: true, wallpaper: legacyBlissos.wallpaper || 'aqua' }
+          : {}
+      );
       return {
         bliss98: { ...defaults.bliss98, ...(parsed.bliss98 || {}) },
-        blissos: { ...defaults.blissos, ...(parsed.blissos || {}) },
+        blissos: { ...defaults.blissos, ...legacyBlissos, blissosAqua: false },
+        blissaqua: { ...defaults.blissaqua, ...migratedBlissAqua, blissosAqua: true },
       };
     }
   } catch {}
@@ -6380,7 +6411,7 @@ function saveOsProfiles(){
 
 function syncOsProfile(){
   if(!state.settings.osProfiles) state.settings.osProfiles = getDefaultOsProfiles();
-  const theme = state.settings.theme || 'bliss98';
+  const theme = getCurrentOsThemeChoice();
   state.settings.osProfiles[theme] = {
     wallpaper: state.wallpaper,
     themePreset: state.theme.preset,
@@ -6407,16 +6438,21 @@ function syncOsProfile(){
 
 function applyOsProfile(theme){
   if(!state.settings.osProfiles) state.settings.osProfiles = getDefaultOsProfiles();
-  const profile = state.settings.osProfiles[theme] || getDefaultOsProfiles()[theme];
-  state.wallpaper = profile.wallpaper || (theme === 'blissos' ? 'blissos' : 'classic');
+  const profileTheme = normalizeOsThemeChoice(theme || getCurrentOsThemeChoice());
+  const defaults = getDefaultOsProfiles();
+  const profile = state.settings.osProfiles[profileTheme] || defaults[profileTheme];
+  const blissFamily = profileTheme !== 'bliss98';
+  const isAqua = profileTheme === 'blissaqua';
+  state.settings.theme = blissFamily ? 'blissos' : 'bliss98';
+  state.settings.blissosAqua = isAqua;
+  state.wallpaper = profile.wallpaper || (isAqua ? 'aqua' : (blissFamily ? 'blissos' : 'classic'));
   state.theme.preset = profile.themePreset || 'default';
   state.theme.titlebar = profile.titlebar || 'defaultBlue';
-  if(theme === 'blissos' && state.theme.titlebar === 'blank'){
+  if(blissFamily && state.theme.titlebar === 'blank'){
     state.theme.titlebar = 'defaultBlue';
   }
   state.settings.darkMode = !!profile.darkMode;
   state.settings.blissosDarkMode = !!profile.blissosDarkMode;
-  state.settings.blissosAqua = !!profile.blissosAqua;
   state.settings.dockSize = typeof profile.dockSize === 'number' ? clamp(Math.round(profile.dockSize), 0, 100) : 58;
   state.settings.dockMagnification = profile.dockMagnification !== false;
   state.settings.dockMagnificationStrength = typeof profile.dockMagnificationStrength === 'number' ? clamp(Math.round(profile.dockMagnificationStrength), 0, 100) : 60;
@@ -6431,7 +6467,7 @@ function applyOsProfile(theme){
   state.settings.systemVolume = typeof profile.systemVolume === 'number' ? profile.systemVolume : loadSystemVolume();
   state.settings.systemSoundsEnabled = profile.systemSoundsEnabled !== false;
 
-  if(theme === 'bliss98'){
+  if(profileTheme === 'bliss98'){
     if(state.theme.preset !== 'custom'){
       setThemePreset(state.theme.preset, { init:true });
     } else {
@@ -6458,7 +6494,10 @@ function applyOsProfile(theme){
 }
 
 function applyOsTheme(){
-  const theme = state.settings.theme || 'bliss98';
+  const current = getCurrentOsThemeChoice();
+  const theme = current === 'bliss98' ? 'bliss98' : 'blissos';
+  state.settings.theme = theme;
+  state.settings.blissosAqua = current === 'blissaqua';
   document.body.dataset.theme = theme;
   const blissos = theme === 'blissos';
   const menubar = $('#blissosMenubar');
@@ -6491,14 +6530,11 @@ function applyOsTheme(){
 
 function setOsTheme(theme){
   const wasRightAligned = shouldAlignDesktopIconsRight();
+  const nextTheme = normalizeOsThemeChoice(theme);
   syncOsProfile();
-  state.settings.theme = (theme === 'blissos') ? 'blissos' : 'bliss98';
+  applyOsProfile(nextTheme);
   saveOsTheme();
-  // Force blissos wallpaper if theme is blissos
-  if (state.settings.theme === 'blissos') {
-    state.wallpaper = 'blissos';
-  }
-  applyOsProfile(state.settings.theme);
+  initDesktopFs();
   applyOsTheme();
   const isRightAligned = shouldAlignDesktopIconsRight();
   if(wasRightAligned !== isRightAligned){

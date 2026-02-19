@@ -27,23 +27,21 @@
         const saved = localStorage.getItem('bliss98_user');
         if(saved){ setUser(saved); $('#username').value = saved; }
 
-        const savedOsTheme = getSavedOsTheme();
-        if(savedOsTheme){
-          state.settings.theme = savedOsTheme;
-        } else {
+        let osThemeChoice = getSavedOsTheme();
+        if(!osThemeChoice){
           const autoOsTheme = detectDefaultOSForFirstVisit();
           if(autoOsTheme){
-            state.settings.theme = autoOsTheme;
-            saveOsTheme();
+            osThemeChoice = autoOsTheme;
           } else {
-            state.settings.theme = loadOsTheme();
+            osThemeChoice = loadOsTheme();
           }
         }
         state.settings.osProfiles = loadOsProfiles();
         state.settings.blissosAccent = loadBlissosAccent();
         mpLoadState();
         
-        applyOsProfile(state.settings.theme);
+        applyOsProfile(osThemeChoice);
+        saveOsTheme();
         initMatrixEffect();
 
         state.gridSnap = loadGridSnap();
@@ -75,6 +73,7 @@
         }
         applyI18n();
         applyOsTheme();
+        if(typeof syncLoginOsButtons === 'function') syncLoginOsButtons();
         updateTrashIconUI();
         initSfx();
         showLogin(true);

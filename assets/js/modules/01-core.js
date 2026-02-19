@@ -176,14 +176,25 @@
       } catch {}
 
       // Helper functions for OS mode detection
+      function normalizeOsThemeChoice(theme){
+        if(theme === 'blissos' || theme === 'blissaqua' || theme === 'bliss98') return theme;
+        return 'bliss98';
+      }
+      function getCurrentOsThemeChoice(){
+        const normalized = normalizeOsThemeChoice(state.settings.theme || 'bliss98');
+        if(normalized === 'blissaqua') return 'blissaqua';
+        if(normalized === 'blissos') return state.settings.blissosAqua ? 'blissaqua' : 'blissos';
+        return 'bliss98';
+      }
       function isBlissOS(){
-        return state.settings.theme === 'blissos';
+        const theme = normalizeOsThemeChoice(state.settings.theme || 'bliss98');
+        return theme === 'blissos' || theme === 'blissaqua';
       }
       function isBliss98(){
-        return state.settings.theme !== 'blissos';
+        return !isBlissOS();
       }
       function shouldAlignDesktopIconsRight(){
-        return state.settings.theme === 'blissos';
+        return isBlissOS();
       }
 
       const ICON_POS_KEY = 'bliss98_icon_positions';
@@ -525,8 +536,14 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
 
       function loadIconPositions(){
         try{
-          const raw = localStorage.getItem(ICON_POS_KEY);
-          return raw ? JSON.parse(raw) : {};
+          const key = `${ICON_POS_KEY}_${getCurrentOsThemeChoice()}`;
+          const raw = localStorage.getItem(key);
+          if(raw){
+            const parsed = JSON.parse(raw);
+            if(parsed && typeof parsed === 'object') return parsed;
+          }
+          const legacy = localStorage.getItem(ICON_POS_KEY);
+          return legacy ? JSON.parse(legacy) : {};
         } catch {
           return {};
         }
@@ -534,7 +551,8 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
 
       function saveIconPositions(pos){
         try{
-          localStorage.setItem(ICON_POS_KEY, JSON.stringify(pos));
+          const key = `${ICON_POS_KEY}_${getCurrentOsThemeChoice()}`;
+          localStorage.setItem(key, JSON.stringify(pos));
         } catch {}
       }
 
@@ -652,12 +670,13 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
           const existing = getFsItem(id);
           const idx = APPS.concat(VIRTUAL_ICONS).findIndex(it => it.id === id);
           const def = layout[id] || legacyDefaultIconPos(Math.max(0, idx));
-          const saved = iconPosCache[id] || def;
+          const hasSaved = !!iconPosCache[id];
+          const saved = hasSaved ? iconPosCache[id] : def;
           const base = existing || { id, type, appId: id };
           const parentId = base.parentId || null;
           const needsPos = parentId == null;
-          const x = needsPos ? (Number.isFinite(base.x) ? base.x : saved.x) : base.x;
-          const y = needsPos ? (Number.isFinite(base.y) ? base.y : saved.y) : base.y;
+          const x = needsPos ? (hasSaved ? saved.x : (Number.isFinite(base.x) ? base.x : saved.x)) : base.x;
+          const y = needsPos ? (hasSaved ? saved.y : (Number.isFinite(base.y) ? base.y : saved.y)) : base.y;
           const next = {
             ...base,
             id,
@@ -935,7 +954,9 @@ const AQUA_ICON_MAP = {
 };
 
 function isAquaIconThemeActive(theme){
-  return theme === 'blissos' && !!state.settings.blissosAqua;
+  const mode = normalizeOsThemeChoice(theme || state.settings.theme || 'bliss98');
+  if(mode === 'blissaqua') return true;
+  return mode === 'blissos' && !!state.settings.blissosAqua;
 }
 
 function getAquaIconPath(iconPath, theme){
@@ -961,7 +982,7 @@ function getIconFor(key, osMode){
     if(trimmed.startsWith('<svg')) return trimmed;
     const looksLikePath = trimmed.startsWith('./') || trimmed.startsWith('../') || trimmed.startsWith('/') || trimmed.startsWith('data:') || trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.includes('/assets/');
     if(looksLikePath){
-      if(theme === 'blissos'){
+      if(theme === 'blissos' || theme === 'blissaqua'){
         const aquaPath = getAquaIconPath(trimmed, theme);
         if(aquaPath) return aquaPath;
         if(isAquaIconThemeActive(theme)) return trimmed;
@@ -983,7 +1004,7 @@ function getThemedIconHtml(item, label, size=32){
     return icon;
   }
   const src = (typeof icon === 'string') ? icon : '';
-  const fallback = (theme === 'blissos' && !isAquaIconThemeActive(theme)) ? getBlissOSFallbackPath(src) : '';
+  const fallback = ((theme === 'blissos' || theme === 'blissaqua') && !isAquaIconThemeActive(theme)) ? getBlissOSFallbackPath(src) : '';
   const fbAttr = fallback ? ` data-fallback-src="${fallback}"` : '';
   const idAttr = item && item.id ? ` data-app-id="${item.id}"` : '';
   return `<img class="pixel" src="${src}"${fbAttr}${idAttr} width="${size}" height="${size}" alt="${label}" style="display:block;" />`;
@@ -996,8 +1017,16 @@ function getFsIconHtml(item, label, size = 32){
     return app ? getThemedIconHtml(app, label, size) : iconSVG('app', state.settings.theme);
   }
   if(item.type === 'virtual'){
-    const virtual = getVirtualIconById(item.appId || item.id);
-    return virtual ? getThemedIconHtml({ icon: 'game', id: virtual.id, iconFile: virtual.iconFile }, label, size) : iconSVG('game', state.settings.theme);
+    const lookupId = item.appId || item.id;
+    const virtual = getVirtualIconById(lookupId);
+    if(virtual){
+      return getThemedIconHtml({ icon: 'game', id: virtual.id, iconFile: virtual.iconFile }, label, size);
+    }
+    const app = getAppById(lookupId);
+    if(app){
+      return getThemedIconHtml(app, label, size);
+    }
+    return iconSVG('game', state.settings.theme);
   }
   if(item.type === 'folder'){
     const src = getFolderIconPath();

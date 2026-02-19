@@ -23,6 +23,7 @@
         $('#login').classList.remove('hidden');
         closeTaskbarCalendar();
         updateMatrixEffect();
+        syncLoginOsButtons();
         $('#username').focus();
         if(playBoot && areSystemSoundsEnabled() && SFX.boot && !SFX.boot.played){
           playSfxOnce('boot', { allowPending: true }).then((ok)=>{
@@ -4088,6 +4089,20 @@ function renderBlissOSAppMenu(){
         setTimeout(tickClock, 1000);
       }
 
+      function syncLoginOsButtons(){
+        const current = getCurrentOsThemeChoice();
+        $$('[data-login-os]').forEach(btn => {
+          const btnOs = normalizeOsThemeChoice(btn.dataset.loginOs || 'bliss98');
+          btn.classList.toggle('pressed', btnOs === current);
+        });
+      }
+
+      function selectLoginOs(theme){
+        const selectedTheme = normalizeOsThemeChoice(theme);
+        setOsTheme(selectedTheme);
+        syncLoginOsButtons();
+      }
+
       function enter(){
         const name = $('#username').value.trim();
         if(!name){
@@ -4106,6 +4121,10 @@ function renderBlissOSAppMenu(){
       $('#enter').addEventListener('click', enter);
       $('#username').addEventListener('keydown', (e)=>{ if(e.key==='Enter') enter(); });
       $('#langBtn').addEventListener('click', (e)=>{ e.preventDefault(); toggleLang(); });
+      $$('[data-login-os]').forEach(btn => {
+        btn.addEventListener('click', ()=>selectLoginOs(btn.dataset.loginOs || 'bliss98'));
+      });
+      syncLoginOsButtons();
 
       $('#clearProfile').addEventListener('click', ()=>{
         localStorage.removeItem('bliss98_user');
