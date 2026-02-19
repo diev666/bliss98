@@ -183,7 +183,7 @@
         return state.settings.theme !== 'blissos';
       }
       function shouldAlignDesktopIconsRight(){
-        return state.settings.theme === 'blissos' && !!state.settings.blissosAqua;
+        return state.settings.theme === 'blissos';
       }
 
       const ICON_POS_KEY = 'bliss98_icon_positions';

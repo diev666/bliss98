@@ -3243,7 +3243,28 @@
         padding:2px 6px;
         color:var(--text);
       }
-      .task-left{display:flex; align-items:center; gap:6px;}
+      .task-left{display:flex; align-items:center; gap:4px;}
+      .task-separator{
+        width:2px;
+        height:22px;
+        border-left:1px solid var(--shadow-mid);
+        border-right:1px solid var(--shadow-white);
+        flex:0 0 auto;
+      }
+      .task-quicklaunch{
+        display:flex;
+        align-items:center;
+        gap:2px;
+        flex:0 0 auto;
+      }
+      .task-quick-btn{
+        width:24px;
+        height:22px;
+        padding:0;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+      }
       .task-buttons{
         display:flex;
         align-items:center;
@@ -3515,6 +3536,45 @@
         width:100%;
         box-sizing:border-box;
         overflow:hidden;
+      }
+      .start-list .start-menu-has-sub{
+        position:relative;
+        padding-right:20px;
+        overflow:visible;
+      }
+      .start-list .start-menu-has-sub > span:nth-child(2){
+        flex:1;
+        min-width:0;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+      }
+      .start-list .start-menu-has-sub > .menu-arrow{
+        margin-left:auto;
+        font-size:11px;
+        line-height:1;
+        opacity:0.92;
+      }
+      .start-list .start-menu-has-sub > .start-submenu{
+        min-width:214px;
+        top:-2px;
+        left:calc(100% - 2px);
+        z-index:20;
+      }
+      .start-list .start-sub-item{
+        justify-content:flex-start;
+        gap:8px;
+      }
+      .start-list .start-sub-item.disabled{
+        opacity:0.62;
+        pointer-events:none;
+      }
+      .start-list .start-sub-item > span:last-child{
+        flex:1;
+        min-width:0;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
       }
       .start-list .menu-item > div:last-child{
         flex:1;
@@ -8723,6 +8783,9 @@
               <img class="pixel" src="./assets/icons/bliss.png" width="16" height="16" alt="" style="display:block;" />
               <strong>Bliss</strong>
             </div>
+            <span class="task-separator" aria-hidden="true"></span>
+            <div class="task-quicklaunch" id="taskQuickLaunch" aria-label="Quick launch"></div>
+            <span class="task-separator" aria-hidden="true"></span>
           </div>
 
           <div class="task-buttons" id="taskButtons"></div>

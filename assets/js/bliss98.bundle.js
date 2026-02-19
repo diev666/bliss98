@@ -187,7 +187,7 @@
         return state.settings.theme !== 'blissos';
       }
       function shouldAlignDesktopIconsRight(){
-        return state.settings.theme === 'blissos' && !!state.settings.blissosAqua;
+        return state.settings.theme === 'blissos';
       }
 
       const ICON_POS_KEY = 'bliss98_icon_positions';
@@ -16380,27 +16380,206 @@ function renderIcons(){
         if(!list) return;
         list.textContent = '';
         const fragment = document.createDocumentFragment();
-        APPS.filter(app => app.showInStart !== false).forEach(app => {
+
+        const settingsTabsAll = [
+          { id:'general', icon:'./assets/icons/computer.png', labelKey:'settings.tab.general' },
+          { id:'language', icon:'./assets/icons/language.png', labelKey:'settings.tab.language' },
+          { id:'appearance', icon:'./assets/icons/appearance.png', labelKey:'settings.tab.appearance' },
+          { id:'dock', icon:'./assets/icons/dock.png', labelKey:'settings.tab.dock' },
+          { id:'sound', icon:'./assets/icons/Sound.png', labelKey:'settings.tab.sound' },
+          { id:'system', icon:'./assets/icons/system.png', labelKey:'settings.tab.system' },
+          { id:'performance', icon:'./assets/icons/performance.png', labelKey:'settings.tab.performance' },
+        ];
+        const settingsTabs = (state.settings.theme === 'blissos')
+          ? settingsTabsAll
+          : settingsTabsAll.filter(tab => tab.id !== 'dock');
+
+        const makeAppItem = (appId)=>{
+          const app = getAppById(appId);
+          if(!app) return null;
           const label = getIconLabel(app);
           const item = document.createElement('div');
           item.className = 'menu-item';
           item.innerHTML = `
             <div style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;">${getThemedIconHtml(app, label, 16)}</div>
-            <div>${label}</div>
+            <div>${escapeHTML(label)}</div>
           `;
-          item.addEventListener('click', ()=>{ openApp(app.id); closeStartMenu(); });
-          fragment.appendChild(item);
+          item.addEventListener('click', ()=>{
+            openApp(app.id);
+            closeStartMenu();
+          });
+          return item;
+        };
+
+        const makeSeparator = ()=>{
+          const sep = document.createElement('div');
+          sep.className = 'menu-sep';
+          return sep;
+        };
+
+        const makeSettingsItem = ()=>{
+          const settingsApp = getAppById('settings') || { id:'settings', icon:'settings', iconFile:'./assets/icons/Settings.png' };
+          const settingsLabel = getIconLabel(settingsApp) || t('app.settings');
+          const settingsItem = document.createElement('div');
+          settingsItem.className = 'menu-item has-sub start-menu-has-sub';
+          const settingsSubmenu = settingsTabs.map(tab => {
+            const tabLabel = t(tab.labelKey);
+            return `
+              <div class="menu-item start-sub-item" data-start-settings-tab="${tab.id}" role="menuitem" tabindex="-1">
+                <span style="width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;">${getThemedIconHtml({ icon:'settings', id:`start-settings-${tab.id}`, iconFile:tab.icon }, tabLabel, 16)}</span>
+                <span>${escapeHTML(tabLabel)}</span>
+              </div>
+            `;
+          }).join('');
+          settingsItem.innerHTML = `
+            <span style="width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;">${getThemedIconHtml(settingsApp, settingsLabel, 16)}</span>
+            <span>${escapeHTML(settingsLabel)}</span>
+            <span class="menu-arrow" aria-hidden="true">▶</span>
+            <div class="menu-sub start-submenu" role="menu" aria-label="${escapeHTML(settingsLabel)}">
+              ${settingsSubmenu}
+            </div>
+          `;
+          settingsItem.addEventListener('click', (e)=>{
+            const subItem = e.target && e.target.closest ? e.target.closest('[data-start-settings-tab]') : null;
+            if(subItem && subItem.dataset && subItem.dataset.startSettingsTab){
+              e.stopPropagation();
+              openSettingsAndTab(subItem.dataset.startSettingsTab);
+              closeStartMenu();
+              return;
+            }
+            e.stopPropagation();
+          });
+          return settingsItem;
+        };
+
+        const makeDocumentsItem = ()=>{
+          const docsLabel = t('seeker.section.documents');
+          const docsIcon = getThemedIconHtml(
+            { id:'start-docs-menu', icon:'folder', iconFile:'./assets/icons/documents.png' },
+            docsLabel,
+            16
+          );
+          const txtDocs = Object.values(state.fs.items || {})
+            .filter(item => item && item.type === 'txt' && !state.trash.has(item.id))
+            .map(item => {
+              const label = getFsItemLabel(item);
+              return {
+                kind: 'txt',
+                id: item.id,
+                label,
+                iconHtml: getThemedIconHtml(
+                  { id:`start-txt-${item.id}`, icon:'file', iconFile:getTxtIconPath },
+                  label,
+                  16
+                ),
+              };
+            });
+          const poemDocs = POEMS.map(poem => ({
+            kind: 'poem',
+            id: poem.id,
+            label: poem.title,
+            iconHtml: getThemedIconHtml(
+              { id:`start-poem-${poem.id}`, icon:'file', iconFile:'./assets/icons/poetry2.png' },
+              poem.title,
+              16
+            ),
+          }));
+          const entries = txtDocs
+            .concat(poemDocs)
+            .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity:'base' }));
+          const docsSubmenu = entries.length
+            ? entries.map(entry => `
+                <div class="menu-item start-sub-item" data-start-doc-kind="${entry.kind}" data-start-doc-id="${entry.id}" role="menuitem" tabindex="-1">
+                  <span style="width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;">${entry.iconHtml}</span>
+                  <span>${escapeHTML(entry.label)}</span>
+                </div>
+              `).join('')
+            : `<div class="menu-item start-sub-item disabled" role="menuitem" tabindex="-1"><span>${escapeHTML(t('seeker.empty'))}</span></div>`;
+          const docsItem = document.createElement('div');
+          docsItem.className = 'menu-item has-sub start-menu-has-sub';
+          docsItem.innerHTML = `
+            <span style="width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;">${docsIcon}</span>
+            <span>${escapeHTML(docsLabel)}</span>
+            <span class="menu-arrow" aria-hidden="true">▶</span>
+            <div class="menu-sub start-submenu" role="menu" aria-label="${escapeHTML(docsLabel)}">
+              ${docsSubmenu}
+            </div>
+          `;
+          docsItem.addEventListener('click', (e)=>{
+            const subItem = e.target && e.target.closest ? e.target.closest('[data-start-doc-kind]') : null;
+            if(!subItem || !subItem.dataset) return;
+            const kind = subItem.dataset.startDocKind;
+            const id = subItem.dataset.startDocId;
+            if(kind === 'txt' && id){
+              openIconById(id);
+              closeStartMenu();
+              return;
+            }
+            if(kind === 'poem' && id){
+              const poem = getPoemById(id);
+              if(!poem) return;
+              state.poetry.view = 'read';
+              state.poetry.currentId = id;
+              state.poetry.readLang = state.lang;
+              if(typeof rememberSeekerRecent === 'function'){
+                rememberSeekerRecent({ kind:'poem', id }, { refresh:false });
+              }
+              if(!state.windows.has('poetry')){
+                openApp('poetry');
+              }
+              renderPoetryWindow();
+              closeStartMenu();
+              return;
+            }
+          });
+          return docsItem;
+        };
+
+        const orderedEntries = [
+          { type:'app', id:'about' },
+          { type:'app', id:'contact' },
+          { type:'sep' },
+          { type:'app', id:'seeker' },
+          { type:'documents' },
+          { type:'settings' },
+          { type:'app', id:'mediaplayer' },
+          { type:'app', id:'music' },
+          { type:'app', id:'videos' },
+          { type:'app', id:'clothes' },
+          { type:'app', id:'poetry' },
+          { type:'app', id:'art' },
+          { type:'app', id:'games' },
+          { type:'app', id:'diev' },
+          { type:'sep' },
+          { type:'logoff' },
+        ];
+
+        orderedEntries.forEach(entry => {
+          if(entry.type === 'sep'){
+            fragment.appendChild(makeSeparator());
+            return;
+          }
+          if(entry.type === 'documents'){
+            fragment.appendChild(makeDocumentsItem());
+            return;
+          }
+          if(entry.type === 'settings'){
+            fragment.appendChild(makeSettingsItem());
+            return;
+          }
+          if(entry.type === 'logoff'){
+            const logout = document.createElement('div');
+            logout.className = 'menu-item';
+            logout.innerHTML = `<div style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;">${getThemedIconHtml({ icon: 'user', id: 'logout', iconFile: './assets/icons/logout.png' }, t('menu.logoff'), 16)}</div><div>${escapeHTML(t('menu.logoff'))}</div>`;
+            logout.addEventListener('click', ()=>{ closeStartMenu(); doLogoff(); });
+            fragment.appendChild(logout);
+            return;
+          }
+          if(entry.type === 'app' && entry.id){
+            const item = makeAppItem(entry.id);
+            if(item) fragment.appendChild(item);
+          }
         });
-
-        const sep = document.createElement('div');
-        sep.className = 'menu-sep';
-        fragment.appendChild(sep);
-
-        const logout = document.createElement('div');
-        logout.className = 'menu-item';
-        logout.innerHTML = `<div style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;">${getThemedIconHtml({ icon: 'user', id: 'logout', iconFile: './assets/icons/logout.png' }, t('menu.logoff'), 16)}</div><div>${t('menu.logoff')}</div>`;
-        logout.addEventListener('click', ()=>{ closeStartMenu(); doLogoff(); });
-        fragment.appendChild(logout);
         list.appendChild(fragment);
       }
 
@@ -18004,6 +18183,7 @@ function toggleFitWindow(appId) {
       }
 
       let taskButtonsRenderSignature = '';
+      let taskQuickLaunchSignature = '';
       let blissosDockRenderSignature = '';
       const LEOPARD_DOCK_RADIUS = 132;
       const LEOPARD_DOCK_MAX_SCALE = 0.42;
@@ -18210,9 +18390,43 @@ function toggleFitWindow(appId) {
         return `${state.settings.theme}|${state.lang}|${parts.join('||')}`;
       }
 
+      function buildTaskQuickLaunchSignature(){
+        return `${state.settings.theme}|${state.lang}|${state.settings.blissosAqua ? 1 : 0}|${state.settings.blissosDarkMode ? 1 : 0}`;
+      }
+
+      function renderTaskQuickLaunch(){
+        const host = $('#taskQuickLaunch');
+        if(!host) return;
+        const quickApps = ['mediaplayer', 'music', 'clothes', 'videos']
+          .map(id => getAppById(id))
+          .filter(Boolean);
+        const signature = buildTaskQuickLaunchSignature();
+        if(signature === taskQuickLaunchSignature && host.childElementCount === quickApps.length){
+          return;
+        }
+        taskQuickLaunchSignature = signature;
+        host.innerHTML = '';
+        quickApps.forEach(app => {
+          const label = getIconLabel(app);
+          const btn = document.createElement('button');
+          btn.className = 'btn bevel task-quick-btn';
+          btn.type = 'button';
+          btn.title = label;
+          btn.setAttribute('aria-label', label);
+          btn.innerHTML = `<span style="width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;">${getThemedIconHtml(app, label, 16)}</span>`;
+          btn.addEventListener('click', (e)=>{
+            e.stopPropagation();
+            closeStartMenu();
+            openIconById(app.id);
+          });
+          host.appendChild(btn);
+        });
+      }
+
       function renderTaskButtons(){
         const host = $('#taskButtons');
         if(!host) return;
+        renderTaskQuickLaunch();
         const wins = Array.from(state.windows.values()).sort((a,b)=>a.title.localeCompare(b.title));
         const signature = buildTaskButtonsSignature(wins);
         if(signature === taskButtonsRenderSignature && host.childElementCount === wins.length){
