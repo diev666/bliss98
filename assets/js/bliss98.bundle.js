@@ -18647,14 +18647,14 @@ function renderBlissOSDock(){
             dockItemWidth = 58;
             dockItemHeight = 54;
           }
-        } else {
-          const minIcon = isMobileDock() ? 20 : 20;
-          const maxIcon = isMobileDock() ? 30 : 34;
-          dockIconSize = Math.round(minIcon + ((maxIcon - minIcon) * sizeT));
-          dockIconBox = Math.round(dockIconSize + (isMobileDock() ? 2 : 4));
-          dockItemWidth = dockIconBox + (isMobileDock() ? 4 : 8);
-          dockItemHeight = dockItemWidth;
-        }
+	        } else {
+	          const minIcon = isMobileDock() ? 20 : 30;
+	          const maxIcon = isMobileDock() ? 30 : 44;
+	          dockIconSize = Math.round(minIcon + ((maxIcon - minIcon) * sizeT));
+	          dockIconBox = Math.round(dockIconSize + (isMobileDock() ? 2 : 8));
+	          dockItemWidth = dockIconBox + (isMobileDock() ? 4 : 10);
+	          dockItemHeight = isMobileDock() ? dockItemWidth : Math.max(44, Math.round(dockItemWidth * 0.96));
+	        }
         blissosDockRenderSignature = dockSignature;
         normalItems.forEach(item => {
           const winId = getDockWindowIdForItem(item);
@@ -20548,4 +20548,3 @@ function renderBlissOSAppMenu(){
         // Mobile optimization: Native Pointer Events and Click handlers now work without suppression
         // IS_COARSE removed - all events handled via standard Pointer Events API
       })();
-
