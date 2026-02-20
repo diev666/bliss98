@@ -359,6 +359,14 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
           position: 'center'
         },
         {
+          id: 'bigcat',
+          labelKey: 'wallpaper.bigcat',
+          background: 'url("./assets/wallpapers/bigcat.png")',
+          size: 'cover',
+          repeat: 'no-repeat',
+          position: 'center'
+        },
+        {
           id: 'diev',
           labelKey: 'wallpaper.diev',
           className: 'wallpaper-grid'
@@ -9378,7 +9386,43 @@ function ensureSeekerState(){
   if(state.seeker.view !== 'list' && state.seeker.view !== 'icons') state.seeker.view = 'icons';
   if(typeof state.seeker.search !== 'string') state.seeker.search = '';
   if(!Array.isArray(state.seeker.recent)) state.seeker.recent = [];
+  if(!state.seeker.selectedBySection || typeof state.seeker.selectedBySection !== 'object'){
+    state.seeker.selectedBySection = {};
+  }
   return state.seeker;
+}
+
+function getSeekerSelectedKey(sectionId){
+  const seeker = ensureSeekerState();
+  const section = normalizeSeekerSection(sectionId || seeker.section || 'desktop');
+  const key = seeker.selectedBySection[section];
+  return (typeof key === 'string' && key) ? key : '';
+}
+
+function setSeekerSelectedKey(sectionId, key){
+  const seeker = ensureSeekerState();
+  const section = normalizeSeekerSection(sectionId || seeker.section || 'desktop');
+  const nextKey = (typeof key === 'string' && key) ? key : '';
+  if(nextKey){
+    seeker.selectedBySection[section] = nextKey;
+  } else {
+    delete seeker.selectedBySection[section];
+  }
+}
+
+function applySeekerSelection(shell, selectedKey){
+  if(!shell) return;
+  const key = (typeof selectedKey === 'string' && selectedKey) ? selectedKey : '';
+  shell.querySelectorAll('[data-seeker-item]').forEach(itemEl => {
+    const itemKey = (itemEl.dataset && itemEl.dataset.seekerItem) || '';
+    const isSelected = !!key && itemKey === key;
+    itemEl.classList.toggle('selected', isSelected);
+    if(isSelected){
+      itemEl.setAttribute('aria-selected', 'true');
+    } else {
+      itemEl.removeAttribute('aria-selected');
+    }
+  });
 }
 
 function refreshOpenSeekerWindows(){
@@ -9461,6 +9505,60 @@ function getSeekerSectionMeta(sectionId){
     return { id:'recent', title:t('seeker.section.recent'), icon:'./assets/icons/recents.png' };
   }
   return { id:'desktop', title:t('seeker.section.desktop'), icon:'./assets/icons/desktop.png' };
+}
+
+function getSeekerPathSegments(sectionId){
+  const section = normalizeSeekerSection(sectionId || 'desktop');
+  const folderId = getSeekerFolderIdFromSection(section);
+  if(folderId){
+    const segments = [getSeekerSectionMeta('desktop')];
+    const chain = [];
+    const guard = new Set();
+    let current = getFsItem(folderId);
+    while(current && current.type === 'folder' && !state.trash.has(current.id) && !guard.has(current.id)){
+      guard.add(current.id);
+      chain.push(current);
+      if(!current.parentId) break;
+      const parent = getFsItem(current.parentId);
+      if(!parent || parent.type !== 'folder' || state.trash.has(parent.id)) break;
+      current = parent;
+    }
+    chain.reverse().forEach(folder => {
+      segments.push({
+        id: getSeekerSectionForFolderId(folder.id),
+        title: getFsItemLabel(folder),
+        icon: getFolderIconPath(),
+      });
+    });
+    return segments;
+  }
+  if(section === SEEKER_COMPUTER_HD_SECTION){
+    return [
+      getSeekerSectionMeta(SEEKER_COMPUTER_SECTION),
+      getSeekerSectionMeta(SEEKER_COMPUTER_HD_SECTION),
+    ];
+  }
+  return [getSeekerSectionMeta(section)];
+}
+
+function renderSeekerPathMarkup(sectionId){
+  const section = normalizeSeekerSection(sectionId || 'desktop');
+  const segments = getSeekerPathSegments(section);
+  return segments.map((segment, index) => {
+    const token = normalizeSeekerSection((segment && segment.id) || 'desktop');
+    const label = (segment && segment.title) || '';
+    const iconFile = (segment && segment.icon) || getFolderIconPath();
+    const iconHtml = getThemedIconHtml(
+      { id:`seeker-path-${token}-${index}`, icon:'folder', iconFile },
+      label,
+      14
+    );
+    const sep = index > 0
+      ? '<span class="seeker-breadcrumb-sep" aria-hidden="true">&#8250;</span>'
+      : '';
+    const disabled = token === section ? ' disabled aria-current="page"' : '';
+    return `${sep}<button class="seeker-breadcrumb" type="button" data-seeker-path-open="${escapeHTML(token)}"${disabled}><span class="seeker-breadcrumb-icon pixel">${iconHtml}</span><span class="seeker-breadcrumb-label">${escapeHTML(label)}</span></button>`;
+  }).join('');
 }
 
 function getSeekerSidebarIconSpec(sectionId){
@@ -9889,7 +9987,12 @@ function makeSeekerItemDraggable(itemEl, shell){
           } else {
             const targetEl = getDropTargetElement(eventRef.clientX, eventRef.clientY, dragEls);
             const overWindow = targetEl && targetEl.closest ? targetEl.closest('.window') : null;
-            if(isOverDesktopArea(eventRef.clientX, eventRef.clientY) && !overWindow){
+            const seekerWin = shell && shell.closest ? shell.closest('.window') : null;
+            const seekerRect = seekerWin ? seekerWin.getBoundingClientRect() : null;
+            const overSeekerWindow = seekerRect
+              ? isPointInRect(eventRef.clientX, eventRef.clientY, seekerRect)
+              : false;
+            if(isOverDesktopArea(eventRef.clientX, eventRef.clientY) && !overWindow && !overSeekerWindow){
               const preferred = getDesktopPosFromClient(eventRef.clientX, eventRef.clientY);
               moveDraggedItemsToFolderTarget(ids, null, { preferredPos: preferred });
             }
@@ -9981,6 +10084,13 @@ function openSeekerItem(item){
   if(!item) return;
   if(item.kind === 'app'){
     openApp(item.id);
+    if(item.id){
+      requestAnimationFrame(()=>{
+        if(state.windows.has(item.id)){
+          focusWindowAndRefreshTaskbar(item.id);
+        }
+      });
+    }
     return;
   }
   if(item.kind === 'virtual'){
@@ -10030,6 +10140,11 @@ function renderSeekerWindow(winEl){
       return hay.includes(query);
     });
   shell._seekerItems = filtered;
+  let selectedKey = getSeekerSelectedKey(section);
+  if(selectedKey && !filtered.some(item => item.key === selectedKey)){
+    selectedKey = '';
+    setSeekerSelectedKey(section, '');
+  }
 
   const locationIcon = shell.querySelector('[data-seeker-location-icon="1"]');
   const locationName = shell.querySelector('[data-seeker-location-name="1"]');
@@ -10037,6 +10152,7 @@ function renderSeekerWindow(winEl){
   const itemsHost = shell.querySelector('[data-seeker-items="1"]');
   const searchInput = shell.querySelector('[data-seeker-search="1"]');
   const statusEl = shell.querySelector('[data-seeker-status="1"]');
+  const pathEl = shell.querySelector('[data-seeker-path="1"]');
   const backBtn = shell.querySelector('[data-seeker-nav="back"]');
   const forwardBtn = shell.querySelector('[data-seeker-nav="forward"]');
   const trashEmptyBtn = shell.querySelector('[data-seeker-trash-empty="1"]');
@@ -10048,6 +10164,9 @@ function renderSeekerWindow(winEl){
   if(mainTitle) mainTitle.textContent = meta.title;
   if(locationIcon){
     locationIcon.innerHTML = getThemedIconHtml({ id:`seeker-loc-${meta.id}`, icon:'folder', iconFile:meta.icon }, meta.title, 16);
+  }
+  if(pathEl){
+    pathEl.innerHTML = renderSeekerPathMarkup(section);
   }
   shell.querySelectorAll('.seeker-side-item[data-seeker-open]').forEach(btn => {
     const token = normalizeSeekerSection((btn.dataset && btn.dataset.seekerOpen) || 'desktop');
@@ -10093,6 +10212,7 @@ function renderSeekerWindow(winEl){
     itemsHost.querySelectorAll('[data-seeker-item]').forEach(itemEl => {
       makeSeekerItemDraggable(itemEl, shell);
     });
+    applySeekerSelection(shell, selectedKey);
   }
 
   if(statusEl){
@@ -10128,6 +10248,12 @@ function initSeekerWindow(winEl){
     shell.addEventListener('click', (e)=>{
       const target = getEventTargetEl(e);
       if(!target || !target.closest) return;
+      const pathBtn = target.closest('[data-seeker-path-open]');
+      if(pathBtn && pathBtn.dataset){
+        updateSeekerHistory(pathBtn.dataset.seekerPathOpen || 'desktop');
+        renderSeekerWindow(win);
+        return;
+      }
       const sectionBtn = target.closest('[data-seeker-open]');
       if(sectionBtn && sectionBtn.dataset){
         updateSeekerHistory(sectionBtn.dataset.seekerOpen || 'desktop');
@@ -10161,9 +10287,10 @@ function initSeekerWindow(winEl){
           return;
         }
         const key = itemBtn.dataset.seekerItem;
-        const items = Array.isArray(shell._seekerItems) ? shell._seekerItems : [];
-        const item = items.find(it => it.key === key);
-        if(item) openSeekerItem(item);
+        const section = normalizeSeekerSection(ensureSeekerState().section || 'desktop');
+        setSeekerSelectedKey(section, key);
+        applySeekerSelection(shell, key);
+        return;
       }
     });
 
@@ -10177,6 +10304,9 @@ function initSeekerWindow(winEl){
         return;
       }
       const key = itemBtn.dataset.seekerItem;
+      const section = normalizeSeekerSection(ensureSeekerState().section || 'desktop');
+      setSeekerSelectedKey(section, key);
+      applySeekerSelection(shell, key);
       const items = Array.isArray(shell._seekerItems) ? shell._seekerItems : [];
       const item = items.find(it => it.key === key);
       if(item) openSeekerItem(item);
@@ -11123,6 +11253,7 @@ function installLongPress(el, getTarget){
           'wallpaper.bliss': 'Sunrise',
           'wallpaper.clouds': 'Clouds',
           'wallpaper.galaxy': 'Galaxy',
+          'wallpaper.bigcat': 'Big Cat',
           'wallpaper.diev': 'Grid',
           'wallpaper.tot': 'Pink Tot',
           'wallpaper.matrix': 'Matrix',
@@ -11724,6 +11855,7 @@ function installLongPress(el, getTarget){
           'wallpaper.bliss': 'Nascer do Sol',
           'wallpaper.clouds': 'Nuvens',
           'wallpaper.galaxy': 'Galáxia',
+          'wallpaper.bigcat': 'Big Cat',
           'wallpaper.diev': 'Grid',
           'wallpaper.tot': 'Tot (Rosa)',
           'wallpaper.matrix': 'Matrix',
@@ -13668,7 +13800,9 @@ Eu sou o buffalo branco extinto`
               </section>
             </div>
             <div class="seeker-footer">
-              <span data-seeker-status="1">0 ${t('seeker.itemLabel')}</span>
+              <div class="seeker-breadcrumbs" data-seeker-path="1"></div>
+              <span class="seeker-footer-status" data-seeker-status="1">0 ${t('seeker.itemLabel')}</span>
+              <span class="seeker-footer-spacer" aria-hidden="true"></span>
             </div>
           </div>
         `,
@@ -14565,6 +14699,10 @@ Eu sou o buffalo branco extinto`
                         <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="galaxy">
                           <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/galaxy.png') center/cover no-repeat;"></span>
                           <span class="wallpaper-card-label" data-i18n="wallpaper.galaxy">Galaxy</span>
+                        </button>
+                        <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="bigcat">
+                          <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/bigcat.png') center/cover no-repeat;"></span>
+                          <span class="wallpaper-card-label" data-i18n="wallpaper.bigcat">Big Cat</span>
                         </button>
                         <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="diev">
                           <span class="wallpaper-card-thumb" style="background:repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 6px), repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 6px), linear-gradient(135deg, #0a2333, #114b6a);"></span>
@@ -18648,12 +18786,12 @@ function renderBlissOSDock(){
             dockItemHeight = 54;
           }
 	        } else {
-	          const minIcon = isMobileDock() ? 20 : 30;
-	          const maxIcon = isMobileDock() ? 30 : 44;
+	          const minIcon = isMobileDock() ? 20 : 32;
+	          const maxIcon = isMobileDock() ? 30 : 46;
 	          dockIconSize = Math.round(minIcon + ((maxIcon - minIcon) * sizeT));
 	          dockIconBox = Math.round(dockIconSize + (isMobileDock() ? 2 : 8));
-	          dockItemWidth = dockIconBox + (isMobileDock() ? 4 : 10);
-	          dockItemHeight = isMobileDock() ? dockItemWidth : Math.max(44, Math.round(dockItemWidth * 0.96));
+	          dockItemWidth = dockIconBox + (isMobileDock() ? 4 : 8);
+	          dockItemHeight = isMobileDock() ? dockItemWidth : Math.max(46, Math.round(dockItemWidth * 0.95));
 	        }
         blissosDockRenderSignature = dockSignature;
         normalItems.forEach(item => {
