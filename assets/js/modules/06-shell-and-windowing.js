@@ -2839,7 +2839,7 @@ function renderBlissOSDock(){
           } else {
             dockIconSize = 48;
             dockIconBox = 56;
-            dockItemWidth = 64;
+            dockItemWidth = 58;
             dockItemHeight = 54;
           }
         } else {
