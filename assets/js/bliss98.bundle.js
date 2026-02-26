@@ -163,6 +163,8 @@
         gridSnap: true,
         autoPlayTimer: null,
         didAutoPlayThisSession: false,
+        pendingDesktopArrange: false,
+        iconPositionsKnownByTheme: null,
       };
       
 
@@ -566,6 +568,28 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
           const key = `${ICON_POS_KEY}_${getCurrentOsThemeChoice()}`;
           localStorage.setItem(key, JSON.stringify(pos));
         } catch {}
+      }
+
+      function hasStoredIconPositionsForTheme(theme){
+        try{
+          const normalized = normalizeOsThemeChoice(theme);
+          const themeKey = `${ICON_POS_KEY}_${normalized}`;
+          const themedRaw = localStorage.getItem(themeKey);
+          if(themedRaw){
+            const themedParsed = JSON.parse(themedRaw);
+            if(themedParsed && typeof themedParsed === 'object' && Object.keys(themedParsed).length > 0){
+              return true;
+            }
+          }
+          const legacyRaw = localStorage.getItem(ICON_POS_KEY);
+          if(legacyRaw){
+            const legacyParsed = JSON.parse(legacyRaw);
+            if(legacyParsed && typeof legacyParsed === 'object' && Object.keys(legacyParsed).length > 0){
+              return true;
+            }
+          }
+        } catch {}
+        return false;
       }
 
       function getTxtIconPath(osMode){
@@ -7937,7 +7961,17 @@ function setOsTheme(theme){
   applyOsTheme();
   const isRightAligned = shouldAlignDesktopIconsRight();
   if(wasRightAligned !== isRightAligned){
-    arrangeIcons();
+    const desktopEl = $('#desktop');
+    const desktopHidden = !desktopEl || desktopEl.classList.contains('hidden');
+    if(desktopHidden){
+      state.pendingDesktopArrange = true;
+    } else {
+      state.pendingDesktopArrange = false;
+      arrangeIcons();
+      if(state.iconPositionsKnownByTheme){
+        state.iconPositionsKnownByTheme[getCurrentOsThemeChoice()] = true;
+      }
+    }
   }
   if(document.getElementById('win_settings')) renderSettingsWindow();
 }
@@ -16065,6 +16099,16 @@ function getDisplayTime(){
         applyWallpaper(state.wallpaper);
         themeApplying = false;
         renderIcons();
+        const currentTheme = getCurrentOsThemeChoice();
+        const knownByTheme = state.iconPositionsKnownByTheme || {};
+        const needsFirstVisibleArrange = !knownByTheme[currentTheme];
+        if(state.pendingDesktopArrange || needsFirstVisibleArrange){
+          state.pendingDesktopArrange = false;
+          arrangeIcons();
+          if(state.iconPositionsKnownByTheme){
+            state.iconPositionsKnownByTheme[currentTheme] = true;
+          }
+        }
         renderStartMenu();
         tickClock();
       }
@@ -20844,6 +20888,11 @@ function renderBlissOSAppMenu(){
         state.trash = new Set(loadTrash());
         state.iconLabels = loadIconLabels();
         state.trashSelection = new Set();
+        state.iconPositionsKnownByTheme = {
+          bliss98: hasStoredIconPositionsForTheme('bliss98'),
+          blissos: hasStoredIconPositionsForTheme('blissos'),
+          blissaqua: hasStoredIconPositionsForTheme('blissaqua'),
+        };
         initDesktopFs();
         const savedDock = loadDockItems();
         state.dockItems = normalizeDockItems(savedDock == null ? getDefaultDockItems() : savedDock);
