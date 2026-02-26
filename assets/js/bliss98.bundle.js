@@ -18931,7 +18931,11 @@ function renderBlissOSDock(){
         const buildDockItemMarkup = (iconHtml, dockIconBox) => {
           const iconSpan = `<span class="dock-icon pixel" style="width:${dockIconBox}px;height:${dockIconBox}px;display:flex;align-items:center;justify-content:center;">${iconHtml}</span>`;
           if(!isAquaDock){
-            return `${iconSpan}<span class="dock-indicator"></span>`;
+            return `
+              ${iconSpan}
+              <span class="dock-tooltip" aria-hidden="true"></span>
+              <span class="dock-indicator"></span>
+            `;
           }
           return `
             ${iconSpan}
