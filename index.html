@@ -1311,40 +1311,41 @@
         bottom:calc(env(safe-area-inset-bottom) + 1px);
       }
       body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .blissos-dock-inner{
+        --classic-dock-alpha:var(--blissos-dock-opacity);
         height:64px;
         min-height:64px;
         padding:1px 12px 0;
         border-radius:0;
-        border:1px solid rgba(130,149,176,0.66);
-        border-bottom-color:rgba(92,110,136,0.82);
+        border:1px solid rgba(130,149,176,calc(0.66 * var(--classic-dock-alpha)));
+        border-bottom-color:rgba(92,110,136,calc(0.82 * var(--classic-dock-alpha)));
         background:
           linear-gradient(
             180deg,
-            rgba(244,250,255,0.54) 0%,
-            rgba(212,226,244,0.48) 43%,
-            rgba(182,199,223,0.5) 44%,
-            rgba(166,185,212,0.58) 100%
+            rgba(244,250,255,calc(0.54 * var(--classic-dock-alpha))) 0%,
+            rgba(212,226,244,calc(0.48 * var(--classic-dock-alpha))) 43%,
+            rgba(182,199,223,calc(0.5 * var(--classic-dock-alpha))) 44%,
+            rgba(166,185,212,calc(0.58 * var(--classic-dock-alpha))) 100%
           ),
           radial-gradient(
             180% 130% at 50% 10%,
-            rgba(255,255,255,0.26) 0%,
+            rgba(255,255,255,calc(0.26 * var(--classic-dock-alpha))) 0%,
             rgba(255,255,255,0) 60%
           ),
           repeating-linear-gradient(
             180deg,
-            rgba(255,255,255,0.38) 0 1px,
-            rgba(124,145,172,0.28) 1px 2px,
-            rgba(177,196,220,0.12) 2px 4px,
-            rgba(116,136,163,0.06) 4px 6px
+            rgba(255,255,255,calc(0.38 * var(--classic-dock-alpha))) 0 1px,
+            rgba(124,145,172,calc(0.28 * var(--classic-dock-alpha))) 1px 2px,
+            rgba(177,196,220,calc(0.12 * var(--classic-dock-alpha))) 2px 4px,
+            rgba(116,136,163,calc(0.06 * var(--classic-dock-alpha))) 4px 6px
           );
         box-shadow:
-          inset 0 1px 0 rgba(255,255,255,0.9),
-          inset 0 2px 0 rgba(255,255,255,0.38),
-          inset 0 -1px 0 rgba(102,121,146,0.76),
-          inset 0 -2px 0 rgba(73,92,118,0.42),
-          0 0 0 1px rgba(247,252,255,0.32),
-          0 8px 16px rgba(19,30,48,0.22);
-        backdrop-filter:blur(1.2px) saturate(1.05);
+          inset 0 1px 0 rgba(255,255,255,calc(0.9 * var(--classic-dock-alpha))),
+          inset 0 2px 0 rgba(255,255,255,calc(0.38 * var(--classic-dock-alpha))),
+          inset 0 -1px 0 rgba(102,121,146,calc(0.76 * var(--classic-dock-alpha))),
+          inset 0 -2px 0 rgba(73,92,118,calc(0.42 * var(--classic-dock-alpha))),
+          0 0 0 1px rgba(247,252,255,calc(0.32 * var(--classic-dock-alpha))),
+          0 8px 16px rgba(19,30,48,calc(0.22 * var(--classic-dock-alpha)));
+        backdrop-filter:blur(calc(1.2px * var(--classic-dock-alpha))) saturate(calc(1 + (0.05 * var(--classic-dock-alpha))));
         overflow:visible;
       }
       body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .blissos-dock-inner > *{
@@ -1482,35 +1483,35 @@
         gap:4px;
       }
       body[data-theme="blissos"]:not([data-blissos-style="aqua"])[data-blissos-mode="dark"] .blissos-dock-inner{
-        border-color:rgba(90,102,118,0.72);
-        border-bottom-color:rgba(24,32,45,0.88);
+        border-color:rgba(90,102,118,calc(0.72 * var(--classic-dock-alpha)));
+        border-bottom-color:rgba(24,32,45,calc(0.88 * var(--classic-dock-alpha)));
         background:
           linear-gradient(
             180deg,
-            rgba(116,126,142,0.64) 0%,
-            rgba(90,99,113,0.62) 43%,
-            rgba(71,80,92,0.66) 44%,
-            rgba(57,65,76,0.72) 100%
+            rgba(116,126,142,calc(0.64 * var(--classic-dock-alpha))) 0%,
+            rgba(90,99,113,calc(0.62 * var(--classic-dock-alpha))) 43%,
+            rgba(71,80,92,calc(0.66 * var(--classic-dock-alpha))) 44%,
+            rgba(57,65,76,calc(0.72 * var(--classic-dock-alpha))) 100%
           ),
           radial-gradient(
             180% 130% at 50% 10%,
-            rgba(223,233,246,0.16) 0%,
+            rgba(223,233,246,calc(0.16 * var(--classic-dock-alpha))) 0%,
             rgba(223,233,246,0) 60%
           ),
           repeating-linear-gradient(
             180deg,
-            rgba(223,232,245,0.2) 0 1px,
-            rgba(22,29,40,0.36) 1px 2px,
-            rgba(14,20,29,0.26) 2px 4px,
-            rgba(9,13,20,0.16) 4px 6px
+            rgba(223,232,245,calc(0.2 * var(--classic-dock-alpha))) 0 1px,
+            rgba(22,29,40,calc(0.36 * var(--classic-dock-alpha))) 1px 2px,
+            rgba(14,20,29,calc(0.26 * var(--classic-dock-alpha))) 2px 4px,
+            rgba(9,13,20,calc(0.16 * var(--classic-dock-alpha))) 4px 6px
           );
         box-shadow:
-          inset 0 1px 0 rgba(210,220,236,0.3),
-          inset 0 2px 0 rgba(210,220,236,0.12),
-          inset 0 -1px 0 rgba(5,8,12,0.84),
-          inset 0 -2px 0 rgba(2,4,8,0.6),
-          0 0 0 1px rgba(189,199,214,0.16),
-          0 10px 20px rgba(0,0,0,0.5);
+          inset 0 1px 0 rgba(210,220,236,calc(0.3 * var(--classic-dock-alpha))),
+          inset 0 2px 0 rgba(210,220,236,calc(0.12 * var(--classic-dock-alpha))),
+          inset 0 -1px 0 rgba(5,8,12,calc(0.84 * var(--classic-dock-alpha))),
+          inset 0 -2px 0 rgba(2,4,8,calc(0.6 * var(--classic-dock-alpha))),
+          0 0 0 1px rgba(189,199,214,calc(0.16 * var(--classic-dock-alpha))),
+          0 10px 20px rgba(0,0,0,calc(0.5 * var(--classic-dock-alpha)));
       }
       body[data-theme="blissos"]:not([data-blissos-style="aqua"])[data-blissos-mode="dark"] .blissos-dock-inner::before{
         background:repeating-linear-gradient(

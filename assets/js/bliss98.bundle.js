@@ -18611,7 +18611,7 @@ function toggleFitWindow(appId) {
       }
 
       function isLeopardDockActive(){
-        return state.settings.theme === 'blissos' && !!state.settings.blissosAqua && !isMobileDock() && isDockRenderMagnificationEnabled();
+        return state.settings.theme === 'blissos' && !isMobileDock() && isDockRenderMagnificationEnabled();
       }
 
       function isDockLaunchBounceActive(){
@@ -18933,6 +18933,10 @@ function renderBlissOSDock(){
         let dockIconBox = 32;
         let dockItemWidth = 40;
         let dockItemHeight = 40;
+        let classicInnerHeight = 0;
+        let classicInnerPadX = 0;
+        let classicGap = 0;
+        let classicSeparatorHeight = 0;
         if(isAquaDock){
           if(isMobileDock()){
             dockIconSize = Math.round(24 + (8 * sizeT));
@@ -18946,13 +18950,34 @@ function renderBlissOSDock(){
             dockItemHeight = 54;
           }
 	        } else {
-	          const minIcon = isMobileDock() ? 20 : 32;
-	          const maxIcon = isMobileDock() ? 30 : 46;
-	          dockIconSize = Math.round(minIcon + ((maxIcon - minIcon) * sizeT));
-	          dockIconBox = Math.round(dockIconSize + (isMobileDock() ? 2 : 8));
-	          dockItemWidth = dockIconBox + (isMobileDock() ? 4 : 8);
-	          dockItemHeight = isMobileDock() ? dockItemWidth : Math.max(46, Math.round(dockItemWidth * 0.95));
+	          if(isMobileDock()){
+	            const minIcon = 20;
+	            const maxIcon = 30;
+	            dockIconSize = Math.round(minIcon + ((maxIcon - minIcon) * sizeT));
+	            dockIconBox = Math.round(dockIconSize + 2);
+	            dockItemWidth = dockIconBox + 4;
+	            dockItemHeight = dockItemWidth;
+	          } else {
+	            // Keep classic dock/item proportions tighter across the size slider.
+	            const minIcon = 35;
+	            const maxIcon = 46;
+	            dockIconSize = Math.round(minIcon + ((maxIcon - minIcon) * sizeT));
+	            dockIconBox = Math.round(dockIconSize + 8);
+	            dockItemWidth = dockIconBox + 8;
+	            dockItemHeight = Math.max(48, Math.round(dockItemWidth * 0.95));
+	            classicInnerHeight = clamp(Math.round(dockItemHeight + 8), 56, 64);
+	            classicInnerPadX = clamp(Math.round(8 + (4 * sizeT)), 8, 12);
+	            classicGap = clamp(Math.round(2 + (2 * sizeT)), 2, 4);
+	            classicSeparatorHeight = Math.max(52, classicInnerHeight - 4);
+	          }
 	        }
+        if(!isAquaDock && !isMobileDock()){
+          inner.style.height = `${classicInnerHeight}px`;
+          inner.style.minHeight = `${classicInnerHeight}px`;
+          inner.style.padding = `1px ${classicInnerPadX}px 0`;
+          if(mid) mid.style.gap = `${classicGap}px`;
+          if(right) right.style.gap = `${classicGap}px`;
+        }
         blissosDockRenderSignature = dockSignature;
         normalItems.forEach(item => {
           const winId = getDockWindowIdForItem(item);
@@ -19014,6 +19039,9 @@ function renderBlissOSDock(){
             const separator = document.createElement('span');
             separator.className = 'blissos-dock-separator';
             separator.setAttribute('aria-hidden', 'true');
+            if(!isAquaDock && !isMobileDock() && classicSeparatorHeight > 0){
+              separator.style.height = `${classicSeparatorHeight}px`;
+            }
             right.appendChild(separator);
           }
           const winId = getDockWindowIdForItem(trashItem);
