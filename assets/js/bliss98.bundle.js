@@ -1115,7 +1115,11 @@ function buildOccupiedFromFs(parentId, excludeIds, metrics, opts = {}){
 function getDefaultIconLayout(){
   const area = $('#desktopArea').getBoundingClientRect();
   const fallbackWidth = Math.max(ICON_SIZE.w + 6, window.innerWidth || 0);
-  const fallbackHeight = Math.max(ICON_SIZE.h + 6, (window.innerHeight || 0) - 36);
+  // During first boot/login the desktop area can report ~0 height.
+  // Keep enough virtual rows so defaults stay vertical instead of collapsing into one top row.
+  const minRowsForFallback = 6;
+  const minFallbackHeight = ((ICON_SIZE.h + ICON_GAP.y) * minRowsForFallback) + 6;
+  const fallbackHeight = Math.max(ICON_SIZE.h + 6, (window.innerHeight || 0) - 36, minFallbackHeight);
   const width = area.width > (ICON_SIZE.w + 6) ? area.width : fallbackWidth;
   const height = area.height > (ICON_SIZE.h + 6) ? area.height : fallbackHeight;
   const metrics = getGridMetricsForSize(width, height);
@@ -13248,9 +13252,9 @@ function installLongPress(el, getTarget){
         enabled: true,
         base: './assets/BlissOS/',
         sourceBase: './assets/icons/',
-        // BlissOS keeps this filename in lowercase on disk.
+        // Keep canonical case for case-sensitive hosts (production Linux).
         fileOverrides: Object.freeze({
-          'Settings.png': 'settings.png',
+          'Settings.png': 'Settings.png',
         }),
       };
 
@@ -13273,7 +13277,10 @@ function installLongPress(el, getTarget){
         if(path.startsWith(BLISSOS_ICON_MAP.base)) return path + query;
         if(path.startsWith(BLISSOS_ICON_MAP.sourceBase)){
           const file = path.slice(BLISSOS_ICON_MAP.sourceBase.length);
-          const mapped = BLISSOS_ICON_MAP.fileOverrides[file] || file;
+          let mapped = BLISSOS_ICON_MAP.fileOverrides[file] || file;
+          if(!BLISSOS_ICON_MAP.fileOverrides[file] && file.toLowerCase() === 'settings.png'){
+            mapped = BLISSOS_ICON_MAP.fileOverrides['Settings.png'] || 'Settings.png';
+          }
           return `${BLISSOS_ICON_MAP.base}${mapped}${query}`;
         }
         return src;
@@ -13284,7 +13291,10 @@ function installLongPress(el, getTarget){
         const { path, query } = splitAssetQuery(src);
         if(path.startsWith(BLISSOS_ICON_MAP.base)){
           const file = path.slice(BLISSOS_ICON_MAP.base.length);
-          const mapped = BLISSOS_ICON_REVERSE_MAP[file] || file;
+          let mapped = BLISSOS_ICON_REVERSE_MAP[file] || file;
+          if(mapped.toLowerCase() === 'settings.png'){
+            mapped = 'Settings.png';
+          }
           return `${BLISSOS_ICON_MAP.sourceBase}${mapped}${query}`;
         }
         return src;
