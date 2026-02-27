@@ -18673,9 +18673,9 @@ function renderBlissOSDock(){
           const innerPadX = Math.round(10 + (4 * sizeT));
           const trayPlateHeight = Math.round(dockItemHeight + 8);
           const separatorHeight = Math.round(dockItemHeight + 10);
-          const separatorShift = Math.round(2 + (2 * sizeT));
+          const separatorShift = Math.round(1 + sizeT);
           const iconBaseY = -Math.round(dockIconBox * 0.26);
-          const reflectionBottom = -Math.round(dockIconBox + 24);
+          const reflectionBottom = -Math.round((dockIconBox * 0.9) + 3);
           dock.style.setProperty('--aqua-mobile-inner-h', `${innerHeight}px`);
           dock.style.setProperty('--aqua-mobile-inner-pad-x', `${innerPadX}px`);
           dock.style.setProperty('--aqua-mobile-tray-plate-h', `${trayPlateHeight}px`);
