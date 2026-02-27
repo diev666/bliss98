@@ -9328,11 +9328,11 @@
           inset:16px 0 32px 0 !important;
         }
 
-        .blissos-dock{
+        body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .blissos-dock{
           left:50% !important;
           transform:translateX(-50%) !important;
         }
-        .blissos-dock-inner{
+        body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .blissos-dock-inner{
           height:40px !important;
           padding:3px 5px !important;
           gap:5px !important;
@@ -9341,13 +9341,44 @@
           overflow-y:hidden !important;
           -webkit-overflow-scrolling:touch;
         }
-        .blissos-dock-cap{ height:36px !important; }
-        .blissos-dock-cap.left{ width:14px !important; }
-        .blissos-dock-cap.right{ width:16px !important; }
-        .blissos-dock-separator{ height:28px !important; }
-        .blissos-dock-item{
+        body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .blissos-dock-cap{ height:36px !important; }
+        body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .blissos-dock-cap.left{ width:14px !important; }
+        body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .blissos-dock-cap.right{ width:16px !important; }
+        body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .blissos-dock-separator{ height:28px !important; }
+        body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .blissos-dock-item{
           width:36px !important;
           height:36px !important;
+        }
+        body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock{
+          left:50% !important;
+          transform:translateX(-50%) !important;
+        }
+        body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-inner{
+          height:var(--aqua-mobile-inner-h, 68px) !important;
+          min-height:var(--aqua-mobile-inner-h, 68px) !important;
+          padding:0 var(--aqua-mobile-inner-pad-x, 16px) !important;
+          max-width:calc(100vw - 6px) !important;
+        }
+        body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-inner::after{
+          height:var(--aqua-mobile-tray-plate-h, 48px) !important;
+        }
+        body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item{
+          width:var(--aqua-mobile-item-w, 60px) !important;
+          height:var(--aqua-mobile-item-h, 52px) !important;
+        }
+        body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item .dock-icon{
+          width:var(--aqua-mobile-icon-box, 54px) !important;
+          height:var(--aqua-mobile-icon-box, 54px) !important;
+          transform:translate3d(0, calc(var(--aqua-mobile-icon-base-y, -14px) - var(--dock-lift, 0px)), 0) scale(var(--dock-scale, 1)) !important;
+        }
+        body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item .dock-reflection{
+          width:var(--aqua-mobile-icon-box, 54px) !important;
+          height:var(--aqua-mobile-icon-box, 54px) !important;
+          bottom:var(--aqua-mobile-reflection-bottom, -78px) !important;
+        }
+        body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-separator{
+          height:var(--aqua-mobile-separator-h, 52px) !important;
+          transform:translateY(var(--aqua-mobile-separator-shift, 4px)) !important;
         }
 
         /* Bliss98 taskbar (if switched on mobile) */
@@ -9494,6 +9525,6 @@
       </div>
     </div>
 
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260218-desktop-icons-30"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260227-aqua-mobile-dock-1"></script>
   </body>
 </html>

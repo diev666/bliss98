@@ -163,8 +163,6 @@
         gridSnap: true,
         autoPlayTimer: null,
         didAutoPlayThisSession: false,
-        pendingDesktopArrange: false,
-        iconPositionsKnownByTheme: null,
       };
       
 
@@ -356,14 +354,6 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
           id: 'galaxy',
           labelKey: 'wallpaper.galaxy',
           background: 'url("./assets/wallpapers/galaxy.png")',
-          size: 'cover',
-          repeat: 'no-repeat',
-          position: 'center'
-        },
-        {
-          id: 'bigcat',
-          labelKey: 'wallpaper.bigcat',
-          background: 'url("./assets/wallpapers/bigcat.png")',
           size: 'cover',
           repeat: 'no-repeat',
           position: 'center'
@@ -568,28 +558,6 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
           const key = `${ICON_POS_KEY}_${getCurrentOsThemeChoice()}`;
           localStorage.setItem(key, JSON.stringify(pos));
         } catch {}
-      }
-
-      function hasStoredIconPositionsForTheme(theme){
-        try{
-          const normalized = normalizeOsThemeChoice(theme);
-          const themeKey = `${ICON_POS_KEY}_${normalized}`;
-          const themedRaw = localStorage.getItem(themeKey);
-          if(themedRaw){
-            const themedParsed = JSON.parse(themedRaw);
-            if(themedParsed && typeof themedParsed === 'object' && Object.keys(themedParsed).length > 0){
-              return true;
-            }
-          }
-          const legacyRaw = localStorage.getItem(ICON_POS_KEY);
-          if(legacyRaw){
-            const legacyParsed = JSON.parse(legacyRaw);
-            if(legacyParsed && typeof legacyParsed === 'object' && Object.keys(legacyParsed).length > 0){
-              return true;
-            }
-          }
-        } catch {}
-        return false;
       }
 
       function getTxtIconPath(osMode){
@@ -1139,11 +1107,7 @@ function buildOccupiedFromFs(parentId, excludeIds, metrics, opts = {}){
 function getDefaultIconLayout(){
   const area = $('#desktopArea').getBoundingClientRect();
   const fallbackWidth = Math.max(ICON_SIZE.w + 6, window.innerWidth || 0);
-  // During first boot/login the desktop area can report ~0 height.
-  // Keep enough virtual rows so defaults stay vertical instead of collapsing into one top row.
-  const minRowsForFallback = 6;
-  const minFallbackHeight = ((ICON_SIZE.h + ICON_GAP.y) * minRowsForFallback) + 6;
-  const fallbackHeight = Math.max(ICON_SIZE.h + 6, (window.innerHeight || 0) - 36, minFallbackHeight);
+  const fallbackHeight = Math.max(ICON_SIZE.h + 6, (window.innerHeight || 0) - 36);
   const width = area.width > (ICON_SIZE.w + 6) ? area.width : fallbackWidth;
   const height = area.height > (ICON_SIZE.h + 6) ? area.height : fallbackHeight;
   const metrics = getGridMetricsForSize(width, height);
@@ -1206,21 +1170,10 @@ function getDefaultIconLayout(){
 }
 
 function isOverTrash(x, y){
-  const desktopTrashEl = document.querySelector('.icon[data-app-id="trash"]');
-  if(desktopTrashEl){
-    const r = desktopTrashEl.getBoundingClientRect();
-    if(x >= r.left && x <= r.right && y >= r.top && y <= r.bottom){
-      return true;
-    }
-  }
-  const dockTrashEl = document.querySelector('#blissosDock .blissos-dock-item[data-dock-type="trash"]');
-  if(dockTrashEl){
-    const r = dockTrashEl.getBoundingClientRect();
-    if(x >= r.left && x <= r.right && y >= r.top && y <= r.bottom){
-      return true;
-    }
-  }
-  return false;
+  const trashEl = document.querySelector('.icon[data-app-id="trash"]');
+  if(!trashEl) return false;
+  const r = trashEl.getBoundingClientRect();
+  return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
 }
 
 function moveIconsToTrash(ids){
@@ -7961,17 +7914,7 @@ function setOsTheme(theme){
   applyOsTheme();
   const isRightAligned = shouldAlignDesktopIconsRight();
   if(wasRightAligned !== isRightAligned){
-    const desktopEl = $('#desktop');
-    const desktopHidden = !desktopEl || desktopEl.classList.contains('hidden');
-    if(desktopHidden){
-      state.pendingDesktopArrange = true;
-    } else {
-      state.pendingDesktopArrange = false;
-      arrangeIcons();
-      if(state.iconPositionsKnownByTheme){
-        state.iconPositionsKnownByTheme[getCurrentOsThemeChoice()] = true;
-      }
-    }
+    arrangeIcons();
   }
   if(document.getElementById('win_settings')) renderSettingsWindow();
 }
@@ -9435,43 +9378,7 @@ function ensureSeekerState(){
   if(state.seeker.view !== 'list' && state.seeker.view !== 'icons') state.seeker.view = 'icons';
   if(typeof state.seeker.search !== 'string') state.seeker.search = '';
   if(!Array.isArray(state.seeker.recent)) state.seeker.recent = [];
-  if(!state.seeker.selectedBySection || typeof state.seeker.selectedBySection !== 'object'){
-    state.seeker.selectedBySection = {};
-  }
   return state.seeker;
-}
-
-function getSeekerSelectedKey(sectionId){
-  const seeker = ensureSeekerState();
-  const section = normalizeSeekerSection(sectionId || seeker.section || 'desktop');
-  const key = seeker.selectedBySection[section];
-  return (typeof key === 'string' && key) ? key : '';
-}
-
-function setSeekerSelectedKey(sectionId, key){
-  const seeker = ensureSeekerState();
-  const section = normalizeSeekerSection(sectionId || seeker.section || 'desktop');
-  const nextKey = (typeof key === 'string' && key) ? key : '';
-  if(nextKey){
-    seeker.selectedBySection[section] = nextKey;
-  } else {
-    delete seeker.selectedBySection[section];
-  }
-}
-
-function applySeekerSelection(shell, selectedKey){
-  if(!shell) return;
-  const key = (typeof selectedKey === 'string' && selectedKey) ? selectedKey : '';
-  shell.querySelectorAll('[data-seeker-item]').forEach(itemEl => {
-    const itemKey = (itemEl.dataset && itemEl.dataset.seekerItem) || '';
-    const isSelected = !!key && itemKey === key;
-    itemEl.classList.toggle('selected', isSelected);
-    if(isSelected){
-      itemEl.setAttribute('aria-selected', 'true');
-    } else {
-      itemEl.removeAttribute('aria-selected');
-    }
-  });
 }
 
 function refreshOpenSeekerWindows(){
@@ -9554,60 +9461,6 @@ function getSeekerSectionMeta(sectionId){
     return { id:'recent', title:t('seeker.section.recent'), icon:'./assets/icons/recents.png' };
   }
   return { id:'desktop', title:t('seeker.section.desktop'), icon:'./assets/icons/desktop.png' };
-}
-
-function getSeekerPathSegments(sectionId){
-  const section = normalizeSeekerSection(sectionId || 'desktop');
-  const folderId = getSeekerFolderIdFromSection(section);
-  if(folderId){
-    const segments = [getSeekerSectionMeta('desktop')];
-    const chain = [];
-    const guard = new Set();
-    let current = getFsItem(folderId);
-    while(current && current.type === 'folder' && !state.trash.has(current.id) && !guard.has(current.id)){
-      guard.add(current.id);
-      chain.push(current);
-      if(!current.parentId) break;
-      const parent = getFsItem(current.parentId);
-      if(!parent || parent.type !== 'folder' || state.trash.has(parent.id)) break;
-      current = parent;
-    }
-    chain.reverse().forEach(folder => {
-      segments.push({
-        id: getSeekerSectionForFolderId(folder.id),
-        title: getFsItemLabel(folder),
-        icon: getFolderIconPath(),
-      });
-    });
-    return segments;
-  }
-  if(section === SEEKER_COMPUTER_HD_SECTION){
-    return [
-      getSeekerSectionMeta(SEEKER_COMPUTER_SECTION),
-      getSeekerSectionMeta(SEEKER_COMPUTER_HD_SECTION),
-    ];
-  }
-  return [getSeekerSectionMeta(section)];
-}
-
-function renderSeekerPathMarkup(sectionId){
-  const section = normalizeSeekerSection(sectionId || 'desktop');
-  const segments = getSeekerPathSegments(section);
-  return segments.map((segment, index) => {
-    const token = normalizeSeekerSection((segment && segment.id) || 'desktop');
-    const label = (segment && segment.title) || '';
-    const iconFile = (segment && segment.icon) || getFolderIconPath();
-    const iconHtml = getThemedIconHtml(
-      { id:`seeker-path-${token}-${index}`, icon:'folder', iconFile },
-      label,
-      14
-    );
-    const sep = index > 0
-      ? '<span class="seeker-breadcrumb-sep" aria-hidden="true">&#8250;</span>'
-      : '';
-    const disabled = token === section ? ' disabled aria-current="page"' : '';
-    return `${sep}<button class="seeker-breadcrumb" type="button" data-seeker-path-open="${escapeHTML(token)}"${disabled}><span class="seeker-breadcrumb-icon pixel">${iconHtml}</span><span class="seeker-breadcrumb-label">${escapeHTML(label)}</span></button>`;
-  }).join('');
 }
 
 function getSeekerSidebarIconSpec(sectionId){
@@ -10036,12 +9889,7 @@ function makeSeekerItemDraggable(itemEl, shell){
           } else {
             const targetEl = getDropTargetElement(eventRef.clientX, eventRef.clientY, dragEls);
             const overWindow = targetEl && targetEl.closest ? targetEl.closest('.window') : null;
-            const seekerWin = shell && shell.closest ? shell.closest('.window') : null;
-            const seekerRect = seekerWin ? seekerWin.getBoundingClientRect() : null;
-            const overSeekerWindow = seekerRect
-              ? isPointInRect(eventRef.clientX, eventRef.clientY, seekerRect)
-              : false;
-            if(isOverDesktopArea(eventRef.clientX, eventRef.clientY) && !overWindow && !overSeekerWindow){
+            if(isOverDesktopArea(eventRef.clientX, eventRef.clientY) && !overWindow){
               const preferred = getDesktopPosFromClient(eventRef.clientX, eventRef.clientY);
               moveDraggedItemsToFolderTarget(ids, null, { preferredPos: preferred });
             }
@@ -10133,13 +9981,6 @@ function openSeekerItem(item){
   if(!item) return;
   if(item.kind === 'app'){
     openApp(item.id);
-    if(item.id){
-      requestAnimationFrame(()=>{
-        if(state.windows.has(item.id)){
-          focusWindowAndRefreshTaskbar(item.id);
-        }
-      });
-    }
     return;
   }
   if(item.kind === 'virtual'){
@@ -10189,11 +10030,6 @@ function renderSeekerWindow(winEl){
       return hay.includes(query);
     });
   shell._seekerItems = filtered;
-  let selectedKey = getSeekerSelectedKey(section);
-  if(selectedKey && !filtered.some(item => item.key === selectedKey)){
-    selectedKey = '';
-    setSeekerSelectedKey(section, '');
-  }
 
   const locationIcon = shell.querySelector('[data-seeker-location-icon="1"]');
   const locationName = shell.querySelector('[data-seeker-location-name="1"]');
@@ -10201,7 +10037,6 @@ function renderSeekerWindow(winEl){
   const itemsHost = shell.querySelector('[data-seeker-items="1"]');
   const searchInput = shell.querySelector('[data-seeker-search="1"]');
   const statusEl = shell.querySelector('[data-seeker-status="1"]');
-  const pathEl = shell.querySelector('[data-seeker-path="1"]');
   const backBtn = shell.querySelector('[data-seeker-nav="back"]');
   const forwardBtn = shell.querySelector('[data-seeker-nav="forward"]');
   const trashEmptyBtn = shell.querySelector('[data-seeker-trash-empty="1"]');
@@ -10213,9 +10048,6 @@ function renderSeekerWindow(winEl){
   if(mainTitle) mainTitle.textContent = meta.title;
   if(locationIcon){
     locationIcon.innerHTML = getThemedIconHtml({ id:`seeker-loc-${meta.id}`, icon:'folder', iconFile:meta.icon }, meta.title, 16);
-  }
-  if(pathEl){
-    pathEl.innerHTML = renderSeekerPathMarkup(section);
   }
   shell.querySelectorAll('.seeker-side-item[data-seeker-open]').forEach(btn => {
     const token = normalizeSeekerSection((btn.dataset && btn.dataset.seekerOpen) || 'desktop');
@@ -10261,7 +10093,6 @@ function renderSeekerWindow(winEl){
     itemsHost.querySelectorAll('[data-seeker-item]').forEach(itemEl => {
       makeSeekerItemDraggable(itemEl, shell);
     });
-    applySeekerSelection(shell, selectedKey);
   }
 
   if(statusEl){
@@ -10297,12 +10128,6 @@ function initSeekerWindow(winEl){
     shell.addEventListener('click', (e)=>{
       const target = getEventTargetEl(e);
       if(!target || !target.closest) return;
-      const pathBtn = target.closest('[data-seeker-path-open]');
-      if(pathBtn && pathBtn.dataset){
-        updateSeekerHistory(pathBtn.dataset.seekerPathOpen || 'desktop');
-        renderSeekerWindow(win);
-        return;
-      }
       const sectionBtn = target.closest('[data-seeker-open]');
       if(sectionBtn && sectionBtn.dataset){
         updateSeekerHistory(sectionBtn.dataset.seekerOpen || 'desktop');
@@ -10336,10 +10161,9 @@ function initSeekerWindow(winEl){
           return;
         }
         const key = itemBtn.dataset.seekerItem;
-        const section = normalizeSeekerSection(ensureSeekerState().section || 'desktop');
-        setSeekerSelectedKey(section, key);
-        applySeekerSelection(shell, key);
-        return;
+        const items = Array.isArray(shell._seekerItems) ? shell._seekerItems : [];
+        const item = items.find(it => it.key === key);
+        if(item) openSeekerItem(item);
       }
     });
 
@@ -10353,20 +10177,9 @@ function initSeekerWindow(winEl){
         return;
       }
       const key = itemBtn.dataset.seekerItem;
-      const section = normalizeSeekerSection(ensureSeekerState().section || 'desktop');
-      setSeekerSelectedKey(section, key);
-      applySeekerSelection(shell, key);
       const items = Array.isArray(shell._seekerItems) ? shell._seekerItems : [];
       const item = items.find(it => it.key === key);
       if(item) openSeekerItem(item);
-    });
-
-    shell.addEventListener('contextmenu', (e)=>{
-      e.preventDefault();
-      e.stopPropagation();
-      const seeker = ensureSeekerState();
-      const section = normalizeSeekerSection(seeker.section || 'desktop');
-      openCtxMenu(e.clientX, e.clientY, 'seeker', null, { seekerSection: section });
     });
 
     const searchInput = shell.querySelector('[data-seeker-search="1"]');
@@ -10431,45 +10244,7 @@ function getPoemBody(poem, lang){
 }
 
 // Context menu state
-let ctxState = { open:false, target:'desktop', appId:null, itemType:null, parentId:null, containerEl:null, dockId:null, seekerSection:null, lastX:0, lastY:0 };
-
-function renderCtxItems(items){
-  return (items || []).map(item => {
-    if(!item) return '';
-    if(item.sep || item.type === 'sep') return '<div class="ctx-sep"></div>';
-    const label = item.labelKey ? t(item.labelKey) : (item.label || '');
-    const check = item.checked ? (item.type === 'radio' ? '•' : '✓') : (item.check || '');
-    const disabled = !!item.disabled;
-    const left = `<span class="ctx-left"><span class="ctx-check" aria-hidden="true">${check}</span><span>${escapeHTML(label)}</span></span>`;
-    if(item.type === 'submenu'){
-      return `
-        <div class="ctx-item has-sub${disabled ? ' disabled' : ''}" role="menuitem" tabindex="-1" ${disabled ? 'aria-disabled="true"' : ''}>
-          ${left}
-          <span class="ctx-shortcut ctx-arrow" aria-hidden="true">▶</span>
-          <div class="ctx-submenu ctx-menu bevel" role="menu">
-            ${renderCtxItems(item.items || [])}
-          </div>
-        </div>
-      `;
-    }
-    const actionAttr = item.action ? `data-ctx-action="${escapeHTML(item.action)}"` : '';
-    const right = item.right ? `<span class="ctx-shortcut">${escapeHTML(String(item.right))}</span>` : '<span class="ctx-shortcut"></span>';
-    return `
-      <button class="ctx-item${disabled ? ' disabled' : ''}" type="button" role="menuitem" ${actionAttr} ${disabled ? 'disabled' : ''}>
-        ${left}
-        ${right}
-      </button>
-    `;
-  }).join('');
-}
-
-function getSeekerWritableParentId(sectionId){
-  const section = normalizeSeekerSection(sectionId || 'desktop');
-  const folderId = getSeekerFolderIdFromSection(section);
-  if(folderId) return folderId;
-  if(section === 'desktop') return null;
-  return undefined;
-}
+let ctxState = { open:false, target:'desktop', appId:null, itemType:null, parentId:null, containerEl:null, dockId:null, lastX:0, lastY:0 };
 
 function renderCtxMenu(){
   const menu = $('#ctxMenu');
@@ -10477,92 +10252,89 @@ function renderCtxMenu(){
 
   const isIcon = ctxState.target === 'icon' && !!ctxState.appId;
   const isDock = ctxState.target === 'dock' && !!ctxState.appId;
-  const isSeeker = ctxState.target === 'seeker';
   const fsItem = ctxState.appId ? getFsItem(ctxState.appId) : null;
   const itemType = ctxState.itemType || (fsItem ? fsItem.type : null);
   const gridMark = state.gridSnap ? '✓' : '';
 
   const items = [];
-  if(isSeeker){
-    const section = normalizeSeekerSection(ctxState.seekerSection || ensureSeekerState().section || 'desktop');
-    const writableParentId = getSeekerWritableParentId(section);
-    const canCreate = writableParentId !== undefined;
-    const seekerView = ensureSeekerState().view === 'list' ? 'list' : 'icons';
-    const seekerItems = [
-      { action:'seeker:newFolder', labelKey:'ctx.newFolder', disabled: !canCreate },
-      { action:'seeker:newTxt', labelKey:'ctx.newTextFile', disabled: !canCreate },
-      { type:'sep' },
-      { action:'seeker:about', labelKey:'ctx.about' },
-      { type:'sep' },
-      {
-        type:'submenu',
-        labelKey:'menubar.view',
-        items: [
-          { action:'seeker:viewIcons', labelKey:'seeker.ctx.viewAsIcons', checked: seekerView === 'icons' },
-          { action:'seeker:viewList', labelKey:'seeker.ctx.viewAsList', checked: seekerView === 'list' },
-        ],
-      },
-      { action:'seeker:settings', labelKey:'seeker.ctx.showSettings' },
-    ];
-    menu.innerHTML = renderCtxItems(seekerItems);
-    return;
-  }
   if(isDock){
     const disableRemove = ctxState.itemType === 'trash' || ctxState.appId === 'trash' || (ctxState.itemType === 'app' && ctxState.appId === 'seeker');
-    items.push({ action:'removeDock', labelKey:'ctx.removeDock', disabled: disableRemove });
-    menu.innerHTML = renderCtxItems(items);
+    items.push({ action:'removeDock', label:t('ctx.removeDock'), disabled: disableRemove });
+    menu.innerHTML = items.map(it => {
+      if(it.sep) return `<div class="ctx-sep"></div>`;
+      const check = it.check ? `<span class="ctx-check" aria-hidden="true">${it.check}</span>` : `<span class="ctx-check" aria-hidden="true"></span>`;
+      const right = it.right ? `<span class="ctx-shortcut">${it.right}</span>` : `<span class="ctx-shortcut"></span>`;
+      const disabled = it.disabled ? ' disabled' : '';
+      return `
+        <button class="ctx-item${disabled}" type="button" role="menuitem" data-ctx-action="${it.action}" ${it.disabled ? 'disabled' : ''}>
+          <span class="ctx-left">${check}<span>${it.label}</span></span>
+          ${right}
+        </button>
+      `;
+    }).join('');
     return;
   }
   if(isIcon){
-    items.push({ action:'open', labelKey:'ctx.open' });
+    items.push({ action:'open', label:t('ctx.open') });
     items.push({ sep:true });
     if(ctxState.appId === 'trash'){
-      items.push({ action:'emptyTrash', labelKey:'ctx.emptyTrash' });
+      items.push({ action:'emptyTrash', label:t('ctx.emptyTrash') });
       const docked = isDockItemPresent('trash', 'trash');
-      items.push({ action:'addDock', labelKey: docked ? 'ctx.alreadyDock' : 'ctx.addDock', disabled: docked });
+      items.push({ action:'addDock', label: docked ? t('ctx.alreadyDock') : t('ctx.addDock'), disabled: docked });
       items.push({ sep:true });
     } else {
-      items.push({ action:'rename', labelKey:'ctx.rename' });
-      items.push({ action:'crop', labelKey:'ctx.crop' });
-      items.push({ action:'copy', labelKey:'ctx.copy' });
+      items.push({ action:'rename', label:t('ctx.rename') });
+      items.push({ action:'crop', label:t('ctx.crop') });
+      items.push({ action:'copy', label:t('ctx.copy') });
       if(itemType === 'txt'){
-        items.push({ action:'duplicateTxt', labelKey:'ctx.duplicateTxt' });
+        items.push({ action:'duplicateTxt', label:t('ctx.duplicateTxt') });
       }
       if(isDockableItem(itemType, ctxState.appId)){
         const dockType = itemType === 'app' ? 'app' : itemType;
         const docked = isDockItemPresent(dockType, ctxState.appId);
         const lockedDockItem = dockType === 'app' && ctxState.appId === 'seeker';
         if(lockedDockItem && docked){
-          items.push({ action:'addDock', labelKey:'ctx.alreadyDock', disabled:true });
+          items.push({ action:'addDock', label:t('ctx.alreadyDock'), disabled:true });
         } else {
-          items.push({ action: docked ? 'removeDock' : 'addDock', labelKey: docked ? 'ctx.removeDock' : 'ctx.addDock' });
+          items.push({ action: docked ? 'removeDock' : 'addDock', label: t(docked ? 'ctx.removeDock' : 'ctx.addDock') });
         }
       }
       items.push({ sep:true });
-      items.push({ action:'moveTrash', labelKey:'ctx.moveTrash' });
+      items.push({ action:'moveTrash', label:t('ctx.moveTrash') });
       items.push({ sep:true });
     }
   }
 
   if(!isIcon){
-    items.push({ action:'newTxt', labelKey:'ctx.newTextFile' });
-    items.push({ action:'newFolder', labelKey:'ctx.newFolder' });
+    items.push({ action:'newTxt', label:t('ctx.newTextFile') });
+    items.push({ action:'newFolder', label:t('ctx.newFolder') });
     items.push({ sep:true });
-    items.push({ action:'arrange', labelKey:'ctx.arrange' });
+    items.push({ action:'arrange', label:t('ctx.arrange') });
     if(ctxState.parentId == null){
-      items.push({ action:'grid', labelKey:'ctx.grid', check:gridMark });
-      items.push({ action:'desktopIcons', labelKey:'ctx.showDesktopIcons', check:(state.settings.showDesktopIcons !== false) ? '✓' : '' });
-      items.push({ action:'wallpaper', labelKey:'ctx.wallpaper' });
+      items.push({ action:'grid', label:t('ctx.grid'), check:gridMark });
+      items.push({ action:'desktopIcons', label:t('ctx.showDesktopIcons'), check:(state.settings.showDesktopIcons !== false) ? '✓' : '' });
+      items.push({ action:'wallpaper', label:t('ctx.wallpaper') });
       items.push({ sep:true });
-      items.push({ action:'settings', labelKey:'ctx.settings' });
-      items.push({ action:'language', labelKey:'ctx.language', right: state.lang.toUpperCase() });
-      items.push({ action:'about', labelKey:'ctx.about' });
+      items.push({ action:'settings', label:t('ctx.settings') });
+      items.push({ action:'language', label:t('ctx.language'), right: state.lang.toUpperCase() });
+      items.push({ action:'about', label:t('ctx.about') });
       items.push({ sep:true });
-      items.push({ action:'logoff', labelKey:'ctx.logoff' });
+      items.push({ action:'logoff', label:t('ctx.logoff') });
     }
   }
 
-  menu.innerHTML = renderCtxItems(items);
+  menu.innerHTML = items.map(it => {
+    if(it.sep) return `<div class="ctx-sep"></div>`;
+    const check = it.check ? `<span class="ctx-check" aria-hidden="true">${it.check}</span>` : `<span class="ctx-check" aria-hidden="true"></span>`;
+    const right = it.right ? `<span class="ctx-shortcut">${it.right}</span>` : `<span class="ctx-shortcut"></span>`;
+    const disabled = it.disabled ? ' disabled' : '';
+    return `
+      <button class="ctx-item${disabled}" type="button" role="menuitem" data-ctx-action="${it.action}" ${it.disabled ? 'disabled' : ''}>
+        <span class="ctx-left">${check}<span>${it.label}</span></span>
+        ${right}
+      </button>
+    `;
+  }).join('');
 }
 
 function positionCtxMenu(x, y){
@@ -10595,7 +10367,6 @@ function openCtxMenu(x, y, target='desktop', appId=null, opts = {}){
     parentId: opts.parentId === undefined ? null : opts.parentId,
     containerEl: opts.containerEl || null,
     dockId: opts.dockId || null,
-    seekerSection: opts.seekerSection || null,
     lastX: Number.isFinite(x) ? x : 0,
     lastY: Number.isFinite(y) ? y : 0,
   };
@@ -10616,42 +10387,10 @@ function closeCtxMenu(){
   const menu = $('#ctxMenu');
   if(!menu) return;
   menu.classList.add('hidden');
-  ctxState = { open:false, target:'desktop', appId:null, itemType:null, parentId:null, containerEl:null, dockId:null, seekerSection:null, lastX:0, lastY:0 };
+  ctxState = { open:false, target:'desktop', appId:null, itemType:null, parentId:null, containerEl:null, dockId:null, lastX:0, lastY:0 };
 }
 
 function handleCtxAction(action){
-  if(ctxState.target === 'seeker' && action && action.startsWith('seeker:')){
-    const section = normalizeSeekerSection(ctxState.seekerSection || ensureSeekerState().section || 'desktop');
-    const parentId = getSeekerWritableParentId(section);
-    if(action === 'seeker:newTxt'){
-      if(parentId !== undefined){
-        createTxtFile({ clientX: ctxState.lastX, clientY: ctxState.lastY, parentId });
-      }
-      return;
-    }
-    if(action === 'seeker:newFolder'){
-      if(parentId !== undefined){
-        createFolder({ clientX: ctxState.lastX, clientY: ctxState.lastY, parentId });
-      }
-      return;
-    }
-    if(action === 'seeker:viewIcons'){
-      setSeekerView('icons');
-      return;
-    }
-    if(action === 'seeker:viewList'){
-      setSeekerView('list');
-      return;
-    }
-    if(action === 'seeker:about'){
-      openApp('about');
-      return;
-    }
-    if(action === 'seeker:settings'){
-      openApp('settings');
-      return;
-    }
-  }
   if(action === 'open' && ctxState.target === 'icon' && ctxState.appId){
     openIconById(ctxState.appId);
   }
@@ -11011,9 +10750,6 @@ function installLongPress(el, getTarget){
           'seeker.view': 'View mode',
           'seeker.view.icons': 'Icons',
           'seeker.view.list': 'List',
-          'seeker.ctx.viewAsIcons': 'As Icons',
-          'seeker.ctx.viewAsList': 'As List',
-          'seeker.ctx.showSettings': 'Show Settings',
           'seeker.search': 'Search in Seeker',
           'seeker.search.placeholder': 'Search',
           'seeker.group.devices': 'Devices',
@@ -11387,7 +11123,6 @@ function installLongPress(el, getTarget){
           'wallpaper.bliss': 'Sunrise',
           'wallpaper.clouds': 'Clouds',
           'wallpaper.galaxy': 'Galaxy',
-          'wallpaper.bigcat': 'Big Cat',
           'wallpaper.diev': 'Grid',
           'wallpaper.tot': 'Pink Tot',
           'wallpaper.matrix': 'Matrix',
@@ -11616,9 +11351,6 @@ function installLongPress(el, getTarget){
           'seeker.view': 'Modo de visualizacao',
           'seeker.view.icons': 'Icones',
           'seeker.view.list': 'Lista',
-          'seeker.ctx.viewAsIcons': 'Como Icones',
-          'seeker.ctx.viewAsList': 'Como Lista',
-          'seeker.ctx.showSettings': 'Mostrar Configuracoes',
           'seeker.search': 'Buscar no Seeker',
           'seeker.search.placeholder': 'Buscar',
           'seeker.group.devices': 'Dispositivos',
@@ -11992,7 +11724,6 @@ function installLongPress(el, getTarget){
           'wallpaper.bliss': 'Nascer do Sol',
           'wallpaper.clouds': 'Nuvens',
           'wallpaper.galaxy': 'Galáxia',
-          'wallpaper.bigcat': 'Big Cat',
           'wallpaper.diev': 'Grid',
           'wallpaper.tot': 'Tot (Rosa)',
           'wallpaper.matrix': 'Matrix',
@@ -13286,9 +13017,9 @@ function installLongPress(el, getTarget){
         enabled: true,
         base: './assets/BlissOS/',
         sourceBase: './assets/icons/',
-        // Keep canonical case for case-sensitive hosts (production Linux).
+        // BlissOS keeps this filename in lowercase on disk.
         fileOverrides: Object.freeze({
-          'Settings.png': 'Settings.png',
+          'Settings.png': 'settings.png',
         }),
       };
 
@@ -13311,10 +13042,7 @@ function installLongPress(el, getTarget){
         if(path.startsWith(BLISSOS_ICON_MAP.base)) return path + query;
         if(path.startsWith(BLISSOS_ICON_MAP.sourceBase)){
           const file = path.slice(BLISSOS_ICON_MAP.sourceBase.length);
-          let mapped = BLISSOS_ICON_MAP.fileOverrides[file] || file;
-          if(!BLISSOS_ICON_MAP.fileOverrides[file] && file.toLowerCase() === 'settings.png'){
-            mapped = BLISSOS_ICON_MAP.fileOverrides['Settings.png'] || 'Settings.png';
-          }
+          const mapped = BLISSOS_ICON_MAP.fileOverrides[file] || file;
           return `${BLISSOS_ICON_MAP.base}${mapped}${query}`;
         }
         return src;
@@ -13325,10 +13053,7 @@ function installLongPress(el, getTarget){
         const { path, query } = splitAssetQuery(src);
         if(path.startsWith(BLISSOS_ICON_MAP.base)){
           const file = path.slice(BLISSOS_ICON_MAP.base.length);
-          let mapped = BLISSOS_ICON_REVERSE_MAP[file] || file;
-          if(mapped.toLowerCase() === 'settings.png'){
-            mapped = 'Settings.png';
-          }
+          const mapped = BLISSOS_ICON_REVERSE_MAP[file] || file;
           return `${BLISSOS_ICON_MAP.sourceBase}${mapped}${query}`;
         }
         return src;
@@ -13943,9 +13668,7 @@ Eu sou o buffalo branco extinto`
               </section>
             </div>
             <div class="seeker-footer">
-              <div class="seeker-breadcrumbs" data-seeker-path="1"></div>
-              <span class="seeker-footer-status" data-seeker-status="1">0 ${t('seeker.itemLabel')}</span>
-              <span class="seeker-footer-spacer" aria-hidden="true"></span>
+              <span data-seeker-status="1">0 ${t('seeker.itemLabel')}</span>
             </div>
           </div>
         `,
@@ -14842,10 +14565,6 @@ Eu sou o buffalo branco extinto`
                         <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="galaxy">
                           <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/galaxy.png') center/cover no-repeat;"></span>
                           <span class="wallpaper-card-label" data-i18n="wallpaper.galaxy">Galaxy</span>
-                        </button>
-                        <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="bigcat">
-                          <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/bigcat.png') center/cover no-repeat;"></span>
-                          <span class="wallpaper-card-label" data-i18n="wallpaper.bigcat">Big Cat</span>
                         </button>
                         <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="diev">
                           <span class="wallpaper-card-thumb" style="background:repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 6px), repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 6px), linear-gradient(135deg, #0a2333, #114b6a);"></span>
@@ -16099,16 +15818,6 @@ function getDisplayTime(){
         applyWallpaper(state.wallpaper);
         themeApplying = false;
         renderIcons();
-        const currentTheme = getCurrentOsThemeChoice();
-        const knownByTheme = state.iconPositionsKnownByTheme || {};
-        const needsFirstVisibleArrange = !knownByTheme[currentTheme];
-        if(state.pendingDesktopArrange || needsFirstVisibleArrange){
-          state.pendingDesktopArrange = false;
-          arrangeIcons();
-          if(state.iconPositionsKnownByTheme){
-            state.iconPositionsKnownByTheme[currentTheme] = true;
-          }
-        }
         renderStartMenu();
         tickClock();
       }
@@ -18206,11 +17915,6 @@ function toggleFitWindow(appId) {
         el.addEventListener('contextmenu', (e)=>{
           e.preventDefault();
           e.stopPropagation();
-          if(appId === 'seeker'){
-            const seeker = ensureSeekerState();
-            const section = normalizeSeekerSection(seeker.section || 'desktop');
-            openCtxMenu(e.clientX, e.clientY, 'seeker', null, { seekerSection: section });
-          }
         });
         el.addEventListener('click', (e)=>{
           const actTarget = getEventTargetEl(e);
@@ -18557,13 +18261,11 @@ function toggleFitWindow(appId) {
       const LEOPARD_DOCK_MAX_LIFT = 9;
       const DOCK_DEFAULT_SIZE = 58;
       const DOCK_DEFAULT_MAGNIFICATION = 60;
-      const DOCK_LAUNCH_BOUNCE_DURATION = 1150;
       const DOCK_AUTOHIDE_EDGE = 36;
       const DOCK_AUTOHIDE_HIDE_DELAY = 520;
       let dockAutoHideFxBound = false;
       let dockAutoHideHideTimer = 0;
       let dockAutoHideVisible = true;
-      const dockLaunchFxByKey = new Map();
 
       function getDockRenderSizePercent(){
         const raw = Number(state.settings.dockSize);
@@ -18665,42 +18367,7 @@ function toggleFitWindow(appId) {
       }
 
       function isLeopardDockActive(){
-        return state.settings.theme === 'blissos' && !isMobileDock() && isDockRenderMagnificationEnabled();
-      }
-
-      function isDockLaunchBounceActive(){
-        return state.settings.theme === 'blissos' && !isMobileDock();
-      }
-
-      function getDockLaunchFxKeyFromBtn(btn){
-        if(!btn || !btn.dataset) return '';
-        const type = btn.dataset.dockType || 'app';
-        const refId = btn.dataset.refId || btn.dataset.dockWinId || '';
-        return `${type}:${refId}`;
-      }
-
-      function cleanupDockLaunchFx(){
-        if(dockLaunchFxByKey.size === 0) return;
-        const now = Date.now();
-        dockLaunchFxByKey.forEach((until, key) => {
-          if(!until || until <= now) dockLaunchFxByKey.delete(key);
-        });
-      }
-
-      function syncDockLaunchFxClass(btn, launchKey){
-        if(!btn || !launchKey) return;
-        cleanupDockLaunchFx();
-        const until = dockLaunchFxByKey.get(launchKey);
-        if(!until || until <= Date.now()) return;
-        btn.classList.add('dock-launching');
-        const wait = Math.max(80, (until - Date.now()) + 40);
-        setTimeout(() => {
-          const activeUntil = dockLaunchFxByKey.get(launchKey) || 0;
-          if(activeUntil <= Date.now()){
-            dockLaunchFxByKey.delete(launchKey);
-            btn.classList.remove('dock-launching');
-          }
-        }, wait);
+        return state.settings.theme === 'blissos' && !!state.settings.blissosAqua && !isMobileDock() && isDockRenderMagnificationEnabled();
       }
 
       function getLeopardDockItems(inner){
@@ -18776,33 +18443,14 @@ function toggleFitWindow(appId) {
         inner.addEventListener('pointercancel', handleLeave);
       }
 
-      function triggerLeopardDockBounce(btn, launchKey=''){
-        if(!btn || !isDockLaunchBounceActive()) return;
-        const key = launchKey || getDockLaunchFxKeyFromBtn(btn);
-        if(key){
-          dockLaunchFxByKey.set(key, Date.now() + DOCK_LAUNCH_BOUNCE_DURATION);
-        }
+      function triggerLeopardDockBounce(btn){
+        if(!btn || !isLeopardDockActive()) return;
         btn.classList.remove('dock-launching');
         void btn.offsetWidth;
         btn.classList.add('dock-launching');
         setTimeout(() => {
-          if(key){
-            const activeUntil = dockLaunchFxByKey.get(key) || 0;
-            if(activeUntil > Date.now()) return;
-            dockLaunchFxByKey.delete(key);
-          }
           btn.classList.remove('dock-launching');
-        }, DOCK_LAUNCH_BOUNCE_DURATION + 40);
-      }
-
-      function runDockActionWithBounce(btn, action, launchKey=''){
-        if(typeof action !== 'function') return;
-        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        const canAnimate = isDockLaunchBounceActive() && state.animations && !reducedMotion;
-        if(canAnimate){
-          triggerLeopardDockBounce(btn, launchKey);
-        }
-        action();
+        }, 760);
       }
 
       function buildTaskButtonsSignature(wins){
@@ -18893,11 +18541,24 @@ function toggleFitWindow(appId) {
 function renderBlissOSDock(){
   const dock = $('#blissosDock');
   if(!dock) return;
+  const clearAquaMobileDockVars = ()=>{
+    dock.style.removeProperty('--aqua-mobile-inner-h');
+    dock.style.removeProperty('--aqua-mobile-inner-pad-x');
+    dock.style.removeProperty('--aqua-mobile-tray-plate-h');
+    dock.style.removeProperty('--aqua-mobile-item-w');
+    dock.style.removeProperty('--aqua-mobile-item-h');
+    dock.style.removeProperty('--aqua-mobile-icon-box');
+    dock.style.removeProperty('--aqua-mobile-icon-base-y');
+    dock.style.removeProperty('--aqua-mobile-reflection-bottom');
+    dock.style.removeProperty('--aqua-mobile-separator-h');
+    dock.style.removeProperty('--aqua-mobile-separator-shift');
+  };
   const blissos = state.settings.theme === 'blissos';
   dock.classList.toggle('hidden', !blissos);
   if(!blissos){
     dock.style.removeProperty('--blissos-dock-scale');
     dock.style.removeProperty('--blissos-dock-opacity');
+    clearAquaMobileDockVars();
     clearDockAutoHideTimer();
     dock.classList.remove('dock-autohide');
     dock.classList.remove('dock-visible');
@@ -18931,11 +18592,7 @@ function renderBlissOSDock(){
         const buildDockItemMarkup = (iconHtml, dockIconBox) => {
           const iconSpan = `<span class="dock-icon pixel" style="width:${dockIconBox}px;height:${dockIconBox}px;display:flex;align-items:center;justify-content:center;">${iconHtml}</span>`;
           if(!isAquaDock){
-            return `
-              ${iconSpan}
-              <span class="dock-tooltip" aria-hidden="true"></span>
-              <span class="dock-indicator"></span>
-            `;
+            return `${iconSpan}<span class="dock-indicator"></span>`;
           }
           return `
             ${iconSpan}
@@ -18991,10 +18648,6 @@ function renderBlissOSDock(){
         let dockIconBox = 32;
         let dockItemWidth = 40;
         let dockItemHeight = 40;
-        let classicInnerHeight = 0;
-        let classicInnerPadX = 0;
-        let classicGap = 0;
-        let classicSeparatorHeight = 0;
         if(isAquaDock){
           if(isMobileDock()){
             dockIconSize = Math.round(24 + (8 * sizeT));
@@ -19007,40 +18660,39 @@ function renderBlissOSDock(){
             dockItemWidth = 58;
             dockItemHeight = 54;
           }
-	        } else {
-	          if(isMobileDock()){
-	            const minIcon = 20;
-	            const maxIcon = 30;
-	            dockIconSize = Math.round(minIcon + ((maxIcon - minIcon) * sizeT));
-	            dockIconBox = Math.round(dockIconSize + 2);
-	            dockItemWidth = dockIconBox + 4;
-	            dockItemHeight = dockItemWidth;
-	          } else {
-	            // Keep classic dock/item proportions tighter across the size slider.
-	            const minIcon = 35;
-	            const maxIcon = 46;
-	            dockIconSize = Math.round(minIcon + ((maxIcon - minIcon) * sizeT));
-	            dockIconBox = Math.round(dockIconSize + 8);
-	            dockItemWidth = dockIconBox + 8;
-	            dockItemHeight = Math.max(48, Math.round(dockItemWidth * 0.95));
-	            classicInnerHeight = clamp(Math.round(dockItemHeight + 8), 56, 64);
-	            classicInnerPadX = clamp(Math.round(8 + (4 * sizeT)), 8, 12);
-	            classicGap = clamp(Math.round(2 + (2 * sizeT)), 2, 4);
-	            classicSeparatorHeight = Math.max(52, classicInnerHeight - 4);
-	          }
-	        }
-        if(!isAquaDock && !isMobileDock()){
-          inner.style.height = `${classicInnerHeight}px`;
-          inner.style.minHeight = `${classicInnerHeight}px`;
-          inner.style.padding = `1px ${classicInnerPadX}px 0`;
-          if(mid) mid.style.gap = `${classicGap}px`;
-          if(right) right.style.gap = `${classicGap}px`;
+        } else {
+          const minIcon = isMobileDock() ? 20 : 20;
+          const maxIcon = isMobileDock() ? 30 : 34;
+          dockIconSize = Math.round(minIcon + ((maxIcon - minIcon) * sizeT));
+          dockIconBox = Math.round(dockIconSize + (isMobileDock() ? 2 : 4));
+          dockItemWidth = dockIconBox + (isMobileDock() ? 4 : 8);
+          dockItemHeight = dockItemWidth;
+        }
+        if(isAquaDock && isMobileDock()){
+          const innerHeight = dockItemHeight + 16;
+          const innerPadX = Math.round(10 + (4 * sizeT));
+          const trayPlateHeight = Math.round(dockItemHeight + 8);
+          const separatorHeight = Math.round(dockItemHeight + 10);
+          const separatorShift = Math.round(2 + (2 * sizeT));
+          const iconBaseY = -Math.round(dockIconBox * 0.26);
+          const reflectionBottom = -Math.round(dockIconBox + 24);
+          dock.style.setProperty('--aqua-mobile-inner-h', `${innerHeight}px`);
+          dock.style.setProperty('--aqua-mobile-inner-pad-x', `${innerPadX}px`);
+          dock.style.setProperty('--aqua-mobile-tray-plate-h', `${trayPlateHeight}px`);
+          dock.style.setProperty('--aqua-mobile-item-w', `${dockItemWidth}px`);
+          dock.style.setProperty('--aqua-mobile-item-h', `${dockItemHeight}px`);
+          dock.style.setProperty('--aqua-mobile-icon-box', `${dockIconBox}px`);
+          dock.style.setProperty('--aqua-mobile-icon-base-y', `${iconBaseY}px`);
+          dock.style.setProperty('--aqua-mobile-reflection-bottom', `${reflectionBottom}px`);
+          dock.style.setProperty('--aqua-mobile-separator-h', `${separatorHeight}px`);
+          dock.style.setProperty('--aqua-mobile-separator-shift', `${separatorShift}px`);
+        } else {
+          clearAquaMobileDockVars();
         }
         blissosDockRenderSignature = dockSignature;
         normalItems.forEach(item => {
           const winId = getDockWindowIdForItem(item);
           const win = winId ? state.windows.get(winId) : null;
-          const launchKey = `${item.type}:${item.refId}`;
           const btn = document.createElement('button');
           btn.className = 'blissos-dock-item';
           btn.style.width = `${dockItemWidth}px`;
@@ -19057,7 +18709,6 @@ function renderBlissOSDock(){
           btn.innerHTML = buildDockItemMarkup(iconHtml, dockIconBox);
           const tooltip = btn.querySelector('.dock-tooltip');
           if(tooltip) tooltip.textContent = label;
-          syncDockLaunchFxClass(btn, launchKey);
           btn.addEventListener('click', (e)=>{
             e.stopPropagation();
             if(btn.dataset.dragged === '1'){
@@ -19066,22 +18717,17 @@ function renderBlissOSDock(){
             }
             if(win){
               if(win.minimized){
-                runDockActionWithBounce(btn, ()=>{
-                  restoreWindow(winId);
-                }, launchKey);
+                triggerLeopardDockBounce(btn);
+                restoreWindow(winId);
               } else if(state.activeWindowId === winId){
-                runDockActionWithBounce(btn, ()=>{
-                  minimizeApp(winId);
-                }, launchKey);
+                minimizeApp(winId);
               } else {
-                runDockActionWithBounce(btn, ()=>{
-                  focusWindow(winId);
-                }, launchKey);
+                triggerLeopardDockBounce(btn);
+                focusWindow(winId);
               }
             } else if(item.refId){
-              runDockActionWithBounce(btn, ()=>{
-                openIconById(item.refId);
-              }, launchKey);
+              triggerLeopardDockBounce(btn);
+              openIconById(item.refId);
             }
           });
           btn.addEventListener('contextmenu', (e)=>{
@@ -19097,14 +18743,10 @@ function renderBlissOSDock(){
             const separator = document.createElement('span');
             separator.className = 'blissos-dock-separator';
             separator.setAttribute('aria-hidden', 'true');
-            if(!isAquaDock && !isMobileDock() && classicSeparatorHeight > 0){
-              separator.style.height = `${classicSeparatorHeight}px`;
-            }
             right.appendChild(separator);
           }
           const winId = getDockWindowIdForItem(trashItem);
           const win = winId ? state.windows.get(winId) : null;
-          const launchKey = `${trashItem.type}:${trashItem.refId}`;
           const btn = document.createElement('button');
           btn.className = 'blissos-dock-item';
           btn.style.width = `${dockItemWidth}px`;
@@ -19121,16 +18763,14 @@ function renderBlissOSDock(){
           btn.innerHTML = buildDockItemMarkup(trashIconHtml, dockIconBox);
           const trashTooltip = btn.querySelector('.dock-tooltip');
           if(trashTooltip) trashTooltip.textContent = label;
-          syncDockLaunchFxClass(btn, launchKey);
           btn.addEventListener('click', (e)=>{
             e.stopPropagation();
             if(btn.dataset.dragged === '1'){
               btn.dataset.dragged = '0';
               return;
             }
-            runDockActionWithBounce(btn, ()=>{
-              openIconById('trash');
-            }, launchKey);
+            triggerLeopardDockBounce(btn);
+            openIconById('trash');
           });
           btn.addEventListener('contextmenu', (e)=>{
             e.preventDefault();
@@ -20892,11 +20532,6 @@ function renderBlissOSAppMenu(){
         state.trash = new Set(loadTrash());
         state.iconLabels = loadIconLabels();
         state.trashSelection = new Set();
-        state.iconPositionsKnownByTheme = {
-          bliss98: hasStoredIconPositionsForTheme('bliss98'),
-          blissos: hasStoredIconPositionsForTheme('blissos'),
-          blissaqua: hasStoredIconPositionsForTheme('blissaqua'),
-        };
         initDesktopFs();
         const savedDock = loadDockItems();
         state.dockItems = normalizeDockItems(savedDock == null ? getDefaultDockItems() : savedDock);
@@ -20947,3 +20582,4 @@ function renderBlissOSAppMenu(){
         // Mobile optimization: Native Pointer Events and Click handlers now work without suppression
         // IS_COARSE removed - all events handled via standard Pointer Events API
       })();
+

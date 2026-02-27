@@ -2736,11 +2736,24 @@ function toggleFitWindow(appId) {
 function renderBlissOSDock(){
   const dock = $('#blissosDock');
   if(!dock) return;
+  const clearAquaMobileDockVars = ()=>{
+    dock.style.removeProperty('--aqua-mobile-inner-h');
+    dock.style.removeProperty('--aqua-mobile-inner-pad-x');
+    dock.style.removeProperty('--aqua-mobile-tray-plate-h');
+    dock.style.removeProperty('--aqua-mobile-item-w');
+    dock.style.removeProperty('--aqua-mobile-item-h');
+    dock.style.removeProperty('--aqua-mobile-icon-box');
+    dock.style.removeProperty('--aqua-mobile-icon-base-y');
+    dock.style.removeProperty('--aqua-mobile-reflection-bottom');
+    dock.style.removeProperty('--aqua-mobile-separator-h');
+    dock.style.removeProperty('--aqua-mobile-separator-shift');
+  };
   const blissos = state.settings.theme === 'blissos';
   dock.classList.toggle('hidden', !blissos);
   if(!blissos){
     dock.style.removeProperty('--blissos-dock-scale');
     dock.style.removeProperty('--blissos-dock-opacity');
+    clearAquaMobileDockVars();
     clearDockAutoHideTimer();
     dock.classList.remove('dock-autohide');
     dock.classList.remove('dock-visible');
@@ -2849,6 +2862,27 @@ function renderBlissOSDock(){
           dockIconBox = Math.round(dockIconSize + (isMobileDock() ? 2 : 4));
           dockItemWidth = dockIconBox + (isMobileDock() ? 4 : 8);
           dockItemHeight = dockItemWidth;
+        }
+        if(isAquaDock && isMobileDock()){
+          const innerHeight = dockItemHeight + 16;
+          const innerPadX = Math.round(10 + (4 * sizeT));
+          const trayPlateHeight = Math.round(dockItemHeight + 8);
+          const separatorHeight = Math.round(dockItemHeight + 10);
+          const separatorShift = Math.round(2 + (2 * sizeT));
+          const iconBaseY = -Math.round(dockIconBox * 0.26);
+          const reflectionBottom = -Math.round(dockIconBox + 24);
+          dock.style.setProperty('--aqua-mobile-inner-h', `${innerHeight}px`);
+          dock.style.setProperty('--aqua-mobile-inner-pad-x', `${innerPadX}px`);
+          dock.style.setProperty('--aqua-mobile-tray-plate-h', `${trayPlateHeight}px`);
+          dock.style.setProperty('--aqua-mobile-item-w', `${dockItemWidth}px`);
+          dock.style.setProperty('--aqua-mobile-item-h', `${dockItemHeight}px`);
+          dock.style.setProperty('--aqua-mobile-icon-box', `${dockIconBox}px`);
+          dock.style.setProperty('--aqua-mobile-icon-base-y', `${iconBaseY}px`);
+          dock.style.setProperty('--aqua-mobile-reflection-bottom', `${reflectionBottom}px`);
+          dock.style.setProperty('--aqua-mobile-separator-h', `${separatorHeight}px`);
+          dock.style.setProperty('--aqua-mobile-separator-shift', `${separatorShift}px`);
+        } else {
+          clearAquaMobileDockVars();
         }
         blissosDockRenderSignature = dockSignature;
         normalItems.forEach(item => {
