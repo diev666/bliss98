@@ -1006,7 +1006,7 @@ function getThemedIconHtml(item, label, size=32){
   if(item && item.id === 'settings' && (theme === 'blissos' || theme === 'blissaqua')){
     iconKey = isAquaIconThemeActive(theme)
       ? './assets/aqua/settings.png'
-      : './assets/BlissOS/settings.png';
+      : './assets/BlissOS/system.png';
   }
   const icon = getIconFor(iconKey, theme);
   if(typeof icon === 'string' && icon.trim().startsWith('<svg')){
@@ -13024,7 +13024,8 @@ function installLongPress(el, getTarget){
         sourceBase: './assets/icons/',
         // BlissOS keeps this filename in lowercase on disk.
         fileOverrides: Object.freeze({
-          'Settings.png': 'settings.png',
+          'Settings.png': 'system.png',
+          'settings.png': 'system.png',
         }),
       };
 

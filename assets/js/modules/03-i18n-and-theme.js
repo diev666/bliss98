@@ -2444,7 +2444,8 @@
         sourceBase: './assets/icons/',
         // BlissOS keeps this filename in lowercase on disk.
         fileOverrides: Object.freeze({
-          'Settings.png': 'settings.png',
+          'Settings.png': 'system.png',
+          'settings.png': 'system.png',
         }),
       };
 
