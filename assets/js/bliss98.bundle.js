@@ -17096,11 +17096,35 @@ function getWindowRectFromState(wstate){
 
 function getMobileMaximizedRect(){
   const area = $('#desktopArea').getBoundingClientRect();
+  const topInset = 0;
+  let bottomLimit = area.height;
+
+  if(state.settings.theme === 'blissos'){
+    const dock = $('#blissosDock');
+    if(dock && !dock.classList.contains('hidden')){
+      const dockRect = dock.getBoundingClientRect();
+      const dockTop = dockRect.top - area.top;
+      if(Number.isFinite(dockTop)){
+        bottomLimit = Math.min(bottomLimit, Math.floor(dockTop));
+      }
+    }
+  } else {
+    const taskbar = $('#taskbar');
+    if(taskbar){
+      const taskbarRect = taskbar.getBoundingClientRect();
+      const taskbarTop = taskbarRect.top - area.top;
+      if(Number.isFinite(taskbarTop)){
+        bottomLimit = Math.min(bottomLimit, Math.floor(taskbarTop));
+      }
+    }
+  }
+
+  const safeHeight = Math.max(110, Math.floor(bottomLimit - topInset));
   return {
     left: 0,
-    top: 0,
+    top: topInset,
     width: Math.max(120, Math.floor(area.width)),
-    height: Math.max(110, Math.floor(area.height)),
+    height: safeHeight,
   };
 }
 
@@ -17252,19 +17276,19 @@ function getSeekerRect(areaRect = null){
   const maxWidth = Math.max(320, area.width - margin * 2);
   const maxHeight = Math.max(260, area.height - margin * 2);
   const targetWidth = state.isMobile
-    ? Math.max(300, area.width - 12)
+    ? Math.max(250, Math.floor(area.width * 0.88))
     : Math.max(980, Math.floor(area.width * 0.58));
   const targetHeight = state.isMobile
-    ? Math.max(320, area.height - 14)
+    ? Math.max(250, Math.floor(area.height * 0.56))
     : Math.max(700, Math.floor(area.height * 0.70));
   const width = clamp(
     targetWidth,
-    state.isMobile ? 280 : 860,
+    state.isMobile ? 240 : 860,
     Math.min(maxWidth, state.isMobile ? maxWidth : 1380)
   );
   const height = clamp(
     targetHeight,
-    state.isMobile ? 260 : 560,
+    state.isMobile ? 230 : 560,
     Math.min(maxHeight, state.isMobile ? maxHeight : 920)
   );
   const left = Math.round(clamp((area.width - width) / 2, margin, Math.max(margin, area.width - width - margin)));
@@ -17939,8 +17963,8 @@ function toggleFitWindow(appId) {
         if(appId === 'seeker'){
           const seekerContent = el.querySelector('.content');
           if(seekerContent){
-            seekerContent.dataset.fitMinW = state.isMobile ? '300' : '980';
-            seekerContent.dataset.fitMinH = state.isMobile ? '320' : '700';
+            seekerContent.dataset.fitMinW = state.isMobile ? '240' : '980';
+            seekerContent.dataset.fitMinH = state.isMobile ? '230' : '700';
             seekerContent.dataset.fitKey = `seeker-${state.isMobile ? 'mobile' : 'desktop'}`;
           }
         }
@@ -18515,6 +18539,13 @@ function toggleFitWindow(appId) {
       function renderTaskQuickLaunch(){
         const host = $('#taskQuickLaunch');
         if(!host) return;
+        if(state.isMobile && state.settings.theme === 'bliss98'){
+          if(host.childElementCount){
+            host.innerHTML = '';
+          }
+          taskQuickLaunchSignature = 'mobile-hidden';
+          return;
+        }
         const quickApps = ['mediaplayer', 'music', 'clothes', 'videos']
           .map(id => getAppById(id))
           .filter(Boolean);
@@ -18600,12 +18631,28 @@ function renderBlissOSDock(){
     dock.style.removeProperty('--aqua-mobile-separator-h');
     dock.style.removeProperty('--aqua-mobile-separator-shift');
   };
+  const clearClassicMobileDockVars = ()=>{
+    dock.style.removeProperty('--classic-mobile-inner-h');
+    dock.style.removeProperty('--classic-mobile-pad-y');
+    dock.style.removeProperty('--classic-mobile-pad-x');
+    dock.style.removeProperty('--classic-mobile-gap');
+    dock.style.removeProperty('--classic-mobile-cap-h');
+    dock.style.removeProperty('--classic-mobile-separator-h');
+    dock.style.removeProperty('--classic-mobile-item');
+  };
+  const clearMobileDesktopInset = ()=>{
+    if(document.body){
+      document.body.style.removeProperty('--mobile-desktop-bottom-inset');
+    }
+  };
   const blissos = state.settings.theme === 'blissos';
   dock.classList.toggle('hidden', !blissos);
   if(!blissos){
     dock.style.removeProperty('--blissos-dock-scale');
     dock.style.removeProperty('--blissos-dock-opacity');
     clearAquaMobileDockVars();
+    clearClassicMobileDockVars();
+    clearMobileDesktopInset();
     clearDockAutoHideTimer();
     dock.classList.remove('dock-autohide');
     dock.classList.remove('dock-visible');
@@ -18617,6 +18664,7 @@ function renderBlissOSDock(){
     return;
   }
         const isAquaDock = !!state.settings.blissosAqua;
+        const mobileDock = isMobileDock();
         const dockSize = getDockRenderSizePercent();
         const sizeT = dockSize / 100;
         const dockOpacity = getDockRenderOpacityPercent();
@@ -18669,7 +18717,7 @@ function renderBlissOSDock(){
         const mid = inner.querySelector('.blissos-dock-mid');
         const right = inner.querySelector('.blissos-dock-right');
         let normalItems = normalized.filter(item => !isTrashDockItem(item));
-        if(isMobileDock() && normalItems.length > DOCK_MOBILE_MAX_NORMAL){
+        if(mobileDock && normalItems.length > DOCK_MOBILE_MAX_NORMAL){
           normalItems = normalItems.slice(0, DOCK_MOBILE_MAX_NORMAL);
         }
         const trashItem = normalized.find(isTrashDockItem);
@@ -18680,11 +18728,11 @@ function renderBlissOSDock(){
           const label = getDockItemLabel(item);
           return `${item.id}|${item.type}|${item.refId}|${item.iconPath || ''}|${label}|${winId}|${openIds.has(winId) ? 1 : 0}|${win && win.minimized ? 1 : 0}|${state.activeWindowId === winId ? 1 : 0}`;
         }).join('||');
-        const dockSignature = `${state.settings.theme}|${state.settings.blissosAqua ? 'aqua' : 'classic'}|${state.settings.blissosDarkMode ? 'dark' : 'light'}|${state.lang}|${isMobileDock() ? 'mobile' : 'desktop'}|size:${dockSize}|mag:${isDockRenderMagnificationEnabled() ? 1 : 0}|magp:${getDockRenderMagnificationStrength()}|op:${dockOpacity}|autoh:${dockAutoHide ? 1 : 0}|${dockStateSig}`;
+        const dockSignature = `${state.settings.theme}|${state.settings.blissosAqua ? 'aqua' : 'classic'}|${state.settings.blissosDarkMode ? 'dark' : 'light'}|${state.lang}|${mobileDock ? 'mobile' : 'desktop'}|size:${dockSize}|mag:${isDockRenderMagnificationEnabled() ? 1 : 0}|magp:${getDockRenderMagnificationStrength()}|op:${dockOpacity}|autoh:${dockAutoHide ? 1 : 0}|${dockStateSig}`;
         if(dockSignature === blissosDockRenderSignature && dock.firstElementChild){
           return;
         }
-        const isAquaDesktopDock = isAquaDock && !isMobileDock();
+        const isAquaDesktopDock = isAquaDock && !mobileDock;
         if(isAquaDesktopDock){
           const aquaScale = getAquaDockScaleForSize(dockSize);
           dock.style.setProperty('--blissos-dock-scale', aquaScale.toFixed(3));
@@ -18696,7 +18744,7 @@ function renderBlissOSDock(){
         let dockItemWidth = 40;
         let dockItemHeight = 40;
         if(isAquaDock){
-          if(isMobileDock()){
+          if(mobileDock){
             dockIconSize = Math.round(24 + (8 * sizeT));
             dockIconBox = Math.round(dockIconSize + 6);
             dockItemWidth = dockIconBox + 5;
@@ -18708,33 +18756,59 @@ function renderBlissOSDock(){
             dockItemHeight = 54;
           }
         } else {
-          const minIcon = isMobileDock() ? 20 : 20;
-          const maxIcon = isMobileDock() ? 30 : 34;
+          const minIcon = mobileDock ? 20 : 20;
+          const maxIcon = mobileDock ? 30 : 34;
           dockIconSize = Math.round(minIcon + ((maxIcon - minIcon) * sizeT));
-          dockIconBox = Math.round(dockIconSize + (isMobileDock() ? 2 : 4));
-          dockItemWidth = dockIconBox + (isMobileDock() ? 4 : 8);
+          dockIconBox = Math.round(dockIconSize + (mobileDock ? 2 : 4));
+          dockItemWidth = dockIconBox + (mobileDock ? 4 : 8);
           dockItemHeight = dockItemWidth;
         }
-        if(isAquaDock && isMobileDock()){
+        let aquaMobileIconBaseY = null;
+        let aquaMobileReflectionBottom = null;
+        if(isAquaDock && mobileDock){
           const innerHeight = dockItemHeight + 16;
           const innerPadX = Math.round(10 + (4 * sizeT));
           const trayPlateHeight = Math.round(dockItemHeight + 8);
           const separatorHeight = Math.round(dockItemHeight + 10);
           const separatorShift = Math.round(1 + (1.5 * sizeT));
-          const iconBaseY = -Math.round(dockIconBox * 0.26);
-          const reflectionBottom = -Math.round(dockIconBox + 16);
+          aquaMobileIconBaseY = -Math.round(dockIconBox * 0.26);
+          aquaMobileReflectionBottom = -Math.round(dockIconBox + 16);
           dock.style.setProperty('--aqua-mobile-inner-h', `${innerHeight}px`);
           dock.style.setProperty('--aqua-mobile-inner-pad-x', `${innerPadX}px`);
           dock.style.setProperty('--aqua-mobile-tray-plate-h', `${trayPlateHeight}px`);
           dock.style.setProperty('--aqua-mobile-item-w', `${dockItemWidth}px`);
           dock.style.setProperty('--aqua-mobile-item-h', `${dockItemHeight}px`);
           dock.style.setProperty('--aqua-mobile-icon-box', `${dockIconBox}px`);
-          dock.style.setProperty('--aqua-mobile-icon-base-y', `${iconBaseY}px`);
-          dock.style.setProperty('--aqua-mobile-reflection-bottom', `${reflectionBottom}px`);
+          dock.style.setProperty('--aqua-mobile-icon-base-y', `${aquaMobileIconBaseY}px`);
+          dock.style.setProperty('--aqua-mobile-reflection-bottom', `${aquaMobileReflectionBottom}px`);
           dock.style.setProperty('--aqua-mobile-separator-h', `${separatorHeight}px`);
           dock.style.setProperty('--aqua-mobile-separator-shift', `${separatorShift}px`);
         } else {
           clearAquaMobileDockVars();
+        }
+        if(!isAquaDock && mobileDock){
+          const innerHeight = dockItemHeight + 4;
+          const padY = Math.max(2, Math.round(2 + sizeT));
+          const padX = Math.max(4, Math.round(4 + (2 * sizeT)));
+          const itemGap = Math.max(3, Math.round(3 + (2 * sizeT)));
+          const separatorHeight = Math.max(20, dockItemHeight - 8);
+          dock.style.setProperty('--classic-mobile-inner-h', `${innerHeight}px`);
+          dock.style.setProperty('--classic-mobile-pad-y', `${padY}px`);
+          dock.style.setProperty('--classic-mobile-pad-x', `${padX}px`);
+          dock.style.setProperty('--classic-mobile-gap', `${itemGap}px`);
+          dock.style.setProperty('--classic-mobile-cap-h', `${dockItemHeight}px`);
+          dock.style.setProperty('--classic-mobile-separator-h', `${separatorHeight}px`);
+          dock.style.setProperty('--classic-mobile-item', `${dockItemWidth}px`);
+        } else {
+          clearClassicMobileDockVars();
+        }
+        if(mobileDock && document.body){
+          const mobileBottomInset = isAquaDock
+            ? Math.round((dockItemHeight + 16) + 22)
+            : Math.round((dockItemHeight + 4) + 14);
+          document.body.style.setProperty('--mobile-desktop-bottom-inset', `${mobileBottomInset}px`);
+        } else {
+          clearMobileDesktopInset();
         }
         blissosDockRenderSignature = dockSignature;
         normalItems.forEach(item => {
@@ -18754,6 +18828,10 @@ function renderBlissOSDock(){
           btn.title = label;
           const iconHtml = getDockItemIconHtml(item, dockIconSize);
           btn.innerHTML = buildDockItemMarkup(iconHtml, dockIconBox);
+          if(aquaMobileIconBaseY !== null && aquaMobileReflectionBottom !== null){
+            btn.style.setProperty('--dock-icon-base-y', `${aquaMobileIconBaseY}px`);
+            btn.style.setProperty('--dock-reflection-bottom', `${aquaMobileReflectionBottom}px`);
+          }
           const tooltip = btn.querySelector('.dock-tooltip');
           if(tooltip) tooltip.textContent = label;
           btn.addEventListener('click', (e)=>{
@@ -18808,6 +18886,10 @@ function renderBlissOSDock(){
           btn.title = label;
           const trashIconHtml = getDockItemIconHtml(trashItem, dockIconSize);
           btn.innerHTML = buildDockItemMarkup(trashIconHtml, dockIconBox);
+          if(aquaMobileIconBaseY !== null && aquaMobileReflectionBottom !== null){
+            btn.style.setProperty('--dock-icon-base-y', `${aquaMobileIconBaseY + 1}px`);
+            btn.style.setProperty('--dock-reflection-bottom', `${aquaMobileReflectionBottom + 1}px`);
+          }
           const trashTooltip = btn.querySelector('.dock-tooltip');
           if(trashTooltip) trashTooltip.textContent = label;
           btn.addEventListener('click', (e)=>{
