@@ -13036,13 +13036,49 @@ function installLongPress(el, getTarget){
         return { path: src.slice(0, q), query: src.slice(q) };
       }
 
+      function decodeAssetPath(path){
+        if(typeof path !== 'string') return '';
+        try{
+          return decodeURIComponent(path);
+        } catch {
+          return path;
+        }
+      }
+
+      function getAssetFileName(path){
+        const clean = decodeAssetPath(path).split('#')[0];
+        const slash = clean.lastIndexOf('/');
+        return slash >= 0 ? clean.slice(slash + 1) : clean;
+      }
+
+      function getOverrideMappedFile(file){
+        if(!file) return file;
+        if(BLISSOS_ICON_MAP.fileOverrides[file]) return BLISSOS_ICON_MAP.fileOverrides[file];
+        const lower = file.toLowerCase();
+        const matched = Object.keys(BLISSOS_ICON_MAP.fileOverrides).find(key => key.toLowerCase() === lower);
+        return matched ? BLISSOS_ICON_MAP.fileOverrides[matched] : file;
+      }
+
+      function getReverseMappedFile(file){
+        if(!file) return file;
+        if(BLISSOS_ICON_REVERSE_MAP[file]) return BLISSOS_ICON_REVERSE_MAP[file];
+        const lower = file.toLowerCase();
+        const matched = Object.keys(BLISSOS_ICON_REVERSE_MAP).find(key => key.toLowerCase() === lower);
+        return matched ? BLISSOS_ICON_REVERSE_MAP[matched] : file;
+      }
+
       function getBlissOSAssetPath(src){
         if(!src || typeof src !== 'string') return null;
         const { path, query } = splitAssetQuery(src);
         if(path.startsWith(BLISSOS_ICON_MAP.base)) return path + query;
-        if(path.startsWith(BLISSOS_ICON_MAP.sourceBase)){
-          const file = path.slice(BLISSOS_ICON_MAP.sourceBase.length);
-          const mapped = BLISSOS_ICON_MAP.fileOverrides[file] || file;
+        const normalized = decodeAssetPath(path);
+        const iconSourceMatch =
+          normalized.startsWith(BLISSOS_ICON_MAP.sourceBase) ||
+          normalized.startsWith('/assets/icons/') ||
+          normalized.includes('/assets/icons/');
+        if(iconSourceMatch){
+          const file = getAssetFileName(normalized);
+          const mapped = getOverrideMappedFile(file);
           return `${BLISSOS_ICON_MAP.base}${mapped}${query}`;
         }
         return src;
@@ -13051,9 +13087,14 @@ function installLongPress(el, getTarget){
       function getBlissOSFallbackPath(src){
         if(!src || typeof src !== 'string') return null;
         const { path, query } = splitAssetQuery(src);
-        if(path.startsWith(BLISSOS_ICON_MAP.base)){
-          const file = path.slice(BLISSOS_ICON_MAP.base.length);
-          const mapped = BLISSOS_ICON_REVERSE_MAP[file] || file;
+        const normalized = decodeAssetPath(path);
+        const blissMatch =
+          normalized.startsWith(BLISSOS_ICON_MAP.base) ||
+          normalized.startsWith('/assets/BlissOS/') ||
+          normalized.includes('/assets/BlissOS/');
+        if(blissMatch){
+          const file = getAssetFileName(normalized);
+          const mapped = getReverseMappedFile(file);
           return `${BLISSOS_ICON_MAP.sourceBase}${mapped}${query}`;
         }
         return src;
