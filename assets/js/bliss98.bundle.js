@@ -1002,7 +1002,12 @@ function getIconFor(key, osMode){
 function getThemedIconHtml(item, label, size=32){
   const theme = state.settings.theme || 'bliss98';
   const iconFile = typeof item.iconFile === 'function' ? item.iconFile() : item.iconFile;
-  const iconKey = iconFile || item.icon || 'file';
+  let iconKey = iconFile || item.icon || 'file';
+  if(item && item.id === 'settings' && (theme === 'blissos' || theme === 'blissaqua')){
+    iconKey = isAquaIconThemeActive(theme)
+      ? './assets/aqua/settings.png'
+      : './assets/BlissOS/settings.png';
+  }
   const icon = getIconFor(iconKey, theme);
   if(typeof icon === 'string' && icon.trim().startsWith('<svg')){
     return icon;
