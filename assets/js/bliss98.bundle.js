@@ -9545,7 +9545,7 @@ function normalizeSeekerSection(sectionId){
 }
 
 function getSeekerContentIconSize(){
-  return state.isMobile ? 40 : 48;
+  return state.isMobile ? 34 : 48;
 }
 
 function buildSeekerAppItem(app){
