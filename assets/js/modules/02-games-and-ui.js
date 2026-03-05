@@ -8002,6 +8002,9 @@ function ensureSeekerState(){
   if(state.seeker.view !== 'list' && state.seeker.view !== 'icons') state.seeker.view = 'icons';
   if(typeof state.seeker.search !== 'string') state.seeker.search = '';
   if(!Array.isArray(state.seeker.recent)) state.seeker.recent = [];
+  if(typeof state.seeker.selectedKey !== 'string') state.seeker.selectedKey = '';
+  if(typeof state.seeker.lastClickKey !== 'string') state.seeker.lastClickKey = '';
+  if(typeof state.seeker.lastClickTs !== 'number') state.seeker.lastClickTs = 0;
   return state.seeker;
 }
 
@@ -8706,7 +8709,7 @@ function renderSeekerWindow(winEl){
       itemsHost.innerHTML = `<div class="seeker-empty tiny">${t('seeker.empty')}</div>`;
     } else if(seeker.view === 'list'){
       itemsHost.innerHTML = filtered.map(item => `
-        <button class="seeker-item seeker-item-row" type="button" data-seeker-item="${item.key}">
+        <button class="seeker-item seeker-item-row${item.key === seeker.selectedKey ? ' selected' : ''}" type="button" data-seeker-item="${item.key}">
           <span class="seeker-item-icon pixel">${item.iconHtml}</span>
           <span class="seeker-item-copy">
             <span class="seeker-item-label">${escapeHTML(item.label)}</span>
@@ -8716,7 +8719,7 @@ function renderSeekerWindow(winEl){
       `).join('');
     } else {
       itemsHost.innerHTML = filtered.map(item => `
-        <button class="seeker-item seeker-item-card" type="button" data-seeker-item="${item.key}">
+        <button class="seeker-item seeker-item-card${item.key === seeker.selectedKey ? ' selected' : ''}" type="button" data-seeker-item="${item.key}">
           <span class="seeker-item-icon pixel">${item.iconHtml}</span>
           <span class="seeker-item-label">${escapeHTML(item.label)}</span>
         </button>
@@ -8795,23 +8798,32 @@ function initSeekerWindow(winEl){
         const key = itemBtn.dataset.seekerItem;
         const items = Array.isArray(shell._seekerItems) ? shell._seekerItems : [];
         const item = items.find(it => it.key === key);
-        if(item) openSeekerItem(item);
-      }
-    });
+        const seeker = ensureSeekerState();
+        seeker.selectedKey = key || '';
+        shell.querySelectorAll('[data-seeker-item]').forEach(el => {
+          el.classList.toggle('selected', el === itemBtn);
+        });
+        if(!item) return;
 
-    shell.addEventListener('dblclick', (e)=>{
-      const target = getEventTargetEl(e);
-      if(!target || !target.closest) return;
-      const itemBtn = target.closest('[data-seeker-item]');
-      if(!itemBtn || !itemBtn.dataset) return;
-      if(itemBtn.dataset.dragged === '1'){
-        itemBtn.dataset.dragged = '0';
-        return;
+        // Keyboard activation should keep single-activate behavior for accessibility.
+        const clickDetail = Number(e.detail || 0);
+        if(clickDetail === 0){
+          openSeekerItem(item);
+          seeker.lastClickKey = '';
+          seeker.lastClickTs = 0;
+          return;
+        }
+
+        const nowTs = Date.now();
+        const isDoubleActivate = seeker.lastClickKey === key && (nowTs - seeker.lastClickTs) <= 420;
+        seeker.lastClickKey = key || '';
+        seeker.lastClickTs = nowTs;
+        if(isDoubleActivate){
+          openSeekerItem(item);
+          seeker.lastClickKey = '';
+          seeker.lastClickTs = 0;
+        }
       }
-      const key = itemBtn.dataset.seekerItem;
-      const items = Array.isArray(shell._seekerItems) ? shell._seekerItems : [];
-      const item = items.find(it => it.key === key);
-      if(item) openSeekerItem(item);
     });
 
     const searchInput = shell.querySelector('[data-seeker-search="1"]');

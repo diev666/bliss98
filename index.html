@@ -9518,6 +9518,93 @@
           font-size:9px !important;
         }
 
+        /* BlissOS Settings compact + toolbar fix on mobile (classic + aqua) */
+        body[data-theme="blissos"] #win_settings .content{
+          padding:0 !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-shell-aqua{
+          min-height:100% !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-aqua-toolbar{
+          position:sticky !important;
+          top:0 !important;
+          z-index:6 !important;
+          padding:4px 6px !important;
+          gap:5px !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-aqua-nav-btn{
+          min-width:26px !important;
+          height:22px !important;
+          font-size:10px !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-aqua-showall{
+          height:22px !important;
+          min-width:74px !important;
+          padding:0 6px !important;
+          font-size:10px !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-aqua-search{
+          height:22px !important;
+          min-width:0 !important;
+          max-width:none !important;
+          flex:1 1 auto !important;
+          gap:4px !important;
+          padding:0 7px !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-aqua-search-icon{
+          width:10px !important;
+          height:10px !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-aqua-search input{
+          font-size:10px !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-aqua-home{
+          padding:8px 8px 10px !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-aqua-grid{
+          grid-template-columns:repeat(auto-fill, minmax(84px, 1fr)) !important;
+          gap:6px 8px !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-aqua-item{
+          padding:6px 4px !important;
+          gap:3px !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-aqua-item-icon{
+          width:36px !important;
+          height:36px !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-aqua-item-icon img{
+          width:30px !important;
+          height:30px !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-aqua-item-label{
+          font-size:10px !important;
+          min-height:22px !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-panel{
+          padding:8px !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-panel-header{
+          gap:7px !important;
+          margin-bottom:7px !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-panel-icon{
+          width:32px !important;
+          height:32px !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-panel-icon img{
+          width:28px !important;
+          height:28px !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-logo{
+          width:62px !important;
+          height:48px !important;
+        }
+        body[data-theme="blissos"] #win_settings .settings-logo img{
+          width:28px !important;
+          height:28px !important;
+        }
+
         /* Bliss98 taskbar compact + sem fixados no mobile */
         body[data-theme="bliss98"] .desktop-area{
           inset:0 0 22px 0 !important;
@@ -9687,7 +9774,7 @@
           <!-- Build version: bump by +0.01 on every visual/code update -->
           <div class="tiny login-meta">
             <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-            <span class="login-version" id="loginVersion">Version: 1.03</span>
+            <span class="login-version" id="loginVersion">Version: 1.04</span>
           </div>
         </div>
       </div>
@@ -9774,6 +9861,6 @@
       </div>
     </div>
 
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260305-mobile-startmenu-pass-5"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260305-mobile-seeker-settings-pass-6"></script>
   </body>
 </html>
