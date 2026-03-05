@@ -8163,22 +8163,28 @@ function normalizeSeekerSection(sectionId){
   return 'desktop';
 }
 
+function getSeekerContentIconSize(){
+  return state.isMobile ? 40 : 48;
+}
+
 function buildSeekerAppItem(app){
   if(!app) return null;
   const label = getIconLabel(app);
+  const iconSize = getSeekerContentIconSize();
   return {
     key: `app:${app.id}`,
     kind: 'app',
     id: app.id,
     label,
     subtitle: t('seeker.section.applications'),
-    iconHtml: getThemedIconHtml(app, label, 48),
+    iconHtml: getThemedIconHtml(app, label, iconSize),
   };
 }
 
 function buildSeekerFsItem(fsItem){
   if(!fsItem) return null;
   const label = getFsItemLabel(fsItem);
+  const iconSize = getSeekerContentIconSize();
   let subtitle = '';
   if(fsItem.type === 'folder') subtitle = t('fs.newFolderName');
   if(fsItem.type === 'txt') subtitle = t('seeker.section.documents');
@@ -8189,24 +8195,26 @@ function buildSeekerFsItem(fsItem){
     id: fsItem.id,
     label,
     subtitle,
-    iconHtml: getFsIconHtml(fsItem, label, 48),
+    iconHtml: getFsIconHtml(fsItem, label, iconSize),
   };
 }
 
 function buildSeekerPoemItem(poem){
   if(!poem) return null;
+  const iconSize = getSeekerContentIconSize();
   return {
     key: `poem:${poem.id}`,
     kind: 'poem',
     id: poem.id,
     label: poem.title,
     subtitle: t('app.poetry'),
-    iconHtml: getThemedIconHtml({ id:`poem-${poem.id}`, icon:'file', iconFile:'./assets/icons/poetry2.png' }, poem.title, 48),
+    iconHtml: getThemedIconHtml({ id:`poem-${poem.id}`, icon:'file', iconFile:'./assets/icons/poetry2.png' }, poem.title, iconSize),
   };
 }
 
 function buildSeekerComputerHdItem(){
   const label = 'HD';
+  const iconSize = getSeekerContentIconSize();
   return {
     key: `virtual:${SEEKER_COMPUTER_HD_SECTION}`,
     kind: 'virtual',
@@ -8214,7 +8222,7 @@ function buildSeekerComputerHdItem(){
     label,
     subtitle: '',
     openSection: SEEKER_COMPUTER_HD_SECTION,
-    iconHtml: getThemedIconHtml({ id:'seeker-hd', icon:'folder', iconFile:'./assets/icons/hd.png' }, label, 48),
+    iconHtml: getThemedIconHtml({ id:'seeker-hd', icon:'folder', iconFile:'./assets/icons/hd.png' }, label, iconSize),
   };
 }
 

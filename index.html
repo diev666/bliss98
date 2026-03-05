@@ -9585,7 +9585,8 @@
           bottom:23px !important;
           width:min(176px, calc(100vw - 10px)) !important;
           max-height:calc(100vh - 48px) !important;
-          overflow:hidden !important;
+          overflow:visible !important;
+          z-index:2147483000 !important;
         }
         body[data-theme="bliss98"] .start-side{
           width:20px !important;
@@ -9597,7 +9598,6 @@
         }
         body[data-theme="bliss98"] .start-list{
           padding:1px !important;
-          overflow:auto !important;
         }
         body[data-theme="bliss98"] .start-list .menu-item{
           gap:6px !important;
@@ -9620,12 +9620,12 @@
           font-size:9px !important;
         }
         body[data-theme="bliss98"] .start-list .start-menu-has-sub > .start-submenu{
-          min-width:152px !important;
-          max-width:min(152px, calc(100vw - 184px)) !important;
+          min-width:0 !important;
+          width:clamp(124px, 42vw, 152px) !important;
+          max-width:152px !important;
           top:-1px !important;
           left:calc(100% - 1px) !important;
           max-height:calc(100vh - 56px) !important;
-          overflow:auto !important;
         }
         body[data-theme="bliss98"] .start-list .start-sub-item{
           gap:6px !important;
@@ -9687,7 +9687,7 @@
           <!-- Build version: bump by +0.01 on every visual/code update -->
           <div class="tiny login-meta">
             <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-            <span class="login-version" id="loginVersion">Version: 1.01</span>
+            <span class="login-version" id="loginVersion">Version: 1.02</span>
           </div>
         </div>
       </div>
@@ -9774,6 +9774,6 @@
       </div>
     </div>
 
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260305-mobile-startmenu-pass-3"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260305-mobile-startmenu-pass-4"></script>
   </body>
 </html>
