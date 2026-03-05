@@ -2855,7 +2855,27 @@
         border:1px solid var(--panel-border);
       }
       .login-footer{display:flex; justify-content:space-between; align-items:center; margin-top:12px; gap:10px;}
+      .login-meta{
+        margin-top:10px;
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-end;
+        gap:10px;
+        opacity:.9;
+      }
+      .login-version{
+        font-size:10px;
+        opacity:.78;
+        letter-spacing:0.02em;
+        user-select:text;
+        white-space:nowrap;
+      }
       .tiny{font-size:12px; opacity:.85; user-select:text;}
+      @media (max-width:520px){
+        .login-version{
+          font-size:9px;
+        }
+      }
       .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; background:var(--kbd-bg); padding:1px 5px; border:1px solid var(--kbd-border);}
       body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] #login{
         background:
@@ -9605,8 +9625,10 @@
             </div>
           </div>
 
-          <div class="tiny" style="margin-top:10px; opacity:.9;">
+          <!-- Build version: bump by +0.01 on every visual/code update -->
+          <div class="tiny login-meta">
             <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
+            <span class="login-version" id="loginVersion">Version: 1.00</span>
           </div>
         </div>
       </div>
