@@ -9580,7 +9580,66 @@
           height:24px !important;
           font-size:11px !important;
         }
-        body[data-theme="bliss98"] .start-menu{ bottom:23px !important; }
+        body[data-theme="bliss98"] .start-menu{
+          left:4px !important;
+          bottom:23px !important;
+          width:min(176px, calc(100vw - 10px)) !important;
+          max-height:calc(100vh - 48px) !important;
+          overflow:hidden !important;
+        }
+        body[data-theme="bliss98"] .start-side{
+          width:20px !important;
+          padding:6px 0 !important;
+        }
+        body[data-theme="bliss98"] .start-side span{
+          font-size:9px !important;
+          letter-spacing:0.6px !important;
+        }
+        body[data-theme="bliss98"] .start-list{
+          padding:1px !important;
+          overflow:auto !important;
+        }
+        body[data-theme="bliss98"] .start-list .menu-item{
+          gap:6px !important;
+          padding:4px 6px !important;
+          font-size:9px !important;
+        }
+        body[data-theme="bliss98"] .start-list .menu-item > div:first-child{
+          width:14px !important;
+          height:14px !important;
+        }
+        body[data-theme="bliss98"] .start-list .menu-item img,
+        body[data-theme="bliss98"] .start-list .menu-item svg{
+          width:14px !important;
+          height:14px !important;
+        }
+        body[data-theme="bliss98"] .start-list .start-menu-has-sub{
+          padding-right:14px !important;
+        }
+        body[data-theme="bliss98"] .start-list .start-menu-has-sub > .menu-arrow{
+          font-size:9px !important;
+        }
+        body[data-theme="bliss98"] .start-list .start-menu-has-sub > .start-submenu{
+          min-width:152px !important;
+          max-width:min(152px, calc(100vw - 184px)) !important;
+          top:-1px !important;
+          left:calc(100% - 1px) !important;
+          max-height:calc(100vh - 56px) !important;
+          overflow:auto !important;
+        }
+        body[data-theme="bliss98"] .start-list .start-sub-item{
+          gap:6px !important;
+          padding:4px 6px !important;
+          font-size:9px !important;
+        }
+        body[data-theme="bliss98"] .start-list .start-sub-item > span:first-child{
+          width:14px !important;
+          height:14px !important;
+        }
+        body[data-theme="bliss98"] #startMenu .menu-item img[data-app-id="settings"]{
+          width:14px !important;
+          height:14px !important;
+        }
       }
 
 </style>
@@ -9628,7 +9687,7 @@
           <!-- Build version: bump by +0.01 on every visual/code update -->
           <div class="tiny login-meta">
             <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-            <span class="login-version" id="loginVersion">Version: 1.00</span>
+            <span class="login-version" id="loginVersion">Version: 1.01</span>
           </div>
         </div>
       </div>
@@ -9715,6 +9774,6 @@
       </div>
     </div>
 
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260305-mobile-ui-pass-2"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260305-mobile-startmenu-pass-3"></script>
   </body>
 </html>
