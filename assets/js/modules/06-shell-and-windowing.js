@@ -1267,6 +1267,8 @@ function getMobileMaximizedRect(){
     }
   }
 
+  const bottomPadding = (state.settings.theme === 'blissos') ? 2 : 4;
+  bottomLimit = Math.max(0, bottomLimit - bottomPadding);
   const safeHeight = Math.max(110, Math.floor(bottomLimit - topInset));
   return {
     left: 0,
@@ -1424,19 +1426,19 @@ function getSeekerRect(areaRect = null){
   const maxWidth = Math.max(320, area.width - margin * 2);
   const maxHeight = Math.max(260, area.height - margin * 2);
   const targetWidth = state.isMobile
-    ? Math.max(250, Math.floor(area.width * 0.88))
+    ? Math.max(230, Math.floor(area.width * 0.82))
     : Math.max(980, Math.floor(area.width * 0.58));
   const targetHeight = state.isMobile
-    ? Math.max(250, Math.floor(area.height * 0.56))
+    ? Math.max(220, Math.floor(area.height * 0.50))
     : Math.max(700, Math.floor(area.height * 0.70));
   const width = clamp(
     targetWidth,
-    state.isMobile ? 240 : 860,
+    state.isMobile ? 220 : 860,
     Math.min(maxWidth, state.isMobile ? maxWidth : 1380)
   );
   const height = clamp(
     targetHeight,
-    state.isMobile ? 230 : 560,
+    state.isMobile ? 210 : 560,
     Math.min(maxHeight, state.isMobile ? maxHeight : 920)
   );
   const left = Math.round(clamp((area.width - width) / 2, margin, Math.max(margin, area.width - width - margin)));
@@ -2111,8 +2113,8 @@ function toggleFitWindow(appId) {
         if(appId === 'seeker'){
           const seekerContent = el.querySelector('.content');
           if(seekerContent){
-            seekerContent.dataset.fitMinW = state.isMobile ? '240' : '980';
-            seekerContent.dataset.fitMinH = state.isMobile ? '230' : '700';
+            seekerContent.dataset.fitMinW = state.isMobile ? '220' : '980';
+            seekerContent.dataset.fitMinH = state.isMobile ? '210' : '700';
             seekerContent.dataset.fitKey = `seeker-${state.isMobile ? 'mobile' : 'desktop'}`;
           }
         }
