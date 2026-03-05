@@ -2348,13 +2348,13 @@
         transition:transform .12s cubic-bezier(.22,.74,.21,1.03), filter .12s cubic-bezier(.22,.74,.21,1.03);
         position:relative;
         z-index:4;
-        filter:drop-shadow(0 3px 2px rgba(0,0,0,0.28));
+        filter:drop-shadow(0 2px 1px rgba(0,0,0,0.24));
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item .dock-reflection{
         display:flex !important;
         position:absolute;
         left:50%;
-        bottom:-78px;
+        bottom:-79px;
         transform:translateX(-50%) scaleY(-1);
         transform-origin:50% 0;
         opacity:calc((0.26 + var(--dock-reflect, 0.34)) * var(--blissos-dock-opacity));
@@ -2372,6 +2372,14 @@
         height:100%;
         transform:scale(0.92, 0.82);
         transform-origin:50% 0;
+      }
+      @media (hover:hover) and (pointer:fine){
+        body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item .dock-icon img,
+        body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item .dock-icon svg,
+        body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item .dock-reflection img,
+        body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item .dock-reflection svg{
+          image-rendering:auto !important;
+        }
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item .dock-tooltip{
         display:inline-flex !important;
@@ -9774,7 +9782,7 @@
           <!-- Build version: bump by +0.01 on every visual/code update -->
           <div class="tiny login-meta">
             <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-            <span class="login-version" id="loginVersion">Version: 1.07</span>
+            <span class="login-version" id="loginVersion">Version: 1.08</span>
           </div>
         </div>
       </div>
@@ -9861,6 +9869,6 @@
       </div>
     </div>
 
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260305-mobile-aqua-dock-pass-9"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260305-desktop-aqua-dock-pass-10"></script>
   </body>
 </html>
