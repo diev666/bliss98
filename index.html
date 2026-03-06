@@ -10259,6 +10259,69 @@
           font-size:9px !important;
         }
 
+        /* TXT extra-compact layout on mobile */
+        .win-txt .titlebar{
+          height:20px !important;
+          min-height:20px !important;
+          padding:1px 46px !important;
+        }
+        .win-txt .title-left strong{
+          font-size:10px !important;
+        }
+        .win-txt .title-controls{
+          gap:1px !important;
+        }
+        .win-txt .title-controls .wctl{
+          width:12px !important;
+          height:12px !important;
+          min-width:12px !important;
+          font-size:8px !important;
+        }
+        .win-txt .txt-toolbar{
+          gap:calc(4px * var(--txt-toolbar-scale)) !important;
+          padding:calc(4px * var(--txt-toolbar-scale)) calc(5px * var(--txt-toolbar-scale)) !important;
+        }
+        .win-txt .txt-select-label{
+          font-size:8px !important;
+        }
+        .win-txt .txt-tool-btn{
+          font-size:8px !important;
+        }
+        .win-txt .txt-tool-btn-mini{
+          font-size:8px !important;
+          letter-spacing:0 !important;
+        }
+        .win-txt .txt-ruler{
+          height:22px !important;
+          padding:0 6px !important;
+        }
+        .win-txt .txt-ruler-num{
+          font-size:8px !important;
+          bottom:1px !important;
+        }
+        .win-txt .txt-ruler-marker{
+          width:9px !important;
+          height:9px !important;
+          margin-left:-4px !important;
+        }
+        .win-txt .txt-ruler-marker::before{
+          bottom:-3px !important;
+          border-left:3px solid transparent !important;
+          border-right:3px solid transparent !important;
+          border-top:3px solid currentColor !important;
+        }
+        .win-txt .txt-ruler-marker-indent{
+          top:11px !important;
+        }
+        .win-txt .txt-ruler-marker-indent::before{
+          top:-3px !important;
+          border-bottom:3px solid currentColor !important;
+        }
+        .win-txt .txt-editor{
+          font-size:12px !important;
+          padding:8px 10px !important;
+        }
+
         /* BlissOS Settings compact + toolbar fix on mobile (classic + aqua) */
         body[data-theme="blissos"] #win_settings .content{
           padding:0 !important;
@@ -10564,7 +10627,7 @@
           <!-- Build version: bump by +0.01 on every visual/code update -->
           <div class="tiny login-meta">
             <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-            <span class="login-version" id="loginVersion">Version: 1.23</span>
+            <span class="login-version" id="loginVersion">Version: 1.24</span>
           </div>
         </div>
       </div>
