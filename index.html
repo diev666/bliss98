@@ -206,7 +206,7 @@
   .wctl, .settings-tab,
   [data-set-theme], [data-set-lang], [data-set-wallpaper], [data-set-animations], [data-set-appopenanim],
   [data-set-scanlines], [data-set-darkmode], [data-set-fullscreen], [data-set-blissos-darkmode], [data-set-blissos-aqua], [data-toggle-fullscreen], [data-toggle-blissos-darkmode], [data-toggle-blissos-aqua], [data-set-retro],
-  [data-set-clock], [data-set-oldcrt], [data-set-os-theme], [data-set-titlebar],
+  [data-set-clock], [data-set-oldcrt], [data-set-os-theme], [data-set-titlebar], [data-set-bliss98-accent],
   [data-theme-custom], [data-games-tab], [data-music-id], [data-poem-id], [data-trash-id],
   [data-trash-action], [data-modal-action], [data-menu-action], [data-txt-action],
   [data-blissos-action], [data-blissos-open-app], [data-blissos-settings-tab],
@@ -6754,6 +6754,59 @@
         box-shadow:inset 1px 1px var(--shadow-white), inset -1px -1px var(--shadow-dark);
         flex-shrink:0;
       }
+      .settings-accent98-grid{
+        display:flex;
+        flex-wrap:wrap;
+        gap:6px;
+      }
+      .accent98-swatch{
+        min-width:118px;
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        padding:2px 6px;
+        background:var(--task);
+        border:1px solid var(--panel-border);
+        box-shadow:inset 1px 1px var(--shadow-white), inset -1px -1px var(--shadow-dark);
+        color:var(--content-text);
+        font:inherit;
+        cursor:pointer;
+      }
+      .accent98-swatch:hover{
+        background:var(--panel-bg);
+      }
+      .accent98-swatch.active{
+        border-color:var(--bliss98-accent, var(--selection-border));
+        box-shadow:
+          inset 1px 1px var(--shadow-white),
+          inset -1px -1px var(--shadow-dark),
+          0 0 0 1px var(--bliss98-accent, var(--selection-border));
+      }
+      .accent98-swatch:focus-visible{
+        outline:1px dotted var(--selection-border);
+        outline-offset:1px;
+      }
+      .accent98-square{
+        width:14px;
+        height:14px;
+        flex:0 0 auto;
+        border:1px solid #000000;
+        box-shadow:inset 1px 1px rgba(255,255,255,0.45), inset -1px -1px rgba(0,0,0,0.3);
+      }
+      .accent98-square.classic{ background:#000080; }
+      .accent98-square.teal{ background:#006f6f; }
+      .accent98-square.green{ background:#1f7f39; }
+      .accent98-square.purple{ background:#5a2b9a; }
+      .accent98-square.rose{ background:#a13268; }
+      .accent98-square.graphite{ background:#4f545d; }
+      body.dark[data-theme="bliss98"] .accent98-swatch{
+        background:#2c2f35;
+        border-color:#5b6270;
+        box-shadow:inset 1px 1px #6a7486, inset -1px -1px #1a202c;
+      }
+      body.dark[data-theme="bliss98"] .accent98-swatch:hover{
+        background:#353a45;
+      }
       .settings-panel-icon{
         width:48px;
         height:48px;
@@ -9882,6 +9935,21 @@
           height:28px !important;
         }
 
+        /* Bliss98 accent swatches compact on mobile */
+        body[data-theme="bliss98"] #win_settings .settings-accent98-grid{
+          gap:4px !important;
+        }
+        body[data-theme="bliss98"] #win_settings .accent98-swatch{
+          min-width:94px !important;
+          gap:4px !important;
+          padding:2px 4px !important;
+          font-size:10px !important;
+        }
+        body[data-theme="bliss98"] #win_settings .accent98-square{
+          width:12px !important;
+          height:12px !important;
+        }
+
         /* Wallpaper picker compact on mobile (all OS) */
         #win_settings .wallpaper-slider-shell{
           grid-template-columns:26px minmax(0, 1fr) 26px !important;
@@ -10085,7 +10153,7 @@
           <!-- Build version: bump by +0.01 on every visual/code update -->
           <div class="tiny login-meta">
             <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-            <span class="login-version" id="loginVersion">Version: 1.17</span>
+            <span class="login-version" id="loginVersion">Version: 1.18</span>
           </div>
         </div>
       </div>
@@ -10172,6 +10240,6 @@
       </div>
     </div>
 
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260305-bliss98-seeker-dark-pass-19"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260305-bliss98-accent-color-pass-20"></script>
   </body>
 </html>

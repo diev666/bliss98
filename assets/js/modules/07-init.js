@@ -37,6 +37,7 @@
           }
         }
         state.settings.osProfiles = loadOsProfiles();
+        state.settings.bliss98Accent = loadBliss98Accent();
         state.settings.blissosAccent = loadBlissosAccent();
         mpLoadState();
         

@@ -5353,14 +5353,19 @@ function initClothesWindow(winEl){
     btn.addEventListener('click', ()=>{
       const accent = btn.dataset.setBlissosAccent;
       setBlissosAccent(accent);
-      $$('[data-set-blissos-accent]', win).forEach(ab => {
-        ab.classList.toggle('pressed', ab.dataset.setBlissosAccent === state.settings.blissosAccent);
-      });
     });
   });
-  $$('[data-set-blissos-accent]', win).forEach(ab => {
-    ab.classList.toggle('pressed', ab.dataset.setBlissosAccent === state.settings.blissosAccent);
+  updateBlissosAccentButtons(win);
+
+  // Event listeners for Bliss98 accent color buttons
+  $$('[data-set-bliss98-accent]', win).forEach(btn => {
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const accent = btn.dataset.setBliss98Accent;
+      setBliss98Accent(accent);
+    });
   });
+  updateBliss98AccentButtons(win);
 }
 
 function openSettingsAndTab(tabId, scrollId){
@@ -5655,6 +5660,38 @@ function updateBlissosAccentButtons(root=document){
     // Remove 'pressed' class which might have been used by old button styling
     btn.classList.remove('pressed');
   });
+}
+
+function updateBliss98AccentButtons(root=document){
+  $$('[data-set-bliss98-accent]', root).forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.setBliss98Accent === state.settings.bliss98Accent);
+    btn.classList.remove('pressed');
+  });
+}
+
+function applyBliss98Accent(accent){
+  const palette = BLISS98_ACCENT_COLORS[accent] || BLISS98_ACCENT_COLORS.classic;
+  const dark = !!state.settings.darkMode;
+  const tone = dark ? palette.dark : palette.light;
+  const rgb = hexToRgb(tone.accent) || { r:0, g:0, b:128 };
+  const root = document.body;
+  root.style.setProperty('--bliss98-accent', tone.accent);
+  root.style.setProperty('--selection-border', tone.accent);
+  root.style.setProperty('--selection-bg', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${dark ? 0.3 : 0.22})`);
+  root.style.setProperty('--select', tone.accent);
+  root.style.setProperty('--select-text', tone.text);
+  updateBliss98AccentButtons();
+}
+
+function setBliss98Accent(accent, opts = {}){
+  if(!BLISS98_ACCENT_COLORS[accent]) return;
+  state.settings.bliss98Accent = accent;
+  saveBliss98Accent();
+  applyBliss98Accent(accent);
+  if(!opts.fromPreset && !themeApplying && state.settings.theme !== 'blissos'){
+    setThemePresetCustom();
+  }
+  syncOsProfile();
 }
 
 function setDarkMode(enabled, fromPreset=false){
@@ -6203,6 +6240,51 @@ function loadBlissosAccent(){
   }
 }
 
+function loadBliss98Accent(){
+  try{
+    const raw = localStorage.getItem(BLISS98_ACCENT_KEY);
+    if(raw && Object.prototype.hasOwnProperty.call(BLISS98_ACCENT_COLORS, raw)){
+      return raw;
+    }
+    return 'classic';
+  } catch {
+    return 'classic';
+  }
+}
+
+function saveBliss98Accent(){
+  try{
+    localStorage.setItem(BLISS98_ACCENT_KEY, state.settings.bliss98Accent || 'classic');
+  } catch {}
+}
+
+const BLISS98_ACCENT_COLORS = {
+  classic: {
+    light: { accent:'#000080', text:'#ffffff' },
+    dark: { accent:'#7fa8ff', text:'#10192a' },
+  },
+  teal: {
+    light: { accent:'#006f6f', text:'#ffffff' },
+    dark: { accent:'#4dc7c7', text:'#102020' },
+  },
+  green: {
+    light: { accent:'#1f7f39', text:'#ffffff' },
+    dark: { accent:'#67d28a', text:'#0f2415' },
+  },
+  purple: {
+    light: { accent:'#5a2b9a', text:'#ffffff' },
+    dark: { accent:'#b08cff', text:'#1d1430' },
+  },
+  rose: {
+    light: { accent:'#a13268', text:'#ffffff' },
+    dark: { accent:'#f08dbc', text:'#2f1020' },
+  },
+  graphite: {
+    light: { accent:'#4f545d', text:'#ffffff' },
+    dark: { accent:'#aeb7c4', text:'#111827' },
+  },
+};
+
 const BLISSOS_ACCENT_COLORS = {
   multicolor: {
     // Neutral blue base for multicolor
@@ -6314,11 +6396,13 @@ function saveOsTheme(){
 
 function getDefaultOsProfiles(){
   const desktopIconsVisible = loadDesktopIconsVisible();
+  const bliss98Accent = loadBliss98Accent();
   return {
     bliss98: {
       wallpaper: loadWallpaper(),
       themePreset: loadThemePreset(),
       titlebar: loadTitlebarTheme(),
+      bliss98Accent,
       darkMode: loadDarkMode(),
       blissosDarkMode: false,
       blissosAqua: false,
@@ -6340,6 +6424,7 @@ function getDefaultOsProfiles(){
       wallpaper: 'blissos',
       themePreset: 'default',
       titlebar: 'defaultBlue',
+      bliss98Accent,
       darkMode: false,
       blissosDarkMode: false,
       blissosAqua: false,
@@ -6361,6 +6446,7 @@ function getDefaultOsProfiles(){
       wallpaper: 'aqua',
       themePreset: 'default',
       titlebar: 'defaultBlue',
+      bliss98Accent,
       darkMode: false,
       blissosDarkMode: false,
       blissosAqua: true,
@@ -6416,6 +6502,7 @@ function syncOsProfile(){
     wallpaper: state.wallpaper,
     themePreset: state.theme.preset,
     titlebar: state.theme.titlebar,
+    bliss98Accent: state.settings.bliss98Accent || 'classic',
     darkMode: state.settings.darkMode,
     blissosDarkMode: state.settings.blissosDarkMode,
     blissosAqua: state.settings.blissosAqua,
@@ -6448,6 +6535,8 @@ function applyOsProfile(theme){
   state.wallpaper = profile.wallpaper || (isAqua ? 'aqua' : (blissFamily ? 'blissos' : 'classic'));
   state.theme.preset = profile.themePreset || 'default';
   state.theme.titlebar = profile.titlebar || 'defaultBlue';
+  state.settings.bliss98Accent = profile.bliss98Accent || loadBliss98Accent();
+  saveBliss98Accent();
   if(blissFamily && state.theme.titlebar === 'blank'){
     state.theme.titlebar = 'defaultBlue';
   }
@@ -6523,6 +6612,8 @@ function applyOsTheme(){
 
   if(blissos){
     applyBlissosAccent(state.settings.blissosAccent);
+  } else {
+    applyBliss98Accent(state.settings.bliss98Accent || 'classic');
   }
   applyBlissOSAqua();
   applyDesktopIconsVisibility();
@@ -6764,6 +6855,9 @@ function applyTitlebarTheme(){
   document.body.style.setProperty('--title', cur.bar1);
   document.body.style.setProperty('--title2', cur.bar2);
   document.body.style.setProperty('--titlebar-text', cur.text);
+  if(!isBlissOS){
+    applyBliss98Accent(state.settings.bliss98Accent || 'classic');
+  }
   updateRetroGlowPalette();
 }
 
@@ -6817,6 +6911,7 @@ function saveCustomThemeFromState(){
   const data = {
     wallpaper: state.wallpaper,
     titlebar: state.theme.titlebar,
+    bliss98Accent: state.settings.bliss98Accent || 'classic',
     darkMode: state.settings.darkMode,
     scanlines: state.settings.scanlines,
     retroGlow: state.settings.retroGlow,
@@ -6836,6 +6931,8 @@ function applyCustomTheme(){
   applyThemePalette();
   setDarkMode(!!data.darkMode, true);
   applyWallpaper(data.wallpaper || WALLPAPERS[0].id);
+  state.settings.bliss98Accent = data.bliss98Accent || loadBliss98Accent();
+  saveBliss98Accent();
   setTitlebarTheme(data.titlebar || 'defaultBlue', true);
   state.settings.scanlines = !!data.scanlines;
   applyScanlines();

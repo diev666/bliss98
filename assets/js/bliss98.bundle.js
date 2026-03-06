@@ -86,6 +86,7 @@
           zoom: 100,
         },
         settings: {
+          bliss98Accent: 'classic',
           blissosAccent: 'multicolor',
           scanlines: false,
           tab: 'general',
@@ -205,6 +206,7 @@
       const ICON_SIZE = { w: 92, h: 88 };
       const ICON_GAP = { x: 12, y: 8 };
       const WALLPAPER_KEY = 'bliss98_wallpaper';
+      const BLISS98_ACCENT_KEY = 'bliss98_bliss98_accent';
       const BLISSOS_ACCENT_KEY = 'bliss98_blissos_accent';
       const ANIMATIONS_KEY = 'bliss98_animations';
       const APP_OPEN_ANIM_KEY = 'bliss98_app_open_anim';
@@ -6734,14 +6736,19 @@ function initClothesWindow(winEl){
     btn.addEventListener('click', ()=>{
       const accent = btn.dataset.setBlissosAccent;
       setBlissosAccent(accent);
-      $$('[data-set-blissos-accent]', win).forEach(ab => {
-        ab.classList.toggle('pressed', ab.dataset.setBlissosAccent === state.settings.blissosAccent);
-      });
     });
   });
-  $$('[data-set-blissos-accent]', win).forEach(ab => {
-    ab.classList.toggle('pressed', ab.dataset.setBlissosAccent === state.settings.blissosAccent);
+  updateBlissosAccentButtons(win);
+
+  // Event listeners for Bliss98 accent color buttons
+  $$('[data-set-bliss98-accent]', win).forEach(btn => {
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const accent = btn.dataset.setBliss98Accent;
+      setBliss98Accent(accent);
+    });
   });
+  updateBliss98AccentButtons(win);
 }
 
 function openSettingsAndTab(tabId, scrollId){
@@ -7036,6 +7043,38 @@ function updateBlissosAccentButtons(root=document){
     // Remove 'pressed' class which might have been used by old button styling
     btn.classList.remove('pressed');
   });
+}
+
+function updateBliss98AccentButtons(root=document){
+  $$('[data-set-bliss98-accent]', root).forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.setBliss98Accent === state.settings.bliss98Accent);
+    btn.classList.remove('pressed');
+  });
+}
+
+function applyBliss98Accent(accent){
+  const palette = BLISS98_ACCENT_COLORS[accent] || BLISS98_ACCENT_COLORS.classic;
+  const dark = !!state.settings.darkMode;
+  const tone = dark ? palette.dark : palette.light;
+  const rgb = hexToRgb(tone.accent) || { r:0, g:0, b:128 };
+  const root = document.body;
+  root.style.setProperty('--bliss98-accent', tone.accent);
+  root.style.setProperty('--selection-border', tone.accent);
+  root.style.setProperty('--selection-bg', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${dark ? 0.3 : 0.22})`);
+  root.style.setProperty('--select', tone.accent);
+  root.style.setProperty('--select-text', tone.text);
+  updateBliss98AccentButtons();
+}
+
+function setBliss98Accent(accent, opts = {}){
+  if(!BLISS98_ACCENT_COLORS[accent]) return;
+  state.settings.bliss98Accent = accent;
+  saveBliss98Accent();
+  applyBliss98Accent(accent);
+  if(!opts.fromPreset && !themeApplying && state.settings.theme !== 'blissos'){
+    setThemePresetCustom();
+  }
+  syncOsProfile();
 }
 
 function setDarkMode(enabled, fromPreset=false){
@@ -7584,6 +7623,51 @@ function loadBlissosAccent(){
   }
 }
 
+function loadBliss98Accent(){
+  try{
+    const raw = localStorage.getItem(BLISS98_ACCENT_KEY);
+    if(raw && Object.prototype.hasOwnProperty.call(BLISS98_ACCENT_COLORS, raw)){
+      return raw;
+    }
+    return 'classic';
+  } catch {
+    return 'classic';
+  }
+}
+
+function saveBliss98Accent(){
+  try{
+    localStorage.setItem(BLISS98_ACCENT_KEY, state.settings.bliss98Accent || 'classic');
+  } catch {}
+}
+
+const BLISS98_ACCENT_COLORS = {
+  classic: {
+    light: { accent:'#000080', text:'#ffffff' },
+    dark: { accent:'#7fa8ff', text:'#10192a' },
+  },
+  teal: {
+    light: { accent:'#006f6f', text:'#ffffff' },
+    dark: { accent:'#4dc7c7', text:'#102020' },
+  },
+  green: {
+    light: { accent:'#1f7f39', text:'#ffffff' },
+    dark: { accent:'#67d28a', text:'#0f2415' },
+  },
+  purple: {
+    light: { accent:'#5a2b9a', text:'#ffffff' },
+    dark: { accent:'#b08cff', text:'#1d1430' },
+  },
+  rose: {
+    light: { accent:'#a13268', text:'#ffffff' },
+    dark: { accent:'#f08dbc', text:'#2f1020' },
+  },
+  graphite: {
+    light: { accent:'#4f545d', text:'#ffffff' },
+    dark: { accent:'#aeb7c4', text:'#111827' },
+  },
+};
+
 const BLISSOS_ACCENT_COLORS = {
   multicolor: {
     // Neutral blue base for multicolor
@@ -7695,11 +7779,13 @@ function saveOsTheme(){
 
 function getDefaultOsProfiles(){
   const desktopIconsVisible = loadDesktopIconsVisible();
+  const bliss98Accent = loadBliss98Accent();
   return {
     bliss98: {
       wallpaper: loadWallpaper(),
       themePreset: loadThemePreset(),
       titlebar: loadTitlebarTheme(),
+      bliss98Accent,
       darkMode: loadDarkMode(),
       blissosDarkMode: false,
       blissosAqua: false,
@@ -7721,6 +7807,7 @@ function getDefaultOsProfiles(){
       wallpaper: 'blissos',
       themePreset: 'default',
       titlebar: 'defaultBlue',
+      bliss98Accent,
       darkMode: false,
       blissosDarkMode: false,
       blissosAqua: false,
@@ -7742,6 +7829,7 @@ function getDefaultOsProfiles(){
       wallpaper: 'aqua',
       themePreset: 'default',
       titlebar: 'defaultBlue',
+      bliss98Accent,
       darkMode: false,
       blissosDarkMode: false,
       blissosAqua: true,
@@ -7797,6 +7885,7 @@ function syncOsProfile(){
     wallpaper: state.wallpaper,
     themePreset: state.theme.preset,
     titlebar: state.theme.titlebar,
+    bliss98Accent: state.settings.bliss98Accent || 'classic',
     darkMode: state.settings.darkMode,
     blissosDarkMode: state.settings.blissosDarkMode,
     blissosAqua: state.settings.blissosAqua,
@@ -7829,6 +7918,8 @@ function applyOsProfile(theme){
   state.wallpaper = profile.wallpaper || (isAqua ? 'aqua' : (blissFamily ? 'blissos' : 'classic'));
   state.theme.preset = profile.themePreset || 'default';
   state.theme.titlebar = profile.titlebar || 'defaultBlue';
+  state.settings.bliss98Accent = profile.bliss98Accent || loadBliss98Accent();
+  saveBliss98Accent();
   if(blissFamily && state.theme.titlebar === 'blank'){
     state.theme.titlebar = 'defaultBlue';
   }
@@ -7904,6 +7995,8 @@ function applyOsTheme(){
 
   if(blissos){
     applyBlissosAccent(state.settings.blissosAccent);
+  } else {
+    applyBliss98Accent(state.settings.bliss98Accent || 'classic');
   }
   applyBlissOSAqua();
   applyDesktopIconsVisibility();
@@ -8145,6 +8238,9 @@ function applyTitlebarTheme(){
   document.body.style.setProperty('--title', cur.bar1);
   document.body.style.setProperty('--title2', cur.bar2);
   document.body.style.setProperty('--titlebar-text', cur.text);
+  if(!isBlissOS){
+    applyBliss98Accent(state.settings.bliss98Accent || 'classic');
+  }
   updateRetroGlowPalette();
 }
 
@@ -8198,6 +8294,7 @@ function saveCustomThemeFromState(){
   const data = {
     wallpaper: state.wallpaper,
     titlebar: state.theme.titlebar,
+    bliss98Accent: state.settings.bliss98Accent || 'classic',
     darkMode: state.settings.darkMode,
     scanlines: state.settings.scanlines,
     retroGlow: state.settings.retroGlow,
@@ -8217,6 +8314,8 @@ function applyCustomTheme(){
   applyThemePalette();
   setDarkMode(!!data.darkMode, true);
   applyWallpaper(data.wallpaper || WALLPAPERS[0].id);
+  state.settings.bliss98Accent = data.bliss98Accent || loadBliss98Accent();
+  saveBliss98Accent();
   setTitlebarTheme(data.titlebar || 'defaultBlue', true);
   state.settings.scanlines = !!data.scanlines;
   applyScanlines();
@@ -10943,6 +11042,14 @@ function installLongPress(el, getTarget){
           'blissosAccent.yellow': 'Yellow',
           'blissosAccent.green': 'Green',
           'blissosAccent.graphite': 'Graphite',
+          'settings.bliss98Accent.title': 'Accent Color',
+          'settings.bliss98Accent.desc': 'Choose the highlight color for menus and selections.',
+          'bliss98Accent.classic': 'Classic Blue',
+          'bliss98Accent.teal': 'Teal',
+          'bliss98Accent.green': 'Green',
+          'bliss98Accent.purple': 'Purple',
+          'bliss98Accent.rose': 'Rose',
+          'bliss98Accent.graphite': 'Graphite',
           'titlebar.defaultBlue': 'Blue',
           'titlebar.pinkLight': 'Pink',
           'titlebar.purple': 'Purple',
@@ -11544,6 +11651,14 @@ function installLongPress(el, getTarget){
           'blissosAccent.yellow': 'Amarelo',
           'blissosAccent.green': 'Verde',
           'blissosAccent.graphite': 'Grafite',
+          'settings.bliss98Accent.title': 'Cor de destaque',
+          'settings.bliss98Accent.desc': 'Escolha a cor de destaque para menus e seleções.',
+          'bliss98Accent.classic': 'Azul clássico',
+          'bliss98Accent.teal': 'Verde-água',
+          'bliss98Accent.green': 'Verde',
+          'bliss98Accent.purple': 'Roxo',
+          'bliss98Accent.rose': 'Rosa',
+          'bliss98Accent.graphite': 'Grafite',
           'titlebar.defaultBlue': 'Azul',
           'titlebar.pinkLight': 'Rosa',
           'titlebar.purple': 'Roxo',
@@ -11846,9 +11961,11 @@ function installLongPress(el, getTarget){
         updateRetroGlowButtons(root);
         updateScanlinesButtons(root);
         updateClockButtons(root);
-            updateOldCrtButtons(root);
-            updateSoundUI(root);
-            updateBlissosAccentButtons(root);      }
+        updateOldCrtButtons(root);
+        updateSoundUI(root);
+        updateBlissosAccentButtons(root);
+        updateBliss98AccentButtons(root);
+      }
 
       function applyI18n(){
         applyI18nTo(document);
@@ -14582,6 +14699,38 @@ Eu sou o buffalo branco extinto`
                     <button class="btn bevel" type="button" data-set-titlebar="xpBlue">
                       <span class="titlebar-swatch" style="background:linear-gradient(90deg,#0a246a,#3a6ea5);"></span>
                       <span data-i18n="titlebar.xpBlue">XP Blue</span>
+                    </button>
+                  </div>
+                </div>
+                ` : ''}
+                ${isBliss98() ? `
+                <div class="settings-block" id="settingsBliss98Accent">
+                  <strong data-i18n="settings.bliss98Accent.title">Accent Color</strong>
+                  <p style="margin:6px 0 10px 0;" data-i18n="settings.bliss98Accent.desc">Choose the highlight color for menus and selections.</p>
+                  <div class="settings-accent98-grid">
+                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="classic">
+                      <span class="accent98-square classic"></span>
+                      <span data-i18n="bliss98Accent.classic">Classic Blue</span>
+                    </button>
+                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="teal">
+                      <span class="accent98-square teal"></span>
+                      <span data-i18n="bliss98Accent.teal">Teal</span>
+                    </button>
+                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="green">
+                      <span class="accent98-square green"></span>
+                      <span data-i18n="bliss98Accent.green">Green</span>
+                    </button>
+                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="purple">
+                      <span class="accent98-square purple"></span>
+                      <span data-i18n="bliss98Accent.purple">Purple</span>
+                    </button>
+                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="rose">
+                      <span class="accent98-square rose"></span>
+                      <span data-i18n="bliss98Accent.rose">Rose</span>
+                    </button>
+                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="graphite">
+                      <span class="accent98-square graphite"></span>
+                      <span data-i18n="bliss98Accent.graphite">Graphite</span>
                     </button>
                   </div>
                 </div>
@@ -20515,6 +20664,10 @@ function renderBlissOSAppMenu(){
         if(blissosAquaBtn && blissosAquaBtn.dataset && blissosAquaBtn.dataset.setBlissosAqua){
           setBlissOSAqua(blissosAquaBtn.dataset.setBlissosAqua === 'on');
         }
+        const bliss98AccentBtn = target.closest('[data-set-bliss98-accent]');
+        if(bliss98AccentBtn && bliss98AccentBtn.dataset && bliss98AccentBtn.dataset.setBliss98Accent){
+          setBliss98Accent(bliss98AccentBtn.dataset.setBliss98Accent);
+        }
         const retroBtn = target.closest('[data-set-retro]');
         if(retroBtn && retroBtn.dataset && retroBtn.dataset.setRetro){
           setRetroGlow(retroBtn.dataset.setRetro === 'on');
@@ -20657,6 +20810,7 @@ function renderBlissOSAppMenu(){
           }
         }
         state.settings.osProfiles = loadOsProfiles();
+        state.settings.bliss98Accent = loadBliss98Accent();
         state.settings.blissosAccent = loadBlissosAccent();
         mpLoadState();
         

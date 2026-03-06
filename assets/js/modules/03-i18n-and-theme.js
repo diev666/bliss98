@@ -338,6 +338,14 @@
           'blissosAccent.yellow': 'Yellow',
           'blissosAccent.green': 'Green',
           'blissosAccent.graphite': 'Graphite',
+          'settings.bliss98Accent.title': 'Accent Color',
+          'settings.bliss98Accent.desc': 'Choose the highlight color for menus and selections.',
+          'bliss98Accent.classic': 'Classic Blue',
+          'bliss98Accent.teal': 'Teal',
+          'bliss98Accent.green': 'Green',
+          'bliss98Accent.purple': 'Purple',
+          'bliss98Accent.rose': 'Rose',
+          'bliss98Accent.graphite': 'Graphite',
           'titlebar.defaultBlue': 'Blue',
           'titlebar.pinkLight': 'Pink',
           'titlebar.purple': 'Purple',
@@ -939,6 +947,14 @@
           'blissosAccent.yellow': 'Amarelo',
           'blissosAccent.green': 'Verde',
           'blissosAccent.graphite': 'Grafite',
+          'settings.bliss98Accent.title': 'Cor de destaque',
+          'settings.bliss98Accent.desc': 'Escolha a cor de destaque para menus e seleções.',
+          'bliss98Accent.classic': 'Azul clássico',
+          'bliss98Accent.teal': 'Verde-água',
+          'bliss98Accent.green': 'Verde',
+          'bliss98Accent.purple': 'Roxo',
+          'bliss98Accent.rose': 'Rosa',
+          'bliss98Accent.graphite': 'Grafite',
           'titlebar.defaultBlue': 'Azul',
           'titlebar.pinkLight': 'Rosa',
           'titlebar.purple': 'Roxo',
@@ -1241,9 +1257,11 @@
         updateRetroGlowButtons(root);
         updateScanlinesButtons(root);
         updateClockButtons(root);
-            updateOldCrtButtons(root);
-            updateSoundUI(root);
-            updateBlissosAccentButtons(root);      }
+        updateOldCrtButtons(root);
+        updateSoundUI(root);
+        updateBlissosAccentButtons(root);
+        updateBliss98AccentButtons(root);
+      }
 
       function applyI18n(){
         applyI18nTo(document);

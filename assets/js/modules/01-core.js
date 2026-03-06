@@ -82,6 +82,7 @@
           zoom: 100,
         },
         settings: {
+          bliss98Accent: 'classic',
           blissosAccent: 'multicolor',
           scanlines: false,
           tab: 'general',
@@ -201,6 +202,7 @@
       const ICON_SIZE = { w: 92, h: 88 };
       const ICON_GAP = { x: 12, y: 8 };
       const WALLPAPER_KEY = 'bliss98_wallpaper';
+      const BLISS98_ACCENT_KEY = 'bliss98_bliss98_accent';
       const BLISSOS_ACCENT_KEY = 'bliss98_blissos_accent';
       const ANIMATIONS_KEY = 'bliss98_animations';
       const APP_OPEN_ANIM_KEY = 'bliss98_app_open_anim';

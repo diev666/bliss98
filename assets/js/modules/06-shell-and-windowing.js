@@ -4645,6 +4645,10 @@ function renderBlissOSAppMenu(){
         if(blissosAquaBtn && blissosAquaBtn.dataset && blissosAquaBtn.dataset.setBlissosAqua){
           setBlissOSAqua(blissosAquaBtn.dataset.setBlissosAqua === 'on');
         }
+        const bliss98AccentBtn = target.closest('[data-set-bliss98-accent]');
+        if(bliss98AccentBtn && bliss98AccentBtn.dataset && bliss98AccentBtn.dataset.setBliss98Accent){
+          setBliss98Accent(bliss98AccentBtn.dataset.setBliss98Accent);
+        }
         const retroBtn = target.closest('[data-set-retro]');
         if(retroBtn && retroBtn.dataset && retroBtn.dataset.setRetro){
           setRetroGlow(retroBtn.dataset.setRetro === 'on');
