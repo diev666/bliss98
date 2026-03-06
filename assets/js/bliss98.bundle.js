@@ -8983,6 +8983,17 @@ function getTxtEditorFromShell(shell){
   return shell ? shell.querySelector('[data-txt-editor="1"]') : null;
 }
 
+function updateTxtShellResponsive(shell){
+  if(!shell) return;
+  shell.classList.remove('txt-shell-compact', 'txt-shell-narrow');
+  const width = Math.max(260, Math.round(shell.clientWidth || 0));
+  const toolbarChrome = 20;
+  const toolbarAtFullScale = 974;
+  const toolbarBudget = Math.max(140, width - toolbarChrome);
+  const scale = clamp((toolbarBudget / toolbarAtFullScale) * 0.99, 0.56, 1);
+  shell.style.setProperty('--txt-toolbar-scale', String(Number(scale.toFixed(3))));
+}
+
 function applyTxtPrefsToShell(shell, rawPrefs){
   const editor = getTxtEditorFromShell(shell);
   const rail = shell ? shell.querySelector('[data-txt-ruler-rail="1"]') : null;
@@ -9383,7 +9394,7 @@ function openTxtFileWindow(txtId, opts = {}){
     contentHTML: () => `
       <div class="txt-shell" data-txt-shell="1">
         <div class="txt-toolbar" role="toolbar" aria-label="${t('txt.toolbar')}">
-          <label class="txt-select-wrap" title="${t('txt.styles')}">
+          <label class="txt-select-wrap txt-select-wrap-styles" title="${t('txt.styles')}">
             <span class="txt-select-label">${t('txt.styles')}</span>
             <select class="txt-select" data-txt-control="style" aria-label="${t('txt.styles')}">
               <option value="">${t('txt.styles')}</option>
@@ -9399,7 +9410,7 @@ function openTxtFileWindow(txtId, opts = {}){
             <button class="txt-tool-btn" type="button" data-txt-command="justifyRight" data-txt-query="justifyRight" aria-label="${t('txt.align.right')}" title="${t('txt.align.right')}"><span class="txt-glyph txt-glyph-right" aria-hidden="true"></span></button>
             <button class="txt-tool-btn" type="button" data-txt-command="justifyFull" data-txt-query="justifyFull" aria-label="${t('txt.align.justify')}" title="${t('txt.align.justify')}"><span class="txt-glyph txt-glyph-justify" aria-hidden="true"></span></button>
           </div>
-          <label class="txt-select-wrap" title="${t('txt.spacing')}">
+          <label class="txt-select-wrap txt-select-wrap-spacing" title="${t('txt.spacing')}">
             <span class="txt-select-label">${t('txt.spacing')}</span>
             <select class="txt-select" data-txt-control="spacing" aria-label="${t('txt.spacing')}">
               <option value="">${t('txt.spacing')}</option>
@@ -9409,7 +9420,7 @@ function openTxtFileWindow(txtId, opts = {}){
               <option value="loose">${t('txt.spacing.loose')}</option>
             </select>
           </label>
-          <label class="txt-select-wrap" title="${t('txt.lists')}">
+          <label class="txt-select-wrap txt-select-wrap-lists" title="${t('txt.lists')}">
             <span class="txt-select-label">${t('txt.lists')}</span>
             <select class="txt-select" data-txt-control="list" aria-label="${t('txt.lists')}">
               <option value="">${t('txt.lists')}</option>
@@ -9543,6 +9554,7 @@ function renderTxtFileWindow(winId){
     shell = content.querySelector('[data-txt-shell="1"]');
   }
   if(!shell) return;
+  updateTxtShellResponsive(shell);
   const editor = getTxtEditorFromShell(shell);
   if(!editor) return;
   if(!wstate.txtPrefs) wstate.txtPrefs = normalizeTxtPrefs(item.txtPrefs);
@@ -9609,6 +9621,7 @@ function renderTxtFileWindow(winId){
       const observer = new ResizeObserver(()=>{
         const current = state.windows.get(winId);
         if(!current || current.kind !== 'txt') return;
+        updateTxtShellResponsive(shell);
         current.txtPrefs = applyTxtPrefsToShell(shell, current.txtPrefs);
       });
       observer.observe(shell);
@@ -18960,8 +18973,10 @@ function toggleFitWindow(appId) {
           const dx = e.clientX - startX;
           const dy = e.clientY - startY;
 
-          const MIN_W = state.isMobile ? 240 : 280;
-          const MIN_H = state.isMobile ? 180 : 200;
+          const winState = state.windows.get(appId);
+          const isTxtWindow = !!winState && winState.kind === 'txt';
+          const MIN_W = state.isMobile ? 240 : (isTxtWindow ? 580 : 280);
+          const MIN_H = state.isMobile ? 180 : (isTxtWindow ? 230 : 200);
           const areaW = Math.max(0, area.width);
           const areaH = Math.max(0, area.height);
           const startLRel = startL - area.left;
