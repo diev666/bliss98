@@ -1210,6 +1210,10 @@ Eu sou o buffalo branco extinto`
                       <div class="color-circle blue"></div>
                       <span data-i18n="blissosAccent.blue">Blue</span>
                     </div>
+                    <div class="accent-swatch" data-set-blissos-accent="teal">
+                      <div class="color-circle teal"></div>
+                      <span data-i18n="blissosAccent.teal">Teal</span>
+                    </div>
                     <div class="accent-swatch" data-set-blissos-accent="purple">
                       <div class="color-circle purple"></div>
                       <span data-i18n="blissosAccent.purple">Purple</span>
@@ -1217,6 +1221,10 @@ Eu sou o buffalo branco extinto`
                     <div class="accent-swatch" data-set-blissos-accent="pink">
                       <div class="color-circle pink"></div>
                       <span data-i18n="blissosAccent.pink">Pink</span>
+                    </div>
+                    <div class="accent-swatch" data-set-blissos-accent="rose">
+                      <div class="color-circle rose"></div>
+                      <span data-i18n="blissosAccent.rose">Rose</span>
                     </div>
                     <div class="accent-swatch" data-set-blissos-accent="red">
                       <div class="color-circle red"></div>
@@ -1391,9 +1399,25 @@ Eu sou o buffalo branco extinto`
                       <span class="accent98-square purple"></span>
                       <span data-i18n="bliss98Accent.purple">Purple</span>
                     </button>
+                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="pink">
+                      <span class="accent98-square pink"></span>
+                      <span data-i18n="bliss98Accent.pink">Pink</span>
+                    </button>
                     <button class="accent98-swatch" type="button" data-set-bliss98-accent="rose">
                       <span class="accent98-square rose"></span>
                       <span data-i18n="bliss98Accent.rose">Rose</span>
+                    </button>
+                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="red">
+                      <span class="accent98-square red"></span>
+                      <span data-i18n="bliss98Accent.red">Red</span>
+                    </button>
+                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="orange">
+                      <span class="accent98-square orange"></span>
+                      <span data-i18n="bliss98Accent.orange">Orange</span>
+                    </button>
+                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="yellow">
+                      <span class="accent98-square yellow"></span>
+                      <span data-i18n="bliss98Accent.yellow">Yellow</span>
                     </button>
                     <button class="accent98-swatch" type="button" data-set-bliss98-accent="graphite">
                       <span class="accent98-square graphite"></span>

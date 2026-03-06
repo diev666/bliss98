@@ -7614,7 +7614,7 @@ function detectDefaultOSForFirstVisit(){
 function loadBlissosAccent(){
   try{
     const raw = localStorage.getItem(BLISSOS_ACCENT_KEY);
-    if(raw && ['multicolor', 'blue', 'purple', 'pink', 'red', 'orange', 'yellow', 'green', 'graphite'].includes(raw)){
+    if(raw && Object.prototype.hasOwnProperty.call(BLISSOS_ACCENT_COLORS, raw)){
       return raw;
     }
     return 'multicolor'; // Default accent
@@ -7658,9 +7658,25 @@ const BLISS98_ACCENT_COLORS = {
     light: { accent:'#5a2b9a', text:'#ffffff' },
     dark: { accent:'#b08cff', text:'#1d1430' },
   },
+  pink: {
+    light: { accent:'#e54de4', text:'#ffffff' },
+    dark: { accent:'#fa80fa', text:'#2a102a' },
+  },
   rose: {
     light: { accent:'#a13268', text:'#ffffff' },
     dark: { accent:'#f08dbc', text:'#2f1020' },
+  },
+  red: {
+    light: { accent:'#e53d3d', text:'#ffffff' },
+    dark: { accent:'#fa6a6a', text:'#2a1010' },
+  },
+  orange: {
+    light: { accent:'#e58a3d', text:'#111111' },
+    dark: { accent:'#faac6a', text:'#2e1b08' },
+  },
+  yellow: {
+    light: { accent:'#e5d13d', text:'#111111' },
+    dark: { accent:'#fae26a', text:'#2d2808' },
   },
   graphite: {
     light: { accent:'#4f545d', text:'#ffffff' },
@@ -7692,6 +7708,16 @@ const BLISSOS_ACCENT_COLORS = {
     '--blissos-accent-weak-dark': 'rgba(79, 155, 250, 0.15)',
     '--blissos-accent-contrast-dark': '#111111',
   },
+  teal: {
+    '--blissos-accent': '#006f6f',
+    '--blissos-accent-2': '#0b8686',
+    '--blissos-accent-weak': 'rgba(0, 111, 111, 0.15)',
+    '--blissos-accent-contrast': '#ffffff',
+    '--blissos-accent-dark': '#4dc7c7',
+    '--blissos-accent-2-dark': '#66d9d9',
+    '--blissos-accent-weak-dark': 'rgba(77, 199, 199, 0.16)',
+    '--blissos-accent-contrast-dark': '#111111',
+  },
   purple: {
     '--blissos-accent': '#9B4AEE',
     '--blissos-accent-2': '#A958FF',
@@ -7712,6 +7738,16 @@ const BLISSOS_ACCENT_COLORS = {
     '--blissos-accent-dark': '#FA80FA',
     '--blissos-accent-2-dark': '#FF90FF',
     '--blissos-accent-weak-dark': 'rgba(250, 128, 250, 0.15)',
+    '--blissos-accent-contrast-dark': '#111111',
+  },
+  rose: {
+    '--blissos-accent': '#A13268',
+    '--blissos-accent-2': '#B83F7A',
+    '--blissos-accent-weak': 'rgba(161, 50, 104, 0.15)',
+    '--blissos-accent-contrast': '#ffffff',
+    '--blissos-accent-dark': '#F08DBC',
+    '--blissos-accent-2-dark': '#F59EC7',
+    '--blissos-accent-weak-dark': 'rgba(240, 141, 188, 0.16)',
     '--blissos-accent-contrast-dark': '#111111',
   },
   red: {
@@ -11036,8 +11072,10 @@ function installLongPress(el, getTarget){
           'settings.blissosAccent.desc': 'Choose your BlissOS accent color.',
           'blissosAccent.multicolor': 'Multicolor',
           'blissosAccent.blue': 'Blue',
+          'blissosAccent.teal': 'Teal',
           'blissosAccent.purple': 'Purple',
           'blissosAccent.pink': 'Pink',
+          'blissosAccent.rose': 'Rose',
           'blissosAccent.red': 'Red',
           'blissosAccent.orange': 'Orange',
           'blissosAccent.yellow': 'Yellow',
@@ -11049,7 +11087,11 @@ function installLongPress(el, getTarget){
           'bliss98Accent.teal': 'Teal',
           'bliss98Accent.green': 'Green',
           'bliss98Accent.purple': 'Purple',
+          'bliss98Accent.pink': 'Pink',
           'bliss98Accent.rose': 'Rose',
+          'bliss98Accent.red': 'Red',
+          'bliss98Accent.orange': 'Orange',
+          'bliss98Accent.yellow': 'Yellow',
           'bliss98Accent.graphite': 'Graphite',
           'titlebar.defaultBlue': 'Blue',
           'titlebar.pinkLight': 'Pink',
@@ -11645,8 +11687,10 @@ function installLongPress(el, getTarget){
           'settings.blissosAccent.desc': 'Escolha a cor de destaque do seu BlissOS.',
           'blissosAccent.multicolor': 'Multicolor',
           'blissosAccent.blue': 'Azul',
+          'blissosAccent.teal': 'Verde-água',
           'blissosAccent.purple': 'Roxo',
           'blissosAccent.pink': 'Rosa',
+          'blissosAccent.rose': 'Rosa escuro',
           'blissosAccent.red': 'Vermelho',
           'blissosAccent.orange': 'Laranja',
           'blissosAccent.yellow': 'Amarelo',
@@ -11658,7 +11702,11 @@ function installLongPress(el, getTarget){
           'bliss98Accent.teal': 'Verde-água',
           'bliss98Accent.green': 'Verde',
           'bliss98Accent.purple': 'Roxo',
+          'bliss98Accent.pink': 'Rosa',
           'bliss98Accent.rose': 'Rosa',
+          'bliss98Accent.red': 'Vermelho',
+          'bliss98Accent.orange': 'Laranja',
+          'bliss98Accent.yellow': 'Amarelo',
           'bliss98Accent.graphite': 'Grafite',
           'titlebar.defaultBlue': 'Azul',
           'titlebar.pinkLight': 'Rosa',
@@ -14544,6 +14592,10 @@ Eu sou o buffalo branco extinto`
                       <div class="color-circle blue"></div>
                       <span data-i18n="blissosAccent.blue">Blue</span>
                     </div>
+                    <div class="accent-swatch" data-set-blissos-accent="teal">
+                      <div class="color-circle teal"></div>
+                      <span data-i18n="blissosAccent.teal">Teal</span>
+                    </div>
                     <div class="accent-swatch" data-set-blissos-accent="purple">
                       <div class="color-circle purple"></div>
                       <span data-i18n="blissosAccent.purple">Purple</span>
@@ -14551,6 +14603,10 @@ Eu sou o buffalo branco extinto`
                     <div class="accent-swatch" data-set-blissos-accent="pink">
                       <div class="color-circle pink"></div>
                       <span data-i18n="blissosAccent.pink">Pink</span>
+                    </div>
+                    <div class="accent-swatch" data-set-blissos-accent="rose">
+                      <div class="color-circle rose"></div>
+                      <span data-i18n="blissosAccent.rose">Rose</span>
                     </div>
                     <div class="accent-swatch" data-set-blissos-accent="red">
                       <div class="color-circle red"></div>
@@ -14725,9 +14781,25 @@ Eu sou o buffalo branco extinto`
                       <span class="accent98-square purple"></span>
                       <span data-i18n="bliss98Accent.purple">Purple</span>
                     </button>
+                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="pink">
+                      <span class="accent98-square pink"></span>
+                      <span data-i18n="bliss98Accent.pink">Pink</span>
+                    </button>
                     <button class="accent98-swatch" type="button" data-set-bliss98-accent="rose">
                       <span class="accent98-square rose"></span>
                       <span data-i18n="bliss98Accent.rose">Rose</span>
+                    </button>
+                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="red">
+                      <span class="accent98-square red"></span>
+                      <span data-i18n="bliss98Accent.red">Red</span>
+                    </button>
+                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="orange">
+                      <span class="accent98-square orange"></span>
+                      <span data-i18n="bliss98Accent.orange">Orange</span>
+                    </button>
+                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="yellow">
+                      <span class="accent98-square yellow"></span>
+                      <span data-i18n="bliss98Accent.yellow">Yellow</span>
                     </button>
                     <button class="accent98-swatch" type="button" data-set-bliss98-accent="graphite">
                       <span class="accent98-square graphite"></span>

@@ -6231,7 +6231,7 @@ function detectDefaultOSForFirstVisit(){
 function loadBlissosAccent(){
   try{
     const raw = localStorage.getItem(BLISSOS_ACCENT_KEY);
-    if(raw && ['multicolor', 'blue', 'purple', 'pink', 'red', 'orange', 'yellow', 'green', 'graphite'].includes(raw)){
+    if(raw && Object.prototype.hasOwnProperty.call(BLISSOS_ACCENT_COLORS, raw)){
       return raw;
     }
     return 'multicolor'; // Default accent
@@ -6275,9 +6275,25 @@ const BLISS98_ACCENT_COLORS = {
     light: { accent:'#5a2b9a', text:'#ffffff' },
     dark: { accent:'#b08cff', text:'#1d1430' },
   },
+  pink: {
+    light: { accent:'#e54de4', text:'#ffffff' },
+    dark: { accent:'#fa80fa', text:'#2a102a' },
+  },
   rose: {
     light: { accent:'#a13268', text:'#ffffff' },
     dark: { accent:'#f08dbc', text:'#2f1020' },
+  },
+  red: {
+    light: { accent:'#e53d3d', text:'#ffffff' },
+    dark: { accent:'#fa6a6a', text:'#2a1010' },
+  },
+  orange: {
+    light: { accent:'#e58a3d', text:'#111111' },
+    dark: { accent:'#faac6a', text:'#2e1b08' },
+  },
+  yellow: {
+    light: { accent:'#e5d13d', text:'#111111' },
+    dark: { accent:'#fae26a', text:'#2d2808' },
   },
   graphite: {
     light: { accent:'#4f545d', text:'#ffffff' },
@@ -6309,6 +6325,16 @@ const BLISSOS_ACCENT_COLORS = {
     '--blissos-accent-weak-dark': 'rgba(79, 155, 250, 0.15)',
     '--blissos-accent-contrast-dark': '#111111',
   },
+  teal: {
+    '--blissos-accent': '#006f6f',
+    '--blissos-accent-2': '#0b8686',
+    '--blissos-accent-weak': 'rgba(0, 111, 111, 0.15)',
+    '--blissos-accent-contrast': '#ffffff',
+    '--blissos-accent-dark': '#4dc7c7',
+    '--blissos-accent-2-dark': '#66d9d9',
+    '--blissos-accent-weak-dark': 'rgba(77, 199, 199, 0.16)',
+    '--blissos-accent-contrast-dark': '#111111',
+  },
   purple: {
     '--blissos-accent': '#9B4AEE',
     '--blissos-accent-2': '#A958FF',
@@ -6329,6 +6355,16 @@ const BLISSOS_ACCENT_COLORS = {
     '--blissos-accent-dark': '#FA80FA',
     '--blissos-accent-2-dark': '#FF90FF',
     '--blissos-accent-weak-dark': 'rgba(250, 128, 250, 0.15)',
+    '--blissos-accent-contrast-dark': '#111111',
+  },
+  rose: {
+    '--blissos-accent': '#A13268',
+    '--blissos-accent-2': '#B83F7A',
+    '--blissos-accent-weak': 'rgba(161, 50, 104, 0.15)',
+    '--blissos-accent-contrast': '#ffffff',
+    '--blissos-accent-dark': '#F08DBC',
+    '--blissos-accent-2-dark': '#F59EC7',
+    '--blissos-accent-weak-dark': 'rgba(240, 141, 188, 0.16)',
     '--blissos-accent-contrast-dark': '#111111',
   },
   red: {
