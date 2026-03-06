@@ -6531,6 +6531,8 @@ function applyOsTheme(){
 function setOsTheme(theme){
   const wasRightAligned = shouldAlignDesktopIconsRight();
   const nextTheme = normalizeOsThemeChoice(theme);
+  const settingsWinOpen = !!document.getElementById('win_settings');
+  const currentSettingsTab = settingsWinOpen ? (state.settings.tab || '') : '';
   syncOsProfile();
   applyOsProfile(nextTheme);
   saveOsTheme();
@@ -6540,7 +6542,10 @@ function setOsTheme(theme){
   if(wasRightAligned !== isRightAligned){
     arrangeIcons();
   }
-  if(document.getElementById('win_settings')) renderSettingsWindow();
+  if(settingsWinOpen){
+    state.settings.pendingOpenTab = currentSettingsTab;
+    renderSettingsWindow();
+  }
 }
 
 function loadRetroGlow(){
