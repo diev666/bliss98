@@ -8992,7 +8992,7 @@ function updateTxtShellResponsive(shell){
   const globalUiScale = 0.874;
   const toolbarBudget = Math.max(140, width - toolbarChrome);
   const rawScale = (toolbarBudget / toolbarAtFullScale) * 0.99;
-  const scale = clamp(rawScale * globalUiScale, 0.49, globalUiScale);
+  const scale = clamp(rawScale * globalUiScale, 0.52, globalUiScale);
   shell.style.setProperty('--txt-toolbar-scale', String(Number(scale.toFixed(3))));
 }
 
@@ -9354,8 +9354,8 @@ function openTxtFileWindow(txtId, opts = {}){
   }
 
   const area = $('#desktopArea').getBoundingClientRect();
-  const desiredWidth = clamp(Math.round(area.width * (state.isMobile ? 0.86 : 0.54)), 320, 760);
-  const desiredHeight = clamp(Math.round(area.height * (state.isMobile ? 0.78 : 0.56)), 260, 620);
+  const desiredWidth = clamp(Math.round(area.width * (state.isMobile ? 0.86 : 0.48)), 320, 680);
+  const desiredHeight = clamp(Math.round(area.height * (state.isMobile ? 0.78 : 0.52)), 250, 560);
   const rect = normalizeWindowRect({
     left: Math.round((area.width - desiredWidth) / 2),
     top: Math.round((area.height - desiredHeight) / (state.isMobile ? 2.6 : 2.2)),
@@ -18719,8 +18719,8 @@ function toggleFitWindow(appId) {
         if(wstate.kind === 'txt'){
           const txtContent = el.querySelector('.content');
           if(txtContent){
-            txtContent.dataset.fitMinW = state.isMobile ? '320' : '620';
-            txtContent.dataset.fitMinH = state.isMobile ? '240' : '420';
+            txtContent.dataset.fitMinW = state.isMobile ? '320' : '580';
+            txtContent.dataset.fitMinH = state.isMobile ? '240' : '390';
             txtContent.dataset.fitKey = `txt-${state.isMobile ? 'mobile' : 'desktop'}`;
           }
         }
@@ -18982,7 +18982,7 @@ function toggleFitWindow(appId) {
 
           const winState = state.windows.get(appId);
           const isTxtWindow = !!winState && winState.kind === 'txt';
-          const MIN_W = state.isMobile ? 240 : (isTxtWindow ? 460 : 280);
+          const MIN_W = state.isMobile ? 240 : (isTxtWindow ? 540 : 280);
           const MIN_H = state.isMobile ? 180 : (isTxtWindow ? 220 : 200);
           const areaW = Math.max(0, area.width);
           const areaH = Math.max(0, area.height);
