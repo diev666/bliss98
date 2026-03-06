@@ -3821,35 +3821,42 @@
       }
       .wallpaper-slider-shell{
         display:grid;
-        grid-template-columns:auto 1fr auto;
-        gap:8px;
+        grid-template-columns:34px minmax(0, 1fr) 34px;
+        gap:10px;
         align-items:stretch;
         min-width:0;
       }
       .wallpaper-nav{
-        width:28px;
-        min-width:28px;
-        height:auto;
+        width:34px;
+        min-width:34px;
         padding:0;
         justify-content:center;
         font-weight:700;
+        line-height:1;
+        border-radius:9px;
+        font-size:13px;
       }
       .wallpaper-strip-viewport{
         width:100%;
         min-width:0;
-        padding:8px;
-        background:var(--panel-in);
+        padding:10px;
+        border:1px solid var(--panel-border);
+        border-radius:12px;
+        background:linear-gradient(180deg, color-mix(in srgb, var(--panel-in) 88%, #fff 12%) 0%, color-mix(in srgb, var(--panel-bg) 92%, #fff 8%) 100%);
+        box-shadow:
+          inset 0 1px 0 color-mix(in srgb, var(--shadow-white) 78%, transparent),
+          inset 0 -1px 0 color-mix(in srgb, var(--shadow-dark) 54%, transparent);
       }
       .wallpaper-strip{
         display:flex;
         width:100%;
         min-width:0;
-        gap:10px;
+        gap:12px;
         overflow-x:auto;
         overflow-y:hidden;
         scroll-snap-type:x mandatory;
         -webkit-overflow-scrolling:touch;
-        padding-bottom:4px;
+        padding:1px 2px 6px;
       }
       .wallpaper-strip::-webkit-scrollbar{
         height:8px;
@@ -3858,7 +3865,7 @@
         background:var(--sep);
       }
       .wallpaper-card{
-        flex:0 0 min(220px, 52vw);
+        flex:0 0 min(196px, 46vw);
         height:auto;
         min-height:0;
         margin:0;
@@ -3866,14 +3873,34 @@
         display:flex;
         flex-direction:column;
         align-items:stretch;
-        gap:8px;
+        gap:7px;
         text-align:left;
         scroll-snap-align:start;
+        border:1px solid color-mix(in srgb, var(--panel-border) 84%, transparent);
+        border-radius:12px;
+        background:linear-gradient(180deg, color-mix(in srgb, var(--panel-bg) 90%, #fff 10%) 0%, color-mix(in srgb, var(--panel-bg) 95%, #000 5%) 100%);
+        box-shadow:
+          inset 0 1px 0 color-mix(in srgb, var(--shadow-white) 78%, transparent),
+          inset 0 -1px 0 color-mix(in srgb, var(--shadow-dark) 42%, transparent);
+        transition:
+          transform .14s cubic-bezier(.22,.74,.21,1.03),
+          box-shadow .14s cubic-bezier(.22,.74,.21,1.03),
+          border-color .14s cubic-bezier(.22,.74,.21,1.03),
+          background .14s cubic-bezier(.22,.74,.21,1.03);
+      }
+      .wallpaper-card:hover{
+        transform:translateY(-1px);
+        border-color:color-mix(in srgb, var(--selection-border) 72%, var(--panel-border) 28%);
+        box-shadow:
+          inset 0 1px 0 color-mix(in srgb, var(--shadow-white) 82%, transparent),
+          inset 0 -1px 0 color-mix(in srgb, var(--shadow-dark) 46%, transparent),
+          0 4px 10px rgba(0,0,0,0.14);
       }
       .wallpaper-card-thumb{
         width:100%;
-        aspect-ratio:1/1;
+        aspect-ratio:16/10;
         border:1px solid var(--panel-border);
+        border-radius:7px;
         box-shadow: inset 1px 1px var(--shadow-white), inset -1px -1px var(--shadow-dark);
         background-size:cover;
         background-position:center;
@@ -3884,15 +3911,104 @@
         text-overflow:ellipsis;
         white-space:nowrap;
         font-size:11px;
+        font-weight:700;
+        letter-spacing:0.01em;
       }
       .wallpaper-card.pressed{
-        outline:1px dotted var(--selection-border);
+        transform:translateY(-1px);
+        border-color:var(--selection-border);
         background:var(--selection-bg);
+        box-shadow:
+          inset 0 1px 0 color-mix(in srgb, var(--shadow-white) 88%, transparent),
+          inset 0 -1px 0 color-mix(in srgb, var(--shadow-dark) 50%, transparent),
+          0 0 0 1px color-mix(in srgb, var(--selection-border) 46%, transparent);
       }
-      @media (max-width: 520px){
-        .wallpaper-card{
-          flex-basis:min(180px, 64vw);
-        }
+
+      /* Wallpaper UI styles by OS */
+      body[data-theme="bliss98"] #win_settings .wallpaper-strip-viewport{
+        border-radius:0;
+        background:var(--panel-in);
+      }
+      body[data-theme="bliss98"] #win_settings .wallpaper-nav{
+        border-radius:0;
+      }
+      body[data-theme="bliss98"] #win_settings .wallpaper-card{
+        border-radius:0;
+        background:var(--panel-bg);
+      }
+      body[data-theme="bliss98"] #win_settings .wallpaper-card-thumb{
+        border-radius:0;
+      }
+      body[data-theme="bliss98"] #win_settings .wallpaper-card.pressed{
+        transform:none;
+        outline:1px dotted var(--selection-border);
+      }
+
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_settings .wallpaper-strip-viewport{
+        border-color:var(--blissos-border);
+        border-radius:10px;
+        background:linear-gradient(180deg, var(--blissos-surface-3) 0%, var(--blissos-surface) 100%);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_settings .wallpaper-nav{
+        border-color:var(--blissos-border) !important;
+        border-radius:7px;
+        background:linear-gradient(180deg, var(--blissos-surface-3) 0%, var(--blissos-surface-2) 100%) !important;
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_settings .wallpaper-card{
+        border-color:var(--blissos-border);
+        border-radius:10px;
+        background:linear-gradient(180deg, var(--blissos-surface-3) 0%, var(--blissos-surface) 100%);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_settings .wallpaper-card-thumb{
+        border-color:var(--blissos-border);
+      }
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"]) #win_settings .wallpaper-card.pressed{
+        border-color:var(--blissos-highlight);
+        background:color-mix(in srgb, var(--blissos-highlight) 16%, var(--blissos-surface) 84%);
+      }
+
+      body[data-theme="blissos"][data-blissos-style="aqua"] #win_settings .wallpaper-strip-viewport{
+        border-color:#a6b6cb;
+        border-radius:16px;
+        background:
+          linear-gradient(180deg, rgba(248,251,255,0.94) 0%, rgba(229,237,248,0.9) 100%),
+          linear-gradient(90deg, rgba(255,255,255,0.2), rgba(255,255,255,0));
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.86),
+          inset 0 -1px 0 rgba(128,148,175,0.35),
+          0 6px 16px rgba(18,40,72,0.12);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] #win_settings .wallpaper-nav{
+        border-radius:999px;
+        border-color:#96abca !important;
+        background:linear-gradient(180deg, rgba(248,252,255,0.98) 0%, rgba(188,220,248,0.9) 50%, rgba(137,183,232,0.94) 100%) !important;
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.9),
+          inset 0 -1px 0 rgba(76,121,175,0.34);
+        color:#2b4f7b !important;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] #win_settings .wallpaper-card{
+        border-color:#9eb1ca;
+        border-radius:18px;
+        background:
+          linear-gradient(180deg, rgba(246,251,255,0.9) 0%, rgba(216,228,244,0.88) 52%, rgba(198,214,236,0.9) 100%),
+          linear-gradient(90deg, rgba(255,255,255,0.22), rgba(255,255,255,0));
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.88),
+          inset 0 -1px 0 rgba(124,148,180,0.32),
+          0 4px 12px rgba(24,52,90,0.14);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] #win_settings .wallpaper-card-thumb{
+        border-color:#9db0ca;
+        border-radius:11px;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] #win_settings .wallpaper-card-label{
+        color:#223a57;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] #win_settings .wallpaper-card.pressed{
+        border-color:#5d95cf;
+        background:linear-gradient(180deg, rgba(191,223,252,0.96) 0%, rgba(154,197,240,0.96) 100%);
+      }
       }
 
       .taskbar{
@@ -9613,6 +9729,39 @@
           height:28px !important;
         }
 
+        /* Wallpaper picker compact on mobile (all OS) */
+        #win_settings .wallpaper-slider-shell{
+          grid-template-columns:22px minmax(0, 1fr) 22px !important;
+          gap:5px !important;
+        }
+        #win_settings .wallpaper-nav{
+          width:22px !important;
+          min-width:22px !important;
+          font-size:10px !important;
+          border-radius:6px !important;
+        }
+        #win_settings .wallpaper-strip-viewport{
+          padding:5px !important;
+          border-radius:8px !important;
+        }
+        #win_settings .wallpaper-strip{
+          gap:6px !important;
+          padding:1px 1px 4px !important;
+        }
+        #win_settings .wallpaper-card{
+          flex-basis:min(128px, 52vw) !important;
+          padding:5px !important;
+          gap:4px !important;
+          border-radius:8px !important;
+        }
+        #win_settings .wallpaper-card-thumb{
+          aspect-ratio:16/9 !important;
+          border-radius:5px !important;
+        }
+        #win_settings .wallpaper-card-label{
+          font-size:9px !important;
+        }
+
         /* Bliss98 taskbar compact + sem fixados no mobile */
         body[data-theme="bliss98"] .desktop-area{
           inset:0 0 22px 0 !important;
@@ -9782,7 +9931,7 @@
           <!-- Build version: bump by +0.01 on every visual/code update -->
           <div class="tiny login-meta">
             <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-            <span class="login-version" id="loginVersion">Version: 1.08</span>
+            <span class="login-version" id="loginVersion">Version: 1.09</span>
           </div>
         </div>
       </div>
@@ -9869,6 +10018,6 @@
       </div>
     </div>
 
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260305-desktop-aqua-dock-pass-10"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260305-wallpaper-ui-pass-11"></script>
   </body>
 </html>
