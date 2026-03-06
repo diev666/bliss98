@@ -14765,43 +14765,43 @@ Eu sou o buffalo branco extinto`
                   <strong data-i18n="settings.bliss98Accent.title">Accent Color</strong>
                   <p style="margin:6px 0 10px 0;" data-i18n="settings.bliss98Accent.desc">Choose the highlight color for menus and selections.</p>
                   <div class="settings-accent98-grid">
-                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="classic">
+                    <button class="btn bevel accent98-swatch" type="button" data-set-bliss98-accent="classic">
                       <span class="accent98-square classic"></span>
                       <span data-i18n="bliss98Accent.classic">Classic Blue</span>
                     </button>
-                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="teal">
+                    <button class="btn bevel accent98-swatch" type="button" data-set-bliss98-accent="teal">
                       <span class="accent98-square teal"></span>
                       <span data-i18n="bliss98Accent.teal">Teal</span>
                     </button>
-                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="green">
+                    <button class="btn bevel accent98-swatch" type="button" data-set-bliss98-accent="green">
                       <span class="accent98-square green"></span>
                       <span data-i18n="bliss98Accent.green">Green</span>
                     </button>
-                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="purple">
+                    <button class="btn bevel accent98-swatch" type="button" data-set-bliss98-accent="purple">
                       <span class="accent98-square purple"></span>
                       <span data-i18n="bliss98Accent.purple">Purple</span>
                     </button>
-                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="pink">
+                    <button class="btn bevel accent98-swatch" type="button" data-set-bliss98-accent="pink">
                       <span class="accent98-square pink"></span>
                       <span data-i18n="bliss98Accent.pink">Pink</span>
                     </button>
-                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="rose">
+                    <button class="btn bevel accent98-swatch" type="button" data-set-bliss98-accent="rose">
                       <span class="accent98-square rose"></span>
                       <span data-i18n="bliss98Accent.rose">Rose</span>
                     </button>
-                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="red">
+                    <button class="btn bevel accent98-swatch" type="button" data-set-bliss98-accent="red">
                       <span class="accent98-square red"></span>
                       <span data-i18n="bliss98Accent.red">Red</span>
                     </button>
-                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="orange">
+                    <button class="btn bevel accent98-swatch" type="button" data-set-bliss98-accent="orange">
                       <span class="accent98-square orange"></span>
                       <span data-i18n="bliss98Accent.orange">Orange</span>
                     </button>
-                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="yellow">
+                    <button class="btn bevel accent98-swatch" type="button" data-set-bliss98-accent="yellow">
                       <span class="accent98-square yellow"></span>
                       <span data-i18n="bliss98Accent.yellow">Yellow</span>
                     </button>
-                    <button class="accent98-swatch" type="button" data-set-bliss98-accent="graphite">
+                    <button class="btn bevel accent98-swatch" type="button" data-set-bliss98-accent="graphite">
                       <span class="accent98-square graphite"></span>
                       <span data-i18n="bliss98Accent.graphite">Graphite</span>
                     </button>
