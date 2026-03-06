@@ -8508,6 +8508,22 @@
       body[data-theme="bliss98"] #win_mediaplayer .mp-app-titlebar .title-controls .wctl[data-action="max"]{
         background:var(--task);
       }
+      body[data-theme="bliss98"]:not(.dark) .titlebar .wctl,
+      body[data-theme="bliss98"]:not(.dark) .modal-titlebar .wctl,
+      body[data-theme="bliss98"]:not(.dark) #win_mediaplayer .mp-app-titlebar .title-controls .wctl{
+        color:#111111 !important;
+      }
+      body.dark[data-theme="bliss98"] .titlebar .wctl,
+      body.dark[data-theme="bliss98"] .modal-titlebar .wctl,
+      body.dark[data-theme="bliss98"] #win_mediaplayer .mp-app-titlebar .title-controls .wctl{
+        color:#f3f6ff !important;
+      }
+      body[data-theme="bliss98"].titlebar-blank:not(.dark) .titlebar,
+      body[data-theme="bliss98"].titlebar-blank:not(.dark) .modal-titlebar,
+      body[data-theme="bliss98"].titlebar-blank:not(.dark) #win_mediaplayer .mp-app-titlebar{
+        color:#111111 !important;
+        text-shadow:none !important;
+      }
       body[data-theme="bliss98"] #win_mediaplayer .mp-mini{
         border:1px solid var(--panel-border);
         border-radius:0;
@@ -10019,7 +10035,7 @@
           <!-- Build version: bump by +0.01 on every visual/code update -->
           <div class="tiny login-meta">
             <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-            <span class="login-version" id="loginVersion">Version: 1.15</span>
+            <span class="login-version" id="loginVersion">Version: 1.16</span>
           </div>
         </div>
       </div>
@@ -10106,6 +10122,6 @@
       </div>
     </div>
 
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260305-win98-ui-refresh-pass-17"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260305-bliss98-title-controls-pass-18"></script>
   </body>
 </html>
