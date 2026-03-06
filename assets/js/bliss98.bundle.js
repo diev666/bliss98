@@ -8989,8 +8989,10 @@ function updateTxtShellResponsive(shell){
   const width = Math.max(260, Math.round(shell.clientWidth || 0));
   const toolbarChrome = 20;
   const toolbarAtFullScale = 974;
+  const globalUiScale = 0.874;
   const toolbarBudget = Math.max(140, width - toolbarChrome);
-  const scale = clamp((toolbarBudget / toolbarAtFullScale) * 0.99, 0.56, 1);
+  const rawScale = (toolbarBudget / toolbarAtFullScale) * 0.99;
+  const scale = clamp(rawScale * globalUiScale, 0.49, globalUiScale);
   shell.style.setProperty('--txt-toolbar-scale', String(Number(scale.toFixed(3))));
 }
 
@@ -9352,8 +9354,8 @@ function openTxtFileWindow(txtId, opts = {}){
   }
 
   const area = $('#desktopArea').getBoundingClientRect();
-  const desiredWidth = clamp(Math.round(area.width * (state.isMobile ? 0.94 : 0.82)), 320, 1120);
-  const desiredHeight = clamp(Math.round(area.height * (state.isMobile ? 0.84 : 0.82)), 280, 900);
+  const desiredWidth = clamp(Math.round(area.width * (state.isMobile ? 0.86 : 0.54)), 320, 760);
+  const desiredHeight = clamp(Math.round(area.height * (state.isMobile ? 0.78 : 0.56)), 260, 620);
   const rect = normalizeWindowRect({
     left: Math.round((area.width - desiredWidth) / 2),
     top: Math.round((area.height - desiredHeight) / (state.isMobile ? 2.6 : 2.2)),
@@ -18717,8 +18719,8 @@ function toggleFitWindow(appId) {
         if(wstate.kind === 'txt'){
           const txtContent = el.querySelector('.content');
           if(txtContent){
-            txtContent.dataset.fitMinW = state.isMobile ? '320' : '860';
-            txtContent.dataset.fitMinH = state.isMobile ? '260' : '620';
+            txtContent.dataset.fitMinW = state.isMobile ? '320' : '620';
+            txtContent.dataset.fitMinH = state.isMobile ? '240' : '420';
             txtContent.dataset.fitKey = `txt-${state.isMobile ? 'mobile' : 'desktop'}`;
           }
         }
@@ -18799,14 +18801,19 @@ function toggleFitWindow(appId) {
         $('#windows').appendChild(el);
         applyI18nTo(el);
         applyWindowState(el, appId);
+        if(wstate.kind === 'txt'){
+          const txtShell = el.querySelector('[data-txt-shell="1"]');
+          if(txtShell) updateTxtShellResponsive(txtShell);
+        }
         
         // Auto-fit after content + i18n and keep correcting only when overflow appears.
         const skipOpenAutoFit = appId === 'dope-skate' && typeof isMobileGameMode === 'function' && isMobileGameMode();
+        const preferOverflowOnlyOpenFit = wstate.kind === 'txt';
         if(!skipOpenAutoFit){
           installAutoFitObserver(el, appId);
         }
         let fitPromise = Promise.resolve(getWindowRectFromState(wstate));
-        if(!wstate.savedRect && !skipOpenAutoFit){
+        if(!wstate.savedRect && !skipOpenAutoFit && !preferOverflowOnlyOpenFit){
           fitPromise = smartFitWindow(el, 'open');
         } else {
           // Saved rects can become stale after UI changes (new bars/buttons/text scale).
@@ -18975,8 +18982,8 @@ function toggleFitWindow(appId) {
 
           const winState = state.windows.get(appId);
           const isTxtWindow = !!winState && winState.kind === 'txt';
-          const MIN_W = state.isMobile ? 240 : (isTxtWindow ? 580 : 280);
-          const MIN_H = state.isMobile ? 180 : (isTxtWindow ? 230 : 200);
+          const MIN_W = state.isMobile ? 240 : (isTxtWindow ? 460 : 280);
+          const MIN_H = state.isMobile ? 180 : (isTxtWindow ? 220 : 200);
           const areaW = Math.max(0, area.width);
           const areaH = Math.max(0, area.height);
           const startLRel = startL - area.left;
