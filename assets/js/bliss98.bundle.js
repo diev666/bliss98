@@ -8884,6 +8884,305 @@ function refreshOpenTxtWindows(txtId){
   });
 }
 
+const TXT_SPACING_MAP = {
+  tight: 1.22,
+  normal: 1.42,
+  relaxed: 1.64,
+  loose: 1.88,
+};
+
+const TXT_DEFAULT_PREFS = Object.freeze({
+  spacing: 'normal',
+  left: 24,
+  right: 24,
+  indent: 0,
+});
+
+function cloneTxtPrefs(prefs = TXT_DEFAULT_PREFS){
+  return {
+    spacing: prefs.spacing,
+    left: prefs.left,
+    right: prefs.right,
+    indent: prefs.indent,
+  };
+}
+
+function normalizeTxtPrefs(raw){
+  const prefs = cloneTxtPrefs();
+  if(!raw || typeof raw !== 'object') return prefs;
+  if(typeof raw.spacing === 'string' && TXT_SPACING_MAP[raw.spacing]){
+    prefs.spacing = raw.spacing;
+  }
+  if(Number.isFinite(raw.left)) prefs.left = Math.round(raw.left);
+  if(Number.isFinite(raw.right)) prefs.right = Math.round(raw.right);
+  if(Number.isFinite(raw.indent)) prefs.indent = Math.round(raw.indent);
+  return prefs;
+}
+
+function getTxtSpacingValue(spacing){
+  return TXT_SPACING_MAP[spacing] || TXT_SPACING_MAP.normal;
+}
+
+function escapeTxtHtml(value){
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function plainTextToTxtHtml(value){
+  const raw = typeof value === 'string' ? value.replace(/\r\n?/g, '\n') : '';
+  if(!raw.trim()) return '<p><br></p>';
+  return raw
+    .split('\n')
+    .map(line => `<p>${line ? escapeTxtHtml(line) : '<br>'}</p>`)
+    .join('');
+}
+
+function looksLikeHtml(value){
+  return typeof value === 'string' && /<\/?[a-z][\s\S]*>/i.test(value);
+}
+
+function sanitizeTxtHtml(value){
+  const host = document.createElement('div');
+  host.innerHTML = typeof value === 'string' ? value : '';
+  host.querySelectorAll('script,style,iframe,object,embed').forEach(node => node.remove());
+  const showElements = window.NodeFilter ? window.NodeFilter.SHOW_ELEMENT : 1;
+  const walker = document.createTreeWalker(host, showElements);
+  let node = walker.currentNode;
+  while(node){
+    const attrs = Array.from(node.attributes || []);
+    attrs.forEach(attr => {
+      if(/^on/i.test(attr.name)) node.removeAttribute(attr.name);
+    });
+    node = walker.nextNode();
+  }
+  if(!host.innerHTML.trim()) return '<p><br></p>';
+  if(!host.querySelector('p,div,h1,h2,h3,h4,h5,h6,blockquote,ul,ol,li,pre')){
+    const inline = host.innerHTML.trim();
+    return inline ? `<p>${inline}</p>` : '<p><br></p>';
+  }
+  return host.innerHTML;
+}
+
+function getTxtDocumentHtml(item){
+  if(!item || item.type !== 'txt') return '<p><br></p>';
+  const raw = typeof item.content === 'string' ? item.content : '';
+  if(item.contentFormat === 'html' || looksLikeHtml(raw)){
+    return sanitizeTxtHtml(raw);
+  }
+  return plainTextToTxtHtml(raw);
+}
+
+function serializeTxtEditorHtml(editor){
+  if(!editor) return '<p><br></p>';
+  return sanitizeTxtHtml(editor.innerHTML);
+}
+
+function getTxtEditorFromShell(shell){
+  return shell ? shell.querySelector('[data-txt-editor="1"]') : null;
+}
+
+function applyTxtPrefsToShell(shell, rawPrefs){
+  const editor = getTxtEditorFromShell(shell);
+  const rail = shell ? shell.querySelector('[data-txt-ruler-rail="1"]') : null;
+  const leftMarker = shell ? shell.querySelector('[data-txt-ruler-marker="left"]') : null;
+  const indentMarker = shell ? shell.querySelector('[data-txt-ruler-marker="indent"]') : null;
+  const rightMarker = shell ? shell.querySelector('[data-txt-ruler-marker="right"]') : null;
+  if(!editor || !rail) return normalizeTxtPrefs(rawPrefs);
+
+  const prefs = normalizeTxtPrefs(rawPrefs);
+  const width = Math.max(260, Math.round(rail.clientWidth || editor.clientWidth || 320));
+  const minMargin = 10;
+  const minBody = 96;
+  prefs.left = clamp(prefs.left, minMargin, Math.max(minMargin, width - minBody - minMargin));
+  prefs.right = clamp(prefs.right, minMargin, Math.max(minMargin, width - prefs.left - minBody));
+  const maxIndent = Math.max(-24, width - prefs.left - prefs.right - 30);
+  prefs.indent = clamp(prefs.indent, -24, maxIndent);
+
+  editor.style.paddingLeft = `${prefs.left}px`;
+  editor.style.paddingRight = `${prefs.right}px`;
+  editor.style.textIndent = `${prefs.indent}px`;
+  editor.style.lineHeight = String(getTxtSpacingValue(prefs.spacing));
+
+  const leftPos = prefs.left;
+  const rightPos = width - prefs.right;
+  const indentPos = clamp(prefs.left + prefs.indent, 5, rightPos - 8);
+  if(leftMarker) leftMarker.style.left = `${leftPos}px`;
+  if(indentMarker) indentMarker.style.left = `${indentPos}px`;
+  if(rightMarker) rightMarker.style.left = `${rightPos}px`;
+  return prefs;
+}
+
+function isTxtSelectionInside(editor){
+  const sel = window.getSelection ? window.getSelection() : null;
+  if(!sel || sel.rangeCount === 0) return false;
+  const anchor = sel.anchorNode;
+  return !!anchor && editor.contains(anchor);
+}
+
+function updateTxtCommandButtonState(shell){
+  const editor = getTxtEditorFromShell(shell);
+  if(!editor) return;
+  const inEditor = document.activeElement === editor || isTxtSelectionInside(editor);
+  const buttons = shell.querySelectorAll('[data-txt-command]');
+  buttons.forEach(btn => {
+    const query = btn.dataset.txtQuery || btn.dataset.txtCommand;
+    let active = false;
+    if(inEditor){
+      try{
+        active = !!document.queryCommandState(query);
+      } catch {
+        active = false;
+      }
+    }
+    btn.classList.toggle('active', active);
+    btn.dataset.active = active ? '1' : '0';
+  });
+  if(inEditor){
+    const leftBtn = shell.querySelector('[data-txt-command="justifyLeft"]');
+    const centerBtn = shell.querySelector('[data-txt-command="justifyCenter"]');
+    const rightBtn = shell.querySelector('[data-txt-command="justifyRight"]');
+    const justifyBtn = shell.querySelector('[data-txt-command="justifyFull"]');
+    const hasOtherAlign = [centerBtn, rightBtn, justifyBtn].some(btn => btn && btn.dataset.active === '1');
+    if(leftBtn && !hasOtherAlign){
+      leftBtn.classList.add('active');
+      leftBtn.dataset.active = '1';
+    }
+  }
+}
+
+function ensureTxtEditorFocus(editor){
+  if(!editor) return;
+  try{
+    editor.focus({ preventScroll: true });
+  } catch {
+    editor.focus();
+  }
+}
+
+function runTxtEditorCommand(winId, shell, command){
+  const editor = getTxtEditorFromShell(shell);
+  const wstate = state.windows.get(winId);
+  if(!editor || !wstate || wstate.kind !== 'txt') return;
+  ensureTxtEditorFocus(editor);
+  let changed = false;
+  try{
+    document.execCommand('styleWithCSS', false, false);
+  } catch {}
+  try{
+    changed = !!document.execCommand(command, false, null);
+  } catch {
+    changed = false;
+  }
+  if(changed || command.startsWith('justify')){
+    wstate.txtDirty = true;
+    scheduleTxtAutosave(winId, serializeTxtEditorHtml(editor));
+  }
+  updateTxtCommandButtonState(shell);
+}
+
+function handleTxtControlChange(winId, shell, control, value){
+  const editor = getTxtEditorFromShell(shell);
+  const wstate = state.windows.get(winId);
+  if(!editor || !wstate || wstate.kind !== 'txt' || !control || !value) return;
+
+  if(control === 'style'){
+    const blockMap = {
+      paragraph: 'P',
+      heading: 'H1',
+      subheading: 'H2',
+      quote: 'BLOCKQUOTE',
+    };
+    ensureTxtEditorFocus(editor);
+    try{
+      document.execCommand('formatBlock', false, blockMap[value] || 'P');
+    } catch {}
+    wstate.txtDirty = true;
+    scheduleTxtAutosave(winId, serializeTxtEditorHtml(editor));
+    updateTxtCommandButtonState(shell);
+    return;
+  }
+
+  if(control === 'list'){
+    ensureTxtEditorFocus(editor);
+    if(value === 'bullets'){
+      try{ document.execCommand('insertUnorderedList', false, null); } catch {}
+    } else if(value === 'numbers'){
+      try{ document.execCommand('insertOrderedList', false, null); } catch {}
+    } else if(value === 'none'){
+      try{
+        if(document.queryCommandState('insertUnorderedList')){
+          document.execCommand('insertUnorderedList', false, null);
+        }
+      } catch {}
+      try{
+        if(document.queryCommandState('insertOrderedList')){
+          document.execCommand('insertOrderedList', false, null);
+        }
+      } catch {}
+    }
+    wstate.txtDirty = true;
+    scheduleTxtAutosave(winId, serializeTxtEditorHtml(editor));
+    updateTxtCommandButtonState(shell);
+    return;
+  }
+
+  if(control === 'spacing' && TXT_SPACING_MAP[value]){
+    wstate.txtPrefs = applyTxtPrefsToShell(shell, { ...(wstate.txtPrefs || TXT_DEFAULT_PREFS), spacing: value });
+    wstate.txtDirty = true;
+    scheduleTxtAutosave(winId, serializeTxtEditorHtml(editor));
+  }
+}
+
+function beginTxtRulerDrag(winId, shell, markerType, startEvent){
+  const editor = getTxtEditorFromShell(shell);
+  const rail = shell ? shell.querySelector('[data-txt-ruler-rail="1"]') : null;
+  const wstate = state.windows.get(winId);
+  if(!editor || !rail || !wstate || wstate.kind !== 'txt') return;
+  startEvent.preventDefault();
+  const pointerId = startEvent.pointerId;
+  const pointerTarget = startEvent.currentTarget;
+  if(pointerTarget && pointerTarget.setPointerCapture){
+    try{ pointerTarget.setPointerCapture(pointerId); } catch {}
+  }
+
+  const onMove = (e)=>{
+    if(e.pointerId !== pointerId) return;
+    const rect = rail.getBoundingClientRect();
+    if(rect.width <= 0) return;
+    const localX = clamp(Math.round(e.clientX - rect.left), 0, Math.round(rect.width));
+    const next = cloneTxtPrefs(wstate.txtPrefs || TXT_DEFAULT_PREFS);
+    if(markerType === 'left'){
+      next.left = localX;
+    } else if(markerType === 'right'){
+      next.right = Math.round(rect.width - localX);
+    } else if(markerType === 'indent'){
+      next.indent = localX - next.left;
+    } else {
+      return;
+    }
+    wstate.txtPrefs = applyTxtPrefsToShell(shell, next);
+    wstate.txtDirty = true;
+    scheduleTxtAutosave(winId, serializeTxtEditorHtml(editor));
+  };
+
+  const stop = (e)=>{
+    if(e.pointerId !== pointerId) return;
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', stop);
+    window.removeEventListener('pointercancel', stop);
+    if(pointerTarget && pointerTarget.releasePointerCapture){
+      try{ pointerTarget.releasePointerCapture(pointerId); } catch {}
+    }
+  };
+
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', stop);
+  window.addEventListener('pointercancel', stop);
+  onMove(startEvent);
+}
+
 function createTxtFile(opts = {}){
   const parentId = opts.parentId || null;
   if(parentId){
@@ -8903,7 +9202,9 @@ function createTxtFile(opts = {}){
     parentId,
     x: placed.x,
     y: placed.y,
-    content: '',
+    content: '<p><br></p>',
+    contentFormat: 'html',
+    txtPrefs: cloneTxtPrefs(),
     iconFile: './assets/icons/txt.png',
     createdAt: Date.now(),
     updatedAt: Date.now(),
@@ -9040,7 +9341,14 @@ function openTxtFileWindow(txtId, opts = {}){
   }
 
   const area = $('#desktopArea').getBoundingClientRect();
-  const rect = normalizeWindowRect(defaultWindowRect(), area, 16);
+  const desiredWidth = clamp(Math.round(area.width * (state.isMobile ? 0.94 : 0.82)), 320, 1120);
+  const desiredHeight = clamp(Math.round(area.height * (state.isMobile ? 0.84 : 0.82)), 280, 900);
+  const rect = normalizeWindowRect({
+    left: Math.round((area.width - desiredWidth) / 2),
+    top: Math.round((area.height - desiredHeight) / (state.isMobile ? 2.6 : 2.2)),
+    width: desiredWidth,
+    height: desiredHeight,
+  }, area, 14);
   const wstate = {
     id: winId,
     title: item.name,
@@ -9069,15 +9377,76 @@ function openTxtFileWindow(txtId, opts = {}){
     kind: 'txt',
     txtId,
     txtDirty: false,
+    txtPrefs: normalizeTxtPrefs(item.txtPrefs),
     txtSaveTimer: null,
+    txtResizeObserver: null,
     contentHTML: () => `
       <div class="txt-shell" data-txt-shell="1">
-        <div class="txt-toolbar">
-          <button class="btn bevel" type="button" data-txt-action="new" data-i18n="menu.txt.new">${t('menu.txt.new')}</button>
-          <button class="btn bevel" type="button" data-txt-action="save" data-i18n="menu.txt.save">${t('menu.txt.save')}</button>
-          <button class="btn bevel" type="button" data-txt-action="duplicate" data-i18n="menu.txt.duplicate">${t('menu.txt.duplicate')}</button>
+        <div class="txt-toolbar" role="toolbar" aria-label="${t('txt.toolbar')}">
+          <label class="txt-select-wrap" title="${t('txt.styles')}">
+            <span class="txt-select-label">${t('txt.styles')}</span>
+            <select class="txt-select" data-txt-control="style" aria-label="${t('txt.styles')}">
+              <option value="">${t('txt.styles')}</option>
+              <option value="paragraph">${t('txt.style.paragraph')}</option>
+              <option value="heading">${t('txt.style.heading')}</option>
+              <option value="subheading">${t('txt.style.subheading')}</option>
+              <option value="quote">${t('txt.style.quote')}</option>
+            </select>
+          </label>
+          <div class="txt-segment" role="group" aria-label="${t('txt.align.group')}">
+            <button class="txt-tool-btn" type="button" data-txt-command="justifyLeft" data-txt-query="justifyLeft" aria-label="${t('txt.align.left')}" title="${t('txt.align.left')}"><span class="txt-glyph txt-glyph-left" aria-hidden="true"></span></button>
+            <button class="txt-tool-btn" type="button" data-txt-command="justifyCenter" data-txt-query="justifyCenter" aria-label="${t('txt.align.center')}" title="${t('txt.align.center')}"><span class="txt-glyph txt-glyph-center" aria-hidden="true"></span></button>
+            <button class="txt-tool-btn" type="button" data-txt-command="justifyRight" data-txt-query="justifyRight" aria-label="${t('txt.align.right')}" title="${t('txt.align.right')}"><span class="txt-glyph txt-glyph-right" aria-hidden="true"></span></button>
+            <button class="txt-tool-btn" type="button" data-txt-command="justifyFull" data-txt-query="justifyFull" aria-label="${t('txt.align.justify')}" title="${t('txt.align.justify')}"><span class="txt-glyph txt-glyph-justify" aria-hidden="true"></span></button>
+          </div>
+          <label class="txt-select-wrap" title="${t('txt.spacing')}">
+            <span class="txt-select-label">${t('txt.spacing')}</span>
+            <select class="txt-select" data-txt-control="spacing" aria-label="${t('txt.spacing')}">
+              <option value="">${t('txt.spacing')}</option>
+              <option value="tight">${t('txt.spacing.tight')}</option>
+              <option value="normal">${t('txt.spacing.normal')}</option>
+              <option value="relaxed">${t('txt.spacing.relaxed')}</option>
+              <option value="loose">${t('txt.spacing.loose')}</option>
+            </select>
+          </label>
+          <label class="txt-select-wrap" title="${t('txt.lists')}">
+            <span class="txt-select-label">${t('txt.lists')}</span>
+            <select class="txt-select" data-txt-control="list" aria-label="${t('txt.lists')}">
+              <option value="">${t('txt.lists')}</option>
+              <option value="none">${t('txt.list.none')}</option>
+              <option value="bullets">${t('txt.list.bullets')}</option>
+              <option value="numbers">${t('txt.list.numbers')}</option>
+            </select>
+          </label>
+          <div class="txt-mini-group" role="group" aria-label="${t('txt.format.group')}">
+            <button class="txt-tool-btn txt-tool-btn-text" type="button" data-txt-command="bold" data-txt-query="bold" title="${t('txt.format.bold')}" aria-label="${t('txt.format.bold')}">B</button>
+            <button class="txt-tool-btn txt-tool-btn-text" type="button" data-txt-command="italic" data-txt-query="italic" title="${t('txt.format.italic')}" aria-label="${t('txt.format.italic')}">I</button>
+            <button class="txt-tool-btn txt-tool-btn-text" type="button" data-txt-command="underline" data-txt-query="underline" title="${t('txt.format.underline')}" aria-label="${t('txt.format.underline')}">U</button>
+          </div>
+          <div class="txt-toolbar-spacer"></div>
+          <div class="txt-mini-group txt-mini-group-file" role="group" aria-label="${t('txt.file.group')}">
+            <button class="txt-tool-btn txt-tool-btn-mini" type="button" data-txt-action="new" title="${t('menu.txt.new')}" aria-label="${t('menu.txt.new')}">N</button>
+            <button class="txt-tool-btn txt-tool-btn-mini" type="button" data-txt-action="duplicate" title="${t('menu.txt.duplicate')}" aria-label="${t('menu.txt.duplicate')}">D</button>
+            <button class="txt-tool-btn txt-tool-btn-mini" type="button" data-txt-action="save" title="${t('menu.txt.save')}" aria-label="${t('menu.txt.save')}">S</button>
+          </div>
         </div>
-        <textarea class="txt-editor bevel-in" data-txt-editor="1" spellcheck="false"></textarea>
+        <div class="txt-ruler" data-txt-ruler="1" aria-label="${t('txt.ruler')}">
+          <div class="txt-ruler-rail" data-txt-ruler-rail="1">
+            <span class="txt-ruler-num" style="left:0%;">0</span>
+            <span class="txt-ruler-num" style="left:16.66%;">1</span>
+            <span class="txt-ruler-num" style="left:33.33%;">2</span>
+            <span class="txt-ruler-num" style="left:50%;">3</span>
+            <span class="txt-ruler-num" style="left:66.66%;">4</span>
+            <span class="txt-ruler-num" style="left:83.33%;">5</span>
+            <span class="txt-ruler-num" style="left:100%;">6</span>
+            <button class="txt-ruler-marker txt-ruler-marker-left" type="button" data-txt-ruler-marker="left" aria-label="${t('txt.ruler.left')}" title="${t('txt.ruler.left')}"></button>
+            <button class="txt-ruler-marker txt-ruler-marker-indent" type="button" data-txt-ruler-marker="indent" aria-label="${t('txt.ruler.indent')}" title="${t('txt.ruler.indent')}"></button>
+            <button class="txt-ruler-marker txt-ruler-marker-right" type="button" data-txt-ruler-marker="right" aria-label="${t('txt.ruler.right')}" title="${t('txt.ruler.right')}"></button>
+          </div>
+        </div>
+        <div class="txt-editor-wrap">
+          <div class="txt-editor" data-txt-editor="1" contenteditable="true" spellcheck="false"></div>
+        </div>
       </div>
     `,
   };
@@ -9096,10 +9465,18 @@ function getRenderableFsChildren(parentId){
   });
 }
 
-function saveTxtFileContent(txtId, content){
+function saveTxtFileContent(txtId, content, txtPrefs = null){
   const item = getFsItem(txtId);
   if(!item || item.type !== 'txt') return false;
-  upsertFsItem({ id: txtId, content }, { save: false, syncIconPos: false });
+  const payload = {
+    id: txtId,
+    content: sanitizeTxtHtml(content),
+    contentFormat: 'html',
+  };
+  if(txtPrefs && typeof txtPrefs === 'object'){
+    payload.txtPrefs = normalizeTxtPrefs(txtPrefs);
+  }
+  upsertFsItem(payload, { save: false, syncIconPos: false });
   saveDesktopFs();
   return true;
 }
@@ -9108,8 +9485,9 @@ function scheduleTxtAutosave(winId, content){
   const wstate = state.windows.get(winId);
   if(!wstate || wstate.kind !== 'txt') return;
   if(wstate.txtSaveTimer) clearTimeout(wstate.txtSaveTimer);
+  const prefs = normalizeTxtPrefs(wstate.txtPrefs);
   wstate.txtSaveTimer = setTimeout(()=>{
-    saveTxtFileContent(wstate.txtId, content);
+    saveTxtFileContent(wstate.txtId, content, prefs);
     wstate.txtDirty = false;
     wstate.txtSaveTimer = null;
   }, 600);
@@ -9122,7 +9500,7 @@ function handleTxtAction(winId, action){
   if(!item) return;
   const winEl = document.getElementById(`win_${winId}`);
   if(!winEl) return;
-  const textarea = winEl.querySelector('[data-txt-editor="1"]');
+  const editor = winEl.querySelector('[data-txt-editor="1"]');
   const parentId = item.parentId || null;
   const containerEl = resolveFolderContainer(parentId, null);
 
@@ -9136,10 +9514,10 @@ function handleTxtAction(winId, action){
     if(dup) openTxtFileWindow(dup.id);
     return;
   }
-  if(action === 'save' && textarea){
+  if(action === 'save' && editor){
     if(wstate.txtSaveTimer) clearTimeout(wstate.txtSaveTimer);
     wstate.txtSaveTimer = null;
-    saveTxtFileContent(item.id, textarea.value);
+    saveTxtFileContent(item.id, serializeTxtEditorHtml(editor), wstate.txtPrefs);
     wstate.txtDirty = false;
   }
 }
@@ -9165,30 +9543,80 @@ function renderTxtFileWindow(winId){
     shell = content.querySelector('[data-txt-shell="1"]');
   }
   if(!shell) return;
-  const textarea = shell.querySelector('[data-txt-editor="1"]');
-  if(!textarea) return;
-  const value = item.content || '';
-  if(textarea.value !== value) textarea.value = value;
+  const editor = getTxtEditorFromShell(shell);
+  if(!editor) return;
+  if(!wstate.txtPrefs) wstate.txtPrefs = normalizeTxtPrefs(item.txtPrefs);
+  wstate.txtPrefs = applyTxtPrefsToShell(shell, wstate.txtPrefs);
+  const value = getTxtDocumentHtml(item);
+  if(!wstate.txtDirty){
+    const current = serializeTxtEditorHtml(editor);
+    if(current !== value){
+      editor.innerHTML = value;
+    }
+  }
 
   if(!shell.dataset.bound){
     shell.addEventListener('click', (e)=>{
       const target = getEventTargetEl(e);
-      const btn = target && target.closest ? target.closest('[data-txt-action]') : null;
-      if(btn && btn.dataset){
+      const actionBtn = target && target.closest ? target.closest('[data-txt-action]') : null;
+      if(actionBtn && actionBtn.dataset){
         e.preventDefault();
         e.stopPropagation();
-        handleTxtAction(winId, btn.dataset.txtAction);
+        handleTxtAction(winId, actionBtn.dataset.txtAction);
+        return;
+      }
+      const cmdBtn = target && target.closest ? target.closest('[data-txt-command]') : null;
+      if(cmdBtn && cmdBtn.dataset && cmdBtn.dataset.txtCommand){
+        e.preventDefault();
+        e.stopPropagation();
+        runTxtEditorCommand(winId, shell, cmdBtn.dataset.txtCommand);
       }
     });
-    textarea.addEventListener('input', ()=>{
-      wstate.txtDirty = true;
-      scheduleTxtAutosave(winId, textarea.value);
+    shell.addEventListener('change', (e)=>{
+      const target = getEventTargetEl(e);
+      if(!target || !target.dataset || !target.dataset.txtControl) return;
+      handleTxtControlChange(winId, shell, target.dataset.txtControl, target.value);
+      target.value = '';
     });
-    textarea.addEventListener('blur', ()=>{
+    shell.addEventListener('pointerdown', (e)=>{
+      const target = getEventTargetEl(e);
+      const marker = target && target.closest ? target.closest('[data-txt-ruler-marker]') : null;
+      if(!marker || !marker.dataset || !marker.dataset.txtRulerMarker) return;
+      beginTxtRulerDrag(winId, shell, marker.dataset.txtRulerMarker, e);
+    });
+    editor.addEventListener('focus', ()=>{
+      try{ document.execCommand('defaultParagraphSeparator', false, 'p'); } catch {}
+      updateTxtCommandButtonState(shell);
+    });
+    editor.addEventListener('input', ()=>{
+      wstate.txtDirty = true;
+      scheduleTxtAutosave(winId, serializeTxtEditorHtml(editor));
+      updateTxtCommandButtonState(shell);
+    });
+    editor.addEventListener('keyup', ()=>{ updateTxtCommandButtonState(shell); });
+    editor.addEventListener('mouseup', ()=>{ updateTxtCommandButtonState(shell); });
+    editor.addEventListener('keydown', (e)=>{
+      const key = String(e.key || '').toLowerCase();
+      if((e.metaKey || e.ctrlKey) && key === 's'){
+        e.preventDefault();
+        handleTxtAction(winId, 'save');
+      }
+    });
+    editor.addEventListener('blur', ()=>{
       if(wstate.txtDirty) handleTxtAction(winId, 'save');
     });
+    if(typeof ResizeObserver === 'function'){
+      const observer = new ResizeObserver(()=>{
+        const current = state.windows.get(winId);
+        if(!current || current.kind !== 'txt') return;
+        current.txtPrefs = applyTxtPrefsToShell(shell, current.txtPrefs);
+      });
+      observer.observe(shell);
+      wstate.txtResizeObserver = observer;
+    }
     shell.dataset.bound = '1';
   }
+  updateTxtCommandButtonState(shell);
 
   smartFitWindow(winEl, 'tabChange');
 }
@@ -10960,6 +11388,35 @@ function installLongPress(el, getTarget){
           'menu.txt.new': 'New',
           'menu.txt.save': 'Save',
           'menu.txt.duplicate': 'Duplicate',
+          'txt.toolbar': 'Text formatting toolbar',
+          'txt.styles': 'Styles',
+          'txt.style.paragraph': 'Body Text',
+          'txt.style.heading': 'Heading',
+          'txt.style.subheading': 'Subheading',
+          'txt.style.quote': 'Quote',
+          'txt.align.group': 'Alignment',
+          'txt.align.left': 'Align left',
+          'txt.align.center': 'Align center',
+          'txt.align.right': 'Align right',
+          'txt.align.justify': 'Justify',
+          'txt.spacing': 'Spacing',
+          'txt.spacing.tight': 'Tight',
+          'txt.spacing.normal': 'Normal',
+          'txt.spacing.relaxed': 'Relaxed',
+          'txt.spacing.loose': 'Loose',
+          'txt.lists': 'Lists',
+          'txt.list.none': 'No list',
+          'txt.list.bullets': 'Bulleted list',
+          'txt.list.numbers': 'Numbered list',
+          'txt.format.group': 'Text formatting',
+          'txt.format.bold': 'Bold',
+          'txt.format.italic': 'Italic',
+          'txt.format.underline': 'Underline',
+          'txt.file.group': 'File actions',
+          'txt.ruler': 'Paragraph ruler',
+          'txt.ruler.left': 'Left margin',
+          'txt.ruler.indent': 'First line indent',
+          'txt.ruler.right': 'Right margin',
 
           'settings.title': 'Settings',
           'settings.tab.general': 'General',
@@ -11575,6 +12032,35 @@ function installLongPress(el, getTarget){
           'menu.txt.new': 'Novo',
           'menu.txt.save': 'Salvar',
           'menu.txt.duplicate': 'Duplicar',
+          'txt.toolbar': 'Barra de formatacao de texto',
+          'txt.styles': 'Styles',
+          'txt.style.paragraph': 'Corpo de texto',
+          'txt.style.heading': 'Titulo',
+          'txt.style.subheading': 'Subtitulo',
+          'txt.style.quote': 'Citacao',
+          'txt.align.group': 'Alinhamento',
+          'txt.align.left': 'Alinhar a esquerda',
+          'txt.align.center': 'Alinhar ao centro',
+          'txt.align.right': 'Alinhar a direita',
+          'txt.align.justify': 'Justificar',
+          'txt.spacing': 'Spacing',
+          'txt.spacing.tight': 'Apertado',
+          'txt.spacing.normal': 'Normal',
+          'txt.spacing.relaxed': 'Confortavel',
+          'txt.spacing.loose': 'Solto',
+          'txt.lists': 'Lists',
+          'txt.list.none': 'Sem lista',
+          'txt.list.bullets': 'Lista com marcadores',
+          'txt.list.numbers': 'Lista numerada',
+          'txt.format.group': 'Formatacao de texto',
+          'txt.format.bold': 'Negrito',
+          'txt.format.italic': 'Italico',
+          'txt.format.underline': 'Sublinhado',
+          'txt.file.group': 'Acoes de arquivo',
+          'txt.ruler': 'Regua de paragrafo',
+          'txt.ruler.left': 'Margem esquerda',
+          'txt.ruler.indent': 'Recuo da primeira linha',
+          'txt.ruler.right': 'Margem direita',
 
           'settings.title': 'Configurações',
           'settings.tab.general': 'Geral',
@@ -17899,6 +18385,11 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
         } catch(err){
           console.error('Error disconnecting autoFitObserver:', err);
         }
+        try{
+          if(w.txtResizeObserver) w.txtResizeObserver.disconnect();
+        } catch(err){
+          console.error('Error disconnecting txtResizeObserver:', err);
+        }
         
         if(state.activeWindowId === appId) state.activeWindowId = null;
         if(state.activeAppId === appId) state.activeAppId = 'bliss';
@@ -18208,6 +18699,14 @@ function toggleFitWindow(appId) {
             seekerContent.dataset.fitMinW = state.isMobile ? '220' : '980';
             seekerContent.dataset.fitMinH = state.isMobile ? '210' : '700';
             seekerContent.dataset.fitKey = `seeker-${state.isMobile ? 'mobile' : 'desktop'}`;
+          }
+        }
+        if(wstate.kind === 'txt'){
+          const txtContent = el.querySelector('.content');
+          if(txtContent){
+            txtContent.dataset.fitMinW = state.isMobile ? '320' : '860';
+            txtContent.dataset.fitMinH = state.isMobile ? '260' : '620';
+            txtContent.dataset.fitKey = `txt-${state.isMobile ? 'mobile' : 'desktop'}`;
           }
         }
         if(appId === 'mediaplayer'){
@@ -20958,4 +21457,3 @@ function renderBlissOSAppMenu(){
         // Mobile optimization: Native Pointer Events and Click handlers now work without suppression
         // IS_COARSE removed - all events handled via standard Pointer Events API
       })();
-
