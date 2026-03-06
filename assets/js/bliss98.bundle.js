@@ -10381,6 +10381,7 @@ function renderCtxMenu(){
 
   const isIcon = ctxState.target === 'icon' && !!ctxState.appId;
   const isDock = ctxState.target === 'dock' && !!ctxState.appId;
+  const isBliss98Theme = state.settings.theme === 'bliss98';
   const fsItem = ctxState.appId ? getFsItem(ctxState.appId) : null;
   const itemType = ctxState.itemType || (fsItem ? fsItem.type : null);
   const gridMark = state.gridSnap ? '✓' : '';
@@ -10418,7 +10419,7 @@ function renderCtxMenu(){
       if(itemType === 'txt'){
         items.push({ action:'duplicateTxt', label:t('ctx.duplicateTxt') });
       }
-      if(isDockableItem(itemType, ctxState.appId)){
+      if(!isBliss98Theme && isDockableItem(itemType, ctxState.appId)){
         const dockType = itemType === 'app' ? 'app' : itemType;
         const docked = isDockItemPresent(dockType, ctxState.appId);
         const lockedDockItem = dockType === 'app' && ctxState.appId === 'seeker';
