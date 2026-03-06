@@ -4933,13 +4933,11 @@
       .rubberband{
         position:absolute;
         pointer-events:none;
-        border:1px dotted var(--select-text);
-        background:rgba(0,0,128,0.18);
+        border:1px dotted var(--selection-border);
+        background:var(--selection-bg);
         box-shadow: 0 0 0 1px rgba(0,0,0,0.15) inset;
       }
       body[data-theme="blissos"] .rubberband {
-        border: 1px dotted var(--selection-border);
-        background: var(--selection-bg);
         box-shadow: none; /* Reset Win98 specific shadow */
       }
 
@@ -10153,7 +10151,7 @@
           <!-- Build version: bump by +0.01 on every visual/code update -->
           <div class="tiny login-meta">
             <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-            <span class="login-version" id="loginVersion">Version: 1.20</span>
+            <span class="login-version" id="loginVersion">Version: 1.21</span>
           </div>
         </div>
       </div>
@@ -10240,6 +10238,6 @@
       </div>
     </div>
 
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260305-bliss98-ctx-dock-pass-22"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260305-selection-box-accent-pass-23"></script>
   </body>
 </html>
