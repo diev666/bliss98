@@ -531,7 +531,6 @@ Eu sou o buffalo branco extinto`
         about: () => `
           <div class="about-panel">
             <div class="about-copy">
-              <h2>${t('about.title')}</h2>
               <p>${t('about.p1')}</p>
               <p>${t('about.p2')}</p>
               <p>${t('about.p3')}</p>
@@ -546,13 +545,11 @@ Eu sou o buffalo branco extinto`
           </div>
         `,
         clothes: () => `
-          <h2>${t('clothes.title')}</h2>
           <p class="tiny" data-i18n="clothes.subtitle">${t('clothes.subtitle')}</p>
           <div class="clothes-grid" id="clothesGrid"></div>
           <div class="tiny clothes-status" id="clothesStatus" data-i18n="clothes.loading">${t('clothes.loading')}</div>
         `,
         music: () => `
-  <h2>${t('music.title')}</h2>
   <p style="margin:0 0 10px 0;">${t('music.subtitle')}</p>
 
   <div class="music-grid">
@@ -712,7 +709,6 @@ Eu sou o buffalo branco extinto`
             <div class="artists-dim" aria-hidden="true"></div>
             <img class="artists-center-gif pixel" src="./assets/gifs/bliss.gif" alt="" />
             <div class="artists-content">
-              <h2 class="artists-title">BLISS — ${t('app.art')}</h2>
               <div class="artists-list">
                 <a class="artists-item" href="https://www.instagram.com/die.verson/" target="_blank" rel="noopener noreferrer">
                   <span class="artists-name">DIEV</span>
@@ -1077,7 +1073,7 @@ Eu sou o buffalo branco extinto`
         `,
         poetry: () => {
           if(POEMS.length === 0){
-            return `<h2>${t('app.poetry')}</h2><p>${t('poetry.empty')}</p>`;
+            return `<p>${t('poetry.empty')}</p>`;
           }
           if(state.poetry.view === 'read' && state.poetry.currentId){
             const poem = getPoemById(state.poetry.currentId);
@@ -1104,7 +1100,6 @@ Eu sou o buffalo branco extinto`
             </button>
           `).join('');
           return `
-            <h2>${t('poetry.title')}</h2>
             <div class="poetry-grid">${grid}</div>
           `;
         },
@@ -1130,7 +1125,6 @@ Eu sou o buffalo branco extinto`
           return `<div class="trash-grid">${grid}</div>`;
         },
         contact: () => `
-          <h2>${t('contact.title')}</h2>
           <div class="contact-list" style="display:flex; flex-direction:column; gap:8px;">
             <div><strong>${t('contact.label.instagramDIEV')}</strong> <a href="https://www.instagram.com/die.verson/" target="_blank" rel="noopener noreferrer">@die.verson</a></div>
             <div><strong>${t('contact.label.twitterDIEV')}</strong> <a href="https://x.com/DIE_VERSON" target="_blank" rel="noopener noreferrer">@die_verson</a></div>
@@ -1141,9 +1135,8 @@ Eu sou o buffalo branco extinto`
             <img class="pixel" src="./assets/gifs/smilehue.gif" alt="smile hue gif" style="display:block; width:min(100%, 280px); height:auto;" loading="lazy" />
           </div>
         `,
-        diev: () => `<h2>${t('diev.title')}</h2><p>${t('diev.p1')}</p>`,
+        diev: () => `<p>${t('diev.p1')}</p>`,
         settings: () => `
-          <h2 data-i18n="settings.title">Settings</h2>
           <div class="settings-shell">
             <div class="settings-tabs" role="tablist" aria-label="Settings">
               <button class="settings-tab" type="button" role="tab" data-tab="general" aria-controls="settingsPanel_general" data-i18n="settings.tab.general">General</button>
