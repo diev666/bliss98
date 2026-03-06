@@ -3821,14 +3821,15 @@
       }
       .wallpaper-slider-shell{
         display:grid;
-        grid-template-columns:34px minmax(0, 1fr) 34px;
-        gap:10px;
+        grid-template-columns:38px minmax(0, 1fr) 38px;
+        gap:12px;
         align-items:stretch;
         min-width:0;
       }
       .wallpaper-nav{
-        width:34px;
-        min-width:34px;
+        width:38px;
+        min-width:38px;
+        box-sizing:border-box;
         padding:0;
         justify-content:center;
         font-weight:700;
@@ -9725,12 +9726,13 @@
 
         /* Wallpaper picker compact on mobile (all OS) */
         #win_settings .wallpaper-slider-shell{
-          grid-template-columns:22px minmax(0, 1fr) 22px !important;
-          gap:5px !important;
+          grid-template-columns:26px minmax(0, 1fr) 26px !important;
+          gap:6px !important;
         }
         #win_settings .wallpaper-nav{
-          width:22px !important;
-          min-width:22px !important;
+          width:26px !important;
+          min-width:26px !important;
+          box-sizing:border-box !important;
           font-size:10px !important;
           border-radius:6px !important;
         }
@@ -9925,7 +9927,7 @@
           <!-- Build version: bump by +0.01 on every visual/code update -->
           <div class="tiny login-meta">
             <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-            <span class="login-version" id="loginVersion">Version: 1.12</span>
+            <span class="login-version" id="loginVersion">Version: 1.13</span>
           </div>
         </div>
       </div>
@@ -10012,6 +10014,6 @@
       </div>
     </div>
 
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260305-aqua-wallpaper-tone-pass-14"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260305-wallpaper-nav-spacing-pass-15"></script>
   </body>
 </html>
