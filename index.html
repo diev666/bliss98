@@ -2,7 +2,7 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>BLISS 98</title>    <!-- Site icon (PNG transparente) -->
     <link rel="icon" type="image/png" href="./assets/siteicon/bliss.png" sizes="512x512" />
     <link rel="icon" type="image/png" href="./assets/siteicon/bliss.png" sizes="192x192" />
@@ -182,7 +182,13 @@
           0 0 14px var(--retro-glow-text-2);
       }
 
-      html,body{height:100%;margin:0;}
+      html,body{
+        height:100%;
+        margin:0;
+        width:100%;
+        max-width:100%;
+        touch-action:pan-x pan-y;
+      }
       body{
         background:var(--bg);
         color:var(--text);
@@ -198,6 +204,10 @@
       .pixel{image-rendering:pixelated; image-rendering:crisp-edges;}
       /* --- Mobile touch fixes (avoid double-tap-to-activate on iOS) --- */
 @media (hover:none) and (pointer:coarse){
+  html, body, #bootScreen, #login, #desktop{
+    touch-action: pan-x pan-y;
+    overscroll-behavior: none;
+  }
   /* Prefer immediate activation; avoid iOS “first tap = hover, second tap = click” */
   button, a, input, select, textarea,
   .btn, .menu-item, .ctx-item,
@@ -4412,6 +4422,26 @@
       .txt-editor ol{
         margin:0 0 0.6em 1.3em;
         padding:0;
+      }
+      body.dark[data-theme="bliss98"] .txt-editor-wrap,
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"])[data-blissos-mode="dark"] .txt-editor-wrap{
+        background:var(--content-bg);
+      }
+      body.dark[data-theme="bliss98"] .txt-editor,
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"])[data-blissos-mode="dark"] .txt-editor{
+        background:var(--content-bg);
+        color:var(--content-text);
+        caret-color:var(--selection-border);
+      }
+      body.dark[data-theme="bliss98"] .txt-editor blockquote,
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"])[data-blissos-mode="dark"] .txt-editor blockquote{
+        border-left-color:color-mix(in srgb, var(--selection-border) 58%, transparent);
+        color:color-mix(in srgb, var(--content-text) 82%, var(--selection-border) 18%);
+      }
+      body.dark[data-theme="bliss98"] .txt-editor::selection,
+      body[data-theme="blissos"]:not([data-blissos-style="aqua"])[data-blissos-mode="dark"] .txt-editor::selection{
+        background:var(--selection-bg);
+        color:var(--content-text);
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .win-txt .menubar,
       body[data-theme="blissos"][data-blissos-style="aqua"] .win-txt .statusbar{
@@ -10541,6 +10571,27 @@
           min-width:12px !important;
           font-size:8px !important;
         }
+        body[data-theme="bliss98"] .win-txt .titlebar{
+          position:relative !important;
+          padding:1px 4px 1px 46px !important;
+        }
+        body[data-theme="bliss98"] .win-txt .title-left{
+          padding-right:50px !important;
+        }
+        body[data-theme="bliss98"] .win-txt .title-controls{
+          position:absolute !important;
+          top:50% !important;
+          right:4px !important;
+          left:auto !important;
+          height:12px !important;
+          display:flex !important;
+          align-items:center !important;
+          transform:translateY(-50%) !important;
+        }
+        body[data-theme="bliss98"] .win-txt .title-controls .wctl{
+          position:static !important;
+          flex:0 0 12px !important;
+        }
         .win-txt .txt-toolbar{
           gap:calc(4px * var(--txt-toolbar-scale)) !important;
           padding:calc(4px * var(--txt-toolbar-scale)) calc(5px * var(--txt-toolbar-scale)) !important;
@@ -10918,7 +10969,7 @@
             <!-- Build version: bump by +0.01 on every visual/code update -->
             <div class="tiny login-meta">
               <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-              <span class="login-version" id="loginVersion">Version: 1.28</span>
+              <span class="login-version" id="loginVersion">Version: 1.30</span>
             </div>
           </div>
 
@@ -11020,6 +11071,29 @@
 
     <script>
       (function(){
+        var lastTouchEnd = 0;
+        function preventMultiTouchZoom(event){
+          if(event.touches && event.touches.length > 1){
+            event.preventDefault();
+          }
+        }
+        document.addEventListener('touchstart', preventMultiTouchZoom, { passive:false });
+        document.addEventListener('touchmove', preventMultiTouchZoom, { passive:false });
+        document.addEventListener('touchend', function(event){
+          var now = Date.now();
+          if(now - lastTouchEnd <= 320){
+            event.preventDefault();
+          }
+          lastTouchEnd = now;
+        }, { passive:false });
+        ['gesturestart', 'gesturechange', 'gestureend'].forEach(function(type){
+          document.addEventListener(type, function(event){
+            event.preventDefault();
+          }, { passive:false });
+        });
+      })();
+
+      (function(){
         document.documentElement.classList.add('booting');
         function restartBootProgress(bootScreen){
           var fill = bootScreen ? bootScreen.querySelector('.boot-progress-fill') : null;
@@ -11069,6 +11143,6 @@
         });
       })();
     </script>
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260306-accent98-ui-consistency-pass-28-login-dark-buttons"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260306-accent98-ui-consistency-pass-30-mobile-zoom-lock"></script>
   </body>
 </html>
