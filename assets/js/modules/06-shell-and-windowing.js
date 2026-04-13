@@ -4216,6 +4216,31 @@ function renderBlissOSAppMenu(){
           const btnOs = normalizeOsThemeChoice(btn.dataset.loginOs || 'bliss98');
           btn.classList.toggle('pressed', btnOs === current);
         });
+        updateLoginDarkModeButton();
+      }
+
+      function isLoginDarkModeEnabled(){
+        const current = getCurrentOsThemeChoice();
+        return current === 'bliss98' ? !!state.settings.darkMode : !!state.settings.blissosDarkMode;
+      }
+
+      function updateLoginDarkModeButton(){
+        const btn = $('#loginDarkMode');
+        if(!btn) return;
+        const enabled = isLoginDarkModeEnabled();
+        btn.textContent = `Dark Mode: ${enabled ? 'ON' : 'OFF'}`;
+        btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+        btn.classList.toggle('pressed', enabled);
+      }
+
+      function toggleLoginDarkMode(){
+        const enabled = !isLoginDarkModeEnabled();
+        if(getCurrentOsThemeChoice() === 'bliss98'){
+          setDarkMode(enabled);
+        } else {
+          setBlissOSDarkMode(enabled);
+        }
+        updateLoginDarkModeButton();
       }
 
       function selectLoginOs(theme){
@@ -4244,6 +4269,10 @@ function renderBlissOSAppMenu(){
       $('#langBtn').addEventListener('click', (e)=>{ e.preventDefault(); toggleLang(); });
       $$('[data-login-os]').forEach(btn => {
         btn.addEventListener('click', ()=>selectLoginOs(btn.dataset.loginOs || 'bliss98'));
+      });
+      $('#loginDarkMode').addEventListener('click', (e)=>{
+        e.preventDefault();
+        toggleLoginDarkMode();
       });
       syncLoginOsButtons();
 

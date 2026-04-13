@@ -6979,6 +6979,7 @@ function updateDarkModeButtons(root=document){
     const on = btn.dataset.setDarkmode === 'on';
     btn.classList.toggle('pressed', on === state.settings.darkMode);
   });
+  if(typeof updateLoginDarkModeButton === 'function') updateLoginDarkModeButton();
 }
 
 function isFullscreenEnabled(){
@@ -7023,6 +7024,7 @@ function updateBlissOSDarkButtons(root=document){
     input.checked = !!state.settings.blissosDarkMode;
     input.setAttribute('aria-checked', state.settings.blissosDarkMode ? 'true' : 'false');
   });
+  if(typeof updateLoginDarkModeButton === 'function') updateLoginDarkModeButton();
 }
 
 function updateBlissOSAquaButtons(root=document){
@@ -15546,7 +15548,7 @@ Eu sou o buffalo branco extinto`
                       <span data-i18n="settings.dock.max">Max</span>
                     </div>
                   </div>
-                  <div class="settings-block settings-dock-block">
+                  <div class="settings-block settings-dock-block settings-dock-autohide-block">
                     <label class="settings-dock-check settings-dock-autohide">
                       <input type="checkbox" data-dock-toggle="autohide" />
                       <span data-i18n="settings.dock.autohide">Automatically hide and show the Dock</span>
@@ -20958,6 +20960,31 @@ function renderBlissOSAppMenu(){
           const btnOs = normalizeOsThemeChoice(btn.dataset.loginOs || 'bliss98');
           btn.classList.toggle('pressed', btnOs === current);
         });
+        updateLoginDarkModeButton();
+      }
+
+      function isLoginDarkModeEnabled(){
+        const current = getCurrentOsThemeChoice();
+        return current === 'bliss98' ? !!state.settings.darkMode : !!state.settings.blissosDarkMode;
+      }
+
+      function updateLoginDarkModeButton(){
+        const btn = $('#loginDarkMode');
+        if(!btn) return;
+        const enabled = isLoginDarkModeEnabled();
+        btn.textContent = `Dark Mode: ${enabled ? 'ON' : 'OFF'}`;
+        btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+        btn.classList.toggle('pressed', enabled);
+      }
+
+      function toggleLoginDarkMode(){
+        const enabled = !isLoginDarkModeEnabled();
+        if(getCurrentOsThemeChoice() === 'bliss98'){
+          setDarkMode(enabled);
+        } else {
+          setBlissOSDarkMode(enabled);
+        }
+        updateLoginDarkModeButton();
       }
 
       function selectLoginOs(theme){
@@ -20986,6 +21013,10 @@ function renderBlissOSAppMenu(){
       $('#langBtn').addEventListener('click', (e)=>{ e.preventDefault(); toggleLang(); });
       $$('[data-login-os]').forEach(btn => {
         btn.addEventListener('click', ()=>selectLoginOs(btn.dataset.loginOs || 'bliss98'));
+      });
+      $('#loginDarkMode').addEventListener('click', (e)=>{
+        e.preventDefault();
+        toggleLoginDarkMode();
       });
       syncLoginOsButtons();
 

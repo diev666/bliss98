@@ -1542,7 +1542,7 @@ Eu sou o buffalo branco extinto`
                       <span data-i18n="settings.dock.max">Max</span>
                     </div>
                   </div>
-                  <div class="settings-block settings-dock-block">
+                  <div class="settings-block settings-dock-block settings-dock-autohide-block">
                     <label class="settings-dock-check settings-dock-autohide">
                       <input type="checkbox" data-dock-toggle="autohide" />
                       <span data-i18n="settings.dock.autohide">Automatically hide and show the Dock</span>
