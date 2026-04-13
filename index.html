@@ -3,6 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <script>
+      (function(){
+        var enabled = true;
+        try{
+          var raw = localStorage.getItem('bliss98_oldcrt');
+          var theme = localStorage.getItem('bliss98_os_theme') || 'bliss98';
+          theme = (theme === 'blissos' || theme === 'blissaqua') ? theme : 'bliss98';
+          var profilesRaw = localStorage.getItem('bliss98_os_profiles');
+          if(profilesRaw){
+            var profiles = JSON.parse(profilesRaw);
+            var profile = profiles && profiles[theme];
+            if(profile && Object.prototype.hasOwnProperty.call(profile, 'oldCrt')){
+              enabled = profile.oldCrt !== false;
+            } else if(raw !== null){
+              enabled = raw !== '0';
+            }
+          } else if(raw !== null){
+            enabled = raw !== '0';
+          }
+        } catch {}
+        document.documentElement.classList.toggle('old-crt', enabled);
+      })();
+    </script>
     <title>BLISS 98</title>    <!-- Site icon (PNG transparente) -->
     <link rel="icon" type="image/png" href="./assets/siteicon/bliss.png" sizes="512x512" />
     <link rel="icon" type="image/png" href="./assets/siteicon/bliss.png" sizes="192x192" />
@@ -10215,7 +10238,11 @@
         0%{ background-position:center center, 0% 0%, 0 -32%; }
         100%{ background-position:center center, 0% 0%, 0 132%; }
       }
-      body.old-crt #desktop{
+      html.old-crt,
+      html.old-crt body{
+        background:#000;
+      }
+      :is(html.old-crt, body.old-crt) #app{
         filter:saturate(1.12) contrast(1.1) brightness(1) sepia(0.05);
         border-radius:20px / 12px;
         overflow:hidden;
@@ -10225,12 +10252,12 @@
         transform:perspective(1400px) rotateX(0.55deg) scale(0.995,0.992);
         transform-origin:center center;
       }
-      body.old-crt #desktop::before{
+      html.old-crt::before{
         content:"";
-        position:absolute;
+        position:fixed;
         inset:0;
         pointer-events:none;
-        z-index:9000;
+        z-index:2147483647;
         background:
           repeating-linear-gradient(
             0deg,
@@ -10246,12 +10273,12 @@
         opacity:0.3;
         animation:crtFlicker 220ms steps(2,end) infinite;
       }
-      body.old-crt #desktop::after{
+      html.old-crt::after{
         content:"";
-        position:absolute;
+        position:fixed;
         inset:0;
         pointer-events:none;
-        z-index:9001;
+        z-index:2147483647;
         background:
           radial-gradient(130% 115% at 50% 50%, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 53%, rgba(0,0,0,0.38) 100%),
           linear-gradient(120deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.03) 28%, rgba(255,255,255,0) 44%),
@@ -10263,9 +10290,15 @@
         animation:crtSweep 8s linear infinite;
       }
       @media (max-width: 720px){
-        body.old-crt #desktop{
+        :is(html.old-crt, body.old-crt) #app{
           border-radius:14px / 8px;
           transform:perspective(1200px) rotateX(0.35deg) scale(0.998,0.996);
+        }
+      }
+      @media (prefers-reduced-motion: reduce){
+        html.old-crt::before,
+        html.old-crt::after{
+          animation:none;
         }
       }
       .modal{
@@ -10969,7 +11002,7 @@
             <!-- Build version: bump by +0.01 on every visual/code update -->
             <div class="tiny login-meta">
               <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-              <span class="login-version" id="loginVersion">Version: 1.30</span>
+              <span class="login-version" id="loginVersion">Version: 1.31</span>
             </div>
           </div>
 
@@ -11143,6 +11176,6 @@
         });
       })();
     </script>
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260306-accent98-ui-consistency-pass-30-mobile-zoom-lock"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260306-accent98-ui-consistency-pass-31-old-crt-default-global"></script>
   </body>
 </html>

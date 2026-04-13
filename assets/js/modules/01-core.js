@@ -97,7 +97,7 @@
           showDesktopIcons: true,
           retroGlow: false,
           clock24: true,
-          oldCrt: false,
+          oldCrt: true,
           masterVolume: 0.8,
           systemVolume: 0.8,
           systemSoundsEnabled: true,

@@ -101,7 +101,7 @@
           showDesktopIcons: true,
           retroGlow: false,
           clock24: true,
-          oldCrt: false,
+          oldCrt: true,
           masterVolume: 0.8,
           systemVolume: 0.8,
           systemSoundsEnabled: true,
@@ -7146,10 +7146,10 @@ function saveClockFormat(){
 function loadOldCrt(){
   try{
     const raw = localStorage.getItem(OLDCRT_KEY);
-    if(raw === null) return false;
+    if(raw === null) return true;
     return raw === '1';
   } catch {
-    return false;
+    return true;
   }
 }
 
@@ -7860,7 +7860,7 @@ function getDefaultOsProfiles(){
       retroGlow: false,
       scanlines: false,
       clock24: true,
-      oldCrt: false,
+      oldCrt: true,
       masterVolume: loadMasterVolume(),
       systemVolume: loadSystemVolume(),
       systemSoundsEnabled: loadSystemSoundsEnabled(),
@@ -7882,7 +7882,7 @@ function getDefaultOsProfiles(){
       retroGlow: false,
       scanlines: false,
       clock24: true,
-      oldCrt: false,
+      oldCrt: true,
       masterVolume: loadMasterVolume(),
       systemVolume: loadSystemVolume(),
       systemSoundsEnabled: loadSystemSoundsEnabled(),
@@ -7974,7 +7974,7 @@ function applyOsProfile(theme){
   state.settings.retroGlow = !!profile.retroGlow;
   state.settings.scanlines = !!profile.scanlines;
   state.settings.clock24 = profile.clock24 !== false;
-  state.settings.oldCrt = !!profile.oldCrt;
+  state.settings.oldCrt = profile.oldCrt !== false;
   state.settings.masterVolume = typeof profile.masterVolume === 'number' ? profile.masterVolume : loadMasterVolume();
   state.settings.systemVolume = typeof profile.systemVolume === 'number' ? profile.systemVolume : loadSystemVolume();
   state.settings.systemSoundsEnabled = profile.systemSoundsEnabled !== false;
@@ -10941,6 +10941,7 @@ function applyRetroGlow(){
 }
 
 function applyOldCrt(){
+  document.documentElement.classList.toggle('old-crt', state.settings.oldCrt);
   document.body.classList.toggle('old-crt', state.settings.oldCrt);
   saveOldCrt();
   updateOldCrtButtons();
