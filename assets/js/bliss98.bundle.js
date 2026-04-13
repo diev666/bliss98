@@ -8897,6 +8897,13 @@ const TXT_DEFAULT_PREFS = Object.freeze({
   right: 24,
   indent: 0,
 });
+const TXT_STYLE_VALUES = new Set(['paragraph', 'heading', 'subheading', 'quote']);
+const TXT_LIST_VALUES = new Set(['none', 'bullets', 'numbers']);
+const TXT_CONTROL_DEFAULTS = Object.freeze({
+  style: 'paragraph',
+  spacing: 'normal',
+  list: 'none',
+});
 
 function cloneTxtPrefs(prefs = TXT_DEFAULT_PREFS){
   return {
@@ -8917,6 +8924,26 @@ function normalizeTxtPrefs(raw){
   if(Number.isFinite(raw.right)) prefs.right = Math.round(raw.right);
   if(Number.isFinite(raw.indent)) prefs.indent = Math.round(raw.indent);
   return prefs;
+}
+
+function normalizeTxtControlState(raw, prefs = null){
+  const basePrefs = normalizeTxtPrefs(prefs || TXT_DEFAULT_PREFS);
+  const next = {
+    style: TXT_CONTROL_DEFAULTS.style,
+    spacing: basePrefs.spacing || TXT_CONTROL_DEFAULTS.spacing,
+    list: TXT_CONTROL_DEFAULTS.list,
+  };
+  if(!raw || typeof raw !== 'object') return next;
+  if(typeof raw.style === 'string' && TXT_STYLE_VALUES.has(raw.style)){
+    next.style = raw.style;
+  }
+  if(typeof raw.spacing === 'string' && TXT_SPACING_MAP[raw.spacing]){
+    next.spacing = raw.spacing;
+  }
+  if(typeof raw.list === 'string' && TXT_LIST_VALUES.has(raw.list)){
+    next.list = raw.list;
+  }
+  return next;
 }
 
 function getTxtSpacingValue(spacing){
@@ -8981,6 +9008,33 @@ function serializeTxtEditorHtml(editor){
 
 function getTxtEditorFromShell(shell){
   return shell ? shell.querySelector('[data-txt-editor="1"]') : null;
+}
+
+function closeTxtDropdownMenus(shell, keepOpenControl = ''){
+  if(!shell) return;
+  const keep = String(keepOpenControl || '');
+  const hosts = shell.querySelectorAll('[data-txt-dropdown]');
+  hosts.forEach(host => {
+    const control = host.dataset.txtDropdown || '';
+    const open = !!keep && control === keep;
+    host.classList.toggle('open', open);
+    const trigger = host.querySelector('[data-txt-dropdown-trigger]');
+    if(trigger) trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    const menu = host.querySelector('[data-txt-dropdown-menu]');
+    if(menu) menu.hidden = !open;
+  });
+}
+
+function syncTxtDropdownSelection(shell, rawControlState){
+  if(!shell) return;
+  const controlState = normalizeTxtControlState(rawControlState);
+  shell.querySelectorAll('[data-txt-dropdown-item]').forEach(item => {
+    const control = item.dataset.txtControl || '';
+    const value = item.dataset.txtValue || '';
+    const selected = !!control && controlState[control] === value;
+    item.dataset.selected = selected ? '1' : '0';
+    item.setAttribute('aria-checked', selected ? 'true' : 'false');
+  });
 }
 
 function updateTxtShellResponsive(shell){
@@ -9101,6 +9155,9 @@ function handleTxtControlChange(winId, shell, control, value){
   const editor = getTxtEditorFromShell(shell);
   const wstate = state.windows.get(winId);
   if(!editor || !wstate || wstate.kind !== 'txt' || !control || !value) return;
+  if(!wstate.txtControlState){
+    wstate.txtControlState = normalizeTxtControlState(null, wstate.txtPrefs);
+  }
 
   if(control === 'style'){
     const blockMap = {
@@ -9109,23 +9166,27 @@ function handleTxtControlChange(winId, shell, control, value){
       subheading: 'H2',
       quote: 'BLOCKQUOTE',
     };
+    const normalized = TXT_STYLE_VALUES.has(value) ? value : TXT_CONTROL_DEFAULTS.style;
     ensureTxtEditorFocus(editor);
     try{
-      document.execCommand('formatBlock', false, blockMap[value] || 'P');
+      document.execCommand('formatBlock', false, blockMap[normalized] || 'P');
     } catch {}
+    wstate.txtControlState.style = normalized;
     wstate.txtDirty = true;
     scheduleTxtAutosave(winId, serializeTxtEditorHtml(editor));
+    syncTxtDropdownSelection(shell, wstate.txtControlState);
     updateTxtCommandButtonState(shell);
     return;
   }
 
   if(control === 'list'){
+    const normalized = TXT_LIST_VALUES.has(value) ? value : TXT_CONTROL_DEFAULTS.list;
     ensureTxtEditorFocus(editor);
-    if(value === 'bullets'){
+    if(normalized === 'bullets'){
       try{ document.execCommand('insertUnorderedList', false, null); } catch {}
-    } else if(value === 'numbers'){
+    } else if(normalized === 'numbers'){
       try{ document.execCommand('insertOrderedList', false, null); } catch {}
-    } else if(value === 'none'){
+    } else if(normalized === 'none'){
       try{
         if(document.queryCommandState('insertUnorderedList')){
           document.execCommand('insertUnorderedList', false, null);
@@ -9137,16 +9198,20 @@ function handleTxtControlChange(winId, shell, control, value){
         }
       } catch {}
     }
+    wstate.txtControlState.list = normalized;
     wstate.txtDirty = true;
     scheduleTxtAutosave(winId, serializeTxtEditorHtml(editor));
+    syncTxtDropdownSelection(shell, wstate.txtControlState);
     updateTxtCommandButtonState(shell);
     return;
   }
 
   if(control === 'spacing' && TXT_SPACING_MAP[value]){
     wstate.txtPrefs = applyTxtPrefsToShell(shell, { ...(wstate.txtPrefs || TXT_DEFAULT_PREFS), spacing: value });
+    wstate.txtControlState.spacing = value;
     wstate.txtDirty = true;
     scheduleTxtAutosave(winId, serializeTxtEditorHtml(editor));
+    syncTxtDropdownSelection(shell, wstate.txtControlState);
   }
 }
 
@@ -9364,6 +9429,7 @@ function openTxtFileWindow(txtId, opts = {}){
     width: desiredWidth,
     height: desiredHeight,
   }, area, 14);
+  const initialTxtPrefs = normalizeTxtPrefs(item.txtPrefs);
   const wstate = {
     id: winId,
     title: item.name,
@@ -9392,47 +9458,52 @@ function openTxtFileWindow(txtId, opts = {}){
     kind: 'txt',
     txtId,
     txtDirty: false,
-    txtPrefs: normalizeTxtPrefs(item.txtPrefs),
+    txtPrefs: initialTxtPrefs,
+    txtControlState: normalizeTxtControlState(null, initialTxtPrefs),
     txtSaveTimer: null,
     txtResizeObserver: null,
+    txtDocPointerHandler: null,
     contentHTML: () => `
       <div class="txt-shell" data-txt-shell="1">
         <div class="txt-toolbar" role="toolbar" aria-label="${t('txt.toolbar')}">
-          <label class="txt-select-wrap txt-select-wrap-styles" title="${t('txt.styles')}">
-            <span class="txt-select-label">${t('txt.styles')}</span>
-            <select class="txt-select" data-txt-control="style" aria-label="${t('txt.styles')}">
-              <option value="">${t('txt.styles')}</option>
-              <option value="paragraph">${t('txt.style.paragraph')}</option>
-              <option value="heading">${t('txt.style.heading')}</option>
-              <option value="subheading">${t('txt.style.subheading')}</option>
-              <option value="quote">${t('txt.style.quote')}</option>
-            </select>
-          </label>
+          <div class="txt-select-wrap txt-select-wrap-styles txt-dropdown" data-txt-dropdown="style" title="${t('txt.styles')}">
+            <button class="txt-dropdown-trigger" type="button" data-txt-dropdown-trigger="style" aria-label="${t('txt.styles')}" aria-haspopup="menu" aria-expanded="false">
+              <span class="txt-select-label">${t('txt.styles')}</span>
+            </button>
+            <div class="txt-dropdown-menu" role="menu" data-txt-dropdown-menu="style" hidden>
+              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="style" data-txt-value="paragraph"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.style.paragraph')}</span></button>
+              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="style" data-txt-value="heading"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.style.heading')}</span></button>
+              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="style" data-txt-value="subheading"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.style.subheading')}</span></button>
+              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="style" data-txt-value="quote"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.style.quote')}</span></button>
+            </div>
+          </div>
           <div class="txt-segment" role="group" aria-label="${t('txt.align.group')}">
             <button class="txt-tool-btn" type="button" data-txt-command="justifyLeft" data-txt-query="justifyLeft" aria-label="${t('txt.align.left')}" title="${t('txt.align.left')}"><span class="txt-glyph txt-glyph-left" aria-hidden="true"></span></button>
             <button class="txt-tool-btn" type="button" data-txt-command="justifyCenter" data-txt-query="justifyCenter" aria-label="${t('txt.align.center')}" title="${t('txt.align.center')}"><span class="txt-glyph txt-glyph-center" aria-hidden="true"></span></button>
             <button class="txt-tool-btn" type="button" data-txt-command="justifyRight" data-txt-query="justifyRight" aria-label="${t('txt.align.right')}" title="${t('txt.align.right')}"><span class="txt-glyph txt-glyph-right" aria-hidden="true"></span></button>
             <button class="txt-tool-btn" type="button" data-txt-command="justifyFull" data-txt-query="justifyFull" aria-label="${t('txt.align.justify')}" title="${t('txt.align.justify')}"><span class="txt-glyph txt-glyph-justify" aria-hidden="true"></span></button>
           </div>
-          <label class="txt-select-wrap txt-select-wrap-spacing" title="${t('txt.spacing')}">
-            <span class="txt-select-label">${t('txt.spacing')}</span>
-            <select class="txt-select" data-txt-control="spacing" aria-label="${t('txt.spacing')}">
-              <option value="">${t('txt.spacing')}</option>
-              <option value="tight">${t('txt.spacing.tight')}</option>
-              <option value="normal">${t('txt.spacing.normal')}</option>
-              <option value="relaxed">${t('txt.spacing.relaxed')}</option>
-              <option value="loose">${t('txt.spacing.loose')}</option>
-            </select>
-          </label>
-          <label class="txt-select-wrap txt-select-wrap-lists" title="${t('txt.lists')}">
-            <span class="txt-select-label">${t('txt.lists')}</span>
-            <select class="txt-select" data-txt-control="list" aria-label="${t('txt.lists')}">
-              <option value="">${t('txt.lists')}</option>
-              <option value="none">${t('txt.list.none')}</option>
-              <option value="bullets">${t('txt.list.bullets')}</option>
-              <option value="numbers">${t('txt.list.numbers')}</option>
-            </select>
-          </label>
+          <div class="txt-select-wrap txt-select-wrap-spacing txt-dropdown" data-txt-dropdown="spacing" title="${t('txt.spacing')}">
+            <button class="txt-dropdown-trigger" type="button" data-txt-dropdown-trigger="spacing" aria-label="${t('txt.spacing')}" aria-haspopup="menu" aria-expanded="false">
+              <span class="txt-select-label">${t('txt.spacing')}</span>
+            </button>
+            <div class="txt-dropdown-menu" role="menu" data-txt-dropdown-menu="spacing" hidden>
+              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="spacing" data-txt-value="tight"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.spacing.tight')}</span></button>
+              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="spacing" data-txt-value="normal"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.spacing.normal')}</span></button>
+              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="spacing" data-txt-value="relaxed"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.spacing.relaxed')}</span></button>
+              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="spacing" data-txt-value="loose"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.spacing.loose')}</span></button>
+            </div>
+          </div>
+          <div class="txt-select-wrap txt-select-wrap-lists txt-dropdown" data-txt-dropdown="list" title="${t('txt.lists')}">
+            <button class="txt-dropdown-trigger" type="button" data-txt-dropdown-trigger="list" aria-label="${t('txt.lists')}" aria-haspopup="menu" aria-expanded="false">
+              <span class="txt-select-label">${t('txt.lists')}</span>
+            </button>
+            <div class="txt-dropdown-menu" role="menu" data-txt-dropdown-menu="list" hidden>
+              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="list" data-txt-value="none"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.list.none')}</span></button>
+              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="list" data-txt-value="bullets"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.list.bullets')}</span></button>
+              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="list" data-txt-value="numbers"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.list.numbers')}</span></button>
+            </div>
+          </div>
           <div class="txt-mini-group" role="group" aria-label="${t('txt.format.group')}">
             <button class="txt-tool-btn txt-tool-btn-text" type="button" data-txt-command="bold" data-txt-query="bold" title="${t('txt.format.bold')}" aria-label="${t('txt.format.bold')}">B</button>
             <button class="txt-tool-btn txt-tool-btn-text" type="button" data-txt-command="italic" data-txt-query="italic" title="${t('txt.format.italic')}" aria-label="${t('txt.format.italic')}">I</button>
@@ -9563,6 +9634,13 @@ function renderTxtFileWindow(winId){
   if(!editor) return;
   if(!wstate.txtPrefs) wstate.txtPrefs = normalizeTxtPrefs(item.txtPrefs);
   wstate.txtPrefs = applyTxtPrefsToShell(shell, wstate.txtPrefs);
+  if(!wstate.txtControlState){
+    wstate.txtControlState = normalizeTxtControlState(null, wstate.txtPrefs);
+  } else {
+    wstate.txtControlState = normalizeTxtControlState(wstate.txtControlState, wstate.txtPrefs);
+  }
+  syncTxtDropdownSelection(shell, wstate.txtControlState);
+  closeTxtDropdownMenus(shell);
   const value = getTxtDocumentHtml(item);
   if(!wstate.txtDirty){
     const current = serializeTxtEditorHtml(editor);
@@ -9574,10 +9652,34 @@ function renderTxtFileWindow(winId){
   if(!shell.dataset.bound){
     shell.addEventListener('click', (e)=>{
       const target = getEventTargetEl(e);
+      const triggerBtn = target && target.closest ? target.closest('[data-txt-dropdown-trigger]') : null;
+      if(triggerBtn && triggerBtn.dataset){
+        e.preventDefault();
+        e.stopPropagation();
+        const control = triggerBtn.dataset.txtDropdownTrigger || '';
+        const host = shell.querySelector(`[data-txt-dropdown="${control}"]`);
+        const menu = host ? host.querySelector('[data-txt-dropdown-menu]') : null;
+        const shouldOpen = !!menu && menu.hidden;
+        closeTxtDropdownMenus(shell, shouldOpen ? control : '');
+        return;
+      }
+      const dropdownItem = target && target.closest ? target.closest('[data-txt-dropdown-item]') : null;
+      if(dropdownItem && dropdownItem.dataset){
+        const control = dropdownItem.dataset.txtControl || '';
+        const selectedValue = dropdownItem.dataset.txtValue || '';
+        if(control && selectedValue){
+          e.preventDefault();
+          e.stopPropagation();
+          handleTxtControlChange(winId, shell, control, selectedValue);
+          closeTxtDropdownMenus(shell);
+          return;
+        }
+      }
       const actionBtn = target && target.closest ? target.closest('[data-txt-action]') : null;
       if(actionBtn && actionBtn.dataset){
         e.preventDefault();
         e.stopPropagation();
+        closeTxtDropdownMenus(shell);
         handleTxtAction(winId, actionBtn.dataset.txtAction);
         return;
       }
@@ -9585,14 +9687,27 @@ function renderTxtFileWindow(winId){
       if(cmdBtn && cmdBtn.dataset && cmdBtn.dataset.txtCommand){
         e.preventDefault();
         e.stopPropagation();
+        closeTxtDropdownMenus(shell);
         runTxtEditorCommand(winId, shell, cmdBtn.dataset.txtCommand);
+        return;
       }
+      closeTxtDropdownMenus(shell);
     });
-    shell.addEventListener('change', (e)=>{
+    shell.addEventListener('keydown', (e)=>{
+      if(String(e.key || '').toLowerCase() !== 'escape') return;
+      closeTxtDropdownMenus(shell);
+    });
+    const onDocPointerDown = (e)=>{
       const target = getEventTargetEl(e);
-      if(!target || !target.dataset || !target.dataset.txtControl) return;
-      handleTxtControlChange(winId, shell, target.dataset.txtControl, target.value);
-      target.value = '';
+      if(target && shell.contains(target)) return;
+      closeTxtDropdownMenus(shell);
+    };
+    document.addEventListener('pointerdown', onDocPointerDown, true);
+    wstate.txtDocPointerHandler = onDocPointerDown;
+    shell.addEventListener('pointerdown', (e)=>{
+      const target = getEventTargetEl(e);
+      if(target && target.closest && target.closest('[data-txt-dropdown]')) return;
+      closeTxtDropdownMenus(shell);
     });
     shell.addEventListener('pointerdown', (e)=>{
       const target = getEventTargetEl(e);
@@ -9602,6 +9717,7 @@ function renderTxtFileWindow(winId){
     });
     editor.addEventListener('focus', ()=>{
       try{ document.execCommand('defaultParagraphSeparator', false, 'p'); } catch {}
+      closeTxtDropdownMenus(shell);
       updateTxtCommandButtonState(shell);
     });
     editor.addEventListener('input', ()=>{
@@ -9616,6 +9732,9 @@ function renderTxtFileWindow(winId){
       if((e.metaKey || e.ctrlKey) && key === 's'){
         e.preventDefault();
         handleTxtAction(winId, 'save');
+      }
+      if(key === 'escape'){
+        closeTxtDropdownMenus(shell);
       }
     });
     editor.addEventListener('blur', ()=>{
@@ -18406,6 +18525,14 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
           if(w.txtResizeObserver) w.txtResizeObserver.disconnect();
         } catch(err){
           console.error('Error disconnecting txtResizeObserver:', err);
+        }
+        try{
+          if(w.txtDocPointerHandler){
+            document.removeEventListener('pointerdown', w.txtDocPointerHandler, true);
+            w.txtDocPointerHandler = null;
+          }
+        } catch(err){
+          console.error('Error removing txtDocPointerHandler:', err);
         }
         
         if(state.activeWindowId === appId) state.activeWindowId = null;

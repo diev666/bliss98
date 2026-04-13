@@ -2734,6 +2734,57 @@
 
       #app{height:100%;}
 
+      #bootScreen{
+        position:fixed;
+        inset:0;
+        z-index:2147483646;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background:#464646;
+        opacity:1;
+        visibility:visible;
+        transition:opacity .35s ease, visibility .35s ease;
+      }
+      #bootScreen.hidden{
+        opacity:0;
+        visibility:hidden;
+        pointer-events:none;
+      }
+      .boot-panel{
+        width:min(420px, 82vw);
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:22px;
+      }
+      .boot-logo{
+        width:min(360px, 72vw);
+        height:auto;
+        filter:drop-shadow(0 18px 36px rgba(0,0,0,.55));
+      }
+      .boot-progress{
+        width:min(360px, 72vw);
+        height:12px;
+        border:2px solid #1a1a1a;
+        border-radius:999px;
+        background:#0b0b0b;
+        overflow:hidden;
+        box-shadow:0 0 0 1px rgba(255,255,255,.08) inset;
+      }
+      .boot-progress-fill{
+        height:100%;
+        width:0;
+        border-radius:999px;
+        background:#b8b8b8;
+        box-shadow:0 0 12px rgba(255,255,255,.45);
+        animation:bootProgress 3s cubic-bezier(.2,.75,.2,1) forwards;
+      }
+      @keyframes bootProgress{
+        from{ width:0; }
+        to{ width:100%; }
+      }
+
       #login{
         position:absolute; inset:0;
         display:flex;
@@ -3965,11 +4016,21 @@
         overflow:hidden;
         text-overflow:ellipsis;
       }
-      .txt-select{
-        position:absolute;
-        inset:0;
-        opacity:0;
+      .txt-dropdown-trigger{
+        width:100%;
+        min-height:calc(30px * var(--txt-toolbar-scale));
+        border:0;
+        background:transparent;
+        color:inherit;
+        display:flex;
+        align-items:center;
+        justify-content:flex-start;
+        padding:0;
         cursor:default;
+      }
+      .txt-dropdown-trigger:focus-visible{
+        outline:1px dotted currentColor;
+        outline-offset:-3px;
       }
       .txt-select-wrap::after{
         content:"";
@@ -3984,6 +4045,58 @@
         border-top:calc(6px * var(--txt-toolbar-scale)) solid currentColor;
         opacity:0.72;
         pointer-events:none;
+      }
+      .txt-dropdown.open::after{
+        transform:rotate(180deg);
+      }
+      .txt-dropdown-menu{
+        position:absolute;
+        left:0;
+        top:calc(100% + max(3px, calc(3px * var(--txt-toolbar-scale))));
+        min-width:100%;
+        max-height:min(260px, 55vh);
+        overflow:auto;
+        z-index:30;
+        border:1px solid var(--panel-border);
+        border-radius:calc(8px * var(--txt-toolbar-scale));
+        background:var(--panel-bg);
+        box-shadow:
+          0 8px 16px rgba(15,22,33,0.28),
+          inset 0 1px 0 rgba(255,255,255,0.72);
+        padding:calc(4px * var(--txt-toolbar-scale)) 0;
+      }
+      .txt-dropdown-menu[hidden]{
+        display:none;
+      }
+      .txt-dropdown-item{
+        width:100%;
+        border:0;
+        background:transparent;
+        color:inherit;
+        display:flex;
+        align-items:center;
+        gap:calc(6px * var(--txt-toolbar-scale));
+        padding:calc(5px * var(--txt-toolbar-scale)) calc(10px * var(--txt-toolbar-scale));
+        font:600 clamp(9px, calc(11px * var(--txt-toolbar-scale)), 11px)/1.2 var(--font-ui);
+        text-align:left;
+        white-space:nowrap;
+        cursor:default;
+      }
+      .txt-dropdown-item:hover{
+        background:rgba(45,105,176,0.12);
+      }
+      .txt-dropdown-item[data-selected="1"]{
+        background:var(--selection-bg);
+        color:var(--selection-border);
+      }
+      .txt-dropdown-check{
+        width:calc(10px * var(--txt-toolbar-scale));
+        min-width:calc(10px * var(--txt-toolbar-scale));
+        text-align:center;
+        opacity:0;
+      }
+      .txt-dropdown-item[data-selected="1"] .txt-dropdown-check{
+        opacity:1;
       }
       .txt-segment,
       .txt-mini-group{
@@ -4236,6 +4349,25 @@
         border-top-color:#355579;
         opacity:0.9;
       }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .txt-dropdown-menu{
+        border-color:#8691a2;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(238,245,255,0.97) 44%, rgba(214,226,242,0.98) 100%);
+        box-shadow:
+          0 12px 20px rgba(14,30,52,0.32),
+          inset 0 1px 0 rgba(255,255,255,0.9);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .txt-dropdown-item{
+        color:#1f456d;
+        text-shadow:0 1px 0 rgba(255,255,255,0.55);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .txt-dropdown-item:hover{
+        background:linear-gradient(180deg, rgba(216,235,255,0.88) 0%, rgba(165,202,241,0.82) 100%);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .txt-dropdown-item[data-selected="1"]{
+        background:linear-gradient(180deg, rgba(113,178,239,0.86) 0%, rgba(81,143,214,0.9) 100%);
+        color:#123f67;
+      }
       body[data-theme="blissos"][data-blissos-style="aqua"] .txt-tool-btn{
         color:#21466d;
         border-right-color:#8f97a6;
@@ -4313,6 +4445,24 @@
       body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .txt-select-label,
       body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .txt-tool-btn{
         color:#e8eef8;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .txt-dropdown-menu{
+        border-color:#6f7a8a;
+        background:linear-gradient(180deg, rgba(97,109,126,0.98) 0%, rgba(68,79,93,0.98) 100%);
+        box-shadow:
+          0 14px 24px rgba(8,14,22,0.42),
+          inset 0 1px 0 rgba(225,236,250,0.2);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .txt-dropdown-item{
+        color:#e8eef8;
+        text-shadow:none;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .txt-dropdown-item:hover{
+        background:rgba(129,168,212,0.24);
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .txt-dropdown-item[data-selected="1"]{
+        background:linear-gradient(180deg, rgba(112,155,204,0.7) 0%, rgba(78,117,160,0.75) 100%);
+        color:#f5f9ff;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"][data-blissos-mode="dark"] .txt-tool-btn:hover{
         background:rgba(129,168,212,0.24);
@@ -10284,6 +10434,31 @@
         .win-txt .txt-select-label{
           font-size:8px !important;
         }
+        .win-txt .txt-dropdown-menu{
+          min-width:min(164px, 64vw) !important;
+          max-width:min(210px, 78vw) !important;
+          border-radius:14px !important;
+          padding:4px 0 !important;
+          background:rgba(72,70,79,0.96) !important;
+          border-color:rgba(226,233,246,0.22) !important;
+          box-shadow:
+            0 10px 20px rgba(11,16,25,0.52) !important,
+            inset 0 1px 0 rgba(236,241,250,0.16) !important;
+        }
+        .win-txt .txt-dropdown-item{
+          font-size:10px !important;
+          gap:4px !important;
+          padding:4px 10px !important;
+          color:#f2f5fa !important;
+          text-shadow:none !important;
+        }
+        .win-txt .txt-dropdown-item:hover{
+          background:rgba(137,171,214,0.28) !important;
+        }
+        .win-txt .txt-dropdown-item[data-selected="1"]{
+          background:rgba(90,145,210,0.75) !important;
+          color:#ffffff !important;
+        }
         .win-txt .txt-tool-btn{
           font-size:8px !important;
         }
@@ -10586,6 +10761,15 @@
   </head>
   <body>
     <div id="app">
+      <div id="bootScreen" role="status" aria-live="polite" aria-label="Booting system">
+        <div class="boot-panel">
+          <img class="boot-logo" src="./assets/Bliss98.png" alt="BLISS boot logo" />
+          <div class="boot-progress" aria-hidden="true">
+            <div class="boot-progress-fill"></div>
+          </div>
+        </div>
+      </div>
+
       <div id="login">
         <div class="login-panel bevel">
           <div class="login-title">
@@ -10627,7 +10811,7 @@
           <!-- Build version: bump by +0.01 on every visual/code update -->
           <div class="tiny login-meta">
             <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-            <span class="login-version" id="loginVersion">Version: 1.24</span>
+            <span class="login-version" id="loginVersion">Version: 1.25</span>
           </div>
         </div>
       </div>
@@ -10714,6 +10898,32 @@
       </div>
     </div>
 
+    <script>
+      (function(){
+        document.documentElement.classList.add('booting');
+        document.addEventListener('DOMContentLoaded', function(){
+          var bootScreen = document.getElementById('bootScreen');
+          var login = document.getElementById('login');
+          if(!bootScreen || !login) return;
+
+          var minDuration = new Promise(function(resolve){ setTimeout(resolve, 3000); });
+          var domReady = new Promise(function(resolve){
+            if (document.readyState === 'complete') resolve();
+            else window.addEventListener('load', resolve, { once: true });
+          });
+
+          Promise.all([minDuration, domReady]).then(function(){
+            bootScreen.classList.add('hidden');
+            setTimeout(function(){
+              login.style.display = '';
+              bootScreen.remove();
+            }, 360);
+          });
+
+          login.style.display = 'none';
+        });
+      })();
+    </script>
     <script defer src="./assets/js/bliss98.bundle.js?v=20260306-accent98-ui-consistency-pass-25"></script>
   </body>
 </html>
