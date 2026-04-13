@@ -4215,20 +4215,32 @@ function renderBlissOSAppMenu(){
         $$('[data-login-os]').forEach(btn => {
           const btnOs = normalizeOsThemeChoice(btn.dataset.loginOs || 'bliss98');
           btn.classList.toggle('pressed', btnOs === current);
+          btn.classList.toggle('login-os-btn--dark', isLoginOsDarkModeEnabled(btnOs));
         });
         updateLoginDarkModeButton();
       }
 
+      function isLoginOsDarkModeEnabled(osTheme){
+        const normalized = normalizeOsThemeChoice(osTheme || getCurrentOsThemeChoice());
+        if(normalized === getCurrentOsThemeChoice()){
+          return normalized === 'bliss98' ? !!state.settings.darkMode : !!state.settings.blissosDarkMode;
+        }
+        const profiles = state.settings.osProfiles || {};
+        const profile = profiles[normalized] || {};
+        return normalized === 'bliss98' ? !!profile.darkMode : !!profile.blissosDarkMode;
+      }
+
       function isLoginDarkModeEnabled(){
-        const current = getCurrentOsThemeChoice();
-        return current === 'bliss98' ? !!state.settings.darkMode : !!state.settings.blissosDarkMode;
+        return isLoginOsDarkModeEnabled(getCurrentOsThemeChoice());
       }
 
       function updateLoginDarkModeButton(){
         const btn = $('#loginDarkMode');
         if(!btn) return;
+        const current = getCurrentOsThemeChoice();
         const enabled = isLoginDarkModeEnabled();
-        btn.textContent = `Dark Mode: ${enabled ? 'ON' : 'OFF'}`;
+        btn.dataset.loginDarkOs = current;
+        btn.textContent = `Dark: ${enabled ? 'ON' : 'OFF'}`;
         btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
         btn.classList.toggle('pressed', enabled);
       }
@@ -4240,7 +4252,7 @@ function renderBlissOSAppMenu(){
         } else {
           setBlissOSDarkMode(enabled);
         }
-        updateLoginDarkModeButton();
+        syncLoginOsButtons();
       }
 
       function selectLoginOs(theme){

@@ -5596,7 +5596,8 @@ function updateDarkModeButtons(root=document){
     const on = btn.dataset.setDarkmode === 'on';
     btn.classList.toggle('pressed', on === state.settings.darkMode);
   });
-  if(typeof updateLoginDarkModeButton === 'function') updateLoginDarkModeButton();
+  if(typeof syncLoginOsButtons === 'function') syncLoginOsButtons();
+  else if(typeof updateLoginDarkModeButton === 'function') updateLoginDarkModeButton();
 }
 
 function isFullscreenEnabled(){
@@ -5641,7 +5642,8 @@ function updateBlissOSDarkButtons(root=document){
     input.checked = !!state.settings.blissosDarkMode;
     input.setAttribute('aria-checked', state.settings.blissosDarkMode ? 'true' : 'false');
   });
-  if(typeof updateLoginDarkModeButton === 'function') updateLoginDarkModeButton();
+  if(typeof syncLoginOsButtons === 'function') syncLoginOsButtons();
+  else if(typeof updateLoginDarkModeButton === 'function') updateLoginDarkModeButton();
 }
 
 function updateBlissOSAquaButtons(root=document){

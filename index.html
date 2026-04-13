@@ -2837,11 +2837,13 @@
       .login-os-picker{
         width:min(420px, calc(100% - 44px));
         margin-top:clamp(34px, 8vh, 82px);
-        padding:12px;
+        padding:14px 12px 12px;
         box-sizing:border-box;
+        position:relative;
       }
       .login-os-title{
         margin:0 0 8px 0;
+        padding-right:112px;
         font-size:12px;
         font-weight:700;
         letter-spacing:0.2px;
@@ -2901,6 +2903,48 @@
         position:relative;
         overflow:hidden;
       }
+      .login-os-btn--bliss98.login-os-btn--dark{
+        border-top-color:#4b4b4b;
+        border-left-color:#4b4b4b;
+        border-right-color:#000000;
+        border-bottom-color:#000000;
+        background:#252525;
+        color:#e4e4e4;
+        text-shadow:0 1px 0 #000;
+        box-shadow:
+          inset 1px 1px 0 #6a6a6a,
+          inset -1px -1px 0 #111111;
+      }
+      .login-os-btn--blissos.login-os-btn--dark{
+        border-color:#66758d;
+        background:
+          repeating-linear-gradient(
+            180deg,
+            rgba(255,255,255,0.11) 0 1px,
+            rgba(75,93,116,0.38) 1px 2px,
+            rgba(0,0,0,0) 2px 4px
+          ),
+          linear-gradient(180deg, #66748b 0%, #475467 44%, #2e3948 100%);
+        color:#edf4ff;
+        text-shadow:0 1px 0 rgba(0,0,0,0.7);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.2),
+          inset 0 -1px 0 rgba(0,0,0,0.46);
+      }
+      .login-os-btn--blissaqua.login-os-btn--dark{
+        border-color:#385d88;
+        background:
+          linear-gradient(180deg, rgba(225,239,255,0.9) 0%, rgba(105,151,205,0.96) 24%, rgba(49,89,138,0.98) 58%, rgba(25,45,77,1) 100%);
+        color:#f3f8ff;
+        text-shadow:0 1px 0 rgba(0,0,0,0.72);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.58),
+          inset 0 -1px 0 rgba(6,18,38,0.72),
+          0 0 0 1px rgba(70,119,178,0.28);
+      }
+      .login-os-btn--blissaqua.login-os-btn--dark::before{
+        background:linear-gradient(180deg, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.18) 60%, rgba(255,255,255,0) 100%);
+      }
       .login-os-btn--blissaqua::before{
         content:'';
         position:absolute;
@@ -2917,15 +2961,43 @@
         outline-offset:0;
         box-shadow:inset 0 0 0 1px rgba(255,255,255,0.5);
       }
+      .login-os-btn.login-os-btn--dark.pressed{
+        outline-color:rgba(176,202,238,0.92);
+      }
       .login-dark-row{
-        margin-top:10px;
+        position:absolute;
+        top:8px;
+        right:10px;
+        margin-top:0;
         display:flex;
       }
       .login-dark-btn{
-        width:100%;
-        min-height:30px;
+        width:auto;
+        height:22px;
+        min-height:22px;
+        padding:0 7px;
         justify-content:center;
+        font-size:10px;
         font-weight:700;
+        line-height:1;
+        white-space:nowrap;
+      }
+      .login-dark-btn[aria-pressed="true"][data-login-dark-os="bliss98"]{
+        background:#252525;
+        color:#e4e4e4;
+        text-shadow:0 1px 0 #000;
+      }
+      .login-dark-btn[aria-pressed="true"][data-login-dark-os="blissos"]{
+        border-color:#66758d;
+        background:linear-gradient(180deg, #66748b 0%, #475467 48%, #2e3948 100%);
+        color:#edf4ff;
+        text-shadow:0 1px 0 rgba(0,0,0,0.7);
+      }
+      .login-dark-btn[aria-pressed="true"][data-login-dark-os="blissaqua"]{
+        border-color:#385d88;
+        background:linear-gradient(180deg, #dcefff 0%, #6b9bd1 32%, #315a8c 72%, #1a2f50 100%);
+        color:#f3f8ff;
+        text-shadow:0 1px 0 rgba(0,0,0,0.72);
       }
       label{white-space:nowrap;}
       input[type="text"]{
@@ -10846,7 +10918,7 @@
             <!-- Build version: bump by +0.01 on every visual/code update -->
             <div class="tiny login-meta">
               <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-              <span class="login-version" id="loginVersion">Version: 1.27</span>
+              <span class="login-version" id="loginVersion">Version: 1.28</span>
             </div>
           </div>
 
@@ -10858,7 +10930,7 @@
               <button class="login-os-btn login-os-btn--blissaqua" type="button" data-login-os="blissaqua" data-i18n="login.os.blissaqua">Bliss Aqua</button>
             </div>
             <div class="login-dark-row">
-              <button id="loginDarkMode" class="btn bevel login-dark-btn" type="button" aria-pressed="false">Dark Mode: OFF</button>
+              <button id="loginDarkMode" class="btn bevel login-dark-btn" type="button" aria-pressed="false">Dark: OFF</button>
             </div>
           </div>
         </div>
@@ -10997,6 +11069,6 @@
         });
       })();
     </script>
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260306-accent98-ui-consistency-pass-27-mobile-dock-settings"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260306-accent98-ui-consistency-pass-28-login-dark-buttons"></script>
   </body>
 </html>
