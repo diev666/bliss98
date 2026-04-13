@@ -45,8 +45,11 @@
         closeWindowMenu();
         closeTaskbarCalendar();
         closeModal();
-        playSfxAndWait('logoff').finally(()=>{
+        const bootScreenWait = window.showBootScreen ? window.showBootScreen({ duration: 3000 }) : Promise.resolve();
+        const logoffWait = playSfxAndWait('logoff');
+        Promise.all([bootScreenWait, logoffWait]).finally(()=>{
           showLogin(false);
+          if(window.hideBootScreen) window.hideBootScreen();
           logoffInProgress = false;
         });
       }

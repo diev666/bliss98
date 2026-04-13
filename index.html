@@ -2778,6 +2778,8 @@
         border-radius:999px;
         background:#b8b8b8;
         box-shadow:0 0 12px rgba(255,255,255,.45);
+      }
+      #bootScreen.boot-running .boot-progress-fill{
         animation:bootProgress 3s cubic-bezier(.2,.75,.2,1) forwards;
       }
       @keyframes bootProgress{
@@ -10764,7 +10766,7 @@
   </head>
   <body>
     <div id="app">
-      <div id="bootScreen" role="status" aria-live="polite" aria-label="Booting system">
+      <div id="bootScreen" class="boot-running" role="status" aria-live="polite" aria-label="Booting system">
         <div class="boot-panel">
           <img class="boot-logo" src="./assets/Bliss98.png" alt="BLISS boot logo" />
           <div class="boot-progress" aria-hidden="true">
@@ -10814,7 +10816,7 @@
           <!-- Build version: bump by +0.01 on every visual/code update -->
           <div class="tiny login-meta">
             <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-            <span class="login-version" id="loginVersion">Version: 1.25</span>
+            <span class="login-version" id="loginVersion">Version: 1.26</span>
           </div>
         </div>
       </div>
@@ -10904,6 +10906,32 @@
     <script>
       (function(){
         document.documentElement.classList.add('booting');
+        function restartBootProgress(bootScreen){
+          var fill = bootScreen ? bootScreen.querySelector('.boot-progress-fill') : null;
+          bootScreen.classList.remove('boot-running');
+          if(fill) void fill.offsetWidth;
+          bootScreen.classList.add('boot-running');
+        }
+        window.showBootScreen = function(options){
+          var bootScreen = document.getElementById('bootScreen');
+          var duration = options && typeof options.duration === 'number' ? options.duration : 3000;
+          if(!bootScreen) return Promise.resolve();
+          document.documentElement.classList.add('booting');
+          bootScreen.classList.remove('hidden');
+          restartBootProgress(bootScreen);
+          return new Promise(function(resolve){ setTimeout(resolve, duration); });
+        };
+        window.hideBootScreen = function(){
+          var bootScreen = document.getElementById('bootScreen');
+          if(!bootScreen) return;
+          bootScreen.classList.add('hidden');
+          setTimeout(function(){
+            if(bootScreen.classList.contains('hidden')){
+              bootScreen.classList.remove('boot-running');
+              document.documentElement.classList.remove('booting');
+            }
+          }, 360);
+        };
         document.addEventListener('DOMContentLoaded', function(){
           var bootScreen = document.getElementById('bootScreen');
           var login = document.getElementById('login');
@@ -10916,10 +10944,9 @@
           });
 
           Promise.all([minDuration, domReady]).then(function(){
-            bootScreen.classList.add('hidden');
+            window.hideBootScreen();
             setTimeout(function(){
               login.style.display = '';
-              bootScreen.remove();
             }, 360);
           });
 
@@ -10927,6 +10954,6 @@
         });
       })();
     </script>
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260306-accent98-ui-consistency-pass-25"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260306-accent98-ui-consistency-pass-26"></script>
   </body>
 </html>
