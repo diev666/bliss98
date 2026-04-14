@@ -4769,6 +4769,11 @@ function renderBlissOSAppMenu(){
         if(crtBtn && crtBtn.dataset && crtBtn.dataset.setOldcrt){
           setOldCrt(crtBtn.dataset.setOldcrt === 'on');
         }
+        const systemEraseBtn = target.closest('[data-system-erase]');
+        if(systemEraseBtn && systemEraseBtn.dataset && systemEraseBtn.dataset.systemErase){
+          confirmSystemErase(systemEraseBtn.dataset.systemErase);
+          return;
+        }
         const osThemeBtn = target.closest('[data-set-os-theme]');
         if(osThemeBtn && osThemeBtn.dataset && osThemeBtn.dataset.setOsTheme){
           setOsTheme(osThemeBtn.dataset.setOsTheme);

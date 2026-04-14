@@ -6982,6 +6982,181 @@ function setOldCrt(enabled){
   syncOsProfile();
 }
 
+function getFactoryOsProfile(theme){
+  const normalized = normalizeOsThemeChoice(theme);
+  const blissFamily = normalized !== 'bliss98';
+  const isAqua = normalized === 'blissaqua';
+  return {
+    wallpaper: isAqua ? 'aqua' : (blissFamily ? 'bigcat' : 'classic'),
+    themePreset: 'default',
+    titlebar: 'defaultBlue',
+    bliss98Accent: 'classic',
+    darkMode: false,
+    blissosDarkMode: false,
+    blissosAqua: isAqua,
+    dockSize: 58,
+    dockMagnification: true,
+    dockMagnificationStrength: 60,
+    dockOpacity: 100,
+    dockAutoHide: false,
+    showDesktopIcons: true,
+    retroGlow: false,
+    scanlines: false,
+    clock24: true,
+    oldCrt: true,
+    masterVolume: 0.8,
+    systemVolume: 0.8,
+    systemSoundsEnabled: true,
+  };
+}
+
+function removeSettingsStorageForCurrentOs(){
+  const current = getCurrentOsThemeChoice();
+  const keys = [
+    `${ICON_POS_KEY}_${current}`,
+    ICON_POS_KEY,
+    ICON_LABELS_KEY,
+    DOCK_KEY,
+    FOLDER_KEY,
+    WALLPAPER_KEY,
+    BLISS98_ACCENT_KEY,
+    BLISSOS_ACCENT_KEY,
+    ANIMATIONS_KEY,
+    APP_OPEN_ANIM_KEY,
+    SCANLINES_KEY,
+    CLOCK_KEY,
+    OLDCRT_KEY,
+    MASTER_VOL_KEY,
+    SYSTEM_VOL_KEY,
+    SYSTEM_SOUNDS_ENABLED_KEY,
+    DARKMODE_KEY,
+    TITLEBAR_KEY,
+    THEME_PRESET_KEY,
+    THEME_CUSTOM_KEY,
+    GAMES_VIEW_KEY,
+    GAMES_BIG_KEY,
+    DESKTOP_ICONS_KEY,
+    GRID_SNAP_KEY,
+    RETRO_KEY,
+    MOBILE_CONTROLS_KEY,
+  ];
+  keys.forEach(key => {
+    try{ localStorage.removeItem(key); } catch {}
+  });
+}
+
+function resetDesktopLayoutPreservingContent(){
+  if(!state.fs || !state.fs.items || typeof state.fs.items !== 'object'){
+    state.fs = { version: 1, items: {} };
+  }
+
+  state.iconLabels = {};
+  saveIconLabels();
+
+  state.folders = { games: ['snake', 'dope-skate'] };
+  saveFolders();
+
+  const coreIds = new Set(
+    APPS.filter(app => app.showOnDesktop !== false).map(app => app.id)
+      .concat(VIRTUAL_ICONS.map(v => v.id))
+  );
+  state.trash = new Set(Array.from(state.trash || []).filter(id => !coreIds.has(id)));
+  saveTrash();
+
+  const layout = getDefaultIconLayout();
+  const iconPosCache = {};
+  APPS.filter(app => app.showOnDesktop !== false).forEach((app, idx) => {
+    const pos = layout[app.id] || legacyDefaultIconPos(idx);
+    upsertFsItem({
+      id: app.id,
+      type: 'app',
+      appId: app.id,
+      name: t(app.titleKey),
+      parentId: null,
+      x: pos.x,
+      y: pos.y,
+      originalDesktopX: undefined,
+      originalDesktopY: undefined,
+      originalDesktopParent: undefined,
+    }, { save: false, syncIconPos: true, iconPosCache });
+  });
+  VIRTUAL_ICONS.forEach((icon, idx) => {
+    const pos = layout[icon.id] || legacyDefaultIconPos(APPS.length + idx);
+    upsertFsItem({
+      id: icon.id,
+      type: 'virtual',
+      appId: icon.id,
+      name: t(icon.titleKey),
+      parentId: null,
+      x: pos.x,
+      y: pos.y,
+      originalDesktopX: undefined,
+      originalDesktopY: undefined,
+      originalDesktopParent: undefined,
+    }, { save: false, syncIconPos: true, iconPosCache });
+  });
+
+  saveIconPositions(iconPosCache);
+  arrangeIcons();
+  renderIcons();
+  refreshOpenFolderWindows();
+  refreshOpenSeekerWindows();
+  renderTrashWindow();
+  updateTrashIconUI();
+}
+
+function eraseAllSettings(){
+  const current = getCurrentOsThemeChoice();
+  const factoryProfile = getFactoryOsProfile(current);
+
+  removeSettingsStorageForCurrentOs();
+  state.settings.osProfiles = {
+    ...(state.settings.osProfiles || {}),
+    [current]: factoryProfile,
+  };
+  state.settings.bliss98Accent = 'classic';
+  state.settings.blissosAccent = 'multicolor';
+  try{ localStorage.setItem(BLISSOS_ACCENT_KEY, 'multicolor'); } catch {}
+  saveOsProfiles();
+  saveOsTheme();
+
+  state.gridSnap = true;
+  saveGridSnap();
+  state.animations = true;
+  saveAnimations();
+  state.settings.appOpenAnim = true;
+  saveAppOpenAnim();
+  state.games.layout = 'grid';
+  saveGamesLayout();
+  state.games.bigIcons = false;
+  saveGamesBigIcons();
+  state.mobileControlsMode = 'dpad';
+  saveMobileControlsMode(state.mobileControlsMode);
+
+  resetDesktopLayoutPreservingContent();
+  state.dockItems = normalizeDockItems(getDefaultDockItems());
+  saveDockItems();
+
+  applyOsProfile(current);
+  applyOsTheme();
+  updateAnimationButtons();
+  updateAppOpenAnimButtons();
+  renderStartMenu();
+  renderSettingsWindow();
+}
+
+function eraseAllContentAndSettings(){
+  try{
+    const keys = [];
+    for(let i = 0; i < localStorage.length; i += 1){
+      const key = localStorage.key(i);
+      if(key && key.indexOf('bliss98_') === 0) keys.push(key);
+    }
+    keys.forEach(key => localStorage.removeItem(key));
+  } catch {}
+  window.location.reload();
+}
+
 function updateDarkModeButtons(root=document){
   $$('[data-set-darkmode]', root).forEach(btn => {
     const on = btn.dataset.setDarkmode === 'on';
@@ -7518,9 +7693,9 @@ function saveFolders(){
 function loadWallpaper(){
   try{
     const saved = localStorage.getItem(WALLPAPER_KEY);
-    return saved || WALLPAPERS[0].id;
+    return saved || 'classic';
   } catch {
-    return WALLPAPERS[0].id;
+    return 'classic';
   }
 }
 
@@ -11621,6 +11796,10 @@ function installLongPress(el, getTarget){
           'settings.oldcrt.desc': 'Add CRT curvature, phosphor texture, and screen sweep.',
           'settings.oldcrt.on': 'On',
           'settings.oldcrt.off': 'Off',
+          'settings.erase.title': 'Erase',
+          'settings.erase.desc': 'Reset settings or return BLISS to a clean first-run state.',
+          'settings.erase.settings': 'Erase all settings',
+          'settings.erase.content': 'Erase all content and settings',
           'settings.osTheme.bliss98': 'Bliss 98',
           'settings.osTheme.blissos': 'BlissOS',
           'settings.osTheme.blissaqua': 'Bliss Aqua',
@@ -11898,6 +12077,12 @@ function installLongPress(el, getTarget){
           'dialog.rename.confirm': 'Rename',
           'dialog.loginEmpty.title': 'Enter your name',
           'dialog.loginEmpty.body': 'Please type a name to continue.',
+          'dialog.eraseSettings.title': 'Erase all settings?',
+          'dialog.eraseSettings.body': 'This will reset wallpaper, accent color, Dock, desktop layout, effects, and other preferences for the current OS. Your folders and files will stay.',
+          'dialog.eraseSettings.done.title': 'Settings erased',
+          'dialog.eraseSettings.done.body': 'The current OS is back to its default settings. Your folders and files were kept.',
+          'dialog.eraseContent.title': 'Erase all content and settings?',
+          'dialog.eraseContent.body': 'This will delete every BLISS file, folder, trash item, game progress, imported music info, and all settings. The page will restart like a first visit.',
           'dialog.trash.empty': 'Trash is empty.',
           'dialog.trash.restore': 'Restore',
           'dialog.trash.restoreAll': 'Restore All',
@@ -12266,6 +12451,10 @@ function installLongPress(el, getTarget){
           'settings.oldcrt.desc': 'Adiciona curvatura de CRT, textura de fosforo e varredura de tela.',
           'settings.oldcrt.on': 'Ligado',
           'settings.oldcrt.off': 'Desligado',
+          'settings.erase.title': 'Apagar',
+          'settings.erase.desc': 'Redefina ajustes ou volte o BLISS para um estado limpo de primeira visita.',
+          'settings.erase.settings': 'Apagar todos os ajustes',
+          'settings.erase.content': 'Apagar conteudo e ajustes',
           'settings.osTheme.bliss98': 'Bliss 98',
           'settings.osTheme.blissos': 'BlissOS',
           'settings.osTheme.blissaqua': 'Bliss Aqua',
@@ -12543,6 +12732,12 @@ function installLongPress(el, getTarget){
           'dialog.rename.confirm': 'Renomear',
           'dialog.loginEmpty.title': 'Digite seu nome',
           'dialog.loginEmpty.body': 'Digite um nome para continuar.',
+          'dialog.eraseSettings.title': 'Apagar todos os ajustes?',
+          'dialog.eraseSettings.body': 'Isto vai redefinir wallpaper, cor de destaque, Dock, layout do desktop, efeitos e outras preferencias do OS atual. Suas pastas e arquivos serao mantidos.',
+          'dialog.eraseSettings.done.title': 'Ajustes apagados',
+          'dialog.eraseSettings.done.body': 'O OS atual voltou para os ajustes padrao. Suas pastas e arquivos foram mantidos.',
+          'dialog.eraseContent.title': 'Apagar conteudo e ajustes?',
+          'dialog.eraseContent.body': 'Isto vai apagar todos os arquivos, pastas, itens da lixeira, progresso dos jogos, informacoes de musicas importadas e ajustes do BLISS. A pagina vai reiniciar como uma primeira visita.',
           'dialog.trash.empty': 'A lixeira está vazia.',
           'dialog.trash.restore': 'Restaurar',
           'dialog.trash.restoreAll': 'Restaurar tudo',
@@ -13223,6 +13418,43 @@ function installLongPress(el, getTarget){
             { label: t('common.cancel'), action: 'close' }
           ]
         });
+      }
+
+      function showConfirmDialog({ titleKey, bodyKey, confirmKey = 'common.ok', cancelKey = 'common.cancel', onConfirm }){
+        modalState.onConfirm = onConfirm || null;
+        showModal({
+          title: t(titleKey),
+          body: `<p style="margin:0;">${t(bodyKey)}</p>`,
+          actions: [
+            { label: t(confirmKey), action: 'confirm', primary: true },
+            { label: t(cancelKey), action: 'close' }
+          ]
+        });
+      }
+
+      function confirmSystemErase(kind){
+        if(kind === 'settings'){
+          showConfirmDialog({
+            titleKey: 'dialog.eraseSettings.title',
+            bodyKey: 'dialog.eraseSettings.body',
+            onConfirm: ()=>{
+              eraseAllSettings();
+              window.setTimeout(()=>{
+                showMessage('dialog.eraseSettings.done.title', 'dialog.eraseSettings.done.body');
+              }, 0);
+            }
+          });
+          return;
+        }
+        if(kind === 'content'){
+          showConfirmDialog({
+            titleKey: 'dialog.eraseContent.title',
+            bodyKey: 'dialog.eraseContent.body',
+            onConfirm: ()=>{
+              eraseAllContentAndSettings();
+            }
+          });
+        }
       }
 
       async function copyText(text){
@@ -15669,6 +15901,14 @@ Eu sou o buffalo branco extinto`
                   <div class="settings-actions">
                     <button class="btn bevel" type="button" data-set-oldcrt="on"><span data-i18n="settings.oldcrt.on">On</span></button>
                     <button class="btn bevel" type="button" data-set-oldcrt="off"><span data-i18n="settings.oldcrt.off">Off</span></button>
+                  </div>
+                </div>
+                <div class="settings-block settings-erase-zone" id="settingsErase">
+                  <strong data-i18n="settings.erase.title">Erase</strong>
+                  <p style="margin:6px 0 10px 0;" data-i18n="settings.erase.desc">Reset settings or return BLISS to a clean first-run state.</p>
+                  <div class="settings-actions settings-erase-actions">
+                    <button class="btn bevel settings-erase-btn" type="button" data-system-erase="settings" data-i18n="settings.erase.settings">Erase all settings</button>
+                    <button class="btn bevel settings-erase-btn settings-erase-btn--all" type="button" data-system-erase="content" data-i18n="settings.erase.content">Erase all content and settings</button>
                   </div>
                 </div>
               </div>
@@ -21535,6 +21775,11 @@ function renderBlissOSAppMenu(){
         const crtBtn = target.closest('[data-set-oldcrt]');
         if(crtBtn && crtBtn.dataset && crtBtn.dataset.setOldcrt){
           setOldCrt(crtBtn.dataset.setOldcrt === 'on');
+        }
+        const systemEraseBtn = target.closest('[data-system-erase]');
+        if(systemEraseBtn && systemEraseBtn.dataset && systemEraseBtn.dataset.systemErase){
+          confirmSystemErase(systemEraseBtn.dataset.systemErase);
+          return;
         }
         const osThemeBtn = target.closest('[data-set-os-theme]');
         if(osThemeBtn && osThemeBtn.dataset && osThemeBtn.dataset.setOsTheme){

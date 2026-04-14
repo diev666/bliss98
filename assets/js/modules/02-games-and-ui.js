@@ -5591,6 +5591,181 @@ function setOldCrt(enabled){
   syncOsProfile();
 }
 
+function getFactoryOsProfile(theme){
+  const normalized = normalizeOsThemeChoice(theme);
+  const blissFamily = normalized !== 'bliss98';
+  const isAqua = normalized === 'blissaqua';
+  return {
+    wallpaper: isAqua ? 'aqua' : (blissFamily ? 'bigcat' : 'classic'),
+    themePreset: 'default',
+    titlebar: 'defaultBlue',
+    bliss98Accent: 'classic',
+    darkMode: false,
+    blissosDarkMode: false,
+    blissosAqua: isAqua,
+    dockSize: 58,
+    dockMagnification: true,
+    dockMagnificationStrength: 60,
+    dockOpacity: 100,
+    dockAutoHide: false,
+    showDesktopIcons: true,
+    retroGlow: false,
+    scanlines: false,
+    clock24: true,
+    oldCrt: true,
+    masterVolume: 0.8,
+    systemVolume: 0.8,
+    systemSoundsEnabled: true,
+  };
+}
+
+function removeSettingsStorageForCurrentOs(){
+  const current = getCurrentOsThemeChoice();
+  const keys = [
+    `${ICON_POS_KEY}_${current}`,
+    ICON_POS_KEY,
+    ICON_LABELS_KEY,
+    DOCK_KEY,
+    FOLDER_KEY,
+    WALLPAPER_KEY,
+    BLISS98_ACCENT_KEY,
+    BLISSOS_ACCENT_KEY,
+    ANIMATIONS_KEY,
+    APP_OPEN_ANIM_KEY,
+    SCANLINES_KEY,
+    CLOCK_KEY,
+    OLDCRT_KEY,
+    MASTER_VOL_KEY,
+    SYSTEM_VOL_KEY,
+    SYSTEM_SOUNDS_ENABLED_KEY,
+    DARKMODE_KEY,
+    TITLEBAR_KEY,
+    THEME_PRESET_KEY,
+    THEME_CUSTOM_KEY,
+    GAMES_VIEW_KEY,
+    GAMES_BIG_KEY,
+    DESKTOP_ICONS_KEY,
+    GRID_SNAP_KEY,
+    RETRO_KEY,
+    MOBILE_CONTROLS_KEY,
+  ];
+  keys.forEach(key => {
+    try{ localStorage.removeItem(key); } catch {}
+  });
+}
+
+function resetDesktopLayoutPreservingContent(){
+  if(!state.fs || !state.fs.items || typeof state.fs.items !== 'object'){
+    state.fs = { version: 1, items: {} };
+  }
+
+  state.iconLabels = {};
+  saveIconLabels();
+
+  state.folders = { games: ['snake', 'dope-skate'] };
+  saveFolders();
+
+  const coreIds = new Set(
+    APPS.filter(app => app.showOnDesktop !== false).map(app => app.id)
+      .concat(VIRTUAL_ICONS.map(v => v.id))
+  );
+  state.trash = new Set(Array.from(state.trash || []).filter(id => !coreIds.has(id)));
+  saveTrash();
+
+  const layout = getDefaultIconLayout();
+  const iconPosCache = {};
+  APPS.filter(app => app.showOnDesktop !== false).forEach((app, idx) => {
+    const pos = layout[app.id] || legacyDefaultIconPos(idx);
+    upsertFsItem({
+      id: app.id,
+      type: 'app',
+      appId: app.id,
+      name: t(app.titleKey),
+      parentId: null,
+      x: pos.x,
+      y: pos.y,
+      originalDesktopX: undefined,
+      originalDesktopY: undefined,
+      originalDesktopParent: undefined,
+    }, { save: false, syncIconPos: true, iconPosCache });
+  });
+  VIRTUAL_ICONS.forEach((icon, idx) => {
+    const pos = layout[icon.id] || legacyDefaultIconPos(APPS.length + idx);
+    upsertFsItem({
+      id: icon.id,
+      type: 'virtual',
+      appId: icon.id,
+      name: t(icon.titleKey),
+      parentId: null,
+      x: pos.x,
+      y: pos.y,
+      originalDesktopX: undefined,
+      originalDesktopY: undefined,
+      originalDesktopParent: undefined,
+    }, { save: false, syncIconPos: true, iconPosCache });
+  });
+
+  saveIconPositions(iconPosCache);
+  arrangeIcons();
+  renderIcons();
+  refreshOpenFolderWindows();
+  refreshOpenSeekerWindows();
+  renderTrashWindow();
+  updateTrashIconUI();
+}
+
+function eraseAllSettings(){
+  const current = getCurrentOsThemeChoice();
+  const factoryProfile = getFactoryOsProfile(current);
+
+  removeSettingsStorageForCurrentOs();
+  state.settings.osProfiles = {
+    ...(state.settings.osProfiles || {}),
+    [current]: factoryProfile,
+  };
+  state.settings.bliss98Accent = 'classic';
+  state.settings.blissosAccent = 'multicolor';
+  try{ localStorage.setItem(BLISSOS_ACCENT_KEY, 'multicolor'); } catch {}
+  saveOsProfiles();
+  saveOsTheme();
+
+  state.gridSnap = true;
+  saveGridSnap();
+  state.animations = true;
+  saveAnimations();
+  state.settings.appOpenAnim = true;
+  saveAppOpenAnim();
+  state.games.layout = 'grid';
+  saveGamesLayout();
+  state.games.bigIcons = false;
+  saveGamesBigIcons();
+  state.mobileControlsMode = 'dpad';
+  saveMobileControlsMode(state.mobileControlsMode);
+
+  resetDesktopLayoutPreservingContent();
+  state.dockItems = normalizeDockItems(getDefaultDockItems());
+  saveDockItems();
+
+  applyOsProfile(current);
+  applyOsTheme();
+  updateAnimationButtons();
+  updateAppOpenAnimButtons();
+  renderStartMenu();
+  renderSettingsWindow();
+}
+
+function eraseAllContentAndSettings(){
+  try{
+    const keys = [];
+    for(let i = 0; i < localStorage.length; i += 1){
+      const key = localStorage.key(i);
+      if(key && key.indexOf('bliss98_') === 0) keys.push(key);
+    }
+    keys.forEach(key => localStorage.removeItem(key));
+  } catch {}
+  window.location.reload();
+}
+
 function updateDarkModeButtons(root=document){
   $$('[data-set-darkmode]', root).forEach(btn => {
     const on = btn.dataset.setDarkmode === 'on';
@@ -6127,9 +6302,9 @@ function saveFolders(){
 function loadWallpaper(){
   try{
     const saved = localStorage.getItem(WALLPAPER_KEY);
-    return saved || WALLPAPERS[0].id;
+    return saved || 'classic';
   } catch {
-    return WALLPAPERS[0].id;
+    return 'classic';
   }
 }
 

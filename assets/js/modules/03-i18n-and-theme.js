@@ -274,6 +274,10 @@
           'settings.oldcrt.desc': 'Add CRT curvature, phosphor texture, and screen sweep.',
           'settings.oldcrt.on': 'On',
           'settings.oldcrt.off': 'Off',
+          'settings.erase.title': 'Erase',
+          'settings.erase.desc': 'Reset settings or return BLISS to a clean first-run state.',
+          'settings.erase.settings': 'Erase all settings',
+          'settings.erase.content': 'Erase all content and settings',
           'settings.osTheme.bliss98': 'Bliss 98',
           'settings.osTheme.blissos': 'BlissOS',
           'settings.osTheme.blissaqua': 'Bliss Aqua',
@@ -551,6 +555,12 @@
           'dialog.rename.confirm': 'Rename',
           'dialog.loginEmpty.title': 'Enter your name',
           'dialog.loginEmpty.body': 'Please type a name to continue.',
+          'dialog.eraseSettings.title': 'Erase all settings?',
+          'dialog.eraseSettings.body': 'This will reset wallpaper, accent color, Dock, desktop layout, effects, and other preferences for the current OS. Your folders and files will stay.',
+          'dialog.eraseSettings.done.title': 'Settings erased',
+          'dialog.eraseSettings.done.body': 'The current OS is back to its default settings. Your folders and files were kept.',
+          'dialog.eraseContent.title': 'Erase all content and settings?',
+          'dialog.eraseContent.body': 'This will delete every BLISS file, folder, trash item, game progress, imported music info, and all settings. The page will restart like a first visit.',
           'dialog.trash.empty': 'Trash is empty.',
           'dialog.trash.restore': 'Restore',
           'dialog.trash.restoreAll': 'Restore All',
@@ -890,6 +900,10 @@
           'settings.oldcrt.desc': 'Adiciona curvatura de CRT, textura de fosforo e varredura de tela.',
           'settings.oldcrt.on': 'Ligado',
           'settings.oldcrt.off': 'Desligado',
+          'settings.erase.title': 'Apagar',
+          'settings.erase.desc': 'Redefina ajustes ou volte o BLISS para um estado limpo de primeira visita.',
+          'settings.erase.settings': 'Apagar todos os ajustes',
+          'settings.erase.content': 'Apagar conteudo e ajustes',
           'settings.osTheme.bliss98': 'Bliss 98',
           'settings.osTheme.blissos': 'BlissOS',
           'settings.osTheme.blissaqua': 'Bliss Aqua',
@@ -1167,6 +1181,12 @@
           'dialog.rename.confirm': 'Renomear',
           'dialog.loginEmpty.title': 'Digite seu nome',
           'dialog.loginEmpty.body': 'Digite um nome para continuar.',
+          'dialog.eraseSettings.title': 'Apagar todos os ajustes?',
+          'dialog.eraseSettings.body': 'Isto vai redefinir wallpaper, cor de destaque, Dock, layout do desktop, efeitos e outras preferencias do OS atual. Suas pastas e arquivos serao mantidos.',
+          'dialog.eraseSettings.done.title': 'Ajustes apagados',
+          'dialog.eraseSettings.done.body': 'O OS atual voltou para os ajustes padrao. Suas pastas e arquivos foram mantidos.',
+          'dialog.eraseContent.title': 'Apagar conteudo e ajustes?',
+          'dialog.eraseContent.body': 'Isto vai apagar todos os arquivos, pastas, itens da lixeira, progresso dos jogos, informacoes de musicas importadas e ajustes do BLISS. A pagina vai reiniciar como uma primeira visita.',
           'dialog.trash.empty': 'A lixeira está vazia.',
           'dialog.trash.restore': 'Restaurar',
           'dialog.trash.restoreAll': 'Restaurar tudo',
@@ -1847,6 +1867,43 @@
             { label: t('common.cancel'), action: 'close' }
           ]
         });
+      }
+
+      function showConfirmDialog({ titleKey, bodyKey, confirmKey = 'common.ok', cancelKey = 'common.cancel', onConfirm }){
+        modalState.onConfirm = onConfirm || null;
+        showModal({
+          title: t(titleKey),
+          body: `<p style="margin:0;">${t(bodyKey)}</p>`,
+          actions: [
+            { label: t(confirmKey), action: 'confirm', primary: true },
+            { label: t(cancelKey), action: 'close' }
+          ]
+        });
+      }
+
+      function confirmSystemErase(kind){
+        if(kind === 'settings'){
+          showConfirmDialog({
+            titleKey: 'dialog.eraseSettings.title',
+            bodyKey: 'dialog.eraseSettings.body',
+            onConfirm: ()=>{
+              eraseAllSettings();
+              window.setTimeout(()=>{
+                showMessage('dialog.eraseSettings.done.title', 'dialog.eraseSettings.done.body');
+              }, 0);
+            }
+          });
+          return;
+        }
+        if(kind === 'content'){
+          showConfirmDialog({
+            titleKey: 'dialog.eraseContent.title',
+            bodyKey: 'dialog.eraseContent.body',
+            onConfirm: ()=>{
+              eraseAllContentAndSettings();
+            }
+          });
+        }
       }
 
       async function copyText(text){

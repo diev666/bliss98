@@ -8411,6 +8411,28 @@
         gap:8px;
         flex-wrap:wrap;
       }
+      .settings-erase-zone{
+        margin-top:18px;
+      }
+      .settings-erase-actions{
+        align-items:center;
+      }
+      .settings-erase-btn{
+        min-width:158px;
+        justify-content:center;
+      }
+      .settings-erase-btn--all{
+        font-weight:700;
+      }
+      body[data-theme="bliss98"] .settings-erase-btn--all{
+        color:#8b0000;
+      }
+      body.dark[data-theme="bliss98"] .settings-erase-btn--all{
+        color:#ffb3b3;
+      }
+      body[data-theme="blissos"] .settings-erase-btn--all{
+        color:var(--blissos-text);
+      }
       .settings-dock-layout{
         max-width:620px;
         margin:0 auto;
@@ -11832,7 +11854,7 @@
             <!-- Build version: bump by +0.01 on every visual/code update -->
             <div class="tiny login-meta">
               <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-              <span class="login-version" id="loginVersion">Version: 1.39</span>
+              <span class="login-version" id="loginVersion">Version: 1.40</span>
             </div>
           </div>
 
@@ -12006,6 +12028,6 @@
         });
       })();
     </script>
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260414-bigcat-wallpaper"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260414-erase-settings"></script>
   </body>
 </html>

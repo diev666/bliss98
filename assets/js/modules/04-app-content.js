@@ -1652,6 +1652,14 @@ Eu sou o buffalo branco extinto`
                     <button class="btn bevel" type="button" data-set-oldcrt="off"><span data-i18n="settings.oldcrt.off">Off</span></button>
                   </div>
                 </div>
+                <div class="settings-block settings-erase-zone" id="settingsErase">
+                  <strong data-i18n="settings.erase.title">Erase</strong>
+                  <p style="margin:6px 0 10px 0;" data-i18n="settings.erase.desc">Reset settings or return BLISS to a clean first-run state.</p>
+                  <div class="settings-actions settings-erase-actions">
+                    <button class="btn bevel settings-erase-btn" type="button" data-system-erase="settings" data-i18n="settings.erase.settings">Erase all settings</button>
+                    <button class="btn bevel settings-erase-btn settings-erase-btn--all" type="button" data-system-erase="content" data-i18n="settings.erase.content">Erase all content and settings</button>
+                  </div>
+                </div>
               </div>
               <div class="settings-panel" role="tabpanel" data-tab="performance" id="settingsPanel_performance">
                 <div class="settings-panel-header">
