@@ -1455,6 +1455,10 @@ Eu sou o buffalo branco extinto`
                           <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/BlissOS.png') center/cover no-repeat;"></span>
                           <span class="wallpaper-card-label" data-i18n="wallpaper.blissos">BlissOS</span>
                         </button>
+                        <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="bigcat">
+                          <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/bigcat.png') center/cover no-repeat;"></span>
+                          <span class="wallpaper-card-label" data-i18n="wallpaper.bigcat">Big Cat</span>
+                        </button>
                         <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="aqua">
                           <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/Aqua.png') center/cover no-repeat;"></span>
                           <span class="wallpaper-card-label" data-i18n="wallpaper.aqua">Aqua</span>
@@ -1512,7 +1516,9 @@ Eu sou o buffalo branco extinto`
                   <div class="settings-block settings-dock-block">
                     <div class="settings-dock-row">
                       <label class="settings-dock-label" for="settingsDockSize" data-i18n="settings.dock.size">Size:</label>
-                      <input id="settingsDockSize" class="retro-slider settings-dock-slider" type="range" min="0" max="100" step="1" data-dock-slider="size" />
+                      <span class="settings-dock-slider-wrap" style="--dock-default-pct:58%;">
+                        <input id="settingsDockSize" class="retro-slider settings-dock-slider" type="range" min="0" max="100" step="1" data-dock-slider="size" />
+                      </span>
                     </div>
                     <div class="settings-dock-scale tiny">
                       <span data-i18n="settings.dock.small">Small</span>
@@ -1525,7 +1531,9 @@ Eu sou o buffalo branco extinto`
                         <input type="checkbox" data-dock-toggle="magnification" />
                         <span data-i18n="settings.dock.magnification">Magnification:</span>
                       </label>
-                      <input class="retro-slider settings-dock-slider" type="range" min="0" max="100" step="1" data-dock-slider="magnification" />
+                      <span class="settings-dock-slider-wrap" style="--dock-default-pct:60%;">
+                        <input class="retro-slider settings-dock-slider" type="range" min="0" max="100" step="1" data-dock-slider="magnification" />
+                      </span>
                     </div>
                     <div class="settings-dock-scale tiny">
                       <span data-i18n="settings.dock.min">Min</span>
@@ -1535,7 +1543,9 @@ Eu sou o buffalo branco extinto`
                   <div class="settings-block settings-dock-block">
                     <div class="settings-dock-row">
                       <label class="settings-dock-label" for="settingsDockOpacity" data-i18n="settings.dock.opacity">Opacity:</label>
-                      <input id="settingsDockOpacity" class="retro-slider settings-dock-slider" type="range" min="0" max="100" step="1" data-dock-slider="opacity" />
+                      <span class="settings-dock-slider-wrap" style="--dock-default-pct:100%;">
+                        <input id="settingsDockOpacity" class="retro-slider settings-dock-slider" type="range" min="0" max="100" step="1" data-dock-slider="opacity" />
+                      </span>
                     </div>
                     <div class="settings-dock-scale tiny">
                       <span data-i18n="settings.dock.min">Min</span>

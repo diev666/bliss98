@@ -6461,7 +6461,7 @@ function getDefaultOsProfiles(){
       systemSoundsEnabled: loadSystemSoundsEnabled(),
     },
     blissos: {
-      wallpaper: 'blissos',
+      wallpaper: 'bigcat',
       themePreset: 'default',
       titlebar: 'defaultBlue',
       bliss98Accent,
@@ -6572,7 +6572,7 @@ function applyOsProfile(theme){
   const isAqua = profileTheme === 'blissaqua';
   state.settings.theme = blissFamily ? 'blissos' : 'bliss98';
   state.settings.blissosAqua = isAqua;
-  state.wallpaper = profile.wallpaper || (isAqua ? 'aqua' : (blissFamily ? 'blissos' : 'classic'));
+  state.wallpaper = profile.wallpaper || (isAqua ? 'aqua' : (blissFamily ? 'bigcat' : 'classic'));
   state.theme.preset = profile.themePreset || 'default';
   state.theme.titlebar = profile.titlebar || 'defaultBlue';
   state.settings.bliss98Accent = profile.bliss98Accent || loadBliss98Accent();

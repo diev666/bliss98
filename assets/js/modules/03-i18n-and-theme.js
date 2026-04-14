@@ -558,6 +558,7 @@
 
           'wallpaper.classic': 'Classic Teal',
           'wallpaper.blissos': 'BlissOS',
+          'wallpaper.bigcat': 'Big Cat',
           'wallpaper.aqua': 'Aqua',
           'wallpaper.bliss': 'Sunrise',
           'wallpaper.clouds': 'Clouds',
@@ -1173,6 +1174,7 @@
 
           'wallpaper.classic': 'Teal clássico',
           'wallpaper.blissos': 'BlissOS',
+          'wallpaper.bigcat': 'Big Cat',
           'wallpaper.aqua': 'Aqua',
           'wallpaper.bliss': 'Nascer do Sol',
           'wallpaper.clouds': 'Nuvens',

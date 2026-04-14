@@ -2948,12 +2948,21 @@ function renderBlissOSDock(){
             dockItemHeight = 54;
           }
         } else {
-          const minIcon = mobileDock ? 20 : 20;
-          const maxIcon = mobileDock ? 30 : 34;
-          dockIconSize = Math.round(minIcon + ((maxIcon - minIcon) * sizeT));
-          dockIconBox = Math.round(dockIconSize + (mobileDock ? 2 : 4));
-          dockItemWidth = dockIconBox + (mobileDock ? 4 : 8);
-          dockItemHeight = dockItemWidth;
+          if(mobileDock){
+            const minIcon = 20;
+            const maxIcon = 30;
+            dockIconSize = Math.round(minIcon + ((maxIcon - minIcon) * sizeT));
+            dockIconBox = Math.round(dockIconSize + 2);
+            dockItemWidth = dockIconBox + 4;
+            dockItemHeight = dockItemWidth;
+          } else {
+            const minIcon = 30;
+            const maxIcon = 46;
+            dockIconSize = Math.round(minIcon + ((maxIcon - minIcon) * sizeT));
+            dockIconBox = Math.round(dockIconSize + 8);
+            dockItemWidth = dockIconBox + 8;
+            dockItemHeight = dockIconBox + 6;
+          }
         }
         let aquaMobileIconBaseY = null;
         let aquaMobileReflectionBottom = null;

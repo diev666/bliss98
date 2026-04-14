@@ -323,6 +323,14 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
           position: 'center'
         },
         {
+          id: 'bigcat',
+          labelKey: 'wallpaper.bigcat',
+          background: 'url("./assets/wallpapers/bigcat.png")',
+          size: 'cover',
+          repeat: 'no-repeat',
+          position: 'center'
+        },
+        {
           id: 'aqua',
           labelKey: 'wallpaper.aqua',
           background: 'url("./assets/wallpapers/Aqua.png")',
@@ -7844,7 +7852,7 @@ function getDefaultOsProfiles(){
       systemSoundsEnabled: loadSystemSoundsEnabled(),
     },
     blissos: {
-      wallpaper: 'blissos',
+      wallpaper: 'bigcat',
       themePreset: 'default',
       titlebar: 'defaultBlue',
       bliss98Accent,
@@ -7955,7 +7963,7 @@ function applyOsProfile(theme){
   const isAqua = profileTheme === 'blissaqua';
   state.settings.theme = blissFamily ? 'blissos' : 'bliss98';
   state.settings.blissosAqua = isAqua;
-  state.wallpaper = profile.wallpaper || (isAqua ? 'aqua' : (blissFamily ? 'blissos' : 'classic'));
+  state.wallpaper = profile.wallpaper || (isAqua ? 'aqua' : (blissFamily ? 'bigcat' : 'classic'));
   state.theme.preset = profile.themePreset || 'default';
   state.theme.titlebar = profile.titlebar || 'defaultBlue';
   state.settings.bliss98Accent = profile.bliss98Accent || loadBliss98Accent();
@@ -11897,6 +11905,7 @@ function installLongPress(el, getTarget){
 
           'wallpaper.classic': 'Classic Teal',
           'wallpaper.blissos': 'BlissOS',
+          'wallpaper.bigcat': 'Big Cat',
           'wallpaper.aqua': 'Aqua',
           'wallpaper.bliss': 'Sunrise',
           'wallpaper.clouds': 'Clouds',
@@ -12541,6 +12550,7 @@ function installLongPress(el, getTarget){
 
           'wallpaper.classic': 'Teal clássico',
           'wallpaper.blissos': 'BlissOS',
+          'wallpaper.bigcat': 'Big Cat',
           'wallpaper.aqua': 'Aqua',
           'wallpaper.bliss': 'Nascer do Sol',
           'wallpaper.clouds': 'Nuvens',
@@ -15464,6 +15474,10 @@ Eu sou o buffalo branco extinto`
                           <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/BlissOS.png') center/cover no-repeat;"></span>
                           <span class="wallpaper-card-label" data-i18n="wallpaper.blissos">BlissOS</span>
                         </button>
+                        <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="bigcat">
+                          <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/bigcat.png') center/cover no-repeat;"></span>
+                          <span class="wallpaper-card-label" data-i18n="wallpaper.bigcat">Big Cat</span>
+                        </button>
                         <button class="btn bevel wallpaper-card" type="button" data-set-wallpaper="aqua">
                           <span class="wallpaper-card-thumb" style="background:url('./assets/wallpapers/Aqua.png') center/cover no-repeat;"></span>
                           <span class="wallpaper-card-label" data-i18n="wallpaper.aqua">Aqua</span>
@@ -15521,7 +15535,9 @@ Eu sou o buffalo branco extinto`
                   <div class="settings-block settings-dock-block">
                     <div class="settings-dock-row">
                       <label class="settings-dock-label" for="settingsDockSize" data-i18n="settings.dock.size">Size:</label>
-                      <input id="settingsDockSize" class="retro-slider settings-dock-slider" type="range" min="0" max="100" step="1" data-dock-slider="size" />
+                      <span class="settings-dock-slider-wrap" style="--dock-default-pct:58%;">
+                        <input id="settingsDockSize" class="retro-slider settings-dock-slider" type="range" min="0" max="100" step="1" data-dock-slider="size" />
+                      </span>
                     </div>
                     <div class="settings-dock-scale tiny">
                       <span data-i18n="settings.dock.small">Small</span>
@@ -15534,7 +15550,9 @@ Eu sou o buffalo branco extinto`
                         <input type="checkbox" data-dock-toggle="magnification" />
                         <span data-i18n="settings.dock.magnification">Magnification:</span>
                       </label>
-                      <input class="retro-slider settings-dock-slider" type="range" min="0" max="100" step="1" data-dock-slider="magnification" />
+                      <span class="settings-dock-slider-wrap" style="--dock-default-pct:60%;">
+                        <input class="retro-slider settings-dock-slider" type="range" min="0" max="100" step="1" data-dock-slider="magnification" />
+                      </span>
                     </div>
                     <div class="settings-dock-scale tiny">
                       <span data-i18n="settings.dock.min">Min</span>
@@ -15544,7 +15562,9 @@ Eu sou o buffalo branco extinto`
                   <div class="settings-block settings-dock-block">
                     <div class="settings-dock-row">
                       <label class="settings-dock-label" for="settingsDockOpacity" data-i18n="settings.dock.opacity">Opacity:</label>
-                      <input id="settingsDockOpacity" class="retro-slider settings-dock-slider" type="range" min="0" max="100" step="1" data-dock-slider="opacity" />
+                      <span class="settings-dock-slider-wrap" style="--dock-default-pct:100%;">
+                        <input id="settingsDockOpacity" class="retro-slider settings-dock-slider" type="range" min="0" max="100" step="1" data-dock-slider="opacity" />
+                      </span>
                     </div>
                     <div class="settings-dock-scale tiny">
                       <span data-i18n="settings.dock.min">Min</span>
@@ -19695,12 +19715,21 @@ function renderBlissOSDock(){
             dockItemHeight = 54;
           }
         } else {
-          const minIcon = mobileDock ? 20 : 20;
-          const maxIcon = mobileDock ? 30 : 34;
-          dockIconSize = Math.round(minIcon + ((maxIcon - minIcon) * sizeT));
-          dockIconBox = Math.round(dockIconSize + (mobileDock ? 2 : 4));
-          dockItemWidth = dockIconBox + (mobileDock ? 4 : 8);
-          dockItemHeight = dockItemWidth;
+          if(mobileDock){
+            const minIcon = 20;
+            const maxIcon = 30;
+            dockIconSize = Math.round(minIcon + ((maxIcon - minIcon) * sizeT));
+            dockIconBox = Math.round(dockIconSize + 2);
+            dockItemWidth = dockIconBox + 4;
+            dockItemHeight = dockItemWidth;
+          } else {
+            const minIcon = 30;
+            const maxIcon = 46;
+            dockIconSize = Math.round(minIcon + ((maxIcon - minIcon) * sizeT));
+            dockIconBox = Math.round(dockIconSize + 8);
+            dockItemWidth = dockIconBox + 8;
+            dockItemHeight = dockIconBox + 6;
+          }
         }
         let aquaMobileIconBaseY = null;
         let aquaMobileReflectionBottom = null;

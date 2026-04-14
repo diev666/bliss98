@@ -319,6 +319,14 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
           position: 'center'
         },
         {
+          id: 'bigcat',
+          labelKey: 'wallpaper.bigcat',
+          background: 'url("./assets/wallpapers/bigcat.png")',
+          size: 'cover',
+          repeat: 'no-repeat',
+          position: 'center'
+        },
+        {
           id: 'aqua',
           labelKey: 'wallpaper.aqua',
           background: 'url("./assets/wallpapers/Aqua.png")',
