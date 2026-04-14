@@ -3197,6 +3197,11 @@ function getAppDisplay(appId){
   }
   const app = getAppById(appId);
   if(!app){
+    const win = state.windows.get(appId);
+    if(win){
+      const label = (typeof win.title === 'string' && win.title.trim()) ? win.title.trim() : appId;
+      return { label, iconHtml: getThemedIconHtml(win, label, 16) };
+    }
     return { label: appId, iconHtml: iconSVG('file', state.settings.theme) };
   }
   const label = getIconLabel(app);
