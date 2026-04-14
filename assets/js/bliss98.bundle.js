@@ -18248,6 +18248,45 @@ function relayoutWindowsToViewport(){
   });
 }
 
+function isMobileKeyboardEditTarget(el){
+  if(!el || !el.matches) return false;
+  const selector = 'input, textarea, select, [data-txt-editor="1"], [contenteditable]:not([contenteditable="false"])';
+  return !!(
+    el.matches(selector) ||
+    (el.closest && el.closest(selector))
+  );
+}
+
+function isMobileKeyboardViewportOpen(){
+  if(!state.isMobile || !window.visualViewport) return false;
+  if(!isMobileKeyboardEditTarget(document.activeElement)) return false;
+  const layoutHeight = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+  return (layoutHeight - window.visualViewport.height) > 120;
+}
+
+function lockMobileKeyboardScroll(){
+  if(!state.isMobile) return;
+  document.documentElement.classList.add('mobile-keyboard-lock');
+  try{ window.scrollTo(0, 0); } catch {}
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+}
+
+function releaseMobileKeyboardScroll(){
+  document.documentElement.classList.remove('mobile-keyboard-lock');
+}
+
+function handleViewportRelayout(){
+  if(isMobileKeyboardViewportOpen()){
+    lockMobileKeyboardScroll();
+    return;
+  }
+  if(!isMobileKeyboardEditTarget(document.activeElement)){
+    releaseMobileKeyboardScroll();
+  }
+  scheduleWindowRelayout();
+}
+
 function scheduleWindowRelayout(){
   if(windowRelayoutRaf) return;
   windowRelayoutRaf = requestAnimationFrame(()=>{
@@ -21624,11 +21663,26 @@ function renderBlissOSAppMenu(){
         initSfx();
         showLogin(true);
         maybeAutoLaunchGameFromQuery();
-        window.addEventListener('resize', scheduleWindowRelayout, { passive:true });
-        window.addEventListener('orientationchange', scheduleWindowRelayout, { passive:true });
+        window.addEventListener('resize', handleViewportRelayout, { passive:true });
+        window.addEventListener('orientationchange', handleViewportRelayout, { passive:true });
         if(window.visualViewport){
-          window.visualViewport.addEventListener('resize', scheduleWindowRelayout, { passive:true });
+          window.visualViewport.addEventListener('resize', handleViewportRelayout, { passive:true });
+          window.visualViewport.addEventListener('scroll', handleViewportRelayout, { passive:true });
         }
+        document.addEventListener('focusin', (e)=>{
+          if(isMobileKeyboardEditTarget(e.target)){
+            setTimeout(lockMobileKeyboardScroll, 0);
+            setTimeout(lockMobileKeyboardScroll, 260);
+          }
+        });
+        document.addEventListener('focusout', ()=>{
+          setTimeout(()=>{
+            if(!isMobileKeyboardEditTarget(document.activeElement)){
+              releaseMobileKeyboardScroll();
+              handleViewportRelayout();
+            }
+          }, 180);
+        });
         document.addEventListener('pointerdown', (e)=>{
           const target = getEventTargetEl(e);
           const winEl = target && target.closest ? target.closest('.window') : null;

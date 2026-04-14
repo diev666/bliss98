@@ -223,6 +223,13 @@
         -webkit-touch-callout:none;
         -webkit-tap-highlight-color: transparent;
       }
+      html.mobile-keyboard-lock,
+      html.mobile-keyboard-lock body{
+        overflow:hidden !important;
+        height:100% !important;
+        max-height:100% !important;
+        overscroll-behavior:none;
+      }
       .hidden{display:none !important;}
       .pixel{image-rendering:pixelated; image-rendering:crisp-edges;}
       /* --- Mobile touch fixes (avoid double-tap-to-activate on iOS) --- */
@@ -2765,7 +2772,14 @@
         box-shadow: 1px 1px 0 0 var(--shadow-mid) inset, -1px -1px 0 0 var(--shadow-light) inset;
       }
 
-      #app{height:100%;}
+      #app{
+        position:fixed;
+        inset:0;
+        width:100%;
+        height:100%;
+        overflow:hidden;
+        overscroll-behavior:none;
+      }
 
       #bootScreen{
         position:fixed;
@@ -10604,24 +10618,43 @@
           min-width:12px !important;
           font-size:8px !important;
         }
-        body[data-theme="bliss98"] .win-txt .titlebar{
+        body[data-theme="bliss98"] .win-txt .titlebar,
+        body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .win-txt .titlebar{
           position:relative !important;
-          padding:1px 4px 1px 46px !important;
+          padding:1px 4px !important;
         }
-        body[data-theme="bliss98"] .win-txt .title-left{
-          padding-right:50px !important;
+        body[data-theme="bliss98"] .win-txt .title-left,
+        body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .win-txt .title-left{
+          flex:1 1 auto !important;
+          justify-content:flex-start !important;
+          position:static !important;
+          inset:auto !important;
+          transform:none !important;
+          width:auto !important;
+          max-width:none !important;
+          min-width:0 !important;
+          text-align:left !important;
+          background:transparent !important;
+          padding-right:54px !important;
         }
-        body[data-theme="bliss98"] .win-txt .title-controls{
+        body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .win-txt .title-left img,
+        body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .win-txt .win-title-icon{
+          display:inline-flex !important;
+        }
+        body[data-theme="bliss98"] .win-txt .title-controls,
+        body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .win-txt .title-controls{
           position:absolute !important;
           top:50% !important;
           right:4px !important;
           left:auto !important;
+          width:auto !important;
           height:12px !important;
           display:flex !important;
           align-items:center !important;
           transform:translateY(-50%) !important;
         }
-        body[data-theme="bliss98"] .win-txt .title-controls .wctl{
+        body[data-theme="bliss98"] .win-txt .title-controls .wctl,
+        body[data-theme="blissos"]:not([data-blissos-style="aqua"]) .win-txt .title-controls .wctl{
           position:static !important;
           flex:0 0 12px !important;
         }
@@ -11002,7 +11035,7 @@
             <!-- Build version: bump by +0.01 on every visual/code update -->
             <div class="tiny login-meta">
               <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-              <span class="login-version" id="loginVersion">Version: 1.31</span>
+              <span class="login-version" id="loginVersion">Version: 1.32</span>
             </div>
           </div>
 
@@ -11176,6 +11209,6 @@
         });
       })();
     </script>
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260306-accent98-ui-consistency-pass-31-old-crt-default-global"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260306-accent98-ui-consistency-pass-32-mobile-txt-keyboard-lock"></script>
   </body>
 </html>

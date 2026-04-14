@@ -79,11 +79,26 @@
         initSfx();
         showLogin(true);
         maybeAutoLaunchGameFromQuery();
-        window.addEventListener('resize', scheduleWindowRelayout, { passive:true });
-        window.addEventListener('orientationchange', scheduleWindowRelayout, { passive:true });
+        window.addEventListener('resize', handleViewportRelayout, { passive:true });
+        window.addEventListener('orientationchange', handleViewportRelayout, { passive:true });
         if(window.visualViewport){
-          window.visualViewport.addEventListener('resize', scheduleWindowRelayout, { passive:true });
+          window.visualViewport.addEventListener('resize', handleViewportRelayout, { passive:true });
+          window.visualViewport.addEventListener('scroll', handleViewportRelayout, { passive:true });
         }
+        document.addEventListener('focusin', (e)=>{
+          if(isMobileKeyboardEditTarget(e.target)){
+            setTimeout(lockMobileKeyboardScroll, 0);
+            setTimeout(lockMobileKeyboardScroll, 260);
+          }
+        });
+        document.addEventListener('focusout', ()=>{
+          setTimeout(()=>{
+            if(!isMobileKeyboardEditTarget(document.activeElement)){
+              releaseMobileKeyboardScroll();
+              handleViewportRelayout();
+            }
+          }, 180);
+        });
         document.addEventListener('pointerdown', (e)=>{
           const target = getEventTargetEl(e);
           const winEl = target && target.closest ? target.closest('.window') : null;

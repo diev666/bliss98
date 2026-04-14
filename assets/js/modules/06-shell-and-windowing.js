@@ -1529,6 +1529,45 @@ function relayoutWindowsToViewport(){
   });
 }
 
+function isMobileKeyboardEditTarget(el){
+  if(!el || !el.matches) return false;
+  const selector = 'input, textarea, select, [data-txt-editor="1"], [contenteditable]:not([contenteditable="false"])';
+  return !!(
+    el.matches(selector) ||
+    (el.closest && el.closest(selector))
+  );
+}
+
+function isMobileKeyboardViewportOpen(){
+  if(!state.isMobile || !window.visualViewport) return false;
+  if(!isMobileKeyboardEditTarget(document.activeElement)) return false;
+  const layoutHeight = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+  return (layoutHeight - window.visualViewport.height) > 120;
+}
+
+function lockMobileKeyboardScroll(){
+  if(!state.isMobile) return;
+  document.documentElement.classList.add('mobile-keyboard-lock');
+  try{ window.scrollTo(0, 0); } catch {}
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+}
+
+function releaseMobileKeyboardScroll(){
+  document.documentElement.classList.remove('mobile-keyboard-lock');
+}
+
+function handleViewportRelayout(){
+  if(isMobileKeyboardViewportOpen()){
+    lockMobileKeyboardScroll();
+    return;
+  }
+  if(!isMobileKeyboardEditTarget(document.activeElement)){
+    releaseMobileKeyboardScroll();
+  }
+  scheduleWindowRelayout();
+}
+
 function scheduleWindowRelayout(){
   if(windowRelayoutRaf) return;
   windowRelayoutRaf = requestAnimationFrame(()=>{
