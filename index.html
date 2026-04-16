@@ -2358,10 +2358,10 @@
         gap:2px;
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-right{
-        margin-left:8px;
+        margin-left:var(--aqua-mobile-right-gap, 8px);
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-separator{
-        width:18px;
+        width:var(--aqua-mobile-separator-w, 18px);
         height:52px;
         margin-bottom:0;
         align-self:flex-end;
@@ -11282,9 +11282,11 @@
           height:var(--aqua-mobile-inner-h, 68px) !important;
           min-height:var(--aqua-mobile-inner-h, 68px) !important;
           padding:0 var(--aqua-mobile-inner-pad-x, 16px) !important;
-          max-width:calc(100vw - 6px) !important;
+          max-width:calc(100vw - 12px) !important;
         }
         body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-inner::after{
+          left:0 !important;
+          right:0 !important;
           height:var(--aqua-mobile-tray-plate-h, 48px) !important;
         }
         body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item{
@@ -11302,6 +11304,7 @@
           bottom:var(--dock-reflection-bottom, var(--aqua-mobile-reflection-bottom, -78px)) !important;
         }
         body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-separator{
+          width:var(--aqua-mobile-separator-w, 14px) !important;
           height:var(--aqua-mobile-separator-h, 44px) !important;
           transform:translateY(var(--aqua-mobile-separator-shift, -2px)) !important;
         }
@@ -11854,7 +11857,7 @@
             <!-- Build version: bump by +0.01 on every visual/code update -->
             <div class="tiny login-meta">
               <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-              <span class="login-version" id="loginVersion">Version: 1.40</span>
+              <span class="login-version" id="loginVersion">Version: 1.41</span>
             </div>
           </div>
 
@@ -12028,6 +12031,6 @@
         });
       })();
     </script>
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260414-erase-settings"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260415-mobile-dock-fit"></script>
   </body>
 </html>
