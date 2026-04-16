@@ -5596,7 +5596,7 @@ function getFactoryOsProfile(theme){
   const blissFamily = normalized !== 'bliss98';
   const isAqua = normalized === 'blissaqua';
   return {
-    wallpaper: isAqua ? 'aqua' : (blissFamily ? 'bigcat' : 'classic'),
+    wallpaper: isAqua ? 'galaxy' : (blissFamily ? 'bigcat' : 'classic'),
     themePreset: 'default',
     titlebar: 'defaultBlue',
     bliss98Accent: 'classic',
@@ -6658,7 +6658,7 @@ function getDefaultOsProfiles(){
       systemSoundsEnabled: loadSystemSoundsEnabled(),
     },
     blissaqua: {
-      wallpaper: 'aqua',
+      wallpaper: 'galaxy',
       themePreset: 'default',
       titlebar: 'defaultBlue',
       bliss98Accent,
