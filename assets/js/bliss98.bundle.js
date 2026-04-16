@@ -20031,17 +20031,19 @@ function renderBlissOSDock(){
         }
         let aquaMobileIconBaseY = null;
         let aquaMobileReflectionBottom = null;
+        let aquaMobileIndicatorBottom = null;
         if(isAquaDock && mobileDock){
           const innerHeight = dockItemHeight + 14;
           const innerPadX = Math.round(16 + (3 * sizeT));
-          const trayPlateHeight = Math.round(dockItemHeight + 7);
-          const separatorHeight = Math.max(44, trayPlateHeight);
+          const trayPlateHeight = Math.round(dockItemHeight + 3);
+          const separatorHeight = Math.max(34, trayPlateHeight - 1);
           const separatorShift = 0;
           const separatorWidth = Math.round(15 + sizeT);
           const separatorBottom = Math.max(0, Math.round(sizeT));
           const rightGap = Math.round(4 + sizeT);
-          aquaMobileIconBaseY = -Math.round(dockIconBox * 0.62);
-          aquaMobileReflectionBottom = -Math.round(dockIconBox + 13);
+          aquaMobileIconBaseY = -Math.round(dockIconBox * 0.5);
+          aquaMobileReflectionBottom = -Math.round(dockIconBox + 10);
+          aquaMobileIndicatorBottom = Math.max(2, Math.round(1 + (sizeT * 2)));
           dock.style.setProperty('--aqua-mobile-inner-h', `${innerHeight}px`);
           dock.style.setProperty('--aqua-mobile-inner-pad-x', `${innerPadX}px`);
           dock.style.setProperty('--aqua-mobile-tray-plate-h', `${trayPlateHeight}px`);
@@ -20103,6 +20105,7 @@ function renderBlissOSDock(){
           if(aquaMobileIconBaseY !== null && aquaMobileReflectionBottom !== null){
             btn.style.setProperty('--dock-icon-base-y', `${aquaMobileIconBaseY}px`);
             btn.style.setProperty('--dock-reflection-bottom', `${aquaMobileReflectionBottom}px`);
+            if(aquaMobileIndicatorBottom !== null) btn.style.setProperty('--dock-indicator-bottom', `${aquaMobileIndicatorBottom}px`);
           }
           const tooltip = btn.querySelector('.dock-tooltip');
           if(tooltip) tooltip.textContent = label;
@@ -20159,9 +20162,9 @@ function renderBlissOSDock(){
           const trashIconHtml = getDockItemIconHtml(trashItem, dockIconSize);
           btn.innerHTML = buildDockItemMarkup(trashIconHtml, dockIconBox);
           if(aquaMobileIconBaseY !== null && aquaMobileReflectionBottom !== null){
-            btn.style.setProperty('--dock-icon-base-y', `${aquaMobileIconBaseY - 6}px`);
-            btn.style.setProperty('--dock-reflection-bottom', `${aquaMobileReflectionBottom + 7}px`);
-            btn.style.setProperty('--dock-indicator-bottom', `${Math.max(5, Math.round(5 + (sizeT * 3)))}px`);
+            btn.style.setProperty('--dock-icon-base-y', `${aquaMobileIconBaseY - 2}px`);
+            btn.style.setProperty('--dock-reflection-bottom', `${aquaMobileReflectionBottom + 2}px`);
+            if(aquaMobileIndicatorBottom !== null) btn.style.setProperty('--dock-indicator-bottom', `${aquaMobileIndicatorBottom}px`);
           }
           const trashTooltip = btn.querySelector('.dock-tooltip');
           if(trashTooltip) trashTooltip.textContent = label;
