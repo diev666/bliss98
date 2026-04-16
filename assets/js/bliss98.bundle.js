@@ -19991,7 +19991,7 @@ function renderBlissOSDock(){
           const separatorBottom = Math.max(0, Math.round(sizeT));
           const rightGap = Math.round(4 + sizeT);
           aquaMobileIconBaseY = -Math.round(dockIconBox * 0.84);
-          aquaMobileReflectionBottom = -Math.round(dockIconBox + 13);
+          aquaMobileReflectionBottom = -Math.round(dockIconBox + 7);
           dock.style.setProperty('--aqua-mobile-inner-h', `${innerHeight}px`);
           dock.style.setProperty('--aqua-mobile-inner-pad-x', `${innerPadX}px`);
           dock.style.setProperty('--aqua-mobile-tray-plate-h', `${trayPlateHeight}px`);
@@ -20052,7 +20052,7 @@ function renderBlissOSDock(){
           btn.innerHTML = buildDockItemMarkup(iconHtml, dockIconBox);
           if(aquaMobileIconBaseY !== null && aquaMobileReflectionBottom !== null){
             btn.style.setProperty('--dock-icon-base-y', `${aquaMobileIconBaseY}px`);
-            btn.style.setProperty('--dock-reflection-bottom', `${aquaMobileReflectionBottom}px`);
+            btn.style.setProperty('--dock-reflection-bottom', `${aquaMobileReflectionBottom + 7}px`);
           }
           const tooltip = btn.querySelector('.dock-tooltip');
           if(tooltip) tooltip.textContent = label;
