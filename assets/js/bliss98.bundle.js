@@ -19985,9 +19985,9 @@ function renderBlissOSDock(){
           const innerHeight = dockItemHeight + 14;
           const innerPadX = Math.round(16 + (3 * sizeT));
           const trayPlateHeight = Math.round(dockItemHeight + 7);
-          const separatorHeight = Math.max(40, trayPlateHeight - 4);
-          const separatorShift = 2;
-          const separatorWidth = Math.round(19 + (2 * sizeT));
+          const separatorHeight = Math.max(44, trayPlateHeight);
+          const separatorShift = 0;
+          const separatorWidth = Math.round(15 + sizeT);
           const separatorBottom = Math.max(0, Math.round(sizeT));
           const rightGap = Math.round(4 + sizeT);
           aquaMobileIconBaseY = -Math.round(dockIconBox * 0.26);
