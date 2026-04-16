@@ -20052,7 +20052,7 @@ function renderBlissOSDock(){
           btn.innerHTML = buildDockItemMarkup(iconHtml, dockIconBox);
           if(aquaMobileIconBaseY !== null && aquaMobileReflectionBottom !== null){
             btn.style.setProperty('--dock-icon-base-y', `${aquaMobileIconBaseY}px`);
-            btn.style.setProperty('--dock-reflection-bottom', `${aquaMobileReflectionBottom + 7}px`);
+            btn.style.setProperty('--dock-reflection-bottom', `${aquaMobileReflectionBottom}px`);
           }
           const tooltip = btn.querySelector('.dock-tooltip');
           if(tooltip) tooltip.textContent = label;
@@ -20110,7 +20110,7 @@ function renderBlissOSDock(){
           btn.innerHTML = buildDockItemMarkup(trashIconHtml, dockIconBox);
           if(aquaMobileIconBaseY !== null && aquaMobileReflectionBottom !== null){
             btn.style.setProperty('--dock-icon-base-y', `${aquaMobileIconBaseY - 6}px`);
-            btn.style.setProperty('--dock-reflection-bottom', `${aquaMobileReflectionBottom}px`);
+            btn.style.setProperty('--dock-reflection-bottom', `${aquaMobileReflectionBottom + 7}px`);
           }
           const trashTooltip = btn.querySelector('.dock-tooltip');
           if(trashTooltip) trashTooltip.textContent = label;
