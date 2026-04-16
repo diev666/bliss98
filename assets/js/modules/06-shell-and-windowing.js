@@ -2983,7 +2983,7 @@ function renderBlissOSDock(){
           const separatorWidth = Math.round(15 + sizeT);
           const separatorBottom = Math.max(0, Math.round(sizeT));
           const rightGap = Math.round(4 + sizeT);
-          aquaMobileIconBaseY = -Math.round(dockIconBox * 0.38);
+          aquaMobileIconBaseY = -Math.round(dockIconBox * 0.84);
           aquaMobileReflectionBottom = -Math.round(dockIconBox + 13);
           dock.style.setProperty('--aqua-mobile-inner-h', `${innerHeight}px`);
           dock.style.setProperty('--aqua-mobile-inner-pad-x', `${innerPadX}px`);
