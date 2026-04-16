@@ -1,0 +1,2 @@
+- status "Booting system" [ref=e3]:
+  - img "BLISS boot logo" [ref=e5]
