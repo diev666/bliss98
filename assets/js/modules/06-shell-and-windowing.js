@@ -2828,6 +2828,7 @@ function renderBlissOSDock(){
     dock.style.removeProperty('--aqua-mobile-separator-h');
     dock.style.removeProperty('--aqua-mobile-separator-shift');
     dock.style.removeProperty('--aqua-mobile-separator-w');
+    dock.style.removeProperty('--aqua-mobile-separator-bottom');
     dock.style.removeProperty('--aqua-mobile-right-gap');
   };
   const clearClassicMobileDockVars = ()=>{
@@ -2975,11 +2976,12 @@ function renderBlissOSDock(){
         let aquaMobileReflectionBottom = null;
         if(isAquaDock && mobileDock){
           const innerHeight = dockItemHeight + 14;
-          const innerPadX = Math.round(6 + (2 * sizeT));
+          const innerPadX = Math.round(16 + (3 * sizeT));
           const trayPlateHeight = Math.round(dockItemHeight + 7);
-          const separatorHeight = Math.max(28, trayPlateHeight - 3);
+          const separatorHeight = Math.max(24, trayPlateHeight - 10);
           const separatorShift = 0;
-          const separatorWidth = Math.round(11 + (2 * sizeT));
+          const separatorWidth = Math.round(15 + (2 * sizeT));
+          const separatorBottom = Math.round(4 + (2 * sizeT));
           const rightGap = Math.round(4 + sizeT);
           aquaMobileIconBaseY = -Math.round(dockIconBox * 0.26);
           aquaMobileReflectionBottom = -Math.round(dockIconBox + 13);
@@ -2994,6 +2996,7 @@ function renderBlissOSDock(){
           dock.style.setProperty('--aqua-mobile-separator-h', `${separatorHeight}px`);
           dock.style.setProperty('--aqua-mobile-separator-shift', `${separatorShift}px`);
           dock.style.setProperty('--aqua-mobile-separator-w', `${separatorWidth}px`);
+          dock.style.setProperty('--aqua-mobile-separator-bottom', `${separatorBottom}px`);
           dock.style.setProperty('--aqua-mobile-right-gap', `${rightGap}px`);
         } else {
           clearAquaMobileDockVars();
