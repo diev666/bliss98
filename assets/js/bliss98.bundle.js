@@ -19535,6 +19535,10 @@ function toggleFitWindow(appId) {
       const DOCK_DEFAULT_MAGNIFICATION = 60;
       const DOCK_AUTOHIDE_EDGE = 36;
       const DOCK_AUTOHIDE_HIDE_DELAY = 520;
+      const dockBounceTimers = new WeakMap();
+      const dockBounceHandlers = new WeakMap();
+      let pendingDockBounceKey = '';
+      let pendingDockBounceUntil = 0;
       let dockAutoHideFxBound = false;
       let dockAutoHideHideTimer = 0;
       let dockAutoHideVisible = true;
@@ -19645,6 +19649,17 @@ function toggleFitWindow(appId) {
         return state.settings.theme === 'blissos' && !!state.settings.blissosAqua && !isMobileDock() && isDockRenderMagnificationEnabled();
       }
 
+      function isAquaMobileDockBounceActive(){
+        return state.settings.theme === 'blissos' && !!state.settings.blissosAqua && isMobileDock();
+      }
+
+      function getDockBounceKey(btn){
+        if(!btn || !btn.dataset) return '';
+        const type = btn.dataset.dockType || '';
+        const ref = btn.dataset.refId || btn.dataset.dockWinId || '';
+        return `${type}:${ref}`;
+      }
+
       function getLeopardDockItems(inner){
         if(!inner) return [];
         return Array.from(inner.querySelectorAll('.blissos-dock-item')).filter(item =>
@@ -19718,14 +19733,49 @@ function toggleFitWindow(appId) {
         inner.addEventListener('pointercancel', handleLeave);
       }
 
-      function triggerLeopardDockBounce(btn){
-        if(!btn || !isLeopardDockActive()) return;
+      function runLeopardDockBounce(btn){
+        const prevTimer = dockBounceTimers.get(btn);
+        if(prevTimer) clearTimeout(prevTimer);
+        const prevHandler = dockBounceHandlers.get(btn);
+        if(prevHandler) btn.removeEventListener('animationend', prevHandler);
         btn.classList.remove('dock-launching');
         void btn.offsetWidth;
-        btn.classList.add('dock-launching');
-        setTimeout(() => {
+        const cleanup = (event) => {
+          if(event && event.animationName && event.animationName !== 'leopardDockBounce') return;
           btn.classList.remove('dock-launching');
-        }, 760);
+          const timer = dockBounceTimers.get(btn);
+          if(timer) clearTimeout(timer);
+          btn.removeEventListener('animationend', cleanup);
+          dockBounceTimers.delete(btn);
+          dockBounceHandlers.delete(btn);
+        };
+        dockBounceHandlers.set(btn, cleanup);
+        btn.addEventListener('animationend', cleanup);
+        btn.classList.add('dock-launching');
+        dockBounceTimers.set(btn, setTimeout(cleanup, 1300));
+      }
+
+      function replayPendingDockBounce(inner){
+        if(!pendingDockBounceKey) return;
+        if(Date.now() > pendingDockBounceUntil){
+          pendingDockBounceKey = '';
+          pendingDockBounceUntil = 0;
+          return;
+        }
+        const btn = getLeopardDockItems(inner).find(item => getDockBounceKey(item) === pendingDockBounceKey);
+        if(!btn) return;
+        pendingDockBounceKey = '';
+        pendingDockBounceUntil = 0;
+        requestAnimationFrame(() => runLeopardDockBounce(btn));
+      }
+
+      function triggerLeopardDockBounce(btn){
+        if(!btn || (!isLeopardDockActive() && !isAquaMobileDockBounceActive())) return;
+        if(isAquaMobileDockBounceActive()){
+          pendingDockBounceKey = getDockBounceKey(btn);
+          pendingDockBounceUntil = Date.now() + 1500;
+        }
+        runLeopardDockBounce(btn);
       }
 
       function buildTaskButtonsSignature(wins){
@@ -19990,8 +20040,8 @@ function renderBlissOSDock(){
           const separatorWidth = Math.round(15 + sizeT);
           const separatorBottom = Math.max(0, Math.round(sizeT));
           const rightGap = Math.round(4 + sizeT);
-          aquaMobileIconBaseY = -Math.round(dockIconBox * 0.84);
-          aquaMobileReflectionBottom = -Math.round(dockIconBox + 7);
+          aquaMobileIconBaseY = -Math.round(dockIconBox * 0.62);
+          aquaMobileReflectionBottom = -Math.round(dockIconBox + 13);
           dock.style.setProperty('--aqua-mobile-inner-h', `${innerHeight}px`);
           dock.style.setProperty('--aqua-mobile-inner-pad-x', `${innerPadX}px`);
           dock.style.setProperty('--aqua-mobile-tray-plate-h', `${trayPlateHeight}px`);
@@ -20111,6 +20161,7 @@ function renderBlissOSDock(){
           if(aquaMobileIconBaseY !== null && aquaMobileReflectionBottom !== null){
             btn.style.setProperty('--dock-icon-base-y', `${aquaMobileIconBaseY - 6}px`);
             btn.style.setProperty('--dock-reflection-bottom', `${aquaMobileReflectionBottom + 7}px`);
+            btn.style.setProperty('--dock-indicator-bottom', `${Math.max(5, Math.round(5 + (sizeT * 3)))}px`);
           }
           const trashTooltip = btn.querySelector('.dock-tooltip');
           if(trashTooltip) trashTooltip.textContent = label;
@@ -20132,6 +20183,7 @@ function renderBlissOSDock(){
         }
         dock.innerHTML = '';
         dock.appendChild(inner);
+        replayPendingDockBounce(inner);
         bindLeopardDockFx(inner);
         bindDockAutoHideFx(dock);
       }
