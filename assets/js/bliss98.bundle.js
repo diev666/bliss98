@@ -20104,7 +20104,7 @@ function renderBlissOSDock(){
           btn.innerHTML = buildDockItemMarkup(iconHtml, dockIconBox);
           if(aquaMobileIconBaseY !== null && aquaMobileReflectionBottom !== null){
             btn.style.setProperty('--dock-icon-base-y', `${aquaMobileIconBaseY}px`);
-            btn.style.setProperty('--dock-reflection-bottom', `${aquaMobileReflectionBottom}px`);
+            btn.style.setProperty('--dock-reflection-bottom', `${aquaMobileReflectionBottom + 2}px`);
             if(aquaMobileIndicatorBottom !== null) btn.style.setProperty('--dock-indicator-bottom', `${aquaMobileIndicatorBottom}px`);
           }
           const tooltip = btn.querySelector('.dock-tooltip');
