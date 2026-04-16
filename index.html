@@ -2426,20 +2426,20 @@
         bottom:-79px;
         transform:translateX(-50%) scaleY(-1);
         transform-origin:50% 0;
-        opacity:calc((0.18 + var(--dock-reflect, 0.24)) * var(--blissos-dock-opacity));
+        opacity:calc((0.2 + var(--dock-reflect, 0.26)) * var(--blissos-dock-opacity));
         pointer-events:none;
         z-index:2;
         overflow:hidden;
-        clip-path:inset(42% 0 0 0);
-        -webkit-mask-image:linear-gradient(180deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.42) 40%, rgba(0,0,0,0.16) 70%, rgba(0,0,0,0) 100%);
-        mask-image:linear-gradient(180deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.42) 40%, rgba(0,0,0,0.16) 70%, rgba(0,0,0,0) 100%);
-        filter:saturate(0.72) contrast(0.92) brightness(0.86);
+        clip-path:inset(30% 0 0 0);
+        -webkit-mask-image:linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.56) 34%, rgba(0,0,0,0.2) 70%, rgba(0,0,0,0) 100%);
+        mask-image:linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.56) 34%, rgba(0,0,0,0.2) 70%, rgba(0,0,0,0) 100%);
+        filter:saturate(0.76) contrast(0.94) brightness(0.88);
       }
       body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item .dock-reflection img,
       body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-item .dock-reflection svg{
         width:100%;
         height:100%;
-        transform:scale(0.9, 0.66);
+        transform:scale(0.9, 0.9);
         transform-origin:50% 0;
       }
       @media (hover:hover) and (pointer:fine){
@@ -11913,7 +11913,7 @@
             <!-- Build version: bump by +0.01 on every visual/code update -->
             <div class="tiny login-meta">
               <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-              <span class="login-version" id="loginVersion">Version: 1.55</span>
+              <span class="login-version" id="loginVersion">Version: 1.56</span>
             </div>
           </div>
 
@@ -12087,6 +12087,6 @@
         });
       })();
     </script>
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260416-v155-aqua-icons-seated"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260416-v156-aqua-reflection-edge"></script>
   </body>
 </html>
