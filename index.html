@@ -11307,19 +11307,20 @@
           width:var(--aqua-mobile-separator-w, 14px) !important;
           height:var(--aqua-mobile-separator-h, 44px) !important;
           margin:0 0 var(--aqua-mobile-separator-bottom, 5px) 0 !important;
-          transform:skewX(-10deg) translateY(var(--aqua-mobile-separator-shift, 0px)) !important;
+          transform:translateY(var(--aqua-mobile-separator-shift, 0px)) !important;
           clip-path:none !important;
           border-radius:0 !important;
           background:
-            linear-gradient(104deg, transparent 0 25%, rgba(218,222,226,0.5) 25% 72%, rgba(96,105,116,0.52) 72% 86%, transparent 86%) center 1px / 9px 3px no-repeat,
-            linear-gradient(104deg, transparent 0 22%, rgba(211,216,221,0.56) 22% 74%, rgba(88,97,108,0.56) 74% 88%, transparent 88%) center 5px / 11px 3px no-repeat,
-            linear-gradient(104deg, transparent 0 19%, rgba(204,210,216,0.62) 19% 76%, rgba(80,89,100,0.6) 76% 90%, transparent 90%) center 9px / 14px 3px no-repeat,
-            linear-gradient(104deg, transparent 0 16%, rgba(197,204,211,0.68) 16% 78%, rgba(73,82,93,0.64) 78% 92%, transparent 92%) center 14px / 17px 4px no-repeat,
-            linear-gradient(104deg, transparent 0 13%, rgba(189,197,205,0.74) 13% 80%, rgba(66,75,86,0.68) 80% 94%, transparent 94%) center 19px / 20px 4px no-repeat,
-            linear-gradient(104deg, transparent 0 10%, rgba(181,190,199,0.8) 10% 82%, rgba(58,67,78,0.72) 82% 96%, transparent 96%) center 24px / 23px 4px no-repeat,
-            linear-gradient(104deg, transparent 0 8%, rgba(172,182,192,0.84) 8% 84%, rgba(51,60,71,0.76) 84% 98%, transparent 98%) center 29px / 26px 5px no-repeat !important;
-          box-shadow:0 1px 0 rgba(255,255,255,0.34), 0 5px 8px rgba(21,25,31,0.28) !important;
-          opacity:calc(0.96 * var(--blissos-dock-opacity)) !important;
+            linear-gradient(90deg, rgba(239,242,245,0.58) 0%, rgba(178,187,196,0.66) 58%, rgba(118,130,141,0.56) 100%) center 1px / 11px 3px no-repeat,
+            linear-gradient(90deg, rgba(238,241,244,0.62) 0%, rgba(176,185,194,0.68) 58%, rgba(116,128,139,0.58) 100%) center 5px / 13px 3px no-repeat,
+            linear-gradient(90deg, rgba(237,240,243,0.66) 0%, rgba(174,183,192,0.7) 58%, rgba(114,126,137,0.6) 100%) center 9px / 15px 3px no-repeat,
+            linear-gradient(90deg, rgba(236,239,242,0.7) 0%, rgba(172,181,190,0.72) 58%, rgba(112,124,135,0.62) 100%) center 13px / 17px 3px no-repeat,
+            linear-gradient(90deg, rgba(235,238,241,0.74) 0%, rgba(169,178,187,0.74) 58%, rgba(109,121,132,0.64) 100%) center 17px / 19px 3px no-repeat,
+            linear-gradient(90deg, rgba(233,237,240,0.78) 0%, rgba(166,175,184,0.76) 58%, rgba(106,118,129,0.66) 100%) center 21px / 21px 3px no-repeat,
+            linear-gradient(90deg, rgba(231,235,238,0.82) 0%, rgba(162,172,181,0.78) 58%, rgba(102,114,125,0.68) 100%) center 25px / 24px 3px no-repeat,
+            linear-gradient(90deg, rgba(229,233,237,0.86) 0%, rgba(158,168,177,0.8) 58%, rgba(98,110,121,0.7) 100%) center 29px / 27px 3px no-repeat !important;
+          box-shadow:0 1px 0 rgba(255,255,255,0.3), 0 4px 7px rgba(21,25,31,0.22) !important;
+          opacity:calc(0.94 * var(--blissos-dock-opacity)) !important;
           -webkit-mask-image:linear-gradient(180deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.9) 14%, rgba(0,0,0,1) 100%) !important;
           mask-image:linear-gradient(180deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.9) 14%, rgba(0,0,0,1) 100%) !important;
         }
@@ -11872,7 +11873,7 @@
             <!-- Build version: bump by +0.01 on every visual/code update -->
             <div class="tiny login-meta">
               <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-              <span class="login-version" id="loginVersion">Version: 1.43</span>
+              <span class="login-version" id="loginVersion">Version: 1.44</span>
             </div>
           </div>
 
@@ -12046,6 +12047,6 @@
         });
       })();
     </script>
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260415-aqua-galaxy-separator"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20260415-aqua-separator-perspective"></script>
   </body>
 </html>
