@@ -20035,7 +20035,7 @@ function renderBlissOSDock(){
         if(isAquaDock && mobileDock){
           const innerHeight = dockItemHeight + 14;
           const innerPadX = Math.round(16 + (3 * sizeT));
-          const trayPlateHeight = Math.round(dockItemHeight + 3);
+          const trayPlateHeight = Math.round(dockItemHeight + 1);
           const separatorHeight = Math.max(34, trayPlateHeight - 1);
           const separatorShift = 0;
           const separatorWidth = Math.round(15 + sizeT);
