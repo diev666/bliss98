@@ -171,6 +171,7 @@
           state.isMobile = !!(e && e.matches);
           if(typeof tickClock === 'function') tickClock();
           if(typeof scheduleWindowRelayout === 'function') scheduleWindowRelayout();
+          if(typeof renderBlissOSDock === 'function') renderBlissOSDock();
         };
         if(typeof MOBILE_MQ.addEventListener === 'function') MOBILE_MQ.addEventListener('change', onChange);
         else if(typeof MOBILE_MQ.addListener === 'function') MOBILE_MQ.addListener(onChange);
