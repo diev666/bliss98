@@ -2922,6 +2922,7 @@
         display:flex;
         flex-direction:column;
         align-items:center;
+        gap:clamp(18px, 4vh, 30px);
       }
       .login-panel{
         width:100%;
@@ -2956,7 +2957,7 @@
       .field-row{display:flex; gap:8px; align-items:center; margin-top:12px;}
       .login-os-picker{
         width:min(420px, calc(100% - 44px));
-        margin-top:clamp(34px, 8vh, 82px);
+        margin-top:0;
         padding:14px 12px 12px;
         box-sizing:border-box;
         position:relative;
@@ -3152,18 +3153,18 @@
       .tiny{font-size:12px; opacity:.85; user-select:text;}
       @media (max-width:520px){
         #login{
-          align-items:flex-start;
-          padding:clamp(84px, 18vh, 150px) 0 32px;
+          align-items:center;
+          padding:32px 0 calc(32px + env(safe-area-inset-bottom));
         }
         .login-shell{
           width:100%;
+          gap:16px;
         }
         .login-panel{
-          width:100%;
+          width:min(520px, calc(100% - 24px));
         }
         .login-os-picker{
           width:min(360px, calc(100% - 48px));
-          margin-top:clamp(46px, 12vh, 112px);
         }
         .login-version{
           font-size:9px;
