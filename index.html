@@ -11351,19 +11351,41 @@
             linear-gradient(180deg, rgba(154,153,154,0.58) 0%, rgba(154,153,154,0.48) 52%, rgba(154,153,154,0.39) 100%),
             linear-gradient(180deg, rgba(154,153,154,0.58) 0%, rgba(154,153,154,0.48) 52%, rgba(154,153,154,0.39) 100%),
             linear-gradient(180deg, rgba(154,153,154,0.58) 0%, rgba(154,153,154,0.48) 52%, rgba(154,153,154,0.39) 100%),
-            linear-gradient(180deg, rgba(154,153,154,0.58) 0%, rgba(154,153,154,0.48) 52%, rgba(154,153,154,0.39) 100%),
-            linear-gradient(180deg, rgba(154,153,154,0.58) 0%, rgba(154,153,154,0.48) 52%, rgba(154,153,154,0.39) 100%),
-            linear-gradient(180deg, rgba(154,153,154,0.58) 0%, rgba(154,153,154,0.48) 52%, rgba(154,153,154,0.39) 100%),
-            linear-gradient(180deg, rgba(154,153,154,0.58) 0%, rgba(154,153,154,0.48) 52%, rgba(154,153,154,0.39) 100%),
             linear-gradient(180deg, rgba(154,153,154,0.58) 0%, rgba(154,153,154,0.48) 52%, rgba(154,153,154,0.39) 100%) !important;
-          background-position:center bottom 31px, center bottom 28px, center bottom 25px, center bottom 22px, center bottom 18px, center bottom 15px, center bottom 11px, center bottom 5px !important;
-          background-size:28% 1px, 36% 2px, 46% 2px, 56% 2px, 68% 2px, 80% 2px, 92% 2px, 100% 3px !important;
+          background-position:center bottom 18.5px, center bottom 15px, center bottom 11px, center bottom 5px !important;
+          background-size:68% 2px, 80% 2px, 92% 2px, 100% 3px !important;
           background-repeat:no-repeat !important;
           box-shadow:inset 1px 0 0 rgba(255,255,255,0.04), inset -1px 0 0 rgba(53,58,70,0.04) !important;
           filter:blur(0.08px) !important;
           opacity:calc(0.88 * var(--blissos-dock-opacity)) !important;
           -webkit-mask-image:none !important;
           mask-image:none !important;
+        }
+        body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-separator::before,
+        body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-separator::after{
+          content:"" !important;
+          position:absolute !important;
+          inset:0 !important;
+          pointer-events:none !important;
+          background-repeat:no-repeat !important;
+          -webkit-mask-image:none !important;
+          mask-image:none !important;
+        }
+        body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-separator::before{
+          background-image:
+            linear-gradient(180deg, rgba(154,153,154,0.58) 0%, rgba(154,153,154,0.48) 52%, rgba(154,153,154,0.39) 100%),
+            linear-gradient(180deg, rgba(154,153,154,0.58) 0%, rgba(154,153,154,0.48) 52%, rgba(154,153,154,0.39) 100%) !important;
+          background-position:center bottom 31px, center bottom 28px !important;
+          background-size:28% 1px, 36% 2px !important;
+          filter:blur(0.28px) !important;
+        }
+        body[data-theme="blissos"][data-blissos-style="aqua"] .blissos-dock-separator::after{
+          background-image:
+            linear-gradient(180deg, rgba(154,153,154,0.58) 0%, rgba(154,153,154,0.48) 52%, rgba(154,153,154,0.39) 100%),
+            linear-gradient(180deg, rgba(154,153,154,0.58) 0%, rgba(154,153,154,0.48) 52%, rgba(154,153,154,0.39) 100%) !important;
+          background-position:center bottom 25px, center bottom 22px !important;
+          background-size:46% 2px, 56% 2px !important;
+          filter:blur(0.14px) !important;
         }
 
         /* File Seeker compact layout (all themes on mobile) */
