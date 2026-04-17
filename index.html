@@ -10,6 +10,7 @@
           var raw = localStorage.getItem('bliss98_oldcrt');
           var theme = localStorage.getItem('bliss98_os_theme') || 'bliss98';
           theme = (theme === 'blissos' || theme === 'blissaqua') ? theme : 'bliss98';
+          enabled = theme !== 'blissaqua';
           var profilesRaw = localStorage.getItem('bliss98_os_profiles');
           if(profilesRaw){
             var profiles = JSON.parse(profilesRaw);

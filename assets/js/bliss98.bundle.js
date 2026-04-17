@@ -7002,7 +7002,7 @@ function getFactoryOsProfile(theme){
     retroGlow: false,
     scanlines: false,
     clock24: true,
-    oldCrt: true,
+    oldCrt: !isAqua,
     masterVolume: 0.8,
     systemVolume: 0.8,
     systemSoundsEnabled: true,
@@ -8064,7 +8064,7 @@ function getDefaultOsProfiles(){
       retroGlow: false,
       scanlines: false,
       clock24: true,
-      oldCrt: true,
+      oldCrt: false,
       masterVolume: loadMasterVolume(),
       systemVolume: loadSystemVolume(),
       systemSoundsEnabled: loadSystemSoundsEnabled(),
@@ -20506,7 +20506,7 @@ function getDockItemEl(appId){
   return document.querySelector(`#blissosDock [data-dock-win-id="${appId}"]`);
 }
 
-const DEFAULT_DOCK_ORDER = ['seeker','clothes','music','art','games','videos','about','contact','diev','settings','trash'];
+const DEFAULT_DOCK_ORDER = ['seeker','music','clothes','videos','art','poetry','mediaplayer','diev','settings','trash'];
 
 function isTrashDockItem(item){
   return !!item && (item.type === 'trash' || (item.type === 'app' && item.refId === 'trash'));

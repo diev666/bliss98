@@ -3504,7 +3504,7 @@ function getDockItemEl(appId){
   return document.querySelector(`#blissosDock [data-dock-win-id="${appId}"]`);
 }
 
-const DEFAULT_DOCK_ORDER = ['seeker','clothes','music','art','games','videos','about','contact','diev','settings','trash'];
+const DEFAULT_DOCK_ORDER = ['seeker','music','clothes','videos','art','poetry','mediaplayer','diev','settings','trash'];
 
 function isTrashDockItem(item){
   return !!item && (item.type === 'trash' || (item.type === 'app' && item.refId === 'trash'));
