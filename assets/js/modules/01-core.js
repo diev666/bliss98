@@ -236,8 +236,6 @@
       const GAMES_VIEW_KEY = 'bliss98_games_view';
       const GAMES_BIG_KEY = 'bliss98_games_big';
       const DESKTOP_ICONS_KEY = 'bliss98_show_desktop_icons';
-      const DOCK_MOBILE_MAX_TOTAL = 9;
-      const DOCK_MOBILE_MAX_NORMAL = 8;
 const RETRO_KEY = 'bliss98_retro_glow';
 const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
       function loadMobileControlsMode(){

@@ -2999,9 +2999,6 @@ function renderBlissOSDock(){
         const mid = inner.querySelector('.blissos-dock-mid');
         const right = inner.querySelector('.blissos-dock-right');
         let normalItems = normalized.filter(item => !isTrashDockItem(item));
-        if(mobileDock && normalItems.length > DOCK_MOBILE_MAX_NORMAL){
-          normalItems = normalItems.slice(0, DOCK_MOBILE_MAX_NORMAL);
-        }
         const trashItem = normalized.find(isTrashDockItem);
         const renderItems = trashItem ? normalItems.concat(trashItem) : normalItems.slice();
         const dockStateSig = renderItems.map(item => {
@@ -3777,23 +3774,12 @@ function isMobileDock(){
   return !!state.isMobile;
 }
 
-function showDockFullMessage(){
-  showMessage('dialog.dockFull.title', 'dialog.dockFull.body');
-}
-
 function addDockItem(type, refId){
   const targetType = (type === 'trash' || refId === 'trash') ? 'trash' : type;
   const targetRef = (refId === 'trash') ? 'trash' : refId;
   if(!isDockableItem(targetType, targetRef)) return false;
   if(!Array.isArray(state.dockItems)) state.dockItems = [];
   if(isDockItemPresent(targetType, targetRef)) return false;
-  if(targetType !== 'trash' && isMobileDock()){
-    const normal = getDockItemsWithoutTrash();
-    if(normal.length >= DOCK_MOBILE_MAX_NORMAL){
-      showDockFullMessage();
-      return false;
-    }
-  }
   if(targetType === 'trash'){
     state.dockItems = ensureTrashDockItem(state.dockItems);
   } else {
@@ -3921,26 +3907,6 @@ function addDockItemsAt(entries, index){
   let changed = false;
   let normal = getDockItemsWithoutTrash();
   const minInsertIndex = getDockMinInsertIndex(normal);
-  if(isMobileDock()){
-    const pendingKeys = new Set();
-    let pendingAdds = 0;
-    entries.forEach(entry => {
-      if(!entry) return;
-      const type = entry.type === 'trash' || entry.refId === 'trash' ? 'trash' : entry.type;
-      const refId = entry.refId === 'trash' ? 'trash' : entry.refId;
-      if(type === 'trash') return;
-      if(!isDockableItem(type, refId)) return;
-      const key = getDockItemKey(type, refId);
-      if(pendingKeys.has(key)) return;
-      if(isDockItemPresent(type, refId)) return;
-      pendingKeys.add(key);
-      pendingAdds += 1;
-    });
-    if(pendingAdds > 0 && (normal.length >= DOCK_MOBILE_MAX_NORMAL || (normal.length + pendingAdds) > DOCK_MOBILE_MAX_NORMAL)){
-      showDockFullMessage();
-      return false;
-    }
-  }
   let insertAt = clamp(index, minInsertIndex, normal.length);
   entries.forEach(entry => {
     if(!entry) return;
@@ -4070,16 +4036,13 @@ function bindDockDrag(btn, item, midEl, innerEl){
     }
     const key = getDockItemKey(item.type, item.refId);
     const normal = getDockItemsWithoutTrash();
-    const hasOverflow = isMobileDock() && normal.length > DOCK_MOBILE_MAX_NORMAL;
-    const visible = hasOverflow ? normal.slice(0, DOCK_MOBILE_MAX_NORMAL) : normal.slice();
-    const hidden = hasOverflow ? normal.slice(DOCK_MOBILE_MAX_NORMAL) : [];
-    const minInsertIndex = getDockMinInsertIndex(visible);
-    const fromIndex = visible.findIndex(it => (it.id || getDockItemKey(it.type, it.refId)) === key);
+    const minInsertIndex = getDockMinInsertIndex(normal);
+    const fromIndex = normal.findIndex(it => (it.id || getDockItemKey(it.type, it.refId)) === key);
     if(fromIndex !== -1){
-      const moved = visible.splice(fromIndex, 1)[0];
-      const insertAt = clamp(targetIndex >= 0 ? targetIndex : fromIndex, minInsertIndex, visible.length);
-      visible.splice(insertAt, 0, moved);
-      state.dockItems = ensureTrashDockItem(visible.concat(hidden));
+      const moved = normal.splice(fromIndex, 1)[0];
+      const insertAt = clamp(targetIndex >= 0 ? targetIndex : fromIndex, minInsertIndex, normal.length);
+      normal.splice(insertAt, 0, moved);
+      state.dockItems = ensureTrashDockItem(normal);
       saveDockItems();
       cleanup();
       renderBlissOSDock();
