@@ -426,6 +426,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
         { id:'matrix', nameKey:'theme.matrix', titlebarColor:'greenDark', wallpaperId:'matrix', darkMode:true },
         { id:'xp98', nameKey:'theme.xp98', titlebarColor:'xpBlue', wallpaperId:'blissxp', darkMode:false },
         { id:'scarbliss', nameKey:'theme.scarbliss', titlebarColor:'scarbliss', wallpaperId:'scarbliss', darkMode:true },
+        { id:'diev', nameKey:'theme.diev', titlebarColor:'blank', wallpaperId:'clouds', darkMode:true, bliss98Accent:'teal' },
         { id:'blank', nameKey:'theme.blank', titlebarColor:'blank', wallpaperId:'classic', darkMode:false },
       ];
 
@@ -8497,6 +8498,9 @@ function setThemePreset(id, opts={}){
   setDarkMode(preset.darkMode, true);
   applyWallpaper(preset.wallpaperId);
   setTitlebarTheme(preset.titlebarColor, true);
+  if(preset.bliss98Accent){
+    setBliss98Accent(preset.bliss98Accent, { fromPreset:true });
+  }
   themeApplying = false;
   updateThemeButtons();
   updateThemeThumbs();
@@ -11917,6 +11921,7 @@ function installLongPress(el, getTarget){
           'theme.matrix': 'Matrix',
           'theme.xp98': 'XP98',
           'theme.scarbliss': 'ScarBliss',
+          'theme.diev': 'DIEV',
           'theme.blank': 'Blank',
           'theme.custom': 'Custom',
           'theme.customEmpty': 'Empty',
@@ -12570,6 +12575,7 @@ function installLongPress(el, getTarget){
           'theme.matrix': 'Matrix',
           'theme.xp98': 'XP98',
           'theme.scarbliss': 'ScarBliss',
+          'theme.diev': 'DIEV',
           'theme.blank': 'Vazio',
           'theme.custom': 'Personalizado',
           'theme.customEmpty': 'Vazio',
@@ -15554,6 +15560,13 @@ Eu sou o buffalo branco extinto`
                         <div class="theme-preview-body" style="background:url('./assets/wallpapers/scarbliss.png') center/cover no-repeat;"></div>
                       </div>
                       <span data-i18n="theme.scarbliss">ScarBliss</span>
+                    </button>
+                    <button class="theme-thumb bevel" type="button" data-set-theme="diev" data-theme-thumb="diev">
+                      <div class="theme-preview theme-preview-diev">
+                        <div class="theme-preview-bar"></div>
+                        <div class="theme-preview-body" style="background:url('./assets/wallpapers/clouds.png') center/cover no-repeat;"></div>
+                      </div>
+                      <span data-i18n="theme.diev">DIEV</span>
                     </button>
                     <button class="theme-thumb bevel" type="button" data-set-theme="blank" data-theme-thumb="blank">
                       <div class="theme-preview theme-preview-blank">

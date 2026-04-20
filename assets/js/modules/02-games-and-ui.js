@@ -7087,6 +7087,9 @@ function setThemePreset(id, opts={}){
   setDarkMode(preset.darkMode, true);
   applyWallpaper(preset.wallpaperId);
   setTitlebarTheme(preset.titlebarColor, true);
+  if(preset.bliss98Accent){
+    setBliss98Accent(preset.bliss98Accent, { fromPreset:true });
+  }
   themeApplying = false;
   updateThemeButtons();
   updateThemeThumbs();

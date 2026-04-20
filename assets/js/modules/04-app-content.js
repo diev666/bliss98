@@ -1289,6 +1289,13 @@ Eu sou o buffalo branco extinto`
                       </div>
                       <span data-i18n="theme.scarbliss">ScarBliss</span>
                     </button>
+                    <button class="theme-thumb bevel" type="button" data-set-theme="diev" data-theme-thumb="diev">
+                      <div class="theme-preview theme-preview-diev">
+                        <div class="theme-preview-bar"></div>
+                        <div class="theme-preview-body" style="background:url('./assets/wallpapers/clouds.png') center/cover no-repeat;"></div>
+                      </div>
+                      <span data-i18n="theme.diev">DIEV</span>
+                    </button>
                     <button class="theme-thumb bevel" type="button" data-set-theme="blank" data-theme-thumb="blank">
                       <div class="theme-preview theme-preview-blank">
                         <div class="theme-preview-bar"></div>

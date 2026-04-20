@@ -422,6 +422,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
         { id:'matrix', nameKey:'theme.matrix', titlebarColor:'greenDark', wallpaperId:'matrix', darkMode:true },
         { id:'xp98', nameKey:'theme.xp98', titlebarColor:'xpBlue', wallpaperId:'blissxp', darkMode:false },
         { id:'scarbliss', nameKey:'theme.scarbliss', titlebarColor:'scarbliss', wallpaperId:'scarbliss', darkMode:true },
+        { id:'diev', nameKey:'theme.diev', titlebarColor:'blank', wallpaperId:'clouds', darkMode:true, bliss98Accent:'teal' },
         { id:'blank', nameKey:'theme.blank', titlebarColor:'blank', wallpaperId:'classic', darkMode:false },
       ];
 
