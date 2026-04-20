@@ -543,14 +543,28 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
         loginEl.addEventListener('keydown', wrapped, true);
       }
 
+      function getIconPositionsStorageKey(theme = getCurrentOsThemeChoice()){
+        return `${ICON_POS_KEY}_${normalizeOsThemeChoice(theme)}`;
+      }
+
+      function hasSavedIconPositionsForCurrentOs(){
+        try{
+          return localStorage.getItem(getIconPositionsStorageKey()) !== null;
+        } catch {
+          return false;
+        }
+      }
+
       function loadIconPositions(){
         try{
-          const key = `${ICON_POS_KEY}_${getCurrentOsThemeChoice()}`;
+          const theme = getCurrentOsThemeChoice();
+          const key = getIconPositionsStorageKey(theme);
           const raw = localStorage.getItem(key);
           if(raw){
             const parsed = JSON.parse(raw);
             if(parsed && typeof parsed === 'object') return parsed;
           }
+          if(theme !== 'bliss98') return {};
           const legacy = localStorage.getItem(ICON_POS_KEY);
           return legacy ? JSON.parse(legacy) : {};
         } catch {
@@ -560,7 +574,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
 
       function saveIconPositions(pos){
         try{
-          const key = `${ICON_POS_KEY}_${getCurrentOsThemeChoice()}`;
+          const key = getIconPositionsStorageKey();
           localStorage.setItem(key, JSON.stringify(pos));
         } catch {}
       }
@@ -673,6 +687,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
 
         const iconPosCache = loadIconPositions();
         const layout = getDefaultIconLayout();
+        const useThemeDefaultPositions = shouldAlignDesktopIconsRight() && !hasSavedIconPositionsForCurrentOs();
         let iconPosDirty = false;
 
         const syncAppItem = (id, type, titleKey)=>{
@@ -684,8 +699,8 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
           const base = existing || { id, type, appId: id };
           const parentId = base.parentId || null;
           const needsPos = parentId == null;
-          const x = needsPos ? (hasSaved ? saved.x : (Number.isFinite(base.x) ? base.x : saved.x)) : base.x;
-          const y = needsPos ? (hasSaved ? saved.y : (Number.isFinite(base.y) ? base.y : saved.y)) : base.y;
+          const x = needsPos ? (hasSaved ? saved.x : (useThemeDefaultPositions ? saved.x : (Number.isFinite(base.x) ? base.x : saved.x))) : base.x;
+          const y = needsPos ? (hasSaved ? saved.y : (useThemeDefaultPositions ? saved.y : (Number.isFinite(base.y) ? base.y : saved.y))) : base.y;
           const next = {
             ...base,
             id,
@@ -864,9 +879,14 @@ function getFolderGridMetrics(containerEl, items, extraSlots = 0){
 }
 
 function snapToGridClamped(x, y, metrics){
-  const snapped = snapToGrid(x, y);
-  const maxX = (metrics.cols - 1) * metrics.stepX;
-  const maxY = (metrics.rows - 1) * metrics.stepY;
+  const stepX = metrics.stepX || (ICON_SIZE.w + ICON_GAP.x);
+  const stepY = metrics.stepY || (ICON_SIZE.h + ICON_GAP.y);
+  const snapped = {
+    x: Math.round(x / stepX) * stepX,
+    y: Math.round(y / stepY) * stepY
+  };
+  const maxX = (metrics.cols - 1) * stepX;
+  const maxY = (metrics.rows - 1) * stepY;
   return {
     x: clamp(snapped.x, 0, maxX),
     y: clamp(snapped.y, 0, maxY)
@@ -1157,7 +1177,7 @@ function getDefaultIconLayout(){
     let col = 0;
     let row = 0;
     const maxRows = Math.max(1, Math.floor((height - 6) / metrics.stepY));
-    const usableRows = alignRight ? Math.max(1, maxRows - 1) : maxRows;
+    const usableRows = alignRight ? Math.min(6, maxRows) : maxRows;
     const cols = Math.max(1, Math.floor((width - 6) / metrics.stepX));
     ordered.forEach(id => {
       const actualCol = alignRight ? Math.max(0, (cols - 1) - col) : col;

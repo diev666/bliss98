@@ -7303,7 +7303,7 @@ function isInFolder(id){
 
 function isDesktopVisibleItem(item){
   if(!item || item.parentId != null) return false;
-  if(item.id === 'trash' && state.settings.theme === 'blissos' && !!state.settings.blissosAqua) return false;
+  if(item.id === 'trash' && state.settings.theme === 'blissos') return false;
   if(item.id !== 'trash' && state.trash.has(item.id)) return false;
   if((state.folders.games || []).includes(item.id)) return false;
   if(item.type === 'app'){
