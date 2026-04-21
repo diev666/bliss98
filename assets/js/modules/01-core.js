@@ -125,6 +125,10 @@
         snake: {
           highScore: 0,
         },
+        minesweeper: {
+          highScore: 0,
+          difficulty: 'beginner',
+        },
         dopeSkate: {
           highScore: 0,
           preview: {
@@ -225,6 +229,7 @@
       const CLOTHES_PROFILE_URL = 'https://www.instagram.com/blissworldweb/';
       const CLOTHES_SIZING_URL = 'https://www.instagram.com/direct/new/?username=blissworldweb';
       const SNAKE_HIGH_KEY = 'bliss98_snake_highscore';
+      const MINESWEEPER_HIGH_KEY = 'bliss98_minesweeper_highscore';
       const DOPE_SKATE_HIGH_KEY = 'bliss98_dope_skate_highscore';
       const TITLEBAR_KEY = 'bliss98_titlebar_theme';
       const THEME_PRESET_KEY = 'bliss98_theme_preset';

@@ -979,6 +979,58 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
+          if(state.games.view === 'minesweeper'){
+            const difficulty = state.minesweeper && state.minesweeper.difficulty ? state.minesweeper.difficulty : 'beginner';
+            return `
+              <div class="mine-shell">
+                <div class="mine-header">
+                  <div class="mine-topbar">
+                    <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                    <div class="mine-title-wrap">
+                      <h2 class="mine-title" data-i18n="games.minesweeper">Minesweeper</h2>
+                      <p class="tiny mine-tagline" data-i18n="minesweeper.tagline">“Watch your step, one wrong move could be your last.”</p>
+                    </div>
+                    <button class="btn bevel" type="button" data-mine-action="restart" data-i18n="minesweeper.action.restart">Restart</button>
+                  </div>
+                  <div class="mine-controls">
+                    <label class="mine-control">
+                      <span class="tiny" data-i18n="minesweeper.difficulty">Difficulty</span>
+                      <select class="mine-select" data-mine-setting="difficulty">
+                        <option value="beginner"${difficulty === 'beginner' ? ' selected' : ''} data-i18n="minesweeper.difficulty.beginner">Beginner</option>
+                        <option value="intermediate"${difficulty === 'intermediate' ? ' selected' : ''} data-i18n="minesweeper.difficulty.intermediate">Intermediate</option>
+                        <option value="expert"${difficulty === 'expert' ? ' selected' : ''} data-i18n="minesweeper.difficulty.expert">Expert</option>
+                      </select>
+                    </label>
+                    <button class="btn bevel" type="button" data-mine-action="new" data-i18n="minesweeper.action.new">New board</button>
+                  </div>
+                  <div class="mine-stats">
+                    <div class="tiny"><span data-i18n="minesweeper.minesLeft">Mines left:</span> <strong data-mine-mines-left>10</strong></div>
+                    <div class="tiny"><span data-i18n="minesweeper.timer">Timer:</span> <strong data-mine-timer>0</strong></div>
+                    <div class="tiny"><span data-i18n="minesweeper.score">Score:</span> <strong data-mine-score>0</strong></div>
+                    <div class="tiny"><span data-i18n="minesweeper.best">Best:</span> <strong data-mine-best>0</strong></div>
+                  </div>
+                </div>
+                <div class="mine-board-shell">
+                  <div class="mine-board-wrap" id="mineBoardWrap">
+                    <div class="mine-board" id="mineBoard" role="grid" aria-label="${t('games.minesweeper')}"></div>
+                  </div>
+                  <div class="mine-status-row">
+                    <div class="tiny" data-mine-status data-i18n="minesweeper.status.ready">Ready for the first click.</div>
+                    <div class="tiny mine-help" data-i18n="minesweeper.instructions.touch">On touch, tap to reveal or long press to flag.</div>
+                  </div>
+                </div>
+                <div class="mine-overlay hidden" id="mineOverlay">
+                  <div class="mine-overlay-box bevel">
+                    <strong data-mine-overlay-title data-i18n="minesweeper.overlay.win">Board cleared</strong>
+                    <div class="tiny"><span data-i18n="minesweeper.overlay.score">Final score:</span> <span data-mine-over-score>0</span></div>
+                    <div class="tiny"><span data-i18n="minesweeper.overlay.time">Time:</span> <span data-mine-over-time>0</span></div>
+                    <button class="btn bevel" type="button" data-mine-action="viewboard" data-i18n="minesweeper.overlay.viewBoard">View board</button>
+                    <button class="btn bevel" type="button" data-mine-action="playAgain" data-i18n="minesweeper.overlay.playAgain">Play again</button>
+                  </div>
+                </div>
+              </div>
+            `;
+          }
           if(state.games.view === 'leaderboard'){
             const lb = getGamesLeaderboard();
             const rows = lb.items.map(item => `
@@ -1025,6 +1077,16 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'dope-skate', iconFile:'./assets/icons/dope-skate.png' }, t('games.dopeSkate'), 64)}
                   </div>
                   <span data-i18n="games.dopeSkate">Dope Skate</span>
+                </button>
+              `;
+            }
+            if(id === 'minesweeper'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="minesweeper">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'minesweeper', iconFile:'./assets/icons/minesweeper.svg' }, t('games.minesweeper'), 64)}
+                  </div>
+                  <span data-i18n="games.minesweeper">Minesweeper</span>
                 </button>
               `;
             }

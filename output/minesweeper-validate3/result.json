@@ -1,0 +1,101 @@
+{
+  "initialCells": 81,
+  "initialDifficulty": "beginner",
+  "afterFirstClick": {
+    "game": "minesweeper",
+    "mode": "idle",
+    "difficulty": "beginner",
+    "coordinateSystem": "Grid coordinates. Origin at top-left (0,0); x increases right, y increases down.",
+    "grid": {
+      "width": 9,
+      "height": 9
+    },
+    "mines": 10,
+    "minesLeft": 10,
+    "timerSec": 0,
+    "score": 0,
+    "highScore": 0,
+    "cursor": {
+      "row": 0,
+      "col": 0
+    },
+    "firstMoveSafe": true,
+    "cells": [
+      "#########",
+      "#########",
+      "#########",
+      "#########",
+      "#########",
+      "#########",
+      "#########",
+      "#########",
+      "#########"
+    ]
+  },
+  "rightClickFlag": {
+    "cell": "0,0",
+    "minesLeft": 9,
+    "flagged": true
+  },
+  "afterRightClick": {
+    "game": "minesweeper",
+    "mode": "idle",
+    "difficulty": "beginner",
+    "coordinateSystem": "Grid coordinates. Origin at top-left (0,0); x increases right, y increases down.",
+    "grid": {
+      "width": 9,
+      "height": 9
+    },
+    "mines": 10,
+    "minesLeft": 9,
+    "timerSec": 0,
+    "score": 0,
+    "highScore": 0,
+    "cursor": {
+      "row": 0,
+      "col": 0
+    },
+    "firstMoveSafe": true,
+    "cells": [
+      "F########",
+      "#########",
+      "#########",
+      "#########",
+      "#########",
+      "#########",
+      "#########",
+      "#########",
+      "#########"
+    ]
+  },
+  "flagModeState": {
+    "flagMode": true,
+    "button": "Flag Mode: On"
+  },
+  "flagModePlace": {
+    "cell": "0,1",
+    "minesLeft": 8
+  },
+  "expert": {
+    "difficulty": "expert",
+    "cols": 30,
+    "rows": 16,
+    "cells": 480,
+    "flagMode": false
+  },
+  "lose": {
+    "mineCell": "0,3",
+    "overlay": true,
+    "title": "Boom",
+    "mode": "lost"
+  },
+  "win": {
+    "overlay": true,
+    "title": "Board cleared",
+    "mode": "won",
+    "score": 2098,
+    "highScore": 2098,
+    "bestUi": "2098"
+  },
+  "errors": []
+}

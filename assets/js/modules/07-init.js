@@ -7,15 +7,15 @@
         }
         if(!params) return;
         const autoGame = (params.get('autogame') || '').trim().toLowerCase();
-        if(autoGame !== 'snake') return;
+        if(autoGame !== 'snake' && autoGame !== 'minesweeper') return;
         const rawUser = (params.get('user') || localStorage.getItem('bliss98_user') || 'PLAYER').trim();
         const user = rawUser || 'PLAYER';
         setUser(user);
         if($('#username')) $('#username').value = user;
         showDesktop();
         if(!state.windows.has('games')) openApp('games');
-        state.games.view = 'snake';
-        state.games.selectedId = 'snake';
+        state.games.view = autoGame;
+        state.games.selectedId = autoGame;
         renderGamesWindow();
         focusWindow('games');
       }
@@ -54,10 +54,13 @@
         state.folders = loadFolders();
         if(!Array.isArray(state.folders.games)) state.folders.games = [];
         if(!state.folders.games.includes('snake')) state.folders.games.unshift('snake');
+        if(!state.folders.games.includes('minesweeper')) state.folders.games.splice(Math.min(1, state.folders.games.length), 0, 'minesweeper');
         if(!state.folders.games.includes('dope-skate')) state.folders.games.push('dope-skate');
         state.snake.highScore = loadSnakeHighScore();
+        state.minesweeper.highScore = loadMinesweeperHighScore();
         state.dopeSkate.highScore = loadDopeSkateHighScore();
         recordGameScore('snake', state.snake.highScore);
+        recordGameScore('minesweeper', state.minesweeper.highScore);
         recordGameScore('dopeSkate', state.dopeSkate.highScore);
         state.trash = new Set(loadTrash());
         state.iconLabels = loadIconLabels();

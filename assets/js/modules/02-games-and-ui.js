@@ -20,8 +20,8 @@ function renderGamesWindow(){
   delete content.dataset.fitMinW;
   delete content.dataset.fitMinH;
   applyI18nTo(win);
-  const mobileGameView = isMobileGameMode() && state.games.view === 'snake';
-  if(state.games.view === 'snake'){
+  const mobileGameView = isMobileGameMode() && (state.games.view === 'snake' || state.games.view === 'minesweeper');
+  if(state.games.view === 'snake' || state.games.view === 'minesweeper'){
     enterMobileFullscreen(state.games.view, win);
   } else {
     win.classList.remove('mobile-game');
@@ -74,6 +74,20 @@ function renderGamesWindow(){
     content.dataset.fitMinH = state.isMobile ? '280' : '620';
     initSnakeInWindow(win);
     mountMobileGameDock('snake', win);
+    if(!mobileGameView){
+      const wstate = state.windows.get('games');
+      const prevUserSized = wstate ? wstate.userSized : false;
+      if(wstate) wstate.userSized = false;
+      smartFitWindow(win, 'tabChange').finally(()=>{
+        if(wstate) wstate.userSized = prevUserSized;
+      });
+    }
+    return;
+  }
+  if(state.games.view === 'minesweeper'){
+    content.dataset.fitMinW = state.isMobile ? '300' : '930';
+    content.dataset.fitMinH = state.isMobile ? '340' : '780';
+    initMinesweeperInWindow(win);
     if(!mobileGameView){
       const wstate = state.windows.get('games');
       const prevUserSized = wstate ? wstate.userSized : false;
@@ -579,6 +593,12 @@ function openGameFromHub(id){
     renderGamesWindow();
     return;
   }
+  if(id === 'minesweeper'){
+    state.games.view = 'minesweeper';
+    state.games.selectedId = 'minesweeper';
+    renderGamesWindow();
+    return;
+  }
   if(id === 'dope-skate'){
     state.games.selectedId = 'dope-skate';
     state.games.view = 'list';
@@ -597,6 +617,7 @@ function backToGamesHub(){
   state.games.view = 'list';
   state.games.selectedId = getFirstGameId();
   snakeStop();
+  minesweeperStop();
   if(state.windows.has('dope-skate')){
     closeApp('dope-skate');
   } else {
@@ -667,12 +688,30 @@ function saveSnakeHighScore(score){
   try{ localStorage.setItem(SNAKE_HIGH_KEY, String(score)); } catch {}
 }
 
+function loadMinesweeperHighScore(){
+  try{
+    const raw = localStorage.getItem(MINESWEEPER_HIGH_KEY);
+    const parsed = parseInt(raw || '0', 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveMinesweeperHighScore(score){
+  try{ localStorage.setItem(MINESWEEPER_HIGH_KEY, String(score)); } catch {}
+}
+
 function loadGamesLeaderboardData(){
   try{
     const raw = localStorage.getItem(GAMES_LEADER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { snake: { best: 0, lastPlayed: null }, dopeSkate: { best: 0, lastPlayed: null } };
+  return {
+    snake: { best: 0, lastPlayed: null },
+    minesweeper: { best: 0, lastPlayed: null },
+    dopeSkate: { best: 0, lastPlayed: null },
+  };
 }
 
 function saveGamesLeaderboardData(data){
@@ -695,6 +734,7 @@ function getGamesLeaderboard(){
   // TODO: plug in backend leaderboard source.
   const items = [
     { id:'dopeSkate', label: t('games.dopeSkate'), best: data.dopeSkate ? data.dopeSkate.best : 0 },
+    { id:'minesweeper', label: t('games.minesweeper'), best: data.minesweeper ? data.minesweeper.best : 0 },
     { id:'snake', label: t('games.snake'), best: data.snake ? data.snake.best : 0 },
   ];
   const total = items.reduce((sum, item)=>sum + (item.best || 0), 0);
@@ -703,6 +743,10 @@ function getGamesLeaderboard(){
 
 function isSnakeActive(){
   return state.activeWindowId === 'games' && state.games.view === 'snake';
+}
+
+function isMinesweeperActive(){
+  return state.activeWindowId === 'games' && state.games.view === 'minesweeper';
 }
 
 function snakeGetLevel(score = snake.score){
@@ -1407,6 +1451,638 @@ function updateSnakeUI(){
       snake.els.actionBtn.textContent = t('snake.pause');
     }
   }
+}
+
+const MINESWEEPER_DIFFICULTIES = {
+  beginner: {
+    id: 'beginner',
+    cols: 9,
+    rows: 9,
+    mines: 10,
+    scoreBase: 600,
+    winBonus: 240,
+    timeBonusMax: 420,
+    timePenalty: 3.2,
+    accuracyBonus: 90,
+  },
+  intermediate: {
+    id: 'intermediate',
+    cols: 16,
+    rows: 16,
+    mines: 40,
+    scoreBase: 1400,
+    winBonus: 520,
+    timeBonusMax: 900,
+    timePenalty: 2.6,
+    accuracyBonus: 180,
+  },
+  expert: {
+    id: 'expert',
+    cols: 30,
+    rows: 16,
+    mines: 99,
+    scoreBase: 3000,
+    winBonus: 1200,
+    timeBonusMax: 1800,
+    timePenalty: 2.2,
+    accuracyBonus: 360,
+  },
+};
+const MINESWEEPER_TIMER_STEP_MS = 250;
+const MINESWEEPER_LONG_PRESS_MS = 420;
+const MINESWEEPER_MINE_ICON = './assets/icons/mine.png';
+const MINESWEEPER_FLAG_ICON = './assets/icons/red-flag.svg';
+
+let minesweeper = {
+  difficulty: 'beginner',
+  cols: 9,
+  rows: 9,
+  mineCount: 10,
+  safeCells: 71,
+  revealedCount: 0,
+  flagCount: 0,
+  firstMove: true,
+  started: false,
+  won: false,
+  lost: false,
+  score: 0,
+  elapsedMs: 0,
+  board: [],
+  cursor: { row: 0, col: 0 },
+  timer: null,
+  els: null,
+  longPressTimer: null,
+  longPressCellKey: '',
+  longPressTriggered: false,
+  overlayDismissed: false,
+};
+
+function minesweeperGetDifficultyConfig(id = null){
+  const lookup = id || (state.minesweeper && state.minesweeper.difficulty) || minesweeper.difficulty || 'beginner';
+  return MINESWEEPER_DIFFICULTIES[lookup] || MINESWEEPER_DIFFICULTIES.beginner;
+}
+
+function minesweeperGetCellPixelSize(){
+  const mobile = isMobileGameMode();
+  const sizes = mobile
+    ? { beginner: 28, intermediate: 24, expert: 20 }
+    : { beginner: 34, intermediate: 28, expert: 24 };
+  return sizes[minesweeper.difficulty] || sizes.beginner;
+}
+
+function minesweeperCreateCell(row, col){
+  return {
+    row,
+    col,
+    mine: false,
+    revealed: false,
+    flagged: false,
+    adjacent: 0,
+    exploded: false,
+    wrongFlag: false,
+  };
+}
+
+function minesweeperBuildBoard(){
+  minesweeper.board = [];
+  for(let row = 0; row < minesweeper.rows; row += 1){
+    const nextRow = [];
+    for(let col = 0; col < minesweeper.cols; col += 1){
+      nextRow.push(minesweeperCreateCell(row, col));
+    }
+    minesweeper.board.push(nextRow);
+  }
+}
+
+function minesweeperStopTimer(){
+  if(minesweeper.timer){
+    clearInterval(minesweeper.timer);
+    minesweeper.timer = null;
+  }
+}
+
+function minesweeperAdvanceTime(ms){
+  if(!minesweeper.started || minesweeper.won || minesweeper.lost) return;
+  if(!Number.isFinite(ms) || ms <= 0) return;
+  minesweeper.elapsedMs += ms;
+  updateMinesweeperUI();
+}
+
+function minesweeperStartTimer(){
+  minesweeperStopTimer();
+  minesweeper.timer = setInterval(()=>{
+    minesweeperAdvanceTime(MINESWEEPER_TIMER_STEP_MS);
+  }, MINESWEEPER_TIMER_STEP_MS);
+}
+
+function minesweeperInstallTestingHooks(){
+  window.render_game_to_text = minesweeperRenderGameToText;
+  window.advanceTime = (ms)=>{
+    minesweeperAdvanceTime(ms);
+  };
+}
+
+function minesweeperFormatTime(){
+  return Math.max(0, Math.floor(minesweeper.elapsedMs / 1000));
+}
+
+function minesweeperGetNeighbors(row, col){
+  const out = [];
+  for(let r = row - 1; r <= row + 1; r += 1){
+    for(let c = col - 1; c <= col + 1; c += 1){
+      if(r === row && c === col) continue;
+      if(r < 0 || c < 0 || r >= minesweeper.rows || c >= minesweeper.cols) continue;
+      out.push(minesweeper.board[r][c]);
+    }
+  }
+  return out;
+}
+
+function minesweeperGetCell(row, col){
+  if(row < 0 || col < 0 || row >= minesweeper.rows || col >= minesweeper.cols) return null;
+  return minesweeper.board[row][col];
+}
+
+function minesweeperComputeScore(final = false){
+  const cfg = minesweeperGetDifficultyConfig();
+  const revealPoints = minesweeper.revealedCount * 8;
+  if(!final || !minesweeper.won){
+    return revealPoints;
+  }
+  const speedBonus = Math.max(0, Math.round(cfg.timeBonusMax - minesweeperFormatTime() * cfg.timePenalty));
+  return cfg.scoreBase + revealPoints + cfg.winBonus + speedBonus;
+}
+
+function minesweeperUpdateScore(final = false){
+  minesweeper.score = minesweeperComputeScore(final);
+}
+
+function minesweeperCellKey(row, col){
+  return `${row},${col}`;
+}
+
+function minesweeperResetRoundState(){
+  const cfg = minesweeperGetDifficultyConfig();
+  minesweeper.difficulty = cfg.id;
+  minesweeper.cols = cfg.cols;
+  minesweeper.rows = cfg.rows;
+  minesweeper.mineCount = cfg.mines;
+  minesweeper.safeCells = cfg.cols * cfg.rows - cfg.mines;
+  minesweeper.revealedCount = 0;
+  minesweeper.flagCount = 0;
+  minesweeper.firstMove = true;
+  minesweeper.started = false;
+  minesweeper.won = false;
+  minesweeper.lost = false;
+  minesweeper.score = 0;
+  minesweeper.elapsedMs = 0;
+  minesweeper.cursor = { row: 0, col: 0 };
+  minesweeper.longPressCellKey = '';
+  minesweeper.longPressTriggered = false;
+  minesweeper.overlayDismissed = false;
+  minesweeperBuildBoard();
+}
+
+function minesweeperPrepareBoard(){
+  minesweeperStopTimer();
+  minesweeperResetRoundState();
+  minesweeperRenderBoard();
+  updateMinesweeperUI();
+}
+
+function minesweeperSetDifficulty(id){
+  const cfg = minesweeperGetDifficultyConfig(id);
+  minesweeper.difficulty = cfg.id;
+  if(state.minesweeper) state.minesweeper.difficulty = cfg.id;
+  minesweeperPrepareBoard();
+}
+
+function minesweeperPlaceMines(safeRow, safeCol){
+  const totalCells = minesweeper.rows * minesweeper.cols;
+  const forbidden = new Set([minesweeperCellKey(safeRow, safeCol)]);
+  if(totalCells - 9 >= minesweeper.mineCount){
+    minesweeperGetNeighbors(safeRow, safeCol).forEach(cell => {
+      forbidden.add(minesweeperCellKey(cell.row, cell.col));
+    });
+  }
+  const pool = [];
+  minesweeper.board.forEach(row => {
+    row.forEach(cell => {
+      if(!forbidden.has(minesweeperCellKey(cell.row, cell.col))){
+        pool.push(cell);
+      }
+    });
+  });
+  for(let i = pool.length - 1; i > 0; i -= 1){
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = pool[i];
+    pool[i] = pool[j];
+    pool[j] = temp;
+  }
+  for(let i = 0; i < minesweeper.mineCount && i < pool.length; i += 1){
+    pool[i].mine = true;
+  }
+  minesweeper.board.forEach(row => {
+    row.forEach(cell => {
+      if(cell.mine){
+        cell.adjacent = -1;
+        return;
+      }
+      cell.adjacent = minesweeperGetNeighbors(cell.row, cell.col).filter(item => item.mine).length;
+    });
+  });
+}
+
+function minesweeperRevealFlood(startRow, startCol){
+  const queue = [[startRow, startCol]];
+  let revealed = 0;
+  while(queue.length){
+    const [row, col] = queue.pop();
+    const cell = minesweeperGetCell(row, col);
+    if(!cell || cell.revealed || cell.flagged) continue;
+    cell.revealed = true;
+    revealed += 1;
+    if(cell.adjacent !== 0) continue;
+    minesweeperGetNeighbors(row, col).forEach(next => {
+      if(next.revealed || next.flagged || next.mine) return;
+      queue.push([next.row, next.col]);
+    });
+  }
+  minesweeper.revealedCount += revealed;
+}
+
+function minesweeperRevealAllMines(triggerCell = null){
+  minesweeper.board.forEach(row => {
+    row.forEach(cell => {
+      if(cell.mine){
+        cell.revealed = true;
+      } else if(cell.flagged){
+        cell.wrongFlag = true;
+      }
+    });
+  });
+  if(triggerCell){
+    triggerCell.exploded = true;
+  }
+}
+
+function minesweeperCheckWin(){
+  if(minesweeper.revealedCount < minesweeper.safeCells) return;
+  minesweeper.won = true;
+  minesweeperStopTimer();
+  minesweeper.board.forEach(row => {
+    row.forEach(cell => {
+      if(cell.mine && !cell.flagged){
+        cell.flagged = true;
+        minesweeper.flagCount += 1;
+      }
+    });
+  });
+  minesweeperUpdateScore(true);
+  if(minesweeper.score > (state.minesweeper.highScore || 0)){
+    state.minesweeper.highScore = minesweeper.score;
+    saveMinesweeperHighScore(state.minesweeper.highScore);
+  }
+  recordGameScore('minesweeper', state.minesweeper.highScore, new Date().toISOString());
+}
+
+function minesweeperLose(triggerCell = null){
+  minesweeper.lost = true;
+  minesweeperStopTimer();
+  minesweeperRevealAllMines(triggerCell);
+  minesweeperUpdateScore(false);
+  recordGameScore('minesweeper', state.minesweeper.highScore || 0, new Date().toISOString());
+}
+
+function minesweeperRevealAction(row, col){
+  if(minesweeper.won || minesweeper.lost) return;
+  const cell = minesweeperGetCell(row, col);
+  if(!cell || cell.flagged || cell.revealed) return;
+  if(minesweeper.firstMove){
+    minesweeper.firstMove = false;
+    minesweeper.started = true;
+    minesweeperPlaceMines(row, col);
+    minesweeperStartTimer();
+    recordGameScore('minesweeper', state.minesweeper.highScore || 0, new Date().toISOString());
+  }
+  if(cell.mine){
+    cell.revealed = true;
+    minesweeperLose(cell);
+    minesweeperRenderBoard();
+    updateMinesweeperUI();
+    return;
+  }
+  minesweeperRevealFlood(row, col);
+  minesweeperUpdateScore(false);
+  minesweeperCheckWin();
+  minesweeperRenderBoard();
+  updateMinesweeperUI();
+}
+
+function minesweeperToggleFlag(row, col){
+  if(minesweeper.won || minesweeper.lost) return;
+  const cell = minesweeperGetCell(row, col);
+  if(!cell || cell.revealed) return;
+  cell.flagged = !cell.flagged;
+  minesweeper.flagCount += cell.flagged ? 1 : -1;
+  minesweeperUpdateScore(false);
+  minesweeperRenderBoard();
+  updateMinesweeperUI();
+}
+
+function minesweeperChordCell(row, col){
+  if(minesweeper.won || minesweeper.lost) return;
+  const cell = minesweeperGetCell(row, col);
+  if(!cell || !cell.revealed || cell.adjacent <= 0) return;
+  const neighbors = minesweeperGetNeighbors(row, col);
+  const flagged = neighbors.filter(item => item.flagged).length;
+  if(flagged !== cell.adjacent) return;
+  let detonated = null;
+  neighbors.forEach(next => {
+    if(detonated || next.flagged || next.revealed) return;
+    if(next.mine){
+      next.revealed = true;
+      detonated = next;
+      return;
+    }
+    minesweeperRevealFlood(next.row, next.col);
+  });
+  if(detonated){
+    minesweeperLose(detonated);
+  } else {
+    minesweeperUpdateScore(false);
+    minesweeperCheckWin();
+  }
+  minesweeperRenderBoard();
+  updateMinesweeperUI();
+}
+
+function minesweeperMoveCursor(row, col, focus = false){
+  minesweeper.cursor.row = Math.max(0, Math.min(minesweeper.rows - 1, row));
+  minesweeper.cursor.col = Math.max(0, Math.min(minesweeper.cols - 1, col));
+  minesweeperRenderBoard();
+  if(focus){
+    requestAnimationFrame(()=>{
+      if(!minesweeper.els || !minesweeper.els.board) return;
+      const btn = minesweeper.els.board.querySelector(`[data-mine-cell="${minesweeperCellKey(minesweeper.cursor.row, minesweeper.cursor.col)}"]`);
+      if(btn) btn.focus();
+    });
+  }
+}
+
+function minesweeperClearLongPressState(resetTrigger = false){
+  if(minesweeper.longPressTimer){
+    clearTimeout(minesweeper.longPressTimer);
+    minesweeper.longPressTimer = null;
+  }
+  if(resetTrigger){
+    minesweeper.longPressTriggered = false;
+    minesweeper.longPressCellKey = '';
+  }
+}
+
+function minesweeperCellLabel(cell){
+  if(!cell) return '';
+  if(cell.flagged && !cell.revealed) return t('minesweeper.cell.flagged');
+  if(!cell.revealed) return t('minesweeper.cell.hidden');
+  if(cell.mine) return t('minesweeper.cell.mine');
+  if(cell.adjacent > 0) return `${cell.adjacent}`;
+  return t('minesweeper.cell.empty');
+}
+
+function minesweeperGetCellInnerHtml(cell){
+  if(!cell) return '';
+  if(cell.flagged && !cell.revealed){
+    return `<img class="mine-cell-icon mine-cell-flag-icon" src="${MINESWEEPER_FLAG_ICON}" alt="" aria-hidden="true" />`;
+  }
+  if(cell.revealed && cell.mine){
+    return `<img class="mine-cell-icon mine-cell-mine-icon" src="${MINESWEEPER_MINE_ICON}" alt="" aria-hidden="true" />`;
+  }
+  if(cell.revealed && cell.adjacent > 0){
+    return String(cell.adjacent);
+  }
+  return '';
+}
+
+function minesweeperRenderBoard(){
+  if(!minesweeper.els || !minesweeper.els.board) return;
+  const cellSize = minesweeperGetCellPixelSize();
+  const html = minesweeper.board.map((row, rowIndex) => row.map((cell, colIndex) => {
+    const classes = ['mine-cell'];
+    if(cell.revealed){
+      classes.push('revealed');
+      if(cell.mine) classes.push('mine');
+    } else {
+      classes.push('covered');
+      if(cell.flagged) classes.push('flagged');
+    }
+    if(cell.exploded) classes.push('exploded');
+    if(cell.wrongFlag) classes.push('wrong');
+    if(minesweeper.cursor.row === rowIndex && minesweeper.cursor.col === colIndex){
+      classes.push('cursor');
+    }
+    return `<button class="${classes.join(' ')}" type="button" data-mine-cell="${rowIndex},${colIndex}" data-row="${rowIndex}" data-col="${colIndex}" data-adj="${cell.adjacent > 0 ? cell.adjacent : 0}" tabindex="${minesweeper.cursor.row === rowIndex && minesweeper.cursor.col === colIndex ? '0' : '-1'}" aria-label="${minesweeperCellLabel(cell)}">${minesweeperGetCellInnerHtml(cell)}</button>`;
+  }).join('')).join('');
+  minesweeper.els.board.style.setProperty('--mine-cols', String(minesweeper.cols));
+  minesweeper.els.board.style.setProperty('--mine-cell-size', `${cellSize}px`);
+  minesweeper.els.board.innerHTML = html;
+}
+
+function minesweeperRenderGameToText(){
+  const mode = minesweeper.won
+    ? 'won'
+    : minesweeper.lost
+      ? 'lost'
+      : minesweeper.started
+        ? 'running'
+        : 'idle';
+  const cells = minesweeper.board.map(row => row.map(cell => {
+    if(cell.flagged && !cell.revealed) return 'F';
+    if(!cell.revealed) return '#';
+    if(cell.mine) return '*';
+    return cell.adjacent > 0 ? String(cell.adjacent) : '.';
+  }).join(''));
+  return JSON.stringify({
+    game: 'minesweeper',
+    mode,
+    difficulty: minesweeper.difficulty,
+    coordinateSystem: 'Grid coordinates. Origin at top-left (0,0); x increases right, y increases down.',
+    grid: { width: minesweeper.cols, height: minesweeper.rows },
+    mines: minesweeper.mineCount,
+    minesLeft: minesweeper.mineCount - minesweeper.flagCount,
+    timerSec: minesweeperFormatTime(),
+    score: minesweeper.score,
+    highScore: state.minesweeper.highScore || 0,
+    cursor: { row: minesweeper.cursor.row, col: minesweeper.cursor.col },
+    firstMoveSafe: minesweeper.firstMove,
+    cells,
+  });
+}
+
+function updateMinesweeperUI(){
+  if(!minesweeper.els) return;
+  if(minesweeper.els.minesLeft) minesweeper.els.minesLeft.textContent = String(minesweeper.mineCount - minesweeper.flagCount);
+  if(minesweeper.els.timer) minesweeper.els.timer.textContent = String(minesweeperFormatTime());
+  if(minesweeper.els.score) minesweeper.els.score.textContent = String(minesweeper.score);
+  if(minesweeper.els.best) minesweeper.els.best.textContent = String(state.minesweeper.highScore || 0);
+  if(minesweeper.els.overlayScore) minesweeper.els.overlayScore.textContent = String(minesweeper.score);
+  if(minesweeper.els.overlayTime) minesweeper.els.overlayTime.textContent = String(minesweeperFormatTime());
+  if(minesweeper.els.status){
+    const key = minesweeper.won
+      ? 'minesweeper.status.won'
+      : minesweeper.lost
+        ? 'minesweeper.status.lost'
+        : minesweeper.started
+          ? 'minesweeper.status.playing'
+          : 'minesweeper.status.ready';
+    minesweeper.els.status.textContent = t(key);
+  }
+  if(minesweeper.els.difficulty){
+    minesweeper.els.difficulty.value = minesweeper.difficulty;
+  }
+  if(minesweeper.els.overlay){
+    const showOverlay = (minesweeper.won || minesweeper.lost) && !minesweeper.overlayDismissed;
+    minesweeper.els.overlay.classList.toggle('hidden', !showOverlay);
+  }
+  if(minesweeper.els.overlayTitle){
+    minesweeper.els.overlayTitle.textContent = minesweeper.won ? t('minesweeper.overlay.win') : t('minesweeper.overlay.lose');
+  }
+}
+
+function initMinesweeperInWindow(winEl){
+  const board = winEl.querySelector('#mineBoard');
+  if(!board) return;
+  minesweeper.els = {
+    board,
+    boardWrap: winEl.querySelector('#mineBoardWrap'),
+    backBtn: winEl.querySelector('[data-games-action="back"]'),
+    difficulty: winEl.querySelector('[data-mine-setting="difficulty"]'),
+    newBtn: winEl.querySelector('[data-mine-action="new"]'),
+    restartBtn: winEl.querySelector('[data-mine-action="restart"]'),
+    playAgainBtn: winEl.querySelector('[data-mine-action="playAgain"]'),
+    viewBoardBtn: winEl.querySelector('[data-mine-action="viewboard"]'),
+    minesLeft: winEl.querySelector('[data-mine-mines-left]'),
+    timer: winEl.querySelector('[data-mine-timer]'),
+    score: winEl.querySelector('[data-mine-score]'),
+    best: winEl.querySelector('[data-mine-best]'),
+    status: winEl.querySelector('[data-mine-status]'),
+    overlay: winEl.querySelector('#mineOverlay'),
+    overlayTitle: winEl.querySelector('[data-mine-overlay-title]'),
+    overlayScore: winEl.querySelector('[data-mine-over-score]'),
+    overlayTime: winEl.querySelector('[data-mine-over-time]'),
+  };
+
+  minesweeperInstallTestingHooks();
+  minesweeper.difficulty = (state.minesweeper && state.minesweeper.difficulty) || minesweeper.difficulty || 'beginner';
+
+  if(minesweeper.els.backBtn){
+    minesweeper.els.backBtn.addEventListener('click', (e)=>{
+      e.preventDefault();
+      backToGamesHub();
+    });
+  }
+  if(minesweeper.els.difficulty){
+    minesweeper.els.difficulty.addEventListener('change', (e)=>{
+      minesweeperSetDifficulty(e.target.value);
+    });
+  }
+  const resetHandler = (e)=>{
+    e.preventDefault();
+    minesweeperPrepareBoard();
+  };
+  if(minesweeper.els.newBtn) minesweeper.els.newBtn.addEventListener('click', resetHandler);
+  if(minesweeper.els.restartBtn) minesweeper.els.restartBtn.addEventListener('click', resetHandler);
+  if(minesweeper.els.playAgainBtn) minesweeper.els.playAgainBtn.addEventListener('click', resetHandler);
+  if(minesweeper.els.viewBoardBtn){
+    minesweeper.els.viewBoardBtn.addEventListener('click', (e)=>{
+      e.preventDefault();
+      minesweeper.overlayDismissed = true;
+      updateMinesweeperUI();
+    });
+  }
+
+  board.addEventListener('pointerdown', (e)=>{
+    const target = e.target && e.target.closest ? e.target.closest('[data-mine-cell]') : null;
+    if(!target) return;
+    minesweeper.cursor.row = parseInt(target.dataset.row, 10);
+    minesweeper.cursor.col = parseInt(target.dataset.col, 10);
+    minesweeperClearLongPressState();
+    if((e.pointerType !== 'touch' && e.pointerType !== 'pen') || minesweeper.won || minesweeper.lost) return;
+    const cell = minesweeperGetCell(parseInt(target.dataset.row, 10), parseInt(target.dataset.col, 10));
+    if(!cell || cell.revealed) return;
+    const key = target.dataset.mineCell;
+    minesweeper.longPressCellKey = key;
+    minesweeper.longPressTimer = setTimeout(()=>{
+      minesweeper.longPressTriggered = true;
+      minesweeperToggleFlag(cell.row, cell.col);
+    }, MINESWEEPER_LONG_PRESS_MS);
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(eventName => {
+    board.addEventListener(eventName, ()=>{
+      minesweeperClearLongPressState();
+    });
+  });
+  board.addEventListener('contextmenu', (e)=>{
+    const target = e.target && e.target.closest ? e.target.closest('[data-mine-cell]') : null;
+    if(!target) return;
+    e.preventDefault();
+    const row = parseInt(target.dataset.row, 10);
+    const col = parseInt(target.dataset.col, 10);
+    minesweeperMoveCursor(row, col);
+    minesweeperToggleFlag(row, col);
+  });
+  board.addEventListener('click', (e)=>{
+    const target = e.target && e.target.closest ? e.target.closest('[data-mine-cell]') : null;
+    if(!target) return;
+    const row = parseInt(target.dataset.row, 10);
+    const col = parseInt(target.dataset.col, 10);
+    minesweeperMoveCursor(row, col);
+    if(minesweeper.longPressTriggered && minesweeper.longPressCellKey === target.dataset.mineCell){
+      minesweeperClearLongPressState(true);
+      return;
+    }
+    minesweeperClearLongPressState(true);
+    const cell = minesweeperGetCell(row, col);
+    if(!cell) return;
+    if(cell.revealed){
+      minesweeperChordCell(row, col);
+      return;
+    }
+    minesweeperRevealAction(row, col);
+  });
+
+  minesweeperPrepareBoard();
+}
+
+function minesweeperStop(){
+  minesweeperStopTimer();
+  minesweeperClearLongPressState(true);
+  minesweeper.els = null;
+}
+
+function minesweeperHandleKey(e){
+  if(!isMinesweeperActive()) return false;
+  const tag = e.target && e.target.tagName;
+  if(tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return false;
+  const key = e.key.toLowerCase();
+  let handled = true;
+  if(key === 'arrowup' || key === 'w') minesweeperMoveCursor(minesweeper.cursor.row - 1, minesweeper.cursor.col, true);
+  else if(key === 'arrowdown' || key === 's') minesweeperMoveCursor(minesweeper.cursor.row + 1, minesweeper.cursor.col, true);
+  else if(key === 'arrowleft' || key === 'a') minesweeperMoveCursor(minesweeper.cursor.row, minesweeper.cursor.col - 1, true);
+  else if(key === 'arrowright' || key === 'd') minesweeperMoveCursor(minesweeper.cursor.row, minesweeper.cursor.col + 1, true);
+  else if(key === 'f') minesweeperToggleFlag(minesweeper.cursor.row, minesweeper.cursor.col);
+  else if(key === 'x' || key === 'c') minesweeperChordCell(minesweeper.cursor.row, minesweeper.cursor.col);
+  else if(key === 'r'){
+    minesweeperPrepareBoard();
+  } else if(key === 'enter' || key === ' ' || key === 'spacebar'){
+    const cell = minesweeperGetCell(minesweeper.cursor.row, minesweeper.cursor.col);
+    if(cell){
+      if(cell.revealed) minesweeperChordCell(cell.row, cell.col);
+      else minesweeperRevealAction(cell.row, cell.col);
+    }
+  } else handled = false;
+  if(handled) e.preventDefault();
+  return handled;
 }
 
 const DOPE_SKATE_ASSETS = {
@@ -5662,7 +6338,7 @@ function resetDesktopLayoutPreservingContent(){
   state.iconLabels = {};
   saveIconLabels();
 
-  state.folders = { games: ['snake', 'dope-skate'] };
+  state.folders = { games: ['snake', 'minesweeper', 'dope-skate'] };
   saveFolders();
 
   const coreIds = new Set(
@@ -6290,7 +6966,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'dope-skate'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate'] };
 }
 
 function saveFolders(){
@@ -7255,6 +7931,17 @@ function openIconById(id, opts = {}){
   if(id === 'snake'){
     state.games.view = 'snake';
     state.games.selectedId = 'snake';
+    if(isDesktopIcon && !state.windows.has('games')){
+      openAppFromDesktopIcon('games', sourceEl);
+    } else {
+      openApp('games');
+      renderGamesWindow();
+    }
+    return;
+  }
+  if(id === 'minesweeper'){
+    state.games.view = 'minesweeper';
+    state.games.selectedId = 'minesweeper';
     if(isDesktopIcon && !state.windows.has('games')){
       openAppFromDesktopIcon('games', sourceEl);
     } else {

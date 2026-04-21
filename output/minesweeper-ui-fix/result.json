@@ -1,0 +1,14 @@
+{
+  "scoreCheck": {
+    "before": 136,
+    "afterFlag": 136,
+    "afterUnflag": 136,
+    "same": true,
+    "target": {
+      "row": 0,
+      "col": 2
+    }
+  },
+  "mode": "running",
+  "errors": []
+}

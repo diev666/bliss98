@@ -1,0 +1,30 @@
+{
+  "initial": {
+    "flagButtonExists": false,
+    "tagline": "“Watch your step, one wrong move could be your last.”",
+    "touchHelp": "On touch, tap to reveal or long press to flag.",
+    "status": "Ready for the first click."
+  },
+  "afterDesktop": {
+    "revealed": 6,
+    "flagged": 1,
+    "rightClickFlagged": true
+  },
+  "longPressResult": {
+    "key": "0,3",
+    "flagged": false
+  },
+  "blissosStyles": {
+    "controlsBgImage": "linear-gradient(rgb(246, 237, 208) 0%, rgb(219, 199, 143) 100%)",
+    "boardBgImage": "radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.55), rgba(0, 0, 0, 0) 32%), linear-gradient(rgb(235, 223, 180) 0%, rgb(204, 177, 110) 100%)",
+    "selectBg": "rgb(255, 248, 223)",
+    "selectColor": "rgb(60, 45, 18)"
+  },
+  "aquaDarkStyles": {
+    "controlsBgImage": "linear-gradient(rgb(246, 237, 208) 0%, rgb(219, 199, 143) 100%)",
+    "boardBgImage": "radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.55), rgba(0, 0, 0, 0) 32%), linear-gradient(rgb(235, 223, 180) 0%, rgb(204, 177, 110) 100%)",
+    "helpColor": "rgb(106, 76, 29)",
+    "overlayBg": "rgba(46, 65, 30, 0.56)"
+  },
+  "consoleErrors": []
+}

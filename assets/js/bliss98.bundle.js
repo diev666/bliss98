@@ -129,6 +129,10 @@
         snake: {
           highScore: 0,
         },
+        minesweeper: {
+          highScore: 0,
+          difficulty: 'beginner',
+        },
         dopeSkate: {
           highScore: 0,
           preview: {
@@ -229,6 +233,7 @@
       const CLOTHES_PROFILE_URL = 'https://www.instagram.com/blissworldweb/';
       const CLOTHES_SIZING_URL = 'https://www.instagram.com/direct/new/?username=blissworldweb';
       const SNAKE_HIGH_KEY = 'bliss98_snake_highscore';
+      const MINESWEEPER_HIGH_KEY = 'bliss98_minesweeper_highscore';
       const DOPE_SKATE_HIGH_KEY = 'bliss98_dope_skate_highscore';
       const TITLEBAR_KEY = 'bliss98_titlebar_theme';
       const THEME_PRESET_KEY = 'bliss98_theme_preset';
@@ -1431,8 +1436,8 @@ function renderGamesWindow(){
   delete content.dataset.fitMinW;
   delete content.dataset.fitMinH;
   applyI18nTo(win);
-  const mobileGameView = isMobileGameMode() && state.games.view === 'snake';
-  if(state.games.view === 'snake'){
+  const mobileGameView = isMobileGameMode() && (state.games.view === 'snake' || state.games.view === 'minesweeper');
+  if(state.games.view === 'snake' || state.games.view === 'minesweeper'){
     enterMobileFullscreen(state.games.view, win);
   } else {
     win.classList.remove('mobile-game');
@@ -1485,6 +1490,20 @@ function renderGamesWindow(){
     content.dataset.fitMinH = state.isMobile ? '280' : '620';
     initSnakeInWindow(win);
     mountMobileGameDock('snake', win);
+    if(!mobileGameView){
+      const wstate = state.windows.get('games');
+      const prevUserSized = wstate ? wstate.userSized : false;
+      if(wstate) wstate.userSized = false;
+      smartFitWindow(win, 'tabChange').finally(()=>{
+        if(wstate) wstate.userSized = prevUserSized;
+      });
+    }
+    return;
+  }
+  if(state.games.view === 'minesweeper'){
+    content.dataset.fitMinW = state.isMobile ? '300' : '930';
+    content.dataset.fitMinH = state.isMobile ? '340' : '780';
+    initMinesweeperInWindow(win);
     if(!mobileGameView){
       const wstate = state.windows.get('games');
       const prevUserSized = wstate ? wstate.userSized : false;
@@ -1990,6 +2009,12 @@ function openGameFromHub(id){
     renderGamesWindow();
     return;
   }
+  if(id === 'minesweeper'){
+    state.games.view = 'minesweeper';
+    state.games.selectedId = 'minesweeper';
+    renderGamesWindow();
+    return;
+  }
   if(id === 'dope-skate'){
     state.games.selectedId = 'dope-skate';
     state.games.view = 'list';
@@ -2008,6 +2033,7 @@ function backToGamesHub(){
   state.games.view = 'list';
   state.games.selectedId = getFirstGameId();
   snakeStop();
+  minesweeperStop();
   if(state.windows.has('dope-skate')){
     closeApp('dope-skate');
   } else {
@@ -2078,12 +2104,30 @@ function saveSnakeHighScore(score){
   try{ localStorage.setItem(SNAKE_HIGH_KEY, String(score)); } catch {}
 }
 
+function loadMinesweeperHighScore(){
+  try{
+    const raw = localStorage.getItem(MINESWEEPER_HIGH_KEY);
+    const parsed = parseInt(raw || '0', 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveMinesweeperHighScore(score){
+  try{ localStorage.setItem(MINESWEEPER_HIGH_KEY, String(score)); } catch {}
+}
+
 function loadGamesLeaderboardData(){
   try{
     const raw = localStorage.getItem(GAMES_LEADER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { snake: { best: 0, lastPlayed: null }, dopeSkate: { best: 0, lastPlayed: null } };
+  return {
+    snake: { best: 0, lastPlayed: null },
+    minesweeper: { best: 0, lastPlayed: null },
+    dopeSkate: { best: 0, lastPlayed: null },
+  };
 }
 
 function saveGamesLeaderboardData(data){
@@ -2106,6 +2150,7 @@ function getGamesLeaderboard(){
   // TODO: plug in backend leaderboard source.
   const items = [
     { id:'dopeSkate', label: t('games.dopeSkate'), best: data.dopeSkate ? data.dopeSkate.best : 0 },
+    { id:'minesweeper', label: t('games.minesweeper'), best: data.minesweeper ? data.minesweeper.best : 0 },
     { id:'snake', label: t('games.snake'), best: data.snake ? data.snake.best : 0 },
   ];
   const total = items.reduce((sum, item)=>sum + (item.best || 0), 0);
@@ -2114,6 +2159,10 @@ function getGamesLeaderboard(){
 
 function isSnakeActive(){
   return state.activeWindowId === 'games' && state.games.view === 'snake';
+}
+
+function isMinesweeperActive(){
+  return state.activeWindowId === 'games' && state.games.view === 'minesweeper';
 }
 
 function snakeGetLevel(score = snake.score){
@@ -2818,6 +2867,638 @@ function updateSnakeUI(){
       snake.els.actionBtn.textContent = t('snake.pause');
     }
   }
+}
+
+const MINESWEEPER_DIFFICULTIES = {
+  beginner: {
+    id: 'beginner',
+    cols: 9,
+    rows: 9,
+    mines: 10,
+    scoreBase: 600,
+    winBonus: 240,
+    timeBonusMax: 420,
+    timePenalty: 3.2,
+    accuracyBonus: 90,
+  },
+  intermediate: {
+    id: 'intermediate',
+    cols: 16,
+    rows: 16,
+    mines: 40,
+    scoreBase: 1400,
+    winBonus: 520,
+    timeBonusMax: 900,
+    timePenalty: 2.6,
+    accuracyBonus: 180,
+  },
+  expert: {
+    id: 'expert',
+    cols: 30,
+    rows: 16,
+    mines: 99,
+    scoreBase: 3000,
+    winBonus: 1200,
+    timeBonusMax: 1800,
+    timePenalty: 2.2,
+    accuracyBonus: 360,
+  },
+};
+const MINESWEEPER_TIMER_STEP_MS = 250;
+const MINESWEEPER_LONG_PRESS_MS = 420;
+const MINESWEEPER_MINE_ICON = './assets/icons/mine.png';
+const MINESWEEPER_FLAG_ICON = './assets/icons/red-flag.svg';
+
+let minesweeper = {
+  difficulty: 'beginner',
+  cols: 9,
+  rows: 9,
+  mineCount: 10,
+  safeCells: 71,
+  revealedCount: 0,
+  flagCount: 0,
+  firstMove: true,
+  started: false,
+  won: false,
+  lost: false,
+  score: 0,
+  elapsedMs: 0,
+  board: [],
+  cursor: { row: 0, col: 0 },
+  timer: null,
+  els: null,
+  longPressTimer: null,
+  longPressCellKey: '',
+  longPressTriggered: false,
+  overlayDismissed: false,
+};
+
+function minesweeperGetDifficultyConfig(id = null){
+  const lookup = id || (state.minesweeper && state.minesweeper.difficulty) || minesweeper.difficulty || 'beginner';
+  return MINESWEEPER_DIFFICULTIES[lookup] || MINESWEEPER_DIFFICULTIES.beginner;
+}
+
+function minesweeperGetCellPixelSize(){
+  const mobile = isMobileGameMode();
+  const sizes = mobile
+    ? { beginner: 28, intermediate: 24, expert: 20 }
+    : { beginner: 34, intermediate: 28, expert: 24 };
+  return sizes[minesweeper.difficulty] || sizes.beginner;
+}
+
+function minesweeperCreateCell(row, col){
+  return {
+    row,
+    col,
+    mine: false,
+    revealed: false,
+    flagged: false,
+    adjacent: 0,
+    exploded: false,
+    wrongFlag: false,
+  };
+}
+
+function minesweeperBuildBoard(){
+  minesweeper.board = [];
+  for(let row = 0; row < minesweeper.rows; row += 1){
+    const nextRow = [];
+    for(let col = 0; col < minesweeper.cols; col += 1){
+      nextRow.push(minesweeperCreateCell(row, col));
+    }
+    minesweeper.board.push(nextRow);
+  }
+}
+
+function minesweeperStopTimer(){
+  if(minesweeper.timer){
+    clearInterval(minesweeper.timer);
+    minesweeper.timer = null;
+  }
+}
+
+function minesweeperAdvanceTime(ms){
+  if(!minesweeper.started || minesweeper.won || minesweeper.lost) return;
+  if(!Number.isFinite(ms) || ms <= 0) return;
+  minesweeper.elapsedMs += ms;
+  updateMinesweeperUI();
+}
+
+function minesweeperStartTimer(){
+  minesweeperStopTimer();
+  minesweeper.timer = setInterval(()=>{
+    minesweeperAdvanceTime(MINESWEEPER_TIMER_STEP_MS);
+  }, MINESWEEPER_TIMER_STEP_MS);
+}
+
+function minesweeperInstallTestingHooks(){
+  window.render_game_to_text = minesweeperRenderGameToText;
+  window.advanceTime = (ms)=>{
+    minesweeperAdvanceTime(ms);
+  };
+}
+
+function minesweeperFormatTime(){
+  return Math.max(0, Math.floor(minesweeper.elapsedMs / 1000));
+}
+
+function minesweeperGetNeighbors(row, col){
+  const out = [];
+  for(let r = row - 1; r <= row + 1; r += 1){
+    for(let c = col - 1; c <= col + 1; c += 1){
+      if(r === row && c === col) continue;
+      if(r < 0 || c < 0 || r >= minesweeper.rows || c >= minesweeper.cols) continue;
+      out.push(minesweeper.board[r][c]);
+    }
+  }
+  return out;
+}
+
+function minesweeperGetCell(row, col){
+  if(row < 0 || col < 0 || row >= minesweeper.rows || col >= minesweeper.cols) return null;
+  return minesweeper.board[row][col];
+}
+
+function minesweeperComputeScore(final = false){
+  const cfg = minesweeperGetDifficultyConfig();
+  const revealPoints = minesweeper.revealedCount * 8;
+  if(!final || !minesweeper.won){
+    return revealPoints;
+  }
+  const speedBonus = Math.max(0, Math.round(cfg.timeBonusMax - minesweeperFormatTime() * cfg.timePenalty));
+  return cfg.scoreBase + revealPoints + cfg.winBonus + speedBonus;
+}
+
+function minesweeperUpdateScore(final = false){
+  minesweeper.score = minesweeperComputeScore(final);
+}
+
+function minesweeperCellKey(row, col){
+  return `${row},${col}`;
+}
+
+function minesweeperResetRoundState(){
+  const cfg = minesweeperGetDifficultyConfig();
+  minesweeper.difficulty = cfg.id;
+  minesweeper.cols = cfg.cols;
+  minesweeper.rows = cfg.rows;
+  minesweeper.mineCount = cfg.mines;
+  minesweeper.safeCells = cfg.cols * cfg.rows - cfg.mines;
+  minesweeper.revealedCount = 0;
+  minesweeper.flagCount = 0;
+  minesweeper.firstMove = true;
+  minesweeper.started = false;
+  minesweeper.won = false;
+  minesweeper.lost = false;
+  minesweeper.score = 0;
+  minesweeper.elapsedMs = 0;
+  minesweeper.cursor = { row: 0, col: 0 };
+  minesweeper.longPressCellKey = '';
+  minesweeper.longPressTriggered = false;
+  minesweeper.overlayDismissed = false;
+  minesweeperBuildBoard();
+}
+
+function minesweeperPrepareBoard(){
+  minesweeperStopTimer();
+  minesweeperResetRoundState();
+  minesweeperRenderBoard();
+  updateMinesweeperUI();
+}
+
+function minesweeperSetDifficulty(id){
+  const cfg = minesweeperGetDifficultyConfig(id);
+  minesweeper.difficulty = cfg.id;
+  if(state.minesweeper) state.minesweeper.difficulty = cfg.id;
+  minesweeperPrepareBoard();
+}
+
+function minesweeperPlaceMines(safeRow, safeCol){
+  const totalCells = minesweeper.rows * minesweeper.cols;
+  const forbidden = new Set([minesweeperCellKey(safeRow, safeCol)]);
+  if(totalCells - 9 >= minesweeper.mineCount){
+    minesweeperGetNeighbors(safeRow, safeCol).forEach(cell => {
+      forbidden.add(minesweeperCellKey(cell.row, cell.col));
+    });
+  }
+  const pool = [];
+  minesweeper.board.forEach(row => {
+    row.forEach(cell => {
+      if(!forbidden.has(minesweeperCellKey(cell.row, cell.col))){
+        pool.push(cell);
+      }
+    });
+  });
+  for(let i = pool.length - 1; i > 0; i -= 1){
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = pool[i];
+    pool[i] = pool[j];
+    pool[j] = temp;
+  }
+  for(let i = 0; i < minesweeper.mineCount && i < pool.length; i += 1){
+    pool[i].mine = true;
+  }
+  minesweeper.board.forEach(row => {
+    row.forEach(cell => {
+      if(cell.mine){
+        cell.adjacent = -1;
+        return;
+      }
+      cell.adjacent = minesweeperGetNeighbors(cell.row, cell.col).filter(item => item.mine).length;
+    });
+  });
+}
+
+function minesweeperRevealFlood(startRow, startCol){
+  const queue = [[startRow, startCol]];
+  let revealed = 0;
+  while(queue.length){
+    const [row, col] = queue.pop();
+    const cell = minesweeperGetCell(row, col);
+    if(!cell || cell.revealed || cell.flagged) continue;
+    cell.revealed = true;
+    revealed += 1;
+    if(cell.adjacent !== 0) continue;
+    minesweeperGetNeighbors(row, col).forEach(next => {
+      if(next.revealed || next.flagged || next.mine) return;
+      queue.push([next.row, next.col]);
+    });
+  }
+  minesweeper.revealedCount += revealed;
+}
+
+function minesweeperRevealAllMines(triggerCell = null){
+  minesweeper.board.forEach(row => {
+    row.forEach(cell => {
+      if(cell.mine){
+        cell.revealed = true;
+      } else if(cell.flagged){
+        cell.wrongFlag = true;
+      }
+    });
+  });
+  if(triggerCell){
+    triggerCell.exploded = true;
+  }
+}
+
+function minesweeperCheckWin(){
+  if(minesweeper.revealedCount < minesweeper.safeCells) return;
+  minesweeper.won = true;
+  minesweeperStopTimer();
+  minesweeper.board.forEach(row => {
+    row.forEach(cell => {
+      if(cell.mine && !cell.flagged){
+        cell.flagged = true;
+        minesweeper.flagCount += 1;
+      }
+    });
+  });
+  minesweeperUpdateScore(true);
+  if(minesweeper.score > (state.minesweeper.highScore || 0)){
+    state.minesweeper.highScore = minesweeper.score;
+    saveMinesweeperHighScore(state.minesweeper.highScore);
+  }
+  recordGameScore('minesweeper', state.minesweeper.highScore, new Date().toISOString());
+}
+
+function minesweeperLose(triggerCell = null){
+  minesweeper.lost = true;
+  minesweeperStopTimer();
+  minesweeperRevealAllMines(triggerCell);
+  minesweeperUpdateScore(false);
+  recordGameScore('minesweeper', state.minesweeper.highScore || 0, new Date().toISOString());
+}
+
+function minesweeperRevealAction(row, col){
+  if(minesweeper.won || minesweeper.lost) return;
+  const cell = minesweeperGetCell(row, col);
+  if(!cell || cell.flagged || cell.revealed) return;
+  if(minesweeper.firstMove){
+    minesweeper.firstMove = false;
+    minesweeper.started = true;
+    minesweeperPlaceMines(row, col);
+    minesweeperStartTimer();
+    recordGameScore('minesweeper', state.minesweeper.highScore || 0, new Date().toISOString());
+  }
+  if(cell.mine){
+    cell.revealed = true;
+    minesweeperLose(cell);
+    minesweeperRenderBoard();
+    updateMinesweeperUI();
+    return;
+  }
+  minesweeperRevealFlood(row, col);
+  minesweeperUpdateScore(false);
+  minesweeperCheckWin();
+  minesweeperRenderBoard();
+  updateMinesweeperUI();
+}
+
+function minesweeperToggleFlag(row, col){
+  if(minesweeper.won || minesweeper.lost) return;
+  const cell = minesweeperGetCell(row, col);
+  if(!cell || cell.revealed) return;
+  cell.flagged = !cell.flagged;
+  minesweeper.flagCount += cell.flagged ? 1 : -1;
+  minesweeperUpdateScore(false);
+  minesweeperRenderBoard();
+  updateMinesweeperUI();
+}
+
+function minesweeperChordCell(row, col){
+  if(minesweeper.won || minesweeper.lost) return;
+  const cell = minesweeperGetCell(row, col);
+  if(!cell || !cell.revealed || cell.adjacent <= 0) return;
+  const neighbors = minesweeperGetNeighbors(row, col);
+  const flagged = neighbors.filter(item => item.flagged).length;
+  if(flagged !== cell.adjacent) return;
+  let detonated = null;
+  neighbors.forEach(next => {
+    if(detonated || next.flagged || next.revealed) return;
+    if(next.mine){
+      next.revealed = true;
+      detonated = next;
+      return;
+    }
+    minesweeperRevealFlood(next.row, next.col);
+  });
+  if(detonated){
+    minesweeperLose(detonated);
+  } else {
+    minesweeperUpdateScore(false);
+    minesweeperCheckWin();
+  }
+  minesweeperRenderBoard();
+  updateMinesweeperUI();
+}
+
+function minesweeperMoveCursor(row, col, focus = false){
+  minesweeper.cursor.row = Math.max(0, Math.min(minesweeper.rows - 1, row));
+  minesweeper.cursor.col = Math.max(0, Math.min(minesweeper.cols - 1, col));
+  minesweeperRenderBoard();
+  if(focus){
+    requestAnimationFrame(()=>{
+      if(!minesweeper.els || !minesweeper.els.board) return;
+      const btn = minesweeper.els.board.querySelector(`[data-mine-cell="${minesweeperCellKey(minesweeper.cursor.row, minesweeper.cursor.col)}"]`);
+      if(btn) btn.focus();
+    });
+  }
+}
+
+function minesweeperClearLongPressState(resetTrigger = false){
+  if(minesweeper.longPressTimer){
+    clearTimeout(minesweeper.longPressTimer);
+    minesweeper.longPressTimer = null;
+  }
+  if(resetTrigger){
+    minesweeper.longPressTriggered = false;
+    minesweeper.longPressCellKey = '';
+  }
+}
+
+function minesweeperCellLabel(cell){
+  if(!cell) return '';
+  if(cell.flagged && !cell.revealed) return t('minesweeper.cell.flagged');
+  if(!cell.revealed) return t('minesweeper.cell.hidden');
+  if(cell.mine) return t('minesweeper.cell.mine');
+  if(cell.adjacent > 0) return `${cell.adjacent}`;
+  return t('minesweeper.cell.empty');
+}
+
+function minesweeperGetCellInnerHtml(cell){
+  if(!cell) return '';
+  if(cell.flagged && !cell.revealed){
+    return `<img class="mine-cell-icon mine-cell-flag-icon" src="${MINESWEEPER_FLAG_ICON}" alt="" aria-hidden="true" />`;
+  }
+  if(cell.revealed && cell.mine){
+    return `<img class="mine-cell-icon mine-cell-mine-icon" src="${MINESWEEPER_MINE_ICON}" alt="" aria-hidden="true" />`;
+  }
+  if(cell.revealed && cell.adjacent > 0){
+    return String(cell.adjacent);
+  }
+  return '';
+}
+
+function minesweeperRenderBoard(){
+  if(!minesweeper.els || !minesweeper.els.board) return;
+  const cellSize = minesweeperGetCellPixelSize();
+  const html = minesweeper.board.map((row, rowIndex) => row.map((cell, colIndex) => {
+    const classes = ['mine-cell'];
+    if(cell.revealed){
+      classes.push('revealed');
+      if(cell.mine) classes.push('mine');
+    } else {
+      classes.push('covered');
+      if(cell.flagged) classes.push('flagged');
+    }
+    if(cell.exploded) classes.push('exploded');
+    if(cell.wrongFlag) classes.push('wrong');
+    if(minesweeper.cursor.row === rowIndex && minesweeper.cursor.col === colIndex){
+      classes.push('cursor');
+    }
+    return `<button class="${classes.join(' ')}" type="button" data-mine-cell="${rowIndex},${colIndex}" data-row="${rowIndex}" data-col="${colIndex}" data-adj="${cell.adjacent > 0 ? cell.adjacent : 0}" tabindex="${minesweeper.cursor.row === rowIndex && minesweeper.cursor.col === colIndex ? '0' : '-1'}" aria-label="${minesweeperCellLabel(cell)}">${minesweeperGetCellInnerHtml(cell)}</button>`;
+  }).join('')).join('');
+  minesweeper.els.board.style.setProperty('--mine-cols', String(minesweeper.cols));
+  minesweeper.els.board.style.setProperty('--mine-cell-size', `${cellSize}px`);
+  minesweeper.els.board.innerHTML = html;
+}
+
+function minesweeperRenderGameToText(){
+  const mode = minesweeper.won
+    ? 'won'
+    : minesweeper.lost
+      ? 'lost'
+      : minesweeper.started
+        ? 'running'
+        : 'idle';
+  const cells = minesweeper.board.map(row => row.map(cell => {
+    if(cell.flagged && !cell.revealed) return 'F';
+    if(!cell.revealed) return '#';
+    if(cell.mine) return '*';
+    return cell.adjacent > 0 ? String(cell.adjacent) : '.';
+  }).join(''));
+  return JSON.stringify({
+    game: 'minesweeper',
+    mode,
+    difficulty: minesweeper.difficulty,
+    coordinateSystem: 'Grid coordinates. Origin at top-left (0,0); x increases right, y increases down.',
+    grid: { width: minesweeper.cols, height: minesweeper.rows },
+    mines: minesweeper.mineCount,
+    minesLeft: minesweeper.mineCount - minesweeper.flagCount,
+    timerSec: minesweeperFormatTime(),
+    score: minesweeper.score,
+    highScore: state.minesweeper.highScore || 0,
+    cursor: { row: minesweeper.cursor.row, col: minesweeper.cursor.col },
+    firstMoveSafe: minesweeper.firstMove,
+    cells,
+  });
+}
+
+function updateMinesweeperUI(){
+  if(!minesweeper.els) return;
+  if(minesweeper.els.minesLeft) minesweeper.els.minesLeft.textContent = String(minesweeper.mineCount - minesweeper.flagCount);
+  if(minesweeper.els.timer) minesweeper.els.timer.textContent = String(minesweeperFormatTime());
+  if(minesweeper.els.score) minesweeper.els.score.textContent = String(minesweeper.score);
+  if(minesweeper.els.best) minesweeper.els.best.textContent = String(state.minesweeper.highScore || 0);
+  if(minesweeper.els.overlayScore) minesweeper.els.overlayScore.textContent = String(minesweeper.score);
+  if(minesweeper.els.overlayTime) minesweeper.els.overlayTime.textContent = String(minesweeperFormatTime());
+  if(minesweeper.els.status){
+    const key = minesweeper.won
+      ? 'minesweeper.status.won'
+      : minesweeper.lost
+        ? 'minesweeper.status.lost'
+        : minesweeper.started
+          ? 'minesweeper.status.playing'
+          : 'minesweeper.status.ready';
+    minesweeper.els.status.textContent = t(key);
+  }
+  if(minesweeper.els.difficulty){
+    minesweeper.els.difficulty.value = minesweeper.difficulty;
+  }
+  if(minesweeper.els.overlay){
+    const showOverlay = (minesweeper.won || minesweeper.lost) && !minesweeper.overlayDismissed;
+    minesweeper.els.overlay.classList.toggle('hidden', !showOverlay);
+  }
+  if(minesweeper.els.overlayTitle){
+    minesweeper.els.overlayTitle.textContent = minesweeper.won ? t('minesweeper.overlay.win') : t('minesweeper.overlay.lose');
+  }
+}
+
+function initMinesweeperInWindow(winEl){
+  const board = winEl.querySelector('#mineBoard');
+  if(!board) return;
+  minesweeper.els = {
+    board,
+    boardWrap: winEl.querySelector('#mineBoardWrap'),
+    backBtn: winEl.querySelector('[data-games-action="back"]'),
+    difficulty: winEl.querySelector('[data-mine-setting="difficulty"]'),
+    newBtn: winEl.querySelector('[data-mine-action="new"]'),
+    restartBtn: winEl.querySelector('[data-mine-action="restart"]'),
+    playAgainBtn: winEl.querySelector('[data-mine-action="playAgain"]'),
+    viewBoardBtn: winEl.querySelector('[data-mine-action="viewboard"]'),
+    minesLeft: winEl.querySelector('[data-mine-mines-left]'),
+    timer: winEl.querySelector('[data-mine-timer]'),
+    score: winEl.querySelector('[data-mine-score]'),
+    best: winEl.querySelector('[data-mine-best]'),
+    status: winEl.querySelector('[data-mine-status]'),
+    overlay: winEl.querySelector('#mineOverlay'),
+    overlayTitle: winEl.querySelector('[data-mine-overlay-title]'),
+    overlayScore: winEl.querySelector('[data-mine-over-score]'),
+    overlayTime: winEl.querySelector('[data-mine-over-time]'),
+  };
+
+  minesweeperInstallTestingHooks();
+  minesweeper.difficulty = (state.minesweeper && state.minesweeper.difficulty) || minesweeper.difficulty || 'beginner';
+
+  if(minesweeper.els.backBtn){
+    minesweeper.els.backBtn.addEventListener('click', (e)=>{
+      e.preventDefault();
+      backToGamesHub();
+    });
+  }
+  if(minesweeper.els.difficulty){
+    minesweeper.els.difficulty.addEventListener('change', (e)=>{
+      minesweeperSetDifficulty(e.target.value);
+    });
+  }
+  const resetHandler = (e)=>{
+    e.preventDefault();
+    minesweeperPrepareBoard();
+  };
+  if(minesweeper.els.newBtn) minesweeper.els.newBtn.addEventListener('click', resetHandler);
+  if(minesweeper.els.restartBtn) minesweeper.els.restartBtn.addEventListener('click', resetHandler);
+  if(minesweeper.els.playAgainBtn) minesweeper.els.playAgainBtn.addEventListener('click', resetHandler);
+  if(minesweeper.els.viewBoardBtn){
+    minesweeper.els.viewBoardBtn.addEventListener('click', (e)=>{
+      e.preventDefault();
+      minesweeper.overlayDismissed = true;
+      updateMinesweeperUI();
+    });
+  }
+
+  board.addEventListener('pointerdown', (e)=>{
+    const target = e.target && e.target.closest ? e.target.closest('[data-mine-cell]') : null;
+    if(!target) return;
+    minesweeper.cursor.row = parseInt(target.dataset.row, 10);
+    minesweeper.cursor.col = parseInt(target.dataset.col, 10);
+    minesweeperClearLongPressState();
+    if((e.pointerType !== 'touch' && e.pointerType !== 'pen') || minesweeper.won || minesweeper.lost) return;
+    const cell = minesweeperGetCell(parseInt(target.dataset.row, 10), parseInt(target.dataset.col, 10));
+    if(!cell || cell.revealed) return;
+    const key = target.dataset.mineCell;
+    minesweeper.longPressCellKey = key;
+    minesweeper.longPressTimer = setTimeout(()=>{
+      minesweeper.longPressTriggered = true;
+      minesweeperToggleFlag(cell.row, cell.col);
+    }, MINESWEEPER_LONG_PRESS_MS);
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(eventName => {
+    board.addEventListener(eventName, ()=>{
+      minesweeperClearLongPressState();
+    });
+  });
+  board.addEventListener('contextmenu', (e)=>{
+    const target = e.target && e.target.closest ? e.target.closest('[data-mine-cell]') : null;
+    if(!target) return;
+    e.preventDefault();
+    const row = parseInt(target.dataset.row, 10);
+    const col = parseInt(target.dataset.col, 10);
+    minesweeperMoveCursor(row, col);
+    minesweeperToggleFlag(row, col);
+  });
+  board.addEventListener('click', (e)=>{
+    const target = e.target && e.target.closest ? e.target.closest('[data-mine-cell]') : null;
+    if(!target) return;
+    const row = parseInt(target.dataset.row, 10);
+    const col = parseInt(target.dataset.col, 10);
+    minesweeperMoveCursor(row, col);
+    if(minesweeper.longPressTriggered && minesweeper.longPressCellKey === target.dataset.mineCell){
+      minesweeperClearLongPressState(true);
+      return;
+    }
+    minesweeperClearLongPressState(true);
+    const cell = minesweeperGetCell(row, col);
+    if(!cell) return;
+    if(cell.revealed){
+      minesweeperChordCell(row, col);
+      return;
+    }
+    minesweeperRevealAction(row, col);
+  });
+
+  minesweeperPrepareBoard();
+}
+
+function minesweeperStop(){
+  minesweeperStopTimer();
+  minesweeperClearLongPressState(true);
+  minesweeper.els = null;
+}
+
+function minesweeperHandleKey(e){
+  if(!isMinesweeperActive()) return false;
+  const tag = e.target && e.target.tagName;
+  if(tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return false;
+  const key = e.key.toLowerCase();
+  let handled = true;
+  if(key === 'arrowup' || key === 'w') minesweeperMoveCursor(minesweeper.cursor.row - 1, minesweeper.cursor.col, true);
+  else if(key === 'arrowdown' || key === 's') minesweeperMoveCursor(minesweeper.cursor.row + 1, minesweeper.cursor.col, true);
+  else if(key === 'arrowleft' || key === 'a') minesweeperMoveCursor(minesweeper.cursor.row, minesweeper.cursor.col - 1, true);
+  else if(key === 'arrowright' || key === 'd') minesweeperMoveCursor(minesweeper.cursor.row, minesweeper.cursor.col + 1, true);
+  else if(key === 'f') minesweeperToggleFlag(minesweeper.cursor.row, minesweeper.cursor.col);
+  else if(key === 'x' || key === 'c') minesweeperChordCell(minesweeper.cursor.row, minesweeper.cursor.col);
+  else if(key === 'r'){
+    minesweeperPrepareBoard();
+  } else if(key === 'enter' || key === ' ' || key === 'spacebar'){
+    const cell = minesweeperGetCell(minesweeper.cursor.row, minesweeper.cursor.col);
+    if(cell){
+      if(cell.revealed) minesweeperChordCell(cell.row, cell.col);
+      else minesweeperRevealAction(cell.row, cell.col);
+    }
+  } else handled = false;
+  if(handled) e.preventDefault();
+  return handled;
 }
 
 const DOPE_SKATE_ASSETS = {
@@ -7073,7 +7754,7 @@ function resetDesktopLayoutPreservingContent(){
   state.iconLabels = {};
   saveIconLabels();
 
-  state.folders = { games: ['snake', 'dope-skate'] };
+  state.folders = { games: ['snake', 'minesweeper', 'dope-skate'] };
   saveFolders();
 
   const coreIds = new Set(
@@ -7701,7 +8382,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'dope-skate'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate'] };
 }
 
 function saveFolders(){
@@ -8674,6 +9355,17 @@ function openIconById(id, opts = {}){
     }
     return;
   }
+  if(id === 'minesweeper'){
+    state.games.view = 'minesweeper';
+    state.games.selectedId = 'minesweeper';
+    if(isDesktopIcon && !state.windows.has('games')){
+      openAppFromDesktopIcon('games', sourceEl);
+    } else {
+      openApp('games');
+      renderGamesWindow();
+    }
+    return;
+  }
   if(fsItem && fsItem.type === 'folder'){
     openFolderWindow(id, { sourceEl, fromDesktop: isDesktopIcon });
     return;
@@ -9094,385 +9786,6 @@ function refreshOpenTxtWindows(txtId){
   });
 }
 
-const TXT_SPACING_MAP = {
-  tight: 1.22,
-  normal: 1.42,
-  relaxed: 1.64,
-  loose: 1.88,
-};
-
-const TXT_DEFAULT_PREFS = Object.freeze({
-  spacing: 'normal',
-  left: 24,
-  right: 24,
-  indent: 0,
-});
-const TXT_STYLE_VALUES = new Set(['paragraph', 'heading', 'subheading', 'quote']);
-const TXT_LIST_VALUES = new Set(['none', 'bullets', 'numbers']);
-const TXT_CONTROL_DEFAULTS = Object.freeze({
-  style: 'paragraph',
-  spacing: 'normal',
-  list: 'none',
-});
-
-function cloneTxtPrefs(prefs = TXT_DEFAULT_PREFS){
-  return {
-    spacing: prefs.spacing,
-    left: prefs.left,
-    right: prefs.right,
-    indent: prefs.indent,
-  };
-}
-
-function normalizeTxtPrefs(raw){
-  const prefs = cloneTxtPrefs();
-  if(!raw || typeof raw !== 'object') return prefs;
-  if(typeof raw.spacing === 'string' && TXT_SPACING_MAP[raw.spacing]){
-    prefs.spacing = raw.spacing;
-  }
-  if(Number.isFinite(raw.left)) prefs.left = Math.round(raw.left);
-  if(Number.isFinite(raw.right)) prefs.right = Math.round(raw.right);
-  if(Number.isFinite(raw.indent)) prefs.indent = Math.round(raw.indent);
-  return prefs;
-}
-
-function normalizeTxtControlState(raw, prefs = null){
-  const basePrefs = normalizeTxtPrefs(prefs || TXT_DEFAULT_PREFS);
-  const next = {
-    style: TXT_CONTROL_DEFAULTS.style,
-    spacing: basePrefs.spacing || TXT_CONTROL_DEFAULTS.spacing,
-    list: TXT_CONTROL_DEFAULTS.list,
-  };
-  if(!raw || typeof raw !== 'object') return next;
-  if(typeof raw.style === 'string' && TXT_STYLE_VALUES.has(raw.style)){
-    next.style = raw.style;
-  }
-  if(typeof raw.spacing === 'string' && TXT_SPACING_MAP[raw.spacing]){
-    next.spacing = raw.spacing;
-  }
-  if(typeof raw.list === 'string' && TXT_LIST_VALUES.has(raw.list)){
-    next.list = raw.list;
-  }
-  return next;
-}
-
-function getTxtSpacingValue(spacing){
-  return TXT_SPACING_MAP[spacing] || TXT_SPACING_MAP.normal;
-}
-
-function escapeTxtHtml(value){
-  return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-function plainTextToTxtHtml(value){
-  const raw = typeof value === 'string' ? value.replace(/\r\n?/g, '\n') : '';
-  if(!raw.trim()) return '<p><br></p>';
-  return raw
-    .split('\n')
-    .map(line => `<p>${line ? escapeTxtHtml(line) : '<br>'}</p>`)
-    .join('');
-}
-
-function looksLikeHtml(value){
-  return typeof value === 'string' && /<\/?[a-z][\s\S]*>/i.test(value);
-}
-
-function sanitizeTxtHtml(value){
-  const host = document.createElement('div');
-  host.innerHTML = typeof value === 'string' ? value : '';
-  host.querySelectorAll('script,style,iframe,object,embed').forEach(node => node.remove());
-  const showElements = window.NodeFilter ? window.NodeFilter.SHOW_ELEMENT : 1;
-  const walker = document.createTreeWalker(host, showElements);
-  let node = walker.currentNode;
-  while(node){
-    const attrs = Array.from(node.attributes || []);
-    attrs.forEach(attr => {
-      if(/^on/i.test(attr.name)) node.removeAttribute(attr.name);
-    });
-    node = walker.nextNode();
-  }
-  if(!host.innerHTML.trim()) return '<p><br></p>';
-  if(!host.querySelector('p,div,h1,h2,h3,h4,h5,h6,blockquote,ul,ol,li,pre')){
-    const inline = host.innerHTML.trim();
-    return inline ? `<p>${inline}</p>` : '<p><br></p>';
-  }
-  return host.innerHTML;
-}
-
-function getTxtDocumentHtml(item){
-  if(!item || item.type !== 'txt') return '<p><br></p>';
-  const raw = typeof item.content === 'string' ? item.content : '';
-  if(item.contentFormat === 'html' || looksLikeHtml(raw)){
-    return sanitizeTxtHtml(raw);
-  }
-  return plainTextToTxtHtml(raw);
-}
-
-function serializeTxtEditorHtml(editor){
-  if(!editor) return '<p><br></p>';
-  return sanitizeTxtHtml(editor.innerHTML);
-}
-
-function getTxtEditorFromShell(shell){
-  return shell ? shell.querySelector('[data-txt-editor="1"]') : null;
-}
-
-function closeTxtDropdownMenus(shell, keepOpenControl = ''){
-  if(!shell) return;
-  const keep = String(keepOpenControl || '');
-  const hosts = shell.querySelectorAll('[data-txt-dropdown]');
-  hosts.forEach(host => {
-    const control = host.dataset.txtDropdown || '';
-    const open = !!keep && control === keep;
-    host.classList.toggle('open', open);
-    const trigger = host.querySelector('[data-txt-dropdown-trigger]');
-    if(trigger) trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
-    const menu = host.querySelector('[data-txt-dropdown-menu]');
-    if(menu) menu.hidden = !open;
-  });
-}
-
-function syncTxtDropdownSelection(shell, rawControlState){
-  if(!shell) return;
-  const controlState = normalizeTxtControlState(rawControlState);
-  shell.querySelectorAll('[data-txt-dropdown-item]').forEach(item => {
-    const control = item.dataset.txtControl || '';
-    const value = item.dataset.txtValue || '';
-    const selected = !!control && controlState[control] === value;
-    item.dataset.selected = selected ? '1' : '0';
-    item.setAttribute('aria-checked', selected ? 'true' : 'false');
-  });
-}
-
-function updateTxtShellResponsive(shell){
-  if(!shell) return;
-  shell.classList.remove('txt-shell-compact', 'txt-shell-narrow');
-  const isMobileTxt = !!(state && state.isMobile);
-  const width = Math.max(260, Math.round(shell.clientWidth || 0));
-  const toolbarChrome = isMobileTxt ? 10 : 20;
-  const toolbarAtFullScale = isMobileTxt ? 920 : 974;
-  const globalUiScale = isMobileTxt ? 0.72 : 0.874;
-  const minScale = isMobileTxt ? 0.3 : 0.52;
-  const toolbarBudget = Math.max(140, width - toolbarChrome);
-  const rawScale = (toolbarBudget / toolbarAtFullScale) * (isMobileTxt ? 1.02 : 0.99);
-  const scale = clamp(rawScale * globalUiScale, minScale, globalUiScale);
-  shell.style.setProperty('--txt-toolbar-scale', String(Number(scale.toFixed(3))));
-}
-
-function applyTxtPrefsToShell(shell, rawPrefs){
-  const editor = getTxtEditorFromShell(shell);
-  const rail = shell ? shell.querySelector('[data-txt-ruler-rail="1"]') : null;
-  const leftMarker = shell ? shell.querySelector('[data-txt-ruler-marker="left"]') : null;
-  const indentMarker = shell ? shell.querySelector('[data-txt-ruler-marker="indent"]') : null;
-  const rightMarker = shell ? shell.querySelector('[data-txt-ruler-marker="right"]') : null;
-  if(!editor || !rail) return normalizeTxtPrefs(rawPrefs);
-
-  const prefs = normalizeTxtPrefs(rawPrefs);
-  const width = Math.max(260, Math.round(rail.clientWidth || editor.clientWidth || 320));
-  const minMargin = 10;
-  const minBody = 96;
-  prefs.left = clamp(prefs.left, minMargin, Math.max(minMargin, width - minBody - minMargin));
-  prefs.right = clamp(prefs.right, minMargin, Math.max(minMargin, width - prefs.left - minBody));
-  const maxIndent = Math.max(-24, width - prefs.left - prefs.right - 30);
-  prefs.indent = clamp(prefs.indent, -24, maxIndent);
-
-  editor.style.paddingLeft = `${prefs.left}px`;
-  editor.style.paddingRight = `${prefs.right}px`;
-  editor.style.textIndent = `${prefs.indent}px`;
-  editor.style.lineHeight = String(getTxtSpacingValue(prefs.spacing));
-
-  const leftPos = prefs.left;
-  const rightPos = width - prefs.right;
-  const indentPos = clamp(prefs.left + prefs.indent, 5, rightPos - 8);
-  if(leftMarker) leftMarker.style.left = `${leftPos}px`;
-  if(indentMarker) indentMarker.style.left = `${indentPos}px`;
-  if(rightMarker) rightMarker.style.left = `${rightPos}px`;
-  return prefs;
-}
-
-function isTxtSelectionInside(editor){
-  const sel = window.getSelection ? window.getSelection() : null;
-  if(!sel || sel.rangeCount === 0) return false;
-  const anchor = sel.anchorNode;
-  return !!anchor && editor.contains(anchor);
-}
-
-function updateTxtCommandButtonState(shell){
-  const editor = getTxtEditorFromShell(shell);
-  if(!editor) return;
-  const inEditor = document.activeElement === editor || isTxtSelectionInside(editor);
-  const buttons = shell.querySelectorAll('[data-txt-command]');
-  buttons.forEach(btn => {
-    const query = btn.dataset.txtQuery || btn.dataset.txtCommand;
-    let active = false;
-    if(inEditor){
-      try{
-        active = !!document.queryCommandState(query);
-      } catch {
-        active = false;
-      }
-    }
-    btn.classList.toggle('active', active);
-    btn.dataset.active = active ? '1' : '0';
-  });
-  if(inEditor){
-    const leftBtn = shell.querySelector('[data-txt-command="justifyLeft"]');
-    const centerBtn = shell.querySelector('[data-txt-command="justifyCenter"]');
-    const rightBtn = shell.querySelector('[data-txt-command="justifyRight"]');
-    const justifyBtn = shell.querySelector('[data-txt-command="justifyFull"]');
-    const hasOtherAlign = [centerBtn, rightBtn, justifyBtn].some(btn => btn && btn.dataset.active === '1');
-    if(leftBtn && !hasOtherAlign){
-      leftBtn.classList.add('active');
-      leftBtn.dataset.active = '1';
-    }
-  }
-}
-
-function ensureTxtEditorFocus(editor){
-  if(!editor) return;
-  try{
-    editor.focus({ preventScroll: true });
-  } catch {
-    editor.focus();
-  }
-}
-
-function runTxtEditorCommand(winId, shell, command){
-  const editor = getTxtEditorFromShell(shell);
-  const wstate = state.windows.get(winId);
-  if(!editor || !wstate || wstate.kind !== 'txt') return;
-  ensureTxtEditorFocus(editor);
-  let changed = false;
-  try{
-    document.execCommand('styleWithCSS', false, false);
-  } catch {}
-  try{
-    changed = !!document.execCommand(command, false, null);
-  } catch {
-    changed = false;
-  }
-  if(changed || command.startsWith('justify')){
-    wstate.txtDirty = true;
-    scheduleTxtAutosave(winId, serializeTxtEditorHtml(editor));
-  }
-  updateTxtCommandButtonState(shell);
-}
-
-function handleTxtControlChange(winId, shell, control, value){
-  const editor = getTxtEditorFromShell(shell);
-  const wstate = state.windows.get(winId);
-  if(!editor || !wstate || wstate.kind !== 'txt' || !control || !value) return;
-  if(!wstate.txtControlState){
-    wstate.txtControlState = normalizeTxtControlState(null, wstate.txtPrefs);
-  }
-
-  if(control === 'style'){
-    const blockMap = {
-      paragraph: 'P',
-      heading: 'H1',
-      subheading: 'H2',
-      quote: 'BLOCKQUOTE',
-    };
-    const normalized = TXT_STYLE_VALUES.has(value) ? value : TXT_CONTROL_DEFAULTS.style;
-    ensureTxtEditorFocus(editor);
-    try{
-      document.execCommand('formatBlock', false, blockMap[normalized] || 'P');
-    } catch {}
-    wstate.txtControlState.style = normalized;
-    wstate.txtDirty = true;
-    scheduleTxtAutosave(winId, serializeTxtEditorHtml(editor));
-    syncTxtDropdownSelection(shell, wstate.txtControlState);
-    updateTxtCommandButtonState(shell);
-    return;
-  }
-
-  if(control === 'list'){
-    const normalized = TXT_LIST_VALUES.has(value) ? value : TXT_CONTROL_DEFAULTS.list;
-    ensureTxtEditorFocus(editor);
-    if(normalized === 'bullets'){
-      try{ document.execCommand('insertUnorderedList', false, null); } catch {}
-    } else if(normalized === 'numbers'){
-      try{ document.execCommand('insertOrderedList', false, null); } catch {}
-    } else if(normalized === 'none'){
-      try{
-        if(document.queryCommandState('insertUnorderedList')){
-          document.execCommand('insertUnorderedList', false, null);
-        }
-      } catch {}
-      try{
-        if(document.queryCommandState('insertOrderedList')){
-          document.execCommand('insertOrderedList', false, null);
-        }
-      } catch {}
-    }
-    wstate.txtControlState.list = normalized;
-    wstate.txtDirty = true;
-    scheduleTxtAutosave(winId, serializeTxtEditorHtml(editor));
-    syncTxtDropdownSelection(shell, wstate.txtControlState);
-    updateTxtCommandButtonState(shell);
-    return;
-  }
-
-  if(control === 'spacing' && TXT_SPACING_MAP[value]){
-    wstate.txtPrefs = applyTxtPrefsToShell(shell, { ...(wstate.txtPrefs || TXT_DEFAULT_PREFS), spacing: value });
-    wstate.txtControlState.spacing = value;
-    wstate.txtDirty = true;
-    scheduleTxtAutosave(winId, serializeTxtEditorHtml(editor));
-    syncTxtDropdownSelection(shell, wstate.txtControlState);
-  }
-}
-
-function beginTxtRulerDrag(winId, shell, markerType, startEvent){
-  const editor = getTxtEditorFromShell(shell);
-  const rail = shell ? shell.querySelector('[data-txt-ruler-rail="1"]') : null;
-  const wstate = state.windows.get(winId);
-  if(!editor || !rail || !wstate || wstate.kind !== 'txt') return;
-  startEvent.preventDefault();
-  const pointerId = startEvent.pointerId;
-  const pointerTarget = startEvent.currentTarget;
-  if(pointerTarget && pointerTarget.setPointerCapture){
-    try{ pointerTarget.setPointerCapture(pointerId); } catch {}
-  }
-
-  const onMove = (e)=>{
-    if(e.pointerId !== pointerId) return;
-    const rect = rail.getBoundingClientRect();
-    if(rect.width <= 0) return;
-    const localX = clamp(Math.round(e.clientX - rect.left), 0, Math.round(rect.width));
-    const next = cloneTxtPrefs(wstate.txtPrefs || TXT_DEFAULT_PREFS);
-    if(markerType === 'left'){
-      next.left = localX;
-    } else if(markerType === 'right'){
-      next.right = Math.round(rect.width - localX);
-    } else if(markerType === 'indent'){
-      next.indent = localX - next.left;
-    } else {
-      return;
-    }
-    wstate.txtPrefs = applyTxtPrefsToShell(shell, next);
-    wstate.txtDirty = true;
-    scheduleTxtAutosave(winId, serializeTxtEditorHtml(editor));
-  };
-
-  const stop = (e)=>{
-    if(e.pointerId !== pointerId) return;
-    window.removeEventListener('pointermove', onMove);
-    window.removeEventListener('pointerup', stop);
-    window.removeEventListener('pointercancel', stop);
-    if(pointerTarget && pointerTarget.releasePointerCapture){
-      try{ pointerTarget.releasePointerCapture(pointerId); } catch {}
-    }
-  };
-
-  window.addEventListener('pointermove', onMove);
-  window.addEventListener('pointerup', stop);
-  window.addEventListener('pointercancel', stop);
-  onMove(startEvent);
-}
-
 function createTxtFile(opts = {}){
   const parentId = opts.parentId || null;
   if(parentId){
@@ -9492,9 +9805,7 @@ function createTxtFile(opts = {}){
     parentId,
     x: placed.x,
     y: placed.y,
-    content: '<p><br></p>',
-    contentFormat: 'html',
-    txtPrefs: cloneTxtPrefs(),
+    content: '',
     iconFile: './assets/icons/txt.png',
     createdAt: Date.now(),
     updatedAt: Date.now(),
@@ -9631,15 +9942,7 @@ function openTxtFileWindow(txtId, opts = {}){
   }
 
   const area = $('#desktopArea').getBoundingClientRect();
-  const desiredWidth = clamp(Math.round(area.width * (state.isMobile ? 0.74 : 0.48)), state.isMobile ? 250 : 320, state.isMobile ? 560 : 680);
-  const desiredHeight = clamp(Math.round(area.height * (state.isMobile ? 0.56 : 0.52)), state.isMobile ? 220 : 250, state.isMobile ? 520 : 560);
-  const rect = normalizeWindowRect({
-    left: Math.round((area.width - desiredWidth) / 2),
-    top: Math.round((area.height - desiredHeight) / (state.isMobile ? 2.6 : 2.2)),
-    width: desiredWidth,
-    height: desiredHeight,
-  }, area, 14);
-  const initialTxtPrefs = normalizeTxtPrefs(item.txtPrefs);
+  const rect = normalizeWindowRect(defaultWindowRect(), area, 16);
   const wstate = {
     id: winId,
     title: item.name,
@@ -9668,81 +9971,15 @@ function openTxtFileWindow(txtId, opts = {}){
     kind: 'txt',
     txtId,
     txtDirty: false,
-    txtPrefs: initialTxtPrefs,
-    txtControlState: normalizeTxtControlState(null, initialTxtPrefs),
     txtSaveTimer: null,
-    txtResizeObserver: null,
-    txtDocPointerHandler: null,
     contentHTML: () => `
       <div class="txt-shell" data-txt-shell="1">
-        <div class="txt-toolbar" role="toolbar" aria-label="${t('txt.toolbar')}">
-          <div class="txt-select-wrap txt-select-wrap-styles txt-dropdown" data-txt-dropdown="style" title="${t('txt.styles')}">
-            <button class="txt-dropdown-trigger" type="button" data-txt-dropdown-trigger="style" aria-label="${t('txt.styles')}" aria-haspopup="menu" aria-expanded="false">
-              <span class="txt-select-label">${t('txt.styles')}</span>
-            </button>
-            <div class="txt-dropdown-menu" role="menu" data-txt-dropdown-menu="style" hidden>
-              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="style" data-txt-value="paragraph"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.style.paragraph')}</span></button>
-              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="style" data-txt-value="heading"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.style.heading')}</span></button>
-              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="style" data-txt-value="subheading"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.style.subheading')}</span></button>
-              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="style" data-txt-value="quote"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.style.quote')}</span></button>
-            </div>
-          </div>
-          <div class="txt-segment" role="group" aria-label="${t('txt.align.group')}">
-            <button class="txt-tool-btn" type="button" data-txt-command="justifyLeft" data-txt-query="justifyLeft" aria-label="${t('txt.align.left')}" title="${t('txt.align.left')}"><span class="txt-glyph txt-glyph-left" aria-hidden="true"></span></button>
-            <button class="txt-tool-btn" type="button" data-txt-command="justifyCenter" data-txt-query="justifyCenter" aria-label="${t('txt.align.center')}" title="${t('txt.align.center')}"><span class="txt-glyph txt-glyph-center" aria-hidden="true"></span></button>
-            <button class="txt-tool-btn" type="button" data-txt-command="justifyRight" data-txt-query="justifyRight" aria-label="${t('txt.align.right')}" title="${t('txt.align.right')}"><span class="txt-glyph txt-glyph-right" aria-hidden="true"></span></button>
-            <button class="txt-tool-btn" type="button" data-txt-command="justifyFull" data-txt-query="justifyFull" aria-label="${t('txt.align.justify')}" title="${t('txt.align.justify')}"><span class="txt-glyph txt-glyph-justify" aria-hidden="true"></span></button>
-          </div>
-          <div class="txt-select-wrap txt-select-wrap-spacing txt-dropdown" data-txt-dropdown="spacing" title="${t('txt.spacing')}">
-            <button class="txt-dropdown-trigger" type="button" data-txt-dropdown-trigger="spacing" aria-label="${t('txt.spacing')}" aria-haspopup="menu" aria-expanded="false">
-              <span class="txt-select-label">${t('txt.spacing')}</span>
-            </button>
-            <div class="txt-dropdown-menu" role="menu" data-txt-dropdown-menu="spacing" hidden>
-              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="spacing" data-txt-value="tight"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.spacing.tight')}</span></button>
-              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="spacing" data-txt-value="normal"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.spacing.normal')}</span></button>
-              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="spacing" data-txt-value="relaxed"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.spacing.relaxed')}</span></button>
-              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="spacing" data-txt-value="loose"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.spacing.loose')}</span></button>
-            </div>
-          </div>
-          <div class="txt-select-wrap txt-select-wrap-lists txt-dropdown" data-txt-dropdown="list" title="${t('txt.lists')}">
-            <button class="txt-dropdown-trigger" type="button" data-txt-dropdown-trigger="list" aria-label="${t('txt.lists')}" aria-haspopup="menu" aria-expanded="false">
-              <span class="txt-select-label">${t('txt.lists')}</span>
-            </button>
-            <div class="txt-dropdown-menu" role="menu" data-txt-dropdown-menu="list" hidden>
-              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="list" data-txt-value="none"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.list.none')}</span></button>
-              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="list" data-txt-value="bullets"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.list.bullets')}</span></button>
-              <button class="txt-dropdown-item" type="button" role="menuitemradio" aria-checked="false" data-selected="0" data-txt-dropdown-item="1" data-txt-control="list" data-txt-value="numbers"><span class="txt-dropdown-check" aria-hidden="true">✓</span><span>${t('txt.list.numbers')}</span></button>
-            </div>
-          </div>
-          <div class="txt-mini-group" role="group" aria-label="${t('txt.format.group')}">
-            <button class="txt-tool-btn txt-tool-btn-text" type="button" data-txt-command="bold" data-txt-query="bold" title="${t('txt.format.bold')}" aria-label="${t('txt.format.bold')}">B</button>
-            <button class="txt-tool-btn txt-tool-btn-text" type="button" data-txt-command="italic" data-txt-query="italic" title="${t('txt.format.italic')}" aria-label="${t('txt.format.italic')}">I</button>
-            <button class="txt-tool-btn txt-tool-btn-text" type="button" data-txt-command="underline" data-txt-query="underline" title="${t('txt.format.underline')}" aria-label="${t('txt.format.underline')}">U</button>
-          </div>
-          <div class="txt-toolbar-spacer"></div>
-          <div class="txt-mini-group txt-mini-group-file" role="group" aria-label="${t('txt.file.group')}">
-            <button class="txt-tool-btn txt-tool-btn-mini" type="button" data-txt-action="new" title="${t('menu.txt.new')}" aria-label="${t('menu.txt.new')}">N</button>
-            <button class="txt-tool-btn txt-tool-btn-mini" type="button" data-txt-action="duplicate" title="${t('menu.txt.duplicate')}" aria-label="${t('menu.txt.duplicate')}">D</button>
-            <button class="txt-tool-btn txt-tool-btn-mini" type="button" data-txt-action="save" title="${t('menu.txt.save')}" aria-label="${t('menu.txt.save')}">S</button>
-          </div>
+        <div class="txt-toolbar">
+          <button class="btn bevel" type="button" data-txt-action="new" data-i18n="menu.txt.new">${t('menu.txt.new')}</button>
+          <button class="btn bevel" type="button" data-txt-action="save" data-i18n="menu.txt.save">${t('menu.txt.save')}</button>
+          <button class="btn bevel" type="button" data-txt-action="duplicate" data-i18n="menu.txt.duplicate">${t('menu.txt.duplicate')}</button>
         </div>
-        <div class="txt-ruler" data-txt-ruler="1" aria-label="${t('txt.ruler')}">
-          <div class="txt-ruler-rail" data-txt-ruler-rail="1">
-            <span class="txt-ruler-num" style="left:0%;">0</span>
-            <span class="txt-ruler-num" style="left:16.66%;">1</span>
-            <span class="txt-ruler-num" style="left:33.33%;">2</span>
-            <span class="txt-ruler-num" style="left:50%;">3</span>
-            <span class="txt-ruler-num" style="left:66.66%;">4</span>
-            <span class="txt-ruler-num" style="left:83.33%;">5</span>
-            <span class="txt-ruler-num" style="left:100%;">6</span>
-            <button class="txt-ruler-marker txt-ruler-marker-left" type="button" data-txt-ruler-marker="left" aria-label="${t('txt.ruler.left')}" title="${t('txt.ruler.left')}"></button>
-            <button class="txt-ruler-marker txt-ruler-marker-indent" type="button" data-txt-ruler-marker="indent" aria-label="${t('txt.ruler.indent')}" title="${t('txt.ruler.indent')}"></button>
-            <button class="txt-ruler-marker txt-ruler-marker-right" type="button" data-txt-ruler-marker="right" aria-label="${t('txt.ruler.right')}" title="${t('txt.ruler.right')}"></button>
-          </div>
-        </div>
-        <div class="txt-editor-wrap">
-          <div class="txt-editor" data-txt-editor="1" contenteditable="true" spellcheck="false"></div>
-        </div>
+        <textarea class="txt-editor bevel-in" data-txt-editor="1" spellcheck="false"></textarea>
       </div>
     `,
   };
@@ -9761,18 +9998,10 @@ function getRenderableFsChildren(parentId){
   });
 }
 
-function saveTxtFileContent(txtId, content, txtPrefs = null){
+function saveTxtFileContent(txtId, content){
   const item = getFsItem(txtId);
   if(!item || item.type !== 'txt') return false;
-  const payload = {
-    id: txtId,
-    content: sanitizeTxtHtml(content),
-    contentFormat: 'html',
-  };
-  if(txtPrefs && typeof txtPrefs === 'object'){
-    payload.txtPrefs = normalizeTxtPrefs(txtPrefs);
-  }
-  upsertFsItem(payload, { save: false, syncIconPos: false });
+  upsertFsItem({ id: txtId, content }, { save: false, syncIconPos: false });
   saveDesktopFs();
   return true;
 }
@@ -9781,9 +10010,8 @@ function scheduleTxtAutosave(winId, content){
   const wstate = state.windows.get(winId);
   if(!wstate || wstate.kind !== 'txt') return;
   if(wstate.txtSaveTimer) clearTimeout(wstate.txtSaveTimer);
-  const prefs = normalizeTxtPrefs(wstate.txtPrefs);
   wstate.txtSaveTimer = setTimeout(()=>{
-    saveTxtFileContent(wstate.txtId, content, prefs);
+    saveTxtFileContent(wstate.txtId, content);
     wstate.txtDirty = false;
     wstate.txtSaveTimer = null;
   }, 600);
@@ -9796,7 +10024,7 @@ function handleTxtAction(winId, action){
   if(!item) return;
   const winEl = document.getElementById(`win_${winId}`);
   if(!winEl) return;
-  const editor = winEl.querySelector('[data-txt-editor="1"]');
+  const textarea = winEl.querySelector('[data-txt-editor="1"]');
   const parentId = item.parentId || null;
   const containerEl = resolveFolderContainer(parentId, null);
 
@@ -9810,10 +10038,10 @@ function handleTxtAction(winId, action){
     if(dup) openTxtFileWindow(dup.id);
     return;
   }
-  if(action === 'save' && editor){
+  if(action === 'save' && textarea){
     if(wstate.txtSaveTimer) clearTimeout(wstate.txtSaveTimer);
     wstate.txtSaveTimer = null;
-    saveTxtFileContent(item.id, serializeTxtEditorHtml(editor), wstate.txtPrefs);
+    saveTxtFileContent(item.id, textarea.value);
     wstate.txtDirty = false;
   }
 }
@@ -9839,130 +10067,30 @@ function renderTxtFileWindow(winId){
     shell = content.querySelector('[data-txt-shell="1"]');
   }
   if(!shell) return;
-  updateTxtShellResponsive(shell);
-  const editor = getTxtEditorFromShell(shell);
-  if(!editor) return;
-  if(!wstate.txtPrefs) wstate.txtPrefs = normalizeTxtPrefs(item.txtPrefs);
-  wstate.txtPrefs = applyTxtPrefsToShell(shell, wstate.txtPrefs);
-  if(!wstate.txtControlState){
-    wstate.txtControlState = normalizeTxtControlState(null, wstate.txtPrefs);
-  } else {
-    wstate.txtControlState = normalizeTxtControlState(wstate.txtControlState, wstate.txtPrefs);
-  }
-  syncTxtDropdownSelection(shell, wstate.txtControlState);
-  closeTxtDropdownMenus(shell);
-  const value = getTxtDocumentHtml(item);
-  if(!wstate.txtDirty){
-    const current = serializeTxtEditorHtml(editor);
-    if(current !== value){
-      editor.innerHTML = value;
-    }
-  }
+  const textarea = shell.querySelector('[data-txt-editor="1"]');
+  if(!textarea) return;
+  const value = item.content || '';
+  if(textarea.value !== value) textarea.value = value;
 
   if(!shell.dataset.bound){
     shell.addEventListener('click', (e)=>{
       const target = getEventTargetEl(e);
-      const triggerBtn = target && target.closest ? target.closest('[data-txt-dropdown-trigger]') : null;
-      if(triggerBtn && triggerBtn.dataset){
+      const btn = target && target.closest ? target.closest('[data-txt-action]') : null;
+      if(btn && btn.dataset){
         e.preventDefault();
         e.stopPropagation();
-        const control = triggerBtn.dataset.txtDropdownTrigger || '';
-        const host = shell.querySelector(`[data-txt-dropdown="${control}"]`);
-        const menu = host ? host.querySelector('[data-txt-dropdown-menu]') : null;
-        const shouldOpen = !!menu && menu.hidden;
-        closeTxtDropdownMenus(shell, shouldOpen ? control : '');
-        return;
+        handleTxtAction(winId, btn.dataset.txtAction);
       }
-      const dropdownItem = target && target.closest ? target.closest('[data-txt-dropdown-item]') : null;
-      if(dropdownItem && dropdownItem.dataset){
-        const control = dropdownItem.dataset.txtControl || '';
-        const selectedValue = dropdownItem.dataset.txtValue || '';
-        if(control && selectedValue){
-          e.preventDefault();
-          e.stopPropagation();
-          handleTxtControlChange(winId, shell, control, selectedValue);
-          closeTxtDropdownMenus(shell);
-          return;
-        }
-      }
-      const actionBtn = target && target.closest ? target.closest('[data-txt-action]') : null;
-      if(actionBtn && actionBtn.dataset){
-        e.preventDefault();
-        e.stopPropagation();
-        closeTxtDropdownMenus(shell);
-        handleTxtAction(winId, actionBtn.dataset.txtAction);
-        return;
-      }
-      const cmdBtn = target && target.closest ? target.closest('[data-txt-command]') : null;
-      if(cmdBtn && cmdBtn.dataset && cmdBtn.dataset.txtCommand){
-        e.preventDefault();
-        e.stopPropagation();
-        closeTxtDropdownMenus(shell);
-        runTxtEditorCommand(winId, shell, cmdBtn.dataset.txtCommand);
-        return;
-      }
-      closeTxtDropdownMenus(shell);
     });
-    shell.addEventListener('keydown', (e)=>{
-      if(String(e.key || '').toLowerCase() !== 'escape') return;
-      closeTxtDropdownMenus(shell);
-    });
-    const onDocPointerDown = (e)=>{
-      const target = getEventTargetEl(e);
-      if(target && shell.contains(target)) return;
-      closeTxtDropdownMenus(shell);
-    };
-    document.addEventListener('pointerdown', onDocPointerDown, true);
-    wstate.txtDocPointerHandler = onDocPointerDown;
-    shell.addEventListener('pointerdown', (e)=>{
-      const target = getEventTargetEl(e);
-      if(target && target.closest && target.closest('[data-txt-dropdown]')) return;
-      closeTxtDropdownMenus(shell);
-    });
-    shell.addEventListener('pointerdown', (e)=>{
-      const target = getEventTargetEl(e);
-      const marker = target && target.closest ? target.closest('[data-txt-ruler-marker]') : null;
-      if(!marker || !marker.dataset || !marker.dataset.txtRulerMarker) return;
-      beginTxtRulerDrag(winId, shell, marker.dataset.txtRulerMarker, e);
-    });
-    editor.addEventListener('focus', ()=>{
-      try{ document.execCommand('defaultParagraphSeparator', false, 'p'); } catch {}
-      closeTxtDropdownMenus(shell);
-      updateTxtCommandButtonState(shell);
-    });
-    editor.addEventListener('input', ()=>{
+    textarea.addEventListener('input', ()=>{
       wstate.txtDirty = true;
-      scheduleTxtAutosave(winId, serializeTxtEditorHtml(editor));
-      updateTxtCommandButtonState(shell);
+      scheduleTxtAutosave(winId, textarea.value);
     });
-    editor.addEventListener('keyup', ()=>{ updateTxtCommandButtonState(shell); });
-    editor.addEventListener('mouseup', ()=>{ updateTxtCommandButtonState(shell); });
-    editor.addEventListener('keydown', (e)=>{
-      const key = String(e.key || '').toLowerCase();
-      if((e.metaKey || e.ctrlKey) && key === 's'){
-        e.preventDefault();
-        handleTxtAction(winId, 'save');
-      }
-      if(key === 'escape'){
-        closeTxtDropdownMenus(shell);
-      }
-    });
-    editor.addEventListener('blur', ()=>{
+    textarea.addEventListener('blur', ()=>{
       if(wstate.txtDirty) handleTxtAction(winId, 'save');
     });
-    if(typeof ResizeObserver === 'function'){
-      const observer = new ResizeObserver(()=>{
-        const current = state.windows.get(winId);
-        if(!current || current.kind !== 'txt') return;
-        updateTxtShellResponsive(shell);
-        current.txtPrefs = applyTxtPrefsToShell(shell, current.txtPrefs);
-      });
-      observer.observe(shell);
-      wstate.txtResizeObserver = observer;
-    }
     shell.dataset.bound = '1';
   }
-  updateTxtCommandButtonState(shell);
 
   smartFitWindow(winEl, 'tabChange');
 }
@@ -11569,6 +11697,7 @@ function installLongPress(el, getTarget){
           'app.seeker.file': 'File Seeker',
           'app.seeker.short': 'Seeker',
           'games.snake': 'Snake',
+          'games.minesweeper': 'Minesweeper',
           'games.dopeSkate': 'Dope Skate (beta)',
           'games.back': 'Back',
           'games.empty': 'No games yet.',
@@ -11576,6 +11705,34 @@ function installLongPress(el, getTarget){
           'games.tab.leaderboard': 'Leaderboard',
           'games.leaderboard.total': 'Total Score',
           'games.leaderboard.empty': 'No scores yet.',
+          'minesweeper.title': 'Minesweeper',
+          'minesweeper.tagline': '“Watch your step, one wrong move could be your last.”',
+          'minesweeper.difficulty': 'Difficulty',
+          'minesweeper.difficulty.beginner': 'Beginner',
+          'minesweeper.difficulty.intermediate': 'Intermediate',
+          'minesweeper.difficulty.expert': 'Expert',
+          'minesweeper.action.new': 'New board',
+          'minesweeper.action.restart': 'Restart',
+          'minesweeper.minesLeft': 'Mines left:',
+          'minesweeper.timer': 'Timer:',
+          'minesweeper.score': 'Score:',
+          'minesweeper.best': 'Best:',
+          'minesweeper.status.ready': 'Ready for the first click.',
+          'minesweeper.status.playing': 'Sweep the board.',
+          'minesweeper.status.won': 'Board cleared.',
+          'minesweeper.status.lost': 'Boom. You hit a mine.',
+          'minesweeper.instructions': 'Click to reveal, right click to flag, and double-check numbers before you chord.',
+          'minesweeper.instructions.touch': 'On touch, tap to reveal or long press to flag.',
+          'minesweeper.overlay.win': 'Board cleared',
+          'minesweeper.overlay.lose': 'Boom',
+          'minesweeper.overlay.score': 'Final score:',
+          'minesweeper.overlay.time': 'Time:',
+          'minesweeper.overlay.playAgain': 'Play again',
+          'minesweeper.overlay.viewBoard': 'View board',
+          'minesweeper.cell.hidden': 'Hidden cell',
+          'minesweeper.cell.flagged': 'Flagged cell',
+          'minesweeper.cell.mine': 'Mine',
+          'minesweeper.cell.empty': 'Empty cell',
           'skate.menu.play': 'Play',
           'skate.menu.settings': 'Settings',
           'skate.menu.shop': 'Shop',
@@ -11735,35 +11892,6 @@ function installLongPress(el, getTarget){
           'menu.txt.new': 'New',
           'menu.txt.save': 'Save',
           'menu.txt.duplicate': 'Duplicate',
-          'txt.toolbar': 'Text formatting toolbar',
-          'txt.styles': 'Styles',
-          'txt.style.paragraph': 'Body Text',
-          'txt.style.heading': 'Heading',
-          'txt.style.subheading': 'Subheading',
-          'txt.style.quote': 'Quote',
-          'txt.align.group': 'Alignment',
-          'txt.align.left': 'Align left',
-          'txt.align.center': 'Align center',
-          'txt.align.right': 'Align right',
-          'txt.align.justify': 'Justify',
-          'txt.spacing': 'Spacing',
-          'txt.spacing.tight': 'Tight',
-          'txt.spacing.normal': 'Normal',
-          'txt.spacing.relaxed': 'Relaxed',
-          'txt.spacing.loose': 'Loose',
-          'txt.lists': 'Lists',
-          'txt.list.none': 'No list',
-          'txt.list.bullets': 'Bulleted list',
-          'txt.list.numbers': 'Numbered list',
-          'txt.format.group': 'Text formatting',
-          'txt.format.bold': 'Bold',
-          'txt.format.italic': 'Italic',
-          'txt.format.underline': 'Underline',
-          'txt.file.group': 'File actions',
-          'txt.ruler': 'Paragraph ruler',
-          'txt.ruler.left': 'Left margin',
-          'txt.ruler.indent': 'First line indent',
-          'txt.ruler.right': 'Right margin',
 
           'settings.title': 'Settings',
           'settings.tab.general': 'General',
@@ -12227,6 +12355,7 @@ function installLongPress(el, getTarget){
           'app.seeker.file': 'File Seeker',
           'app.seeker.short': 'Seeker',
           'games.snake': 'Snake',
+          'games.minesweeper': 'Campo Minado',
           'games.dopeSkate': 'Dope Skate (beta)',
           'games.back': 'Voltar',
           'games.empty': 'Sem jogos ainda.',
@@ -12234,6 +12363,34 @@ function installLongPress(el, getTarget){
           'games.tab.leaderboard': 'Leaderboard',
           'games.leaderboard.total': 'Score total',
           'games.leaderboard.empty': 'Sem scores ainda.',
+          'minesweeper.title': 'Campo Minado',
+          'minesweeper.tagline': '“Cuidado onde pisa, um passo em falso pode ser o ultimo.”',
+          'minesweeper.difficulty': 'Dificuldade',
+          'minesweeper.difficulty.beginner': 'Iniciante',
+          'minesweeper.difficulty.intermediate': 'Intermediario',
+          'minesweeper.difficulty.expert': 'Expert',
+          'minesweeper.action.new': 'Novo tabuleiro',
+          'minesweeper.action.restart': 'Reiniciar',
+          'minesweeper.minesLeft': 'Minas restantes:',
+          'minesweeper.timer': 'Tempo:',
+          'minesweeper.score': 'Score:',
+          'minesweeper.best': 'Recorde:',
+          'minesweeper.status.ready': 'Pronto para o primeiro clique.',
+          'minesweeper.status.playing': 'Limpe o tabuleiro.',
+          'minesweeper.status.won': 'Tabuleiro limpo.',
+          'minesweeper.status.lost': 'Boom. Voce acertou uma mina.',
+          'minesweeper.instructions': 'Clique para revelar, clique direito para marcar e confira os numeros antes de abrir em volta.',
+          'minesweeper.instructions.touch': 'No touch, toque para revelar ou segure para marcar.',
+          'minesweeper.overlay.win': 'Tabuleiro limpo',
+          'minesweeper.overlay.lose': 'Boom',
+          'minesweeper.overlay.score': 'Score final:',
+          'minesweeper.overlay.time': 'Tempo:',
+          'minesweeper.overlay.playAgain': 'Jogar novamente',
+          'minesweeper.overlay.viewBoard': 'Ver tabuleiro',
+          'minesweeper.cell.hidden': 'Celula fechada',
+          'minesweeper.cell.flagged': 'Celula marcada',
+          'minesweeper.cell.mine': 'Mina',
+          'minesweeper.cell.empty': 'Celula vazia',
           'skate.menu.play': 'Jogar',
           'skate.menu.settings': 'Configurações',
           'skate.menu.shop': 'Shop',
@@ -12389,35 +12546,6 @@ function installLongPress(el, getTarget){
           'menu.txt.new': 'Novo',
           'menu.txt.save': 'Salvar',
           'menu.txt.duplicate': 'Duplicar',
-          'txt.toolbar': 'Barra de formatacao de texto',
-          'txt.styles': 'Styles',
-          'txt.style.paragraph': 'Corpo de texto',
-          'txt.style.heading': 'Titulo',
-          'txt.style.subheading': 'Subtitulo',
-          'txt.style.quote': 'Citacao',
-          'txt.align.group': 'Alinhamento',
-          'txt.align.left': 'Alinhar a esquerda',
-          'txt.align.center': 'Alinhar ao centro',
-          'txt.align.right': 'Alinhar a direita',
-          'txt.align.justify': 'Justificar',
-          'txt.spacing': 'Spacing',
-          'txt.spacing.tight': 'Apertado',
-          'txt.spacing.normal': 'Normal',
-          'txt.spacing.relaxed': 'Confortavel',
-          'txt.spacing.loose': 'Solto',
-          'txt.lists': 'Lists',
-          'txt.list.none': 'Sem lista',
-          'txt.list.bullets': 'Lista com marcadores',
-          'txt.list.numbers': 'Lista numerada',
-          'txt.format.group': 'Formatacao de texto',
-          'txt.format.bold': 'Negrito',
-          'txt.format.italic': 'Italico',
-          'txt.format.underline': 'Sublinhado',
-          'txt.file.group': 'Acoes de arquivo',
-          'txt.ruler': 'Regua de paragrafo',
-          'txt.ruler.left': 'Margem esquerda',
-          'txt.ruler.indent': 'Recuo da primeira linha',
-          'txt.ruler.right': 'Margem direita',
 
           'settings.title': 'Configurações',
           'settings.tab.general': 'Geral',
@@ -15251,6 +15379,58 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
+          if(state.games.view === 'minesweeper'){
+            const difficulty = state.minesweeper && state.minesweeper.difficulty ? state.minesweeper.difficulty : 'beginner';
+            return `
+              <div class="mine-shell">
+                <div class="mine-header">
+                  <div class="mine-topbar">
+                    <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                    <div class="mine-title-wrap">
+                      <h2 class="mine-title" data-i18n="games.minesweeper">Minesweeper</h2>
+                      <p class="tiny mine-tagline" data-i18n="minesweeper.tagline">“Watch your step, one wrong move could be your last.”</p>
+                    </div>
+                    <button class="btn bevel" type="button" data-mine-action="restart" data-i18n="minesweeper.action.restart">Restart</button>
+                  </div>
+                  <div class="mine-controls">
+                    <label class="mine-control">
+                      <span class="tiny" data-i18n="minesweeper.difficulty">Difficulty</span>
+                      <select class="mine-select" data-mine-setting="difficulty">
+                        <option value="beginner"${difficulty === 'beginner' ? ' selected' : ''} data-i18n="minesweeper.difficulty.beginner">Beginner</option>
+                        <option value="intermediate"${difficulty === 'intermediate' ? ' selected' : ''} data-i18n="minesweeper.difficulty.intermediate">Intermediate</option>
+                        <option value="expert"${difficulty === 'expert' ? ' selected' : ''} data-i18n="minesweeper.difficulty.expert">Expert</option>
+                      </select>
+                    </label>
+                    <button class="btn bevel" type="button" data-mine-action="new" data-i18n="minesweeper.action.new">New board</button>
+                  </div>
+                  <div class="mine-stats">
+                    <div class="tiny"><span data-i18n="minesweeper.minesLeft">Mines left:</span> <strong data-mine-mines-left>10</strong></div>
+                    <div class="tiny"><span data-i18n="minesweeper.timer">Timer:</span> <strong data-mine-timer>0</strong></div>
+                    <div class="tiny"><span data-i18n="minesweeper.score">Score:</span> <strong data-mine-score>0</strong></div>
+                    <div class="tiny"><span data-i18n="minesweeper.best">Best:</span> <strong data-mine-best>0</strong></div>
+                  </div>
+                </div>
+                <div class="mine-board-shell">
+                  <div class="mine-board-wrap" id="mineBoardWrap">
+                    <div class="mine-board" id="mineBoard" role="grid" aria-label="${t('games.minesweeper')}"></div>
+                  </div>
+                  <div class="mine-status-row">
+                    <div class="tiny" data-mine-status data-i18n="minesweeper.status.ready">Ready for the first click.</div>
+                    <div class="tiny mine-help" data-i18n="minesweeper.instructions.touch">On touch, tap to reveal or long press to flag.</div>
+                  </div>
+                </div>
+                <div class="mine-overlay hidden" id="mineOverlay">
+                  <div class="mine-overlay-box bevel">
+                    <strong data-mine-overlay-title data-i18n="minesweeper.overlay.win">Board cleared</strong>
+                    <div class="tiny"><span data-i18n="minesweeper.overlay.score">Final score:</span> <span data-mine-over-score>0</span></div>
+                    <div class="tiny"><span data-i18n="minesweeper.overlay.time">Time:</span> <span data-mine-over-time>0</span></div>
+                    <button class="btn bevel" type="button" data-mine-action="viewboard" data-i18n="minesweeper.overlay.viewBoard">View board</button>
+                    <button class="btn bevel" type="button" data-mine-action="playAgain" data-i18n="minesweeper.overlay.playAgain">Play again</button>
+                  </div>
+                </div>
+              </div>
+            `;
+          }
           if(state.games.view === 'leaderboard'){
             const lb = getGamesLeaderboard();
             const rows = lb.items.map(item => `
@@ -15297,6 +15477,16 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'dope-skate', iconFile:'./assets/icons/dope-skate.png' }, t('games.dopeSkate'), 64)}
                   </div>
                   <span data-i18n="games.dopeSkate">Dope Skate</span>
+                </button>
+              `;
+            }
+            if(id === 'minesweeper'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="minesweeper">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'minesweeper', iconFile:'./assets/icons/minesweeper.svg' }, t('games.minesweeper'), 64)}
+                  </div>
+                  <span data-i18n="games.minesweeper">Minesweeper</span>
                 </button>
               `;
             }
@@ -18833,6 +19023,7 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
         try {
           if(appId === 'games'){
             snakeStop();
+            minesweeperStop();
             if(state.games.view === 'dope-skate'){
               DopeSkateGame.unmount();
             }
@@ -18856,19 +19047,6 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
           if(w.autoFitObserver) w.autoFitObserver.disconnect();
         } catch(err){
           console.error('Error disconnecting autoFitObserver:', err);
-        }
-        try{
-          if(w.txtResizeObserver) w.txtResizeObserver.disconnect();
-        } catch(err){
-          console.error('Error disconnecting txtResizeObserver:', err);
-        }
-        try{
-          if(w.txtDocPointerHandler){
-            document.removeEventListener('pointerdown', w.txtDocPointerHandler, true);
-            w.txtDocPointerHandler = null;
-          }
-        } catch(err){
-          console.error('Error removing txtDocPointerHandler:', err);
         }
         
         if(state.activeWindowId === appId) state.activeWindowId = null;
@@ -19181,14 +19359,6 @@ function toggleFitWindow(appId) {
             seekerContent.dataset.fitKey = `seeker-${state.isMobile ? 'mobile' : 'desktop'}`;
           }
         }
-        if(wstate.kind === 'txt'){
-          const txtContent = el.querySelector('.content');
-          if(txtContent){
-            txtContent.dataset.fitMinW = state.isMobile ? '250' : '580';
-            txtContent.dataset.fitMinH = state.isMobile ? '210' : '390';
-            txtContent.dataset.fitKey = `txt-${state.isMobile ? 'mobile' : 'desktop'}`;
-          }
-        }
         if(appId === 'mediaplayer'){
           const nativeTitlebar = el.querySelector('.frame > .titlebar[data-drag="1"]');
           if(nativeTitlebar) nativeTitlebar.removeAttribute('data-drag');
@@ -19266,19 +19436,14 @@ function toggleFitWindow(appId) {
         $('#windows').appendChild(el);
         applyI18nTo(el);
         applyWindowState(el, appId);
-        if(wstate.kind === 'txt'){
-          const txtShell = el.querySelector('[data-txt-shell="1"]');
-          if(txtShell) updateTxtShellResponsive(txtShell);
-        }
         
         // Auto-fit after content + i18n and keep correcting only when overflow appears.
         const skipOpenAutoFit = appId === 'dope-skate' && typeof isMobileGameMode === 'function' && isMobileGameMode();
-        const preferOverflowOnlyOpenFit = wstate.kind === 'txt';
         if(!skipOpenAutoFit){
           installAutoFitObserver(el, appId);
         }
         let fitPromise = Promise.resolve(getWindowRectFromState(wstate));
-        if(!wstate.savedRect && !skipOpenAutoFit && !preferOverflowOnlyOpenFit){
+        if(!wstate.savedRect && !skipOpenAutoFit){
           fitPromise = smartFitWindow(el, 'open');
         } else {
           // Saved rects can become stale after UI changes (new bars/buttons/text scale).
@@ -19445,10 +19610,8 @@ function toggleFitWindow(appId) {
           const dx = e.clientX - startX;
           const dy = e.clientY - startY;
 
-          const winState = state.windows.get(appId);
-          const isTxtWindow = !!winState && winState.kind === 'txt';
-          const MIN_W = state.isMobile ? (isTxtWindow ? 250 : 240) : (isTxtWindow ? 560 : 280);
-          const MIN_H = state.isMobile ? 180 : (isTxtWindow ? 220 : 200);
+          const MIN_W = state.isMobile ? 240 : 280;
+          const MIN_H = state.isMobile ? 180 : 200;
           const areaW = Math.max(0, area.width);
           const areaH = Math.max(0, area.height);
           const startLRel = startL - area.left;
@@ -21415,6 +21578,7 @@ function renderBlissOSAppMenu(){
           closeTaskbarCalendar();
         }
         if(snakeHandleKey(e)) return;
+        if(minesweeperHandleKey(e)) return;
         if(dopeSkateHandleKey(e)) return;
         const activeEl = document.activeElement;
         if((e.key === 'Enter' || e.key === ' ') && activeEl && (activeEl.id === 'clock' || activeEl.id === 'blissosClock')){
@@ -21920,15 +22084,15 @@ function renderBlissOSAppMenu(){
         }
         if(!params) return;
         const autoGame = (params.get('autogame') || '').trim().toLowerCase();
-        if(autoGame !== 'snake') return;
+        if(autoGame !== 'snake' && autoGame !== 'minesweeper') return;
         const rawUser = (params.get('user') || localStorage.getItem('bliss98_user') || 'PLAYER').trim();
         const user = rawUser || 'PLAYER';
         setUser(user);
         if($('#username')) $('#username').value = user;
         showDesktop();
         if(!state.windows.has('games')) openApp('games');
-        state.games.view = 'snake';
-        state.games.selectedId = 'snake';
+        state.games.view = autoGame;
+        state.games.selectedId = autoGame;
         renderGamesWindow();
         focusWindow('games');
       }
@@ -21967,10 +22131,13 @@ function renderBlissOSAppMenu(){
         state.folders = loadFolders();
         if(!Array.isArray(state.folders.games)) state.folders.games = [];
         if(!state.folders.games.includes('snake')) state.folders.games.unshift('snake');
+        if(!state.folders.games.includes('minesweeper')) state.folders.games.splice(Math.min(1, state.folders.games.length), 0, 'minesweeper');
         if(!state.folders.games.includes('dope-skate')) state.folders.games.push('dope-skate');
         state.snake.highScore = loadSnakeHighScore();
+        state.minesweeper.highScore = loadMinesweeperHighScore();
         state.dopeSkate.highScore = loadDopeSkateHighScore();
         recordGameScore('snake', state.snake.highScore);
+        recordGameScore('minesweeper', state.minesweeper.highScore);
         recordGameScore('dopeSkate', state.dopeSkate.highScore);
         state.trash = new Set(loadTrash());
         state.iconLabels = loadIconLabels();
@@ -22040,3 +22207,4 @@ function renderBlissOSAppMenu(){
         // Mobile optimization: Native Pointer Events and Click handlers now work without suppression
         // IS_COARSE removed - all events handled via standard Pointer Events API
       })();
+

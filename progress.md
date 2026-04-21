@@ -238,6 +238,66 @@ Original prompt (continuação): e crie esses sons dentro da pasta assets/sounds
     - `updateDopeSkateUI()` atualiza tier, streak e recompensa dinâmica.
   - Validação Playwright:
     - sequência de 3 missões confirmou aumento de recompensa por streak,
+- Minesweeper: removido `Flag Mode` da UI e da lógica.
+  - Clique esquerdo/Enter agora sempre revelam ou fazem chord; desktop continua com clique direito para bandeira e mobile só usa `long press`.
+  - Textos atualizados:
+    - tagline: `“Watch your step, one wrong move could be your last.”`
+    - ajuda touch: `On touch, tap to reveal or long press to flag.`
+- Games/Minesweeper: hardening visual para ignorar tema do OS.
+  - Removidos `bevel-in` dos painéis do Minesweeper para parar de herdar skin do BlissOS/Aqua.
+  - `content[data-games-view="minesweeper"]` e `select` presos em `color-scheme: light`.
+  - Painéis, board shell e overlay reforçados com backgrounds e cores próprias da mesa de poker.
+- Validação da rodada:
+  - `node --check` dos módulos alterados: OK.
+  - Rebuild do bundle (`node scripts/build-js-bundle.mjs`) + `node --check assets/js/bliss98.bundle.js`: OK.
+  - Cliente Playwright do skill gerou artefatos em `output/minesweeper-ui-theme/`.
+  - Validação visual dirigida em `output/minesweeper-theme-validate/` confirmou:
+    - sem botão `Flag Mode`,
+    - tagline e help text novos renderizando,
+    - clique direito ainda marca bandeira,
+    - `mine-controls`, `mine-board-shell` e `mine-select` mantem backgrounds poker em `BlissOS` e `Bliss Aqua dark`,
+    - sem `console.error`/`pageerror`.
+  - Validação touch em `output/minesweeper-touch-validate/` confirmou `long press` marcando bandeira no mobile (`flaggedCount: 1`).
+- Novo pedido: adicionar Campo Minado completo dentro do app `Games`.
+- Integração base iniciada:
+  - novo card `Minesweeper/Campo Minado` no hub `Games`,
+  - novo estado `state.minesweeper` + persistência de high score,
+  - novos textos i18n EN/PT,
+  - novos assets `assets/icons/minesweeper.svg` e `assets/BlissOS/minesweeper.svg`.
+- Engine do Campo Minado implementada no módulo de jogos:
+  - dificuldades `Beginner / Intermediate / Expert`,
+  - primeiro clique seguro com zona protegida,
+  - reveal em cascata, bandeiras, chord, timer, score e overlay de vitória/derrota,
+  - suporte a mouse, teclado e touch com long-press + `Flag Mode`,
+  - hooks de teste `window.render_game_to_text` e `window.advanceTime(ms)`.
+- Em andamento:
+  - rebuild do bundle e validação Playwright visual/funcional do fluxo completo.
+- Hotfix pós-validação:
+  - corrigido bug de input em `pointerdown` do Campo Minado; o tabuleiro estava re-renderizando cedo demais e engolindo o primeiro clique do mouse.
+  - ajuste: cursor do mouse/touch agora atualiza sem re-render antes do `click`, preservando reveal normal.
+- Validação concluída:
+  - smoke do skill `develop-web-game` gerou screenshot + `render_game_to_text` sem erros de console/pageerror.
+  - validação Playwright dirigida confirmou:
+    - clique real abre o primeiro tile e inicia a partida,
+    - marcação de bandeira funciona,
+    - `Flag Mode` liga/desliga e altera o comportamento,
+    - dificuldade `Expert` renderiza grid `30x16`,
+    - overlay de derrota aparece ao abrir uma mina,
+    - overlay de vitória aparece ao limpar o tabuleiro,
+    - high score de Campo Minado persiste e entra no leaderboard local.
+- Ajustes finos de UI/score do Campo Minado concluídos:
+  - tiles revelados agora usam visual mais claro e mais “flat”, enquanto os fechados ficaram mais dourados e elevados, aumentando contraste entre estados.
+  - score foi desacoplado totalmente de flags/minas marcadas; marcar e desmarcar não altera mais a pontuação em runtime, removendo o exploit.
+  - tagline sob o título `Minesweeper` e os textos inferiores do board ganharam contraste melhor sobre os backgrounds.
+  - validação Playwright extra confirmou `before === afterFlag === afterUnflag` no score, sem erros de console.
+- Atualização visual/UX adicional do Campo Minado concluída:
+  - bombas no board agora usam `assets/icons/mine.png` em vez de `*`,
+  - criada bandeira vermelha dedicada em `assets/icons/red-flag.svg` para substituir o `F`,
+  - overlay de fim de jogo ganhou ação `View board / Ver tabuleiro` para esconder o modal e inspecionar o board final sem resetar a partida.
+- Validação dessa rodada:
+  - Playwright confirmou `mineImgCount=10` após derrota e `overlayHidden=true` após `View board`, mantendo `mode=lost`,
+  - checagem dedicada confirmou `flagImgCount=1` e `flagSrc='./assets/icons/red-flag.svg'`,
+  - sem `console.error`/`pageerror`.
     - simulação de `runTime=115s` promoveu missão para tier `hard` com reward maior,
     - HUD refletiu `HARD`, `Streak x4` e reward escalado,
     - sem `console.error`/`pageerror`.

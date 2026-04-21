@@ -1,0 +1,19 @@
+{
+  "flagTarget": "3,7",
+  "loseResult": {
+    "mineCell": "3,8",
+    "overlayVisible": true
+  },
+  "metrics": {
+    "flagImgCount": 0,
+    "mineImgCount": 10,
+    "viewBoardText": "View board"
+  },
+  "afterViewBoard": {
+    "overlayHidden": true,
+    "mode": "lost",
+    "mineImgCount": 10,
+    "flagImgCount": 0
+  },
+  "errors": []
+}

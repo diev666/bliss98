@@ -1826,6 +1826,7 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
         try {
           if(appId === 'games'){
             snakeStop();
+            minesweeperStop();
             if(state.games.view === 'dope-skate'){
               DopeSkateGame.unmount();
             }
@@ -4380,6 +4381,7 @@ function renderBlissOSAppMenu(){
           closeTaskbarCalendar();
         }
         if(snakeHandleKey(e)) return;
+        if(minesweeperHandleKey(e)) return;
         if(dopeSkateHandleKey(e)) return;
         const activeEl = document.activeElement;
         if((e.key === 'Enter' || e.key === ' ') && activeEl && (activeEl.id === 'clock' || activeEl.id === 'blissosClock')){
