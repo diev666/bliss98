@@ -1421,6 +1421,18 @@ function updateOpenWindowTitleIcons(){
 
 /* ===== Module: 02-games-and-ui.js ===== */
 let sewerSkaterRufflePromise = null;
+function setFlashAudioButtonState(button, muted){
+  if(!button) return;
+  const label = t(muted ? 'games.flash.unmute' : 'games.flash.mute');
+  button.dataset.muted = muted ? 'true' : 'false';
+  button.setAttribute('aria-pressed', muted ? 'true' : 'false');
+  button.setAttribute('aria-label', label);
+  button.title = label;
+  button.innerHTML = muted
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="m16 9 5 6m0-6-5 6" class="flash-audio-slash"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M15 9a5 5 0 0 1 0 6m2-9a9 9 0 0 1 0 12"/></svg>';
+}
+
 function constrainFlashWindowToMovie(win, container, metadata){
   const movieWidth = Number(metadata && metadata.width);
   const movieHeight = Number(metadata && metadata.height);
@@ -1482,6 +1494,23 @@ function initRuffleGameInWindow(win, playerSelector, swfPath, gameName, loadOpti
     player.setAttribute('aria-label', gameName);
     container.replaceChildren(player);
     const playerApi = player.ruffle();
+    const audioButton = win.querySelector('[data-games-action="flash-audio"]');
+    if(audioButton){
+      audioButton.addEventListener('click', ()=>{
+        const muted = audioButton.dataset.muted === 'true';
+        if(muted){
+          const restoreVolume = Number(audioButton.dataset.restoreVolume) || 1;
+          playerApi.volume = restoreVolume;
+          setFlashAudioButtonState(audioButton, false);
+        } else {
+          const currentVolume = Number(playerApi.volume);
+          audioButton.dataset.restoreVolume = String(currentVolume > 0 ? currentVolume : 1);
+          playerApi.volume = 0;
+          setFlashAudioButtonState(audioButton, true);
+        }
+      });
+      setFlashAudioButtonState(audioButton, Number(playerApi.volume) === 0);
+    }
     return playerApi.load({
       url: new URL(swfPath, document.baseURI).href,
       ...loadOptions
@@ -11986,6 +12015,8 @@ function installLongPress(el, getTarget){
           'games.happyWheelsDemo': 'Happy Wheels Demo',
           'games.lineRiderBeta2': 'Line Rider Beta 2',
           'games.flash.loadError': 'Could not load the Flash emulator. Please reload and try again.',
+          'games.flash.mute': 'Mute game audio',
+          'games.flash.unmute': 'Unmute game audio',
           'games.back': 'Back',
           'games.empty': 'No games yet.',
           'games.tab.hub': 'Games',
@@ -12655,6 +12686,8 @@ function installLongPress(el, getTarget){
           'games.happyWheelsDemo': 'Happy Wheels Demo',
           'games.lineRiderBeta2': 'Line Rider Beta 2',
           'games.flash.loadError': 'Não foi possível carregar o emulador Flash. Atualize a página e tente novamente.',
+          'games.flash.mute': 'Silenciar áudio do jogo',
+          'games.flash.unmute': 'Ativar áudio do jogo',
           'games.back': 'Voltar',
           'games.empty': 'Sem jogos ainda.',
           'games.tab.hub': 'Jogos',
@@ -15761,6 +15794,9 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="${titleKey}">${title}</h2>
+                  <button class="btn bevel flash-audio-button" type="button" data-games-action="flash-audio" data-i18n-aria="games.flash.mute" aria-pressed="false" data-i18n-title="games.flash.mute" title="Mute game audio">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M15 9a5 5 0 0 1 0 6m2-9a9 9 0 0 1 0 12"/></svg>
+                  </button>
                 </div>
                 <div class="sewer-skater-stage" ${playerAttribute} aria-live="polite"></div>
               </div>

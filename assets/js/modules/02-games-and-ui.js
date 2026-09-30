@@ -1,4 +1,16 @@
 let sewerSkaterRufflePromise = null;
+function setFlashAudioButtonState(button, muted){
+  if(!button) return;
+  const label = t(muted ? 'games.flash.unmute' : 'games.flash.mute');
+  button.dataset.muted = muted ? 'true' : 'false';
+  button.setAttribute('aria-pressed', muted ? 'true' : 'false');
+  button.setAttribute('aria-label', label);
+  button.title = label;
+  button.innerHTML = muted
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="m16 9 5 6m0-6-5 6" class="flash-audio-slash"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M15 9a5 5 0 0 1 0 6m2-9a9 9 0 0 1 0 12"/></svg>';
+}
+
 function constrainFlashWindowToMovie(win, container, metadata){
   const movieWidth = Number(metadata && metadata.width);
   const movieHeight = Number(metadata && metadata.height);
@@ -60,6 +72,23 @@ function initRuffleGameInWindow(win, playerSelector, swfPath, gameName, loadOpti
     player.setAttribute('aria-label', gameName);
     container.replaceChildren(player);
     const playerApi = player.ruffle();
+    const audioButton = win.querySelector('[data-games-action="flash-audio"]');
+    if(audioButton){
+      audioButton.addEventListener('click', ()=>{
+        const muted = audioButton.dataset.muted === 'true';
+        if(muted){
+          const restoreVolume = Number(audioButton.dataset.restoreVolume) || 1;
+          playerApi.volume = restoreVolume;
+          setFlashAudioButtonState(audioButton, false);
+        } else {
+          const currentVolume = Number(playerApi.volume);
+          audioButton.dataset.restoreVolume = String(currentVolume > 0 ? currentVolume : 1);
+          playerApi.volume = 0;
+          setFlashAudioButtonState(audioButton, true);
+        }
+      });
+      setFlashAudioButtonState(audioButton, Number(playerApi.volume) === 0);
+    }
     return playerApi.load({
       url: new URL(swfPath, document.baseURI).href,
       ...loadOptions

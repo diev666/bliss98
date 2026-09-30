@@ -1053,6 +1053,9 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="${titleKey}">${title}</h2>
+                  <button class="btn bevel flash-audio-button" type="button" data-games-action="flash-audio" data-i18n-aria="games.flash.mute" aria-pressed="false" data-i18n-title="games.flash.mute" title="Mute game audio">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M15 9a5 5 0 0 1 0 6m2-9a9 9 0 0 1 0 12"/></svg>
+                  </button>
                 </div>
                 <div class="sewer-skater-stage" ${playerAttribute} aria-live="polite"></div>
               </div>
