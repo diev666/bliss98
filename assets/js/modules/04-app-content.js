@@ -1103,7 +1103,7 @@ Eu sou o buffalo branco extinto`
               return `
                 <button class="games-item games-card" type="button" data-game-id="sewer-skater">
                   <div class="games-icon pixel">
-                    ${getThemedIconHtml({ icon:'game', id:'sewer-skater', iconFile:'./assets/icons/dope-skate.png' }, t('games.sewerSkater'), 64)}
+                    ${getThemedIconHtml({ icon:'game', id:'sewer-skater', iconFile:'./assets/flashgames/sewer-skater/skatesewer.jpg' }, t('games.sewerSkater'), 64)}
                   </div>
                   <span data-i18n="games.sewerSkater">Sewer Skater</span>
                 </button>
