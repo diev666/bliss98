@@ -1,4 +1,32 @@
 let sewerSkaterRufflePromise = null;
+let dirPlayerPromise = null;
+
+function initSkateFreestyleInWindow(win){
+  const container = win && win.querySelector('[data-skate-freestyle-player]');
+  if(!container) return;
+  const showError = () => {
+    if(container.isConnected) container.textContent = t('games.shockwave.loadError');
+  };
+  if(!dirPlayerPromise){
+    dirPlayerPromise = new Promise((resolve, reject)=>{
+      const script = document.createElement('script');
+      script.src = './assets/js/dirplayer/dirplayer-polyfill.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+  dirPlayerPromise.then(()=>{
+    if(!container.isConnected) return;
+    if(!window.DirPlayer || typeof window.DirPlayer.init !== 'function'){
+      throw new Error('DirPlayer did not initialize');
+    }
+    window.DirPlayer.init();
+  }).catch((error)=>{
+    console.error('Could not load Skate Freestyle:', error);
+    showError();
+  });
+}
 
 function initSewerSkaterInWindow(win){
   const container = win && win.querySelector('[data-sewer-skater-player]');
@@ -136,6 +164,15 @@ function renderGamesWindow(){
     const backButton = win.querySelector('[data-games-action="back"]');
     if(backButton) backButton.addEventListener('click', backToGamesHub);
     initSewerSkaterInWindow(win);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'skate-freestyle'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '640';
+    content.dataset.fitMinH = state.isMobile ? '360' : '500';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    initSkateFreestyleInWindow(win);
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
@@ -642,6 +679,12 @@ function openGameFromHub(id){
   }
   if(id === 'sewer-skater'){
     state.games.view = 'sewer-skater';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'skate-freestyle'){
+    state.games.view = 'skate-freestyle';
     state.games.selectedId = id;
     renderGamesWindow();
     return;
@@ -6444,7 +6487,7 @@ function resetDesktopLayoutPreservingContent(){
   state.iconLabels = {};
   saveIconLabels();
 
-  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
+  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'skate-freestyle'] };
   saveFolders();
 
   const coreIds = new Set(
@@ -7072,7 +7115,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'skate-freestyle'] };
 }
 
 function saveFolders(){

@@ -1050,6 +1050,20 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
+          if(state.games.view === 'skate-freestyle'){
+            const movieUrl = './assets/flashgames/Skate%20Freestyle/content/comoquierascolacao.com/juegos/skatefreestyle/skate_freestyle.dcr';
+            return `
+              <div class="shockwave-game-shell">
+                <div class="shockwave-game-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.skateFreestyle">Skate Freestyle</h2>
+                </div>
+                <div class="shockwave-game-stage" data-skate-freestyle-player>
+                  <embed src="${movieUrl}" type="application/x-director" width="640" height="480" aria-label="Skate Freestyle">
+                </div>
+              </div>
+            `;
+          }
           if(state.games.view === 'leaderboard'){
             const lb = getGamesLeaderboard();
             const rows = lb.items.map(item => `
@@ -1106,6 +1120,16 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'sewer-skater', iconFile:'./assets/flashgames/sewer-skater/skatesewer.jpg' }, t('games.sewerSkater'), 64)}
                   </div>
                   <span data-i18n="games.sewerSkater">Sewer Skater</span>
+                </button>
+              `;
+            }
+            if(id === 'skate-freestyle'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="skate-freestyle">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'skate-freestyle', iconFile:'./assets/flashgames/Skate Freestyle/skatefreestyle.png' }, t('games.skateFreestyle'), 64)}
+                  </div>
+                  <span data-i18n="games.skateFreestyle">Skate Freestyle</span>
                 </button>
               `;
             }
