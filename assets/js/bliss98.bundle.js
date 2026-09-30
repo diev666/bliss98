@@ -1421,6 +1421,43 @@ function updateOpenWindowTitleIcons(){
 
 /* ===== Module: 02-games-and-ui.js ===== */
 let sewerSkaterRufflePromise = null;
+function constrainFlashWindowToMovie(win, container, metadata){
+  const movieWidth = Number(metadata && metadata.width);
+  const movieHeight = Number(metadata && metadata.height);
+  if(!win || !container || !container.isConnected || !Number.isFinite(movieWidth) || !Number.isFinite(movieHeight) || movieWidth <= 0 || movieHeight <= 0) return;
+  const content = win.querySelector('.content');
+  if(!content) return;
+
+  const frameRect = win.getBoundingClientRect();
+  const stageRect = container.getBoundingClientRect();
+  const maxWidth = Math.ceil(movieWidth + Math.max(0, frameRect.width - stageRect.width));
+  const maxHeight = Math.ceil(movieHeight + Math.max(0, frameRect.height - stageRect.height));
+  content.dataset.fitMaxW = String(maxWidth);
+  content.dataset.fitMaxH = String(maxHeight);
+  content.dataset.fitMinW = String(Math.min(Number(content.dataset.fitMinW) || maxWidth, maxWidth));
+  content.dataset.fitMinH = String(Math.min(Number(content.dataset.fitMinH) || maxHeight, maxHeight));
+
+  const area = document.getElementById('desktopArea');
+  const wstate = state.windows.get('games');
+  if(!area || !wstate) return;
+  const areaRect = area.getBoundingClientRect();
+  const margin = 16;
+  const width = Math.min(Math.round(frameRect.width), maxWidth, Math.max(120, Math.floor(areaRect.width - margin * 2)));
+  const height = Math.min(Math.round(frameRect.height), maxHeight, Math.max(110, Math.floor(areaRect.height - margin * 2)));
+  const left = clamp(frameRect.left - areaRect.left, margin, Math.max(margin, areaRect.width - width - margin));
+  const top = clamp(frameRect.top - areaRect.top, margin, Math.max(margin, areaRect.height - height - margin));
+  if(width >= frameRect.width - 1 && height >= frameRect.height - 1) return;
+
+  wstate.width = width;
+  wstate.height = height;
+  wstate.left = left;
+  wstate.top = top;
+  win.style.width = `${width}px`;
+  win.style.height = `${height}px`;
+  win.style.left = `${left}px`;
+  win.style.top = `${top}px`;
+}
+
 function initRuffleGameInWindow(win, playerSelector, swfPath, gameName, loadOptions = {}){
   const container = win && win.querySelector(playerSelector);
   if(!container) return;
@@ -1444,9 +1481,12 @@ function initRuffleGameInWindow(win, playerSelector, swfPath, gameName, loadOpti
     player.className = 'sewer-skater-player';
     player.setAttribute('aria-label', gameName);
     container.replaceChildren(player);
-    return player.ruffle().load({
+    const playerApi = player.ruffle();
+    return playerApi.load({
       url: new URL(swfPath, document.baseURI).href,
       ...loadOptions
+    }).then(()=>{
+      constrainFlashWindowToMovie(win, container, playerApi.metadata);
     });
   }).catch((error)=>{
     console.error(`Could not load ${gameName}:`, error);
@@ -1488,6 +1528,8 @@ function renderGamesWindow(){
   content.dataset.gamesView = state.games.view;
   delete content.dataset.fitMinW;
   delete content.dataset.fitMinH;
+  delete content.dataset.fitMaxW;
+  delete content.dataset.fitMaxH;
   applyI18nTo(win);
   const mobileGameView = isMobileGameMode() && (state.games.view === 'snake' || state.games.view === 'minesweeper');
   if(state.games.view === 'snake' || state.games.view === 'minesweeper'){
@@ -18746,13 +18788,18 @@ function smartFitWindow(winEl, mode = 'auto', opts = {}){
     requestAnimationFrame(()=>{
       requestAnimationFrame(()=>{
         const bounds = getSmartFitBounds();
-        const desktopMaximizeMode = (mode === 'maximize' && !state.isMobile);
-        const softMinW = Math.min(SMART_WINDOW.minWidth, bounds.maxWidth);
-        const softMinH = Math.min(SMART_WINDOW.minHeight, bounds.maxHeight);
+        const configuredMaxW = Number(content.dataset.fitMaxW);
+        const configuredMaxH = Number(content.dataset.fitMaxH);
+        const maxWidth = Math.min(bounds.maxWidth, Number.isFinite(configuredMaxW) && configuredMaxW > 0 ? configuredMaxW : bounds.maxWidth);
+        const maxHeight = Math.min(bounds.maxHeight, Number.isFinite(configuredMaxH) && configuredMaxH > 0 ? configuredMaxH : bounds.maxHeight);
+        const hasMovieSizeLimit = maxWidth < bounds.maxWidth || maxHeight < bounds.maxHeight;
+        const desktopMaximizeMode = (mode === 'maximize' && !state.isMobile && !hasMovieSizeLimit);
+        const softMinW = Math.min(SMART_WINDOW.minWidth, maxWidth);
+        const softMinH = Math.min(SMART_WINDOW.minHeight, maxHeight);
         const dataMinW = parseInt(content.dataset.fitMinW || '0', 10) || softMinW;
         const dataMinH = parseInt(content.dataset.fitMinH || '0', 10) || softMinH;
-        const fitMinW = clamp(dataMinW, softMinW, bounds.maxWidth);
-        const fitMinH = clamp(dataMinH, softMinH, bounds.maxHeight);
+        const fitMinW = clamp(dataMinW, softMinW, maxWidth);
+        const fitMinH = clamp(dataMinH, softMinH, maxHeight);
         let { targetW, targetH } = getWindowContentTargetSize(winEl, appId);
         if(!desktopMaximizeMode){
           ({ targetW, targetH } = applyNiceSquareish(targetW, targetH));
@@ -18760,8 +18807,8 @@ function smartFitWindow(winEl, mode = 'auto', opts = {}){
         let width = Math.max(targetW, fitMinW);
         let height = Math.max(targetH, fitMinH);
 
-        width = clamp(width, fitMinW, bounds.maxWidth);
-        height = clamp(height, fitMinH, bounds.maxHeight);
+        width = clamp(width, fitMinW, maxWidth);
+        height = clamp(height, fitMinH, maxHeight);
         if(!desktopMaximizeMode){
           const ratio = width / Math.max(1, height);
           const inverse = 1 / SMART_WINDOW.ratio;
@@ -18771,10 +18818,12 @@ function smartFitWindow(winEl, mode = 'auto', opts = {}){
             height = Math.min(height, width * SMART_WINDOW.ratio);
           }
         }
-        width = clamp(width, fitMinW, bounds.maxWidth);
-        height = clamp(height, fitMinH, bounds.maxHeight);
+        width = clamp(width, fitMinW, maxWidth);
+        height = clamp(height, fitMinH, maxHeight);
 
         let normalized = normalizeWindowRect({ left: w.left, top: w.top, width, height }, bounds.area, bounds.margin);
+        normalized.width = Math.min(normalized.width, maxWidth);
+        normalized.height = Math.min(normalized.height, maxHeight);
         const fitKey = content.dataset.fitKey || '';
         if(fitKey){
           if(!w.fitCache) w.fitCache = {};
@@ -18783,6 +18832,8 @@ function smartFitWindow(winEl, mode = 'auto', opts = {}){
             normalized.width = Math.max(normalized.width, cached.width);
             normalized.height = Math.max(normalized.height, cached.height);
           }
+          normalized.width = Math.min(normalized.width, maxWidth);
+          normalized.height = Math.min(normalized.height, maxHeight);
           w.fitCache[fitKey] = { width: normalized.width, height: normalized.height };
           normalized = normalizeWindowRect({ left: normalized.left, top: normalized.top, width: normalized.width, height: normalized.height }, bounds.area, bounds.margin);
         }
@@ -19823,10 +19874,15 @@ function toggleFitWindow(appId) {
           const MIN_H = state.isMobile ? 180 : 200;
           const areaW = Math.max(0, area.width);
           const areaH = Math.max(0, area.height);
+          const content = winEl.querySelector('.content');
+          const configuredMaxW = Number(content && content.dataset.fitMaxW);
+          const configuredMaxH = Number(content && content.dataset.fitMaxH);
+          const maxMovieW = Number.isFinite(configuredMaxW) && configuredMaxW > 0 ? configuredMaxW : Infinity;
+          const maxMovieH = Number.isFinite(configuredMaxH) && configuredMaxH > 0 ? configuredMaxH : Infinity;
           const startLRel = startL - area.left;
           const startTRel = startT - area.top;
-          const minW = Math.max(120, Math.min(MIN_W, areaW));
-          const minH = Math.max(110, Math.min(MIN_H, areaH));
+          const minW = Math.max(120, Math.min(MIN_W, areaW, maxMovieW));
+          const minH = Math.max(110, Math.min(MIN_H, areaH, maxMovieH));
 
           let newW = startW;
           let newH = startH;
@@ -19834,11 +19890,11 @@ function toggleFitWindow(appId) {
           let newT = startTRel;
 
           if(dir.includes('e')){
-            const maxW = Math.max(minW, areaW - newL);
+            const maxW = Math.max(minW, Math.min(areaW - newL, maxMovieW));
             newW = clamp(startW + dx, minW, maxW);
           }
           if(dir.includes('s')){
-            const maxH = Math.max(minH, areaH - newT);
+            const maxH = Math.max(minH, Math.min(areaH - newT, maxMovieH));
             newH = clamp(startH + dy, minH, maxH);
           }
 
@@ -19853,10 +19909,21 @@ function toggleFitWindow(appId) {
             newH = startH + (startTRel - newT);
           }
 
+          const maxWAtPosition = Math.max(minW, Math.min(areaW - newL, maxMovieW));
+          if(newW > maxWAtPosition){
+            newW = maxWAtPosition;
+            if(dir.includes('w')) newL = startLRel + startW - newW;
+          }
+          const maxHAtPosition = Math.max(minH, Math.min(areaH - newT, maxMovieH));
+          if(newH > maxHAtPosition){
+            newH = maxHAtPosition;
+            if(dir.includes('n')) newT = startTRel + startH - newH;
+          }
+
           newL = clamp(newL, 0, Math.max(0, areaW - minW));
           newT = clamp(newT, 0, Math.max(0, areaH - minH));
-          newW = clamp(newW, minW, Math.max(minW, areaW - newL));
-          newH = clamp(newH, minH, Math.max(minH, areaH - newT));
+          newW = clamp(newW, minW, Math.max(minW, Math.min(areaW - newL, maxMovieW)));
+          newH = clamp(newH, minH, Math.max(minH, Math.min(areaH - newT, maxMovieH)));
 
           winEl.style.width = newW + 'px';
           winEl.style.height = newH + 'px';

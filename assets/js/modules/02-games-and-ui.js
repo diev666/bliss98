@@ -1,4 +1,41 @@
 let sewerSkaterRufflePromise = null;
+function constrainFlashWindowToMovie(win, container, metadata){
+  const movieWidth = Number(metadata && metadata.width);
+  const movieHeight = Number(metadata && metadata.height);
+  if(!win || !container || !container.isConnected || !Number.isFinite(movieWidth) || !Number.isFinite(movieHeight) || movieWidth <= 0 || movieHeight <= 0) return;
+  const content = win.querySelector('.content');
+  if(!content) return;
+
+  const frameRect = win.getBoundingClientRect();
+  const stageRect = container.getBoundingClientRect();
+  const maxWidth = Math.ceil(movieWidth + Math.max(0, frameRect.width - stageRect.width));
+  const maxHeight = Math.ceil(movieHeight + Math.max(0, frameRect.height - stageRect.height));
+  content.dataset.fitMaxW = String(maxWidth);
+  content.dataset.fitMaxH = String(maxHeight);
+  content.dataset.fitMinW = String(Math.min(Number(content.dataset.fitMinW) || maxWidth, maxWidth));
+  content.dataset.fitMinH = String(Math.min(Number(content.dataset.fitMinH) || maxHeight, maxHeight));
+
+  const area = document.getElementById('desktopArea');
+  const wstate = state.windows.get('games');
+  if(!area || !wstate) return;
+  const areaRect = area.getBoundingClientRect();
+  const margin = 16;
+  const width = Math.min(Math.round(frameRect.width), maxWidth, Math.max(120, Math.floor(areaRect.width - margin * 2)));
+  const height = Math.min(Math.round(frameRect.height), maxHeight, Math.max(110, Math.floor(areaRect.height - margin * 2)));
+  const left = clamp(frameRect.left - areaRect.left, margin, Math.max(margin, areaRect.width - width - margin));
+  const top = clamp(frameRect.top - areaRect.top, margin, Math.max(margin, areaRect.height - height - margin));
+  if(width >= frameRect.width - 1 && height >= frameRect.height - 1) return;
+
+  wstate.width = width;
+  wstate.height = height;
+  wstate.left = left;
+  wstate.top = top;
+  win.style.width = `${width}px`;
+  win.style.height = `${height}px`;
+  win.style.left = `${left}px`;
+  win.style.top = `${top}px`;
+}
+
 function initRuffleGameInWindow(win, playerSelector, swfPath, gameName, loadOptions = {}){
   const container = win && win.querySelector(playerSelector);
   if(!container) return;
@@ -22,9 +59,12 @@ function initRuffleGameInWindow(win, playerSelector, swfPath, gameName, loadOpti
     player.className = 'sewer-skater-player';
     player.setAttribute('aria-label', gameName);
     container.replaceChildren(player);
-    return player.ruffle().load({
+    const playerApi = player.ruffle();
+    return playerApi.load({
       url: new URL(swfPath, document.baseURI).href,
       ...loadOptions
+    }).then(()=>{
+      constrainFlashWindowToMovie(win, container, playerApi.metadata);
     });
   }).catch((error)=>{
     console.error(`Could not load ${gameName}:`, error);
@@ -66,6 +106,8 @@ function renderGamesWindow(){
   content.dataset.gamesView = state.games.view;
   delete content.dataset.fitMinW;
   delete content.dataset.fitMinH;
+  delete content.dataset.fitMaxW;
+  delete content.dataset.fitMaxH;
   applyI18nTo(win);
   const mobileGameView = isMobileGameMode() && (state.games.view === 'snake' || state.games.view === 'minesweeper');
   if(state.games.view === 'snake' || state.games.view === 'minesweeper'){
