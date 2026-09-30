@@ -1,3 +1,35 @@
+let sewerSkaterRufflePromise = null;
+
+function initSewerSkaterInWindow(win){
+  const container = win && win.querySelector('[data-sewer-skater-player]');
+  if(!container) return;
+  const showError = () => {
+    if(container.isConnected) container.textContent = t('games.flash.loadError');
+  };
+  if(!sewerSkaterRufflePromise){
+    sewerSkaterRufflePromise = new Promise((resolve, reject)=>{
+      const script = document.createElement('script');
+      script.src = './assets/js/ruffle/ruffle.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+  sewerSkaterRufflePromise.then(()=>{
+    if(!container.isConnected) return;
+    const ruffle = window.RufflePlayer && window.RufflePlayer.newest();
+    if(!ruffle) throw new Error('Ruffle did not initialize');
+    const player = ruffle.createPlayer();
+    player.className = 'sewer-skater-player';
+    player.setAttribute('aria-label', 'Sewer Skater');
+    container.replaceChildren(player);
+    return player.ruffle().load(new URL('./assets/flashgames/sewer-skater/sewer-skater.swf', document.baseURI).href);
+  }).catch((error)=>{
+    console.error('Could not load Sewer Skater:', error);
+    showError();
+  });
+}
+
 function renderGamesWindow(){
   const win = document.getElementById('win_games');
   if(!win) return;
@@ -96,6 +128,15 @@ function renderGamesWindow(){
         if(wstate) wstate.userSized = prevUserSized;
       });
     }
+    return;
+  }
+  if(state.games.view === 'sewer-skater'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '640';
+    content.dataset.fitMinH = state.isMobile ? '360' : '480';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    initSewerSkaterInWindow(win);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
   if(!mobileGameView){
@@ -596,6 +637,12 @@ function openGameFromHub(id){
   if(id === 'minesweeper'){
     state.games.view = 'minesweeper';
     state.games.selectedId = 'minesweeper';
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'sewer-skater'){
+    state.games.view = 'sewer-skater';
+    state.games.selectedId = id;
     renderGamesWindow();
     return;
   }
@@ -6397,7 +6444,7 @@ function resetDesktopLayoutPreservingContent(){
   state.iconLabels = {};
   saveIconLabels();
 
-  state.folders = { games: ['snake', 'minesweeper', 'dope-skate'] };
+  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
   saveFolders();
 
   const coreIds = new Set(
@@ -7025,7 +7072,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'minesweeper', 'dope-skate'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
 }
 
 function saveFolders(){

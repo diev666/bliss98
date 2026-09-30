@@ -56,6 +56,7 @@
         if(!state.folders.games.includes('snake')) state.folders.games.unshift('snake');
         if(!state.folders.games.includes('minesweeper')) state.folders.games.splice(Math.min(1, state.folders.games.length), 0, 'minesweeper');
         if(!state.folders.games.includes('dope-skate')) state.folders.games.push('dope-skate');
+        if(!state.folders.games.includes('sewer-skater')) state.folders.games.push('sewer-skater');
         state.snake.highScore = loadSnakeHighScore();
         state.minesweeper.highScore = loadMinesweeperHighScore();
         state.dopeSkate.highScore = loadDopeSkateHighScore();

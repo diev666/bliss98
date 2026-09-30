@@ -1039,6 +1039,17 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
+          if(state.games.view === 'sewer-skater'){
+            return `
+              <div class="sewer-skater-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.sewerSkater">Sewer Skater</h2>
+                </div>
+                <div class="sewer-skater-stage" data-sewer-skater-player aria-live="polite"></div>
+              </div>
+            `;
+          }
           if(state.games.view === 'leaderboard'){
             const lb = getGamesLeaderboard();
             const rows = lb.items.map(item => `
@@ -1085,6 +1096,16 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'dope-skate', iconFile:'./assets/icons/dope-skate.png' }, t('games.dopeSkate'), 64)}
                   </div>
                   <span data-i18n="games.dopeSkate">Dope Skate</span>
+                </button>
+              `;
+            }
+            if(id === 'sewer-skater'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="sewer-skater">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'sewer-skater', iconFile:'./assets/icons/dope-skate.png' }, t('games.sewerSkater'), 64)}
+                  </div>
+                  <span data-i18n="games.sewerSkater">Sewer Skater</span>
                 </button>
               `;
             }

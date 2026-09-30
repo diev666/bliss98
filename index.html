@@ -6446,6 +6446,36 @@
         flex-direction:column;
         color-scheme:light;
       }
+      #win_games .content[data-games-view="sewer-skater"]{
+        display:flex;
+        flex-direction:column;
+        min-height:420px;
+        overflow:hidden;
+      }
+      .sewer-skater-shell{
+        display:flex;
+        flex:1;
+        min-height:0;
+        flex-direction:column;
+        gap:8px;
+      }
+      .sewer-skater-toolbar{
+        display:flex;
+        align-items:center;
+        gap:12px;
+      }
+      .sewer-skater-toolbar h2{ margin:0; font-size:16px; }
+      .sewer-skater-stage{
+        display:flex;
+        flex:1;
+        min-height:360px;
+        align-items:center;
+        justify-content:center;
+        overflow:hidden;
+        background:#101010;
+        color:#fff;
+      }
+      .sewer-skater-player{ width:100%; height:100%; min-height:360px; }
       :is(#win_games, #win_dope-skate) .statusbar{
         background:
           linear-gradient(90deg, #8a5a2d, #6b3f1c),

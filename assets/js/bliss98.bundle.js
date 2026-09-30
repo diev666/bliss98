@@ -1420,6 +1420,38 @@ function updateOpenWindowTitleIcons(){
 }
 
 /* ===== Module: 02-games-and-ui.js ===== */
+let sewerSkaterRufflePromise = null;
+
+function initSewerSkaterInWindow(win){
+  const container = win && win.querySelector('[data-sewer-skater-player]');
+  if(!container) return;
+  const showError = () => {
+    if(container.isConnected) container.textContent = t('games.flash.loadError');
+  };
+  if(!sewerSkaterRufflePromise){
+    sewerSkaterRufflePromise = new Promise((resolve, reject)=>{
+      const script = document.createElement('script');
+      script.src = './assets/js/ruffle/ruffle.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+  sewerSkaterRufflePromise.then(()=>{
+    if(!container.isConnected) return;
+    const ruffle = window.RufflePlayer && window.RufflePlayer.newest();
+    if(!ruffle) throw new Error('Ruffle did not initialize');
+    const player = ruffle.createPlayer();
+    player.className = 'sewer-skater-player';
+    player.setAttribute('aria-label', 'Sewer Skater');
+    container.replaceChildren(player);
+    return player.ruffle().load(new URL('./assets/flashgames/sewer-skater/sewer-skater.swf', document.baseURI).href);
+  }).catch((error)=>{
+    console.error('Could not load Sewer Skater:', error);
+    showError();
+  });
+}
+
 function renderGamesWindow(){
   const win = document.getElementById('win_games');
   if(!win) return;
@@ -1518,6 +1550,15 @@ function renderGamesWindow(){
         if(wstate) wstate.userSized = prevUserSized;
       });
     }
+    return;
+  }
+  if(state.games.view === 'sewer-skater'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '640';
+    content.dataset.fitMinH = state.isMobile ? '360' : '480';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    initSewerSkaterInWindow(win);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
   if(!mobileGameView){
@@ -2018,6 +2059,12 @@ function openGameFromHub(id){
   if(id === 'minesweeper'){
     state.games.view = 'minesweeper';
     state.games.selectedId = 'minesweeper';
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'sewer-skater'){
+    state.games.view = 'sewer-skater';
+    state.games.selectedId = id;
     renderGamesWindow();
     return;
   }
@@ -7819,7 +7866,7 @@ function resetDesktopLayoutPreservingContent(){
   state.iconLabels = {};
   saveIconLabels();
 
-  state.folders = { games: ['snake', 'minesweeper', 'dope-skate'] };
+  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
   saveFolders();
 
   const coreIds = new Set(
@@ -8447,7 +8494,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'minesweeper', 'dope-skate'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
 }
 
 function saveFolders(){
@@ -11764,6 +11811,8 @@ function installLongPress(el, getTarget){
           'games.snake': 'Snake',
           'games.minesweeper': 'Minesweeper',
           'games.dopeSkate': 'Dope Skate (beta)',
+          'games.sewerSkater': 'Sewer Skater',
+          'games.flash.loadError': 'Could not load the Flash emulator. Please reload and try again.',
           'games.back': 'Back',
           'games.empty': 'No games yet.',
           'games.tab.hub': 'Games',
@@ -12426,6 +12475,8 @@ function installLongPress(el, getTarget){
           'games.snake': 'Snake',
           'games.minesweeper': 'Campo Minado',
           'games.dopeSkate': 'Dope Skate (beta)',
+          'games.sewerSkater': 'Sewer Skater',
+          'games.flash.loadError': 'Não foi possível carregar o emulador Flash. Atualize a página e tente novamente.',
           'games.back': 'Voltar',
           'games.empty': 'Sem jogos ainda.',
           'games.tab.hub': 'Jogos',
@@ -15518,6 +15569,17 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
+          if(state.games.view === 'sewer-skater'){
+            return `
+              <div class="sewer-skater-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.sewerSkater">Sewer Skater</h2>
+                </div>
+                <div class="sewer-skater-stage" data-sewer-skater-player aria-live="polite"></div>
+              </div>
+            `;
+          }
           if(state.games.view === 'leaderboard'){
             const lb = getGamesLeaderboard();
             const rows = lb.items.map(item => `
@@ -15564,6 +15626,16 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'dope-skate', iconFile:'./assets/icons/dope-skate.png' }, t('games.dopeSkate'), 64)}
                   </div>
                   <span data-i18n="games.dopeSkate">Dope Skate</span>
+                </button>
+              `;
+            }
+            if(id === 'sewer-skater'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="sewer-skater">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'sewer-skater', iconFile:'./assets/icons/dope-skate.png' }, t('games.sewerSkater'), 64)}
+                  </div>
+                  <span data-i18n="games.sewerSkater">Sewer Skater</span>
                 </button>
               `;
             }
@@ -22229,6 +22301,7 @@ function renderBlissOSAppMenu(){
         if(!state.folders.games.includes('snake')) state.folders.games.unshift('snake');
         if(!state.folders.games.includes('minesweeper')) state.folders.games.splice(Math.min(1, state.folders.games.length), 0, 'minesweeper');
         if(!state.folders.games.includes('dope-skate')) state.folders.games.push('dope-skate');
+        if(!state.folders.games.includes('sewer-skater')) state.folders.games.push('sewer-skater');
         state.snake.highScore = loadSnakeHighScore();
         state.minesweeper.highScore = loadMinesweeperHighScore();
         state.dopeSkate.highScore = loadDopeSkateHighScore();
