@@ -1039,15 +1039,17 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
-          if(state.games.view === 'sewer-skater' || state.games.view === 'antbuster'){
+          if(state.games.view === 'sewer-skater' || state.games.view === 'antbuster' || state.games.view === 'bowman-2'){
             const isAntbuster = state.games.view === 'antbuster';
-            const titleKey = isAntbuster ? 'games.antbuster' : 'games.sewerSkater';
-            const playerAttribute = isAntbuster ? 'data-antbuster-player' : 'data-sewer-skater-player';
+            const isBowman2 = state.games.view === 'bowman-2';
+            const titleKey = isAntbuster ? 'games.antbuster' : isBowman2 ? 'games.bowman2' : 'games.sewerSkater';
+            const title = isAntbuster ? 'Antbuster' : isBowman2 ? 'Bowman 2' : 'Sewer Skater';
+            const playerAttribute = isAntbuster ? 'data-antbuster-player' : isBowman2 ? 'data-bowman-2-player' : 'data-sewer-skater-player';
             return `
               <div class="sewer-skater-shell">
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
-                  <h2 data-i18n="${titleKey}">${isAntbuster ? 'Antbuster' : 'Sewer Skater'}</h2>
+                  <h2 data-i18n="${titleKey}">${title}</h2>
                 </div>
                 <div class="sewer-skater-stage" ${playerAttribute} aria-live="polite"></div>
               </div>
@@ -1119,6 +1121,16 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'antbuster', iconFile:'./assets/flashgames/Antbuster/Antbuster.png' }, t('games.antbuster'), 64)}
                   </div>
                   <span data-i18n="games.antbuster">Antbuster</span>
+                </button>
+              `;
+            }
+            if(id === 'bowman-2'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="bowman-2">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'bowman-2', iconFile:'./assets/flashgames/Bowman 2/Bowman 2.png' }, t('games.bowman2'), 64)}
+                  </div>
+                  <span data-i18n="games.bowman2">Bowman 2</span>
                 </button>
               `;
             }
