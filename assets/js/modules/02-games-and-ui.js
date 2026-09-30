@@ -112,6 +112,15 @@ function initHappyWheelsDemoInWindow(win){
   );
 }
 
+function initLineRiderBeta2InWindow(win){
+  initRuffleGameInWindow(
+    win,
+    '[data-line-rider-beta-2-player]',
+    './assets/flashgames/Line%20Rider%20Beta%202/content/www.andkon.com/arcade/racing/lineriderbeta2/lineriderbeta2.swf',
+    'Line Rider Beta 2'
+  );
+}
+
 function renderGamesWindow(){
   const win = document.getElementById('win_games');
   if(!win) return;
@@ -256,6 +265,15 @@ function renderGamesWindow(){
     const backButton = win.querySelector('[data-games-action="back"]');
     if(backButton) backButton.addEventListener('click', backToGamesHub);
     initHappyWheelsDemoInWindow(win);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'line-rider-beta-2'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '640';
+    content.dataset.fitMinH = state.isMobile ? '360' : '480';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    initLineRiderBeta2InWindow(win);
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
@@ -786,6 +804,12 @@ function openGameFromHub(id){
   }
   if(id === 'happy-wheels-demo'){
     state.games.view = 'happy-wheels-demo';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'line-rider-beta-2'){
+    state.games.view = 'line-rider-beta-2';
     state.games.selectedId = id;
     renderGamesWindow();
     return;
@@ -6588,7 +6612,7 @@ function resetDesktopLayoutPreservingContent(){
   state.iconLabels = {};
   saveIconLabels();
 
-  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'alien-hominid', 'happy-wheels-demo'] };
+  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'alien-hominid', 'happy-wheels-demo', 'line-rider-beta-2'] };
   saveFolders();
 
   const coreIds = new Set(
@@ -7216,7 +7240,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'alien-hominid', 'happy-wheels-demo'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'alien-hominid', 'happy-wheels-demo', 'line-rider-beta-2'] };
 }
 
 function saveFolders(){

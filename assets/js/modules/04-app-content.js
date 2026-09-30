@@ -1039,14 +1039,15 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
-          if(state.games.view === 'sewer-skater' || state.games.view === 'antbuster' || state.games.view === 'bowman-2' || state.games.view === 'alien-hominid' || state.games.view === 'happy-wheels-demo'){
+          if(state.games.view === 'sewer-skater' || state.games.view === 'antbuster' || state.games.view === 'bowman-2' || state.games.view === 'alien-hominid' || state.games.view === 'happy-wheels-demo' || state.games.view === 'line-rider-beta-2'){
             const isAntbuster = state.games.view === 'antbuster';
             const isBowman2 = state.games.view === 'bowman-2';
             const isAlienHominid = state.games.view === 'alien-hominid';
             const isHappyWheelsDemo = state.games.view === 'happy-wheels-demo';
-            const titleKey = isAntbuster ? 'games.antbuster' : isBowman2 ? 'games.bowman2' : isAlienHominid ? 'games.alienHominid' : isHappyWheelsDemo ? 'games.happyWheelsDemo' : 'games.sewerSkater';
-            const title = isAntbuster ? 'Antbuster' : isBowman2 ? 'Bowman 2' : isAlienHominid ? 'Alien Hominid' : isHappyWheelsDemo ? 'Happy Wheels Demo' : 'Sewer Skater';
-            const playerAttribute = isAntbuster ? 'data-antbuster-player' : isBowman2 ? 'data-bowman-2-player' : isAlienHominid ? 'data-alien-hominid-player' : isHappyWheelsDemo ? 'data-happy-wheels-demo-player' : 'data-sewer-skater-player';
+            const isLineRiderBeta2 = state.games.view === 'line-rider-beta-2';
+            const titleKey = isAntbuster ? 'games.antbuster' : isBowman2 ? 'games.bowman2' : isAlienHominid ? 'games.alienHominid' : isHappyWheelsDemo ? 'games.happyWheelsDemo' : isLineRiderBeta2 ? 'games.lineRiderBeta2' : 'games.sewerSkater';
+            const title = isAntbuster ? 'Antbuster' : isBowman2 ? 'Bowman 2' : isAlienHominid ? 'Alien Hominid' : isHappyWheelsDemo ? 'Happy Wheels Demo' : isLineRiderBeta2 ? 'Line Rider Beta 2' : 'Sewer Skater';
+            const playerAttribute = isAntbuster ? 'data-antbuster-player' : isBowman2 ? 'data-bowman-2-player' : isAlienHominid ? 'data-alien-hominid-player' : isHappyWheelsDemo ? 'data-happy-wheels-demo-player' : isLineRiderBeta2 ? 'data-line-rider-beta-2-player' : 'data-sewer-skater-player';
             return `
               <div class="sewer-skater-shell">
                 <div class="sewer-skater-toolbar">
@@ -1153,6 +1154,16 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'happy-wheels-demo', iconFile:'./assets/flashgames/Happy Wheels Demo/Happy Wheels Demo.png' }, t('games.happyWheelsDemo'), 64)}
                   </div>
                   <span data-i18n="games.happyWheelsDemo">Happy Wheels Demo</span>
+                </button>
+              `;
+            }
+            if(id === 'line-rider-beta-2'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="line-rider-beta-2">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'line-rider-beta-2', iconFile:'./assets/flashgames/Line Rider Beta 2/Line Rider Beta 2.png' }, t('games.lineRiderBeta2'), 64)}
+                  </div>
+                  <span data-i18n="games.lineRiderBeta2">Line Rider Beta 2</span>
                 </button>
               `;
             }

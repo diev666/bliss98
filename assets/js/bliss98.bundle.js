@@ -1534,6 +1534,15 @@ function initHappyWheelsDemoInWindow(win){
   );
 }
 
+function initLineRiderBeta2InWindow(win){
+  initRuffleGameInWindow(
+    win,
+    '[data-line-rider-beta-2-player]',
+    './assets/flashgames/Line%20Rider%20Beta%202/content/www.andkon.com/arcade/racing/lineriderbeta2/lineriderbeta2.swf',
+    'Line Rider Beta 2'
+  );
+}
+
 function renderGamesWindow(){
   const win = document.getElementById('win_games');
   if(!win) return;
@@ -1678,6 +1687,15 @@ function renderGamesWindow(){
     const backButton = win.querySelector('[data-games-action="back"]');
     if(backButton) backButton.addEventListener('click', backToGamesHub);
     initHappyWheelsDemoInWindow(win);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'line-rider-beta-2'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '640';
+    content.dataset.fitMinH = state.isMobile ? '360' : '480';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    initLineRiderBeta2InWindow(win);
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
@@ -2208,6 +2226,12 @@ function openGameFromHub(id){
   }
   if(id === 'happy-wheels-demo'){
     state.games.view = 'happy-wheels-demo';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'line-rider-beta-2'){
+    state.games.view = 'line-rider-beta-2';
     state.games.selectedId = id;
     renderGamesWindow();
     return;
@@ -8010,7 +8034,7 @@ function resetDesktopLayoutPreservingContent(){
   state.iconLabels = {};
   saveIconLabels();
 
-  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'alien-hominid', 'happy-wheels-demo'] };
+  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'alien-hominid', 'happy-wheels-demo', 'line-rider-beta-2'] };
   saveFolders();
 
   const coreIds = new Set(
@@ -8638,7 +8662,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'alien-hominid', 'happy-wheels-demo'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'alien-hominid', 'happy-wheels-demo', 'line-rider-beta-2'] };
 }
 
 function saveFolders(){
@@ -11960,6 +11984,7 @@ function installLongPress(el, getTarget){
           'games.bowman2': 'Bowman 2',
           'games.alienHominid': 'Alien Hominid',
           'games.happyWheelsDemo': 'Happy Wheels Demo',
+          'games.lineRiderBeta2': 'Line Rider Beta 2',
           'games.flash.loadError': 'Could not load the Flash emulator. Please reload and try again.',
           'games.back': 'Back',
           'games.empty': 'No games yet.',
@@ -12628,6 +12653,7 @@ function installLongPress(el, getTarget){
           'games.bowman2': 'Bowman 2',
           'games.alienHominid': 'Alien Hominid',
           'games.happyWheelsDemo': 'Happy Wheels Demo',
+          'games.lineRiderBeta2': 'Line Rider Beta 2',
           'games.flash.loadError': 'Não foi possível carregar o emulador Flash. Atualize a página e tente novamente.',
           'games.back': 'Voltar',
           'games.empty': 'Sem jogos ainda.',
@@ -15721,14 +15747,15 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
-          if(state.games.view === 'sewer-skater' || state.games.view === 'antbuster' || state.games.view === 'bowman-2' || state.games.view === 'alien-hominid' || state.games.view === 'happy-wheels-demo'){
+          if(state.games.view === 'sewer-skater' || state.games.view === 'antbuster' || state.games.view === 'bowman-2' || state.games.view === 'alien-hominid' || state.games.view === 'happy-wheels-demo' || state.games.view === 'line-rider-beta-2'){
             const isAntbuster = state.games.view === 'antbuster';
             const isBowman2 = state.games.view === 'bowman-2';
             const isAlienHominid = state.games.view === 'alien-hominid';
             const isHappyWheelsDemo = state.games.view === 'happy-wheels-demo';
-            const titleKey = isAntbuster ? 'games.antbuster' : isBowman2 ? 'games.bowman2' : isAlienHominid ? 'games.alienHominid' : isHappyWheelsDemo ? 'games.happyWheelsDemo' : 'games.sewerSkater';
-            const title = isAntbuster ? 'Antbuster' : isBowman2 ? 'Bowman 2' : isAlienHominid ? 'Alien Hominid' : isHappyWheelsDemo ? 'Happy Wheels Demo' : 'Sewer Skater';
-            const playerAttribute = isAntbuster ? 'data-antbuster-player' : isBowman2 ? 'data-bowman-2-player' : isAlienHominid ? 'data-alien-hominid-player' : isHappyWheelsDemo ? 'data-happy-wheels-demo-player' : 'data-sewer-skater-player';
+            const isLineRiderBeta2 = state.games.view === 'line-rider-beta-2';
+            const titleKey = isAntbuster ? 'games.antbuster' : isBowman2 ? 'games.bowman2' : isAlienHominid ? 'games.alienHominid' : isHappyWheelsDemo ? 'games.happyWheelsDemo' : isLineRiderBeta2 ? 'games.lineRiderBeta2' : 'games.sewerSkater';
+            const title = isAntbuster ? 'Antbuster' : isBowman2 ? 'Bowman 2' : isAlienHominid ? 'Alien Hominid' : isHappyWheelsDemo ? 'Happy Wheels Demo' : isLineRiderBeta2 ? 'Line Rider Beta 2' : 'Sewer Skater';
+            const playerAttribute = isAntbuster ? 'data-antbuster-player' : isBowman2 ? 'data-bowman-2-player' : isAlienHominid ? 'data-alien-hominid-player' : isHappyWheelsDemo ? 'data-happy-wheels-demo-player' : isLineRiderBeta2 ? 'data-line-rider-beta-2-player' : 'data-sewer-skater-player';
             return `
               <div class="sewer-skater-shell">
                 <div class="sewer-skater-toolbar">
@@ -15835,6 +15862,16 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'happy-wheels-demo', iconFile:'./assets/flashgames/Happy Wheels Demo/Happy Wheels Demo.png' }, t('games.happyWheelsDemo'), 64)}
                   </div>
                   <span data-i18n="games.happyWheelsDemo">Happy Wheels Demo</span>
+                </button>
+              `;
+            }
+            if(id === 'line-rider-beta-2'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="line-rider-beta-2">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'line-rider-beta-2', iconFile:'./assets/flashgames/Line Rider Beta 2/Line Rider Beta 2.png' }, t('games.lineRiderBeta2'), 64)}
+                  </div>
+                  <span data-i18n="games.lineRiderBeta2">Line Rider Beta 2</span>
                 </button>
               `;
             }
@@ -22533,6 +22570,7 @@ function renderBlissOSAppMenu(){
         if(!state.folders.games.includes('bowman-2')) state.folders.games.push('bowman-2');
         if(!state.folders.games.includes('alien-hominid')) state.folders.games.push('alien-hominid');
         if(!state.folders.games.includes('happy-wheels-demo')) state.folders.games.push('happy-wheels-demo');
+        if(!state.folders.games.includes('line-rider-beta-2')) state.folders.games.push('line-rider-beta-2');
         state.folders.games = state.folders.games.filter(id => id !== 'flash-element-td2');
         state.snake.highScore = loadSnakeHighScore();
         state.minesweeper.highScore = loadMinesweeperHighScore();
