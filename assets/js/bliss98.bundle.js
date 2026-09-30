@@ -1421,7 +1421,7 @@ function updateOpenWindowTitleIcons(){
 
 /* ===== Module: 02-games-and-ui.js ===== */
 let sewerSkaterRufflePromise = null;
-function initRuffleGameInWindow(win, playerSelector, swfPath, gameName){
+function initRuffleGameInWindow(win, playerSelector, swfPath, gameName, loadOptions = {}){
   const container = win && win.querySelector(playerSelector);
   if(!container) return;
   const showError = () => {
@@ -1444,7 +1444,10 @@ function initRuffleGameInWindow(win, playerSelector, swfPath, gameName){
     player.className = 'sewer-skater-player';
     player.setAttribute('aria-label', gameName);
     container.replaceChildren(player);
-    return player.ruffle().load(new URL(swfPath, document.baseURI).href);
+    return player.ruffle().load({
+      url: new URL(swfPath, document.baseURI).href,
+      ...loadOptions
+    });
   }).catch((error)=>{
     console.error(`Could not load ${gameName}:`, error);
     showError();
@@ -1456,7 +1459,16 @@ function initSewerSkaterInWindow(win){
 }
 
 function initBlacksmithLabInWindow(win){
-  initRuffleGameInWindow(win, '[data-blacksmith-lab-player]', './assets/flashgames/Blacksmith%20Lab/blacksmith-lab-179700ef7.swf', 'Blacksmith Lab');
+  initRuffleGameInWindow(
+    win,
+    '[data-blacksmith-lab-player]',
+    './assets/flashgames/Blacksmith%20Lab/blacksmith-lab-179700ef7.swf',
+    'Blacksmith Lab',
+    {
+      parameters: { kongregate_api_path: 'https://www.kongregate.com/flash/API_AS3_Local.swf' },
+      upgradeToHttps: true
+    }
+  );
 }
 
 function renderGamesWindow(){
