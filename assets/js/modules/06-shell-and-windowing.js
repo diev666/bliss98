@@ -2801,11 +2801,16 @@ function toggleFitWindow(appId) {
         requestAnimationFrame(() => runLeopardDockBounce(btn));
       }
 
+      function queueLeopardDockBounce(btn){
+        if(!btn || (!isLeopardDockActive() && !isAquaMobileDockBounceActive())) return;
+        pendingDockBounceKey = getDockBounceKey(btn);
+        pendingDockBounceUntil = Date.now() + 1500;
+      }
+
       function triggerLeopardDockBounce(btn){
         if(!btn || (!isLeopardDockActive() && !isAquaMobileDockBounceActive())) return;
         if(isAquaMobileDockBounceActive()){
-          pendingDockBounceKey = getDockBounceKey(btn);
-          pendingDockBounceUntil = Date.now() + 1500;
+          queueLeopardDockBounce(btn);
         }
         runLeopardDockBounce(btn);
       }
@@ -3103,16 +3108,14 @@ function renderBlissOSDock(){
             }
             if(win){
               if(win.minimized){
-                triggerLeopardDockBounce(btn);
                 restoreWindow(winId);
               } else if(state.activeWindowId === winId){
                 minimizeApp(winId);
               } else {
-                triggerLeopardDockBounce(btn);
                 focusWindow(winId);
               }
             } else if(item.refId){
-              triggerLeopardDockBounce(btn);
+              queueLeopardDockBounce(btn);
               openIconById(item.refId);
             }
           });
