@@ -11621,7 +11621,7 @@ function getPoemBody(poem, lang){
 }
 
 // Context menu state
-let ctxState = { open:false, target:'desktop', appId:null, itemType:null, parentId:null, containerEl:null, dockId:null, lastX:0, lastY:0 };
+let ctxState = { open:false, target:'desktop', appId:null, itemType:null, parentId:null, containerEl:null, dockId:null, selectedIds:[], lastX:0, lastY:0 };
 
 function renderCtxMenu(){
   const menu = $('#ctxMenu');
@@ -11745,6 +11745,7 @@ function openCtxMenu(x, y, target='desktop', appId=null, opts = {}){
     parentId: opts.parentId === undefined ? null : opts.parentId,
     containerEl: opts.containerEl || null,
     dockId: opts.dockId || null,
+    selectedIds: Array.isArray(opts.selectedIds) ? opts.selectedIds.slice() : [],
     lastX: Number.isFinite(x) ? x : 0,
     lastY: Number.isFinite(y) ? y : 0,
   };
@@ -11765,7 +11766,7 @@ function closeCtxMenu(){
   const menu = $('#ctxMenu');
   if(!menu) return;
   menu.classList.add('hidden');
-  ctxState = { open:false, target:'desktop', appId:null, itemType:null, parentId:null, containerEl:null, dockId:null, lastX:0, lastY:0 };
+  ctxState = { open:false, target:'desktop', appId:null, itemType:null, parentId:null, containerEl:null, dockId:null, selectedIds:[], lastX:0, lastY:0 };
 }
 
 function handleCtxAction(action){
@@ -11841,7 +11842,8 @@ function handleCtxAction(action){
     }
   }
   if(action === 'moveTrash' && ctxState.target === 'icon' && ctxState.appId){
-    moveIconsToTrash([ctxState.appId]);
+    const ids = ctxState.selectedIds.includes(ctxState.appId) ? ctxState.selectedIds : [ctxState.appId];
+    moveIconsToTrash(ids);
     refreshOpenFolderWindows();
   }
   if(action === 'emptyTrash' && ctxState.target === 'icon' && ctxState.appId === 'trash'){
@@ -17803,7 +17805,16 @@ function renderIcons(){
     el.addEventListener('contextmenu', (ev)=>{
       ev.preventDefault();
       ev.stopPropagation();
-      openCtxMenu(ev.clientX, ev.clientY, 'icon', id, { itemType: item.type, parentId: null });
+      const iconGrid = document.getElementById('iconGrid');
+      if(!el.classList.contains('selected')){
+        if(iconGrid) iconGrid.querySelectorAll('.icon.selected').forEach(selected => selected.classList.remove('selected'));
+        el.classList.add('selected');
+        state.selectedIconId = id;
+      }
+      const selectedIds = iconGrid
+        ? Array.from(iconGrid.querySelectorAll('.icon.selected')).map(selected => selected.dataset.appId).filter(Boolean)
+        : [id];
+      openCtxMenu(ev.clientX, ev.clientY, 'icon', id, { itemType: item.type, parentId: null, selectedIds });
     });
     installLongPress(el, ()=>({ target:'icon', appId: id, itemType: item.type, parentId: null }));
     fragment.appendChild(el);

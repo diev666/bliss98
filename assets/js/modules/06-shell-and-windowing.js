@@ -171,7 +171,16 @@ function renderIcons(){
     el.addEventListener('contextmenu', (ev)=>{
       ev.preventDefault();
       ev.stopPropagation();
-      openCtxMenu(ev.clientX, ev.clientY, 'icon', id, { itemType: item.type, parentId: null });
+      const iconGrid = document.getElementById('iconGrid');
+      if(!el.classList.contains('selected')){
+        if(iconGrid) iconGrid.querySelectorAll('.icon.selected').forEach(selected => selected.classList.remove('selected'));
+        el.classList.add('selected');
+        state.selectedIconId = id;
+      }
+      const selectedIds = iconGrid
+        ? Array.from(iconGrid.querySelectorAll('.icon.selected')).map(selected => selected.dataset.appId).filter(Boolean)
+        : [id];
+      openCtxMenu(ev.clientX, ev.clientY, 'icon', id, { itemType: item.type, parentId: null, selectedIds });
     });
     installLongPress(el, ()=>({ target:'icon', appId: id, itemType: item.type, parentId: null }));
     fragment.appendChild(el);
