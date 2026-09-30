@@ -1833,6 +1833,13 @@
       .blissos-menu-drop .menu-item{
         padding:2px 8px;
       }
+      body[data-theme="blissos"]:not([data-blissos-mode="dark"]) .blissos-menu-drop .menu-item{
+        color:var(--blissos-text);
+      }
+      body[data-theme="blissos"]:not([data-blissos-mode="dark"]) .blissos-menu-drop .menu-item:disabled,
+      body[data-theme="blissos"]:not([data-blissos-mode="dark"]) .blissos-menu-drop .menu-item.disabled{
+        color:var(--blissos-text-disabled);
+      }
       .blissos-menu-drop .menu-item:hover,
       .blissos-menu-drop .menu-item:focus{
         background:var(--blissos-highlight);

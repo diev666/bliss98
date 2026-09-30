@@ -3187,6 +3187,7 @@ function toggleBlissOSMenu(forceOpen){
   const brand = document.querySelector('.blissos-menu-brand');
   if(!menu) return;
   const willOpen = typeof forceOpen === 'boolean' ? forceOpen : menu.classList.contains('hidden');
+  closeWindowMenu();
   closeBlissOSAppMenu();
   if(willOpen) renderBlissOSAppleMenu();
   menu.classList.toggle('hidden', !willOpen);

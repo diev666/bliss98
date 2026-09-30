@@ -13446,6 +13446,11 @@ function installLongPress(el, getTarget){
         if(!appId) return;
         const drop = isTop ? $('#blissosMenuDrop') : (winEl ? winEl.querySelector('.menu-drop') : null);
         if(!drop) return;
+        // OLD CRT transforms #app, which makes fixed descendants use #app as
+        // their containing block. Keep the global menu in viewport coordinates.
+        if(isTop && drop.parentElement !== document.body){
+          document.body.appendChild(drop);
+        }
 
         if(state.menuOpen && state.menuOpen.winId !== appId){
           closeWindowMenu();
@@ -13460,7 +13465,8 @@ function installLongPress(el, getTarget){
 
         const anchorRect = anchorEl.getBoundingClientRect();
         if(isTop){
-          drop.style.top = anchorRect.bottom + 'px';
+          const menubarRect = anchorEl.closest('#blissosMenubar').getBoundingClientRect();
+          drop.style.top = menubarRect.bottom + 'px';
           drop.style.left = anchorRect.left + 'px';
         } else {
           const winRect = winEl.getBoundingClientRect();
@@ -20388,6 +20394,7 @@ function toggleBlissOSMenu(forceOpen){
   const brand = document.querySelector('.blissos-menu-brand');
   if(!menu) return;
   const willOpen = typeof forceOpen === 'boolean' ? forceOpen : menu.classList.contains('hidden');
+  closeWindowMenu();
   closeBlissOSAppMenu();
   if(willOpen) renderBlissOSAppleMenu();
   menu.classList.toggle('hidden', !willOpen);
