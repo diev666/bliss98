@@ -1,6 +1,6 @@
 let sewerSkaterRufflePromise = null;
-function initSewerSkaterInWindow(win){
-  const container = win && win.querySelector('[data-sewer-skater-player]');
+function initRuffleGameInWindow(win, playerSelector, swfPath, gameName){
+  const container = win && win.querySelector(playerSelector);
   if(!container) return;
   const showError = () => {
     if(container.isConnected) container.textContent = t('games.flash.loadError');
@@ -20,13 +20,21 @@ function initSewerSkaterInWindow(win){
     if(!ruffle) throw new Error('Ruffle did not initialize');
     const player = ruffle.createPlayer();
     player.className = 'sewer-skater-player';
-    player.setAttribute('aria-label', 'Sewer Skater');
+    player.setAttribute('aria-label', gameName);
     container.replaceChildren(player);
-    return player.ruffle().load(new URL('./assets/flashgames/sewer-skater/sewer-skater.swf', document.baseURI).href);
+    return player.ruffle().load(new URL(swfPath, document.baseURI).href);
   }).catch((error)=>{
-    console.error('Could not load Sewer Skater:', error);
+    console.error(`Could not load ${gameName}:`, error);
     showError();
   });
+}
+
+function initSewerSkaterInWindow(win){
+  initRuffleGameInWindow(win, '[data-sewer-skater-player]', './assets/flashgames/sewer-skater/sewer-skater.swf', 'Sewer Skater');
+}
+
+function initFlashElementTd2InWindow(win){
+  initRuffleGameInWindow(win, '[data-flash-element-td2-player]', './assets/flashgames/Flash%20Element%20TD%202/content/storage.cloud.casualcollective.com/games/flashelementtd2.swf', 'Flash Element TD 2');
 }
 
 function renderGamesWindow(){
@@ -135,6 +143,15 @@ function renderGamesWindow(){
     const backButton = win.querySelector('[data-games-action="back"]');
     if(backButton) backButton.addEventListener('click', backToGamesHub);
     initSewerSkaterInWindow(win);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'flash-element-td2'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '700';
+    content.dataset.fitMinH = state.isMobile ? '360' : '525';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    initFlashElementTd2InWindow(win);
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
@@ -641,6 +658,12 @@ function openGameFromHub(id){
   }
   if(id === 'sewer-skater'){
     state.games.view = 'sewer-skater';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'flash-element-td2'){
+    state.games.view = 'flash-element-td2';
     state.games.selectedId = id;
     renderGamesWindow();
     return;
@@ -6443,7 +6466,7 @@ function resetDesktopLayoutPreservingContent(){
   state.iconLabels = {};
   saveIconLabels();
 
-  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
+  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'flash-element-td2'] };
   saveFolders();
 
   const coreIds = new Set(
@@ -7071,7 +7094,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'flash-element-td2'] };
 }
 
 function saveFolders(){

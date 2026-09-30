@@ -1421,8 +1421,8 @@ function updateOpenWindowTitleIcons(){
 
 /* ===== Module: 02-games-and-ui.js ===== */
 let sewerSkaterRufflePromise = null;
-function initSewerSkaterInWindow(win){
-  const container = win && win.querySelector('[data-sewer-skater-player]');
+function initRuffleGameInWindow(win, playerSelector, swfPath, gameName){
+  const container = win && win.querySelector(playerSelector);
   if(!container) return;
   const showError = () => {
     if(container.isConnected) container.textContent = t('games.flash.loadError');
@@ -1442,13 +1442,21 @@ function initSewerSkaterInWindow(win){
     if(!ruffle) throw new Error('Ruffle did not initialize');
     const player = ruffle.createPlayer();
     player.className = 'sewer-skater-player';
-    player.setAttribute('aria-label', 'Sewer Skater');
+    player.setAttribute('aria-label', gameName);
     container.replaceChildren(player);
-    return player.ruffle().load(new URL('./assets/flashgames/sewer-skater/sewer-skater.swf', document.baseURI).href);
+    return player.ruffle().load(new URL(swfPath, document.baseURI).href);
   }).catch((error)=>{
-    console.error('Could not load Sewer Skater:', error);
+    console.error(`Could not load ${gameName}:`, error);
     showError();
   });
+}
+
+function initSewerSkaterInWindow(win){
+  initRuffleGameInWindow(win, '[data-sewer-skater-player]', './assets/flashgames/sewer-skater/sewer-skater.swf', 'Sewer Skater');
+}
+
+function initFlashElementTd2InWindow(win){
+  initRuffleGameInWindow(win, '[data-flash-element-td2-player]', './assets/flashgames/Flash%20Element%20TD%202/content/storage.cloud.casualcollective.com/games/flashelementtd2.swf', 'Flash Element TD 2');
 }
 
 function renderGamesWindow(){
@@ -1557,6 +1565,15 @@ function renderGamesWindow(){
     const backButton = win.querySelector('[data-games-action="back"]');
     if(backButton) backButton.addEventListener('click', backToGamesHub);
     initSewerSkaterInWindow(win);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'flash-element-td2'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '700';
+    content.dataset.fitMinH = state.isMobile ? '360' : '525';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    initFlashElementTd2InWindow(win);
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
@@ -2063,6 +2080,12 @@ function openGameFromHub(id){
   }
   if(id === 'sewer-skater'){
     state.games.view = 'sewer-skater';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'flash-element-td2'){
+    state.games.view = 'flash-element-td2';
     state.games.selectedId = id;
     renderGamesWindow();
     return;
@@ -7865,7 +7888,7 @@ function resetDesktopLayoutPreservingContent(){
   state.iconLabels = {};
   saveIconLabels();
 
-  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
+  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'flash-element-td2'] };
   saveFolders();
 
   const coreIds = new Set(
@@ -8493,7 +8516,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'flash-element-td2'] };
 }
 
 function saveFolders(){
@@ -11811,6 +11834,7 @@ function installLongPress(el, getTarget){
           'games.minesweeper': 'Minesweeper',
           'games.dopeSkate': 'Dope Skate (beta)',
           'games.sewerSkater': 'Sewer Skater',
+          'games.flashElementTd2': 'Flash Element TD 2',
           'games.flash.loadError': 'Could not load the Flash emulator. Please reload and try again.',
           'games.back': 'Back',
           'games.empty': 'No games yet.',
@@ -12475,6 +12499,7 @@ function installLongPress(el, getTarget){
           'games.minesweeper': 'Campo Minado',
           'games.dopeSkate': 'Dope Skate (beta)',
           'games.sewerSkater': 'Sewer Skater',
+          'games.flashElementTd2': 'Flash Element TD 2',
           'games.flash.loadError': 'Não foi possível carregar o emulador Flash. Atualize a página e tente novamente.',
           'games.back': 'Voltar',
           'games.empty': 'Sem jogos ainda.',
@@ -15579,6 +15604,17 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
+          if(state.games.view === 'flash-element-td2'){
+            return `
+              <div class="sewer-skater-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.flashElementTd2">Flash Element TD 2</h2>
+                </div>
+                <div class="sewer-skater-stage" data-flash-element-td2-player aria-live="polite"></div>
+              </div>
+            `;
+          }
           if(state.games.view === 'leaderboard'){
             const lb = getGamesLeaderboard();
             const rows = lb.items.map(item => `
@@ -15635,6 +15671,16 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'sewer-skater', iconFile:'./assets/flashgames/sewer-skater/skatesewer.jpg' }, t('games.sewerSkater'), 64)}
                   </div>
                   <span data-i18n="games.sewerSkater">Sewer Skater</span>
+                </button>
+              `;
+            }
+            if(id === 'flash-element-td2'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="flash-element-td2">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'flash-element-td2', iconFile:'./assets/flashgames/Flash Element TD 2/Flash Element TD 2.jpg' }, t('games.flashElementTd2'), 64)}
+                  </div>
+                  <span data-i18n="games.flashElementTd2">Flash Element TD 2</span>
                 </button>
               `;
             }
@@ -22302,6 +22348,7 @@ function renderBlissOSAppMenu(){
         if(!state.folders.games.includes('minesweeper')) state.folders.games.splice(Math.min(1, state.folders.games.length), 0, 'minesweeper');
         if(!state.folders.games.includes('dope-skate')) state.folders.games.push('dope-skate');
         if(!state.folders.games.includes('sewer-skater')) state.folders.games.push('sewer-skater');
+        if(!state.folders.games.includes('flash-element-td2')) state.folders.games.push('flash-element-td2');
         state.snake.highScore = loadSnakeHighScore();
         state.minesweeper.highScore = loadMinesweeperHighScore();
         state.dopeSkate.highScore = loadDopeSkateHighScore();
