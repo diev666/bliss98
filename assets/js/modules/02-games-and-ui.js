@@ -34,7 +34,7 @@ function initSewerSkaterInWindow(win){
 }
 
 function initFlashElementTd2InWindow(win){
-  initRuffleGameInWindow(win, '[data-flash-element-td2-player]', './assets/flashgames/Flash%20Element%20TD%202/content/storage.cloud.casualcollective.com/games/flashelementtd2.swf', 'Flash Element TD 2');
+  initRuffleGameInWindow(win, '[data-flash-element-td2-player]', './assets/flashgames/Flash%20Element%20TD%202/content/storage.cloud.casualcollective.com/zones/pub/7/flashelementtd2.v9.swf', 'Flash Element TD 2');
 }
 
 function renderGamesWindow(){
