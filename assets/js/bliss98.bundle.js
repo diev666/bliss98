@@ -1465,7 +1465,9 @@ function initBlacksmithLabInWindow(win){
     './assets/flashgames/Blacksmith%20Lab/blacksmith-lab-179700ef7.swf',
     'Blacksmith Lab',
     {
-      parameters: { kongregate_api_path: 'https://www.kongregate.com/flash/API_AS3_Local.swf' },
+      parameters: {
+        kongregate_api_path: new URL('./assets/flashgames/Blacksmith%20Lab/API_AS3_Local.swf', document.baseURI).href
+      },
       upgradeToHttps: true
     }
   );
