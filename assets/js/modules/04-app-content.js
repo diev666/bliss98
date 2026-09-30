@@ -726,6 +726,10 @@ Eu sou o buffalo branco extinto`
                   <span class="artists-name">Raffz</span>
                   <span class="artists-role">Fashion</span>
                 </a>
+                <a class="artists-item" href="https://www.instagram.com/sujeirapermanente?stkn=MTdraWh3aHhpN2FxeQ==" target="_blank" rel="noopener noreferrer">
+                  <span class="artists-name">Sujeirapermanente</span>
+                  <span class="artists-role">Music, Painter, Drawings</span>
+                </a>
               </div>
             </div>
           </section>
