@@ -103,6 +103,15 @@ function initDuckAdventureInWindow(win){
   );
 }
 
+function initAlienHominidInWindow(win){
+  initRuffleGameInWindow(
+    win,
+    '[data-alien-hominid-player]',
+    './assets/flashgames/Alien%20Hominid/content/uploads.ungrounded.net/59000/59593_alien_booya202c.swf',
+    'Alien Hominid'
+  );
+}
+
 function renderGamesWindow(){
   const win = document.getElementById('win_games');
   if(!win) return;
@@ -238,6 +247,15 @@ function renderGamesWindow(){
     const backButton = win.querySelector('[data-games-action="back"]');
     if(backButton) backButton.addEventListener('click', backToGamesHub);
     initDuckAdventureInWindow(win);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'alien-hominid'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '640';
+    content.dataset.fitMinH = state.isMobile ? '360' : '480';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    initAlienHominidInWindow(win);
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
@@ -762,6 +780,12 @@ function openGameFromHub(id){
   }
   if(id === 'duck-adventure'){
     state.games.view = 'duck-adventure';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'alien-hominid'){
+    state.games.view = 'alien-hominid';
     state.games.selectedId = id;
     renderGamesWindow();
     return;
@@ -6564,7 +6588,7 @@ function resetDesktopLayoutPreservingContent(){
   state.iconLabels = {};
   saveIconLabels();
 
-  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'duck-adventure'] };
+  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'duck-adventure', 'alien-hominid'] };
   saveFolders();
 
   const coreIds = new Set(
@@ -7192,7 +7216,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'duck-adventure'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'duck-adventure', 'alien-hominid'] };
 }
 
 function saveFolders(){

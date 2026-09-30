@@ -1525,6 +1525,15 @@ function initDuckAdventureInWindow(win){
   );
 }
 
+function initAlienHominidInWindow(win){
+  initRuffleGameInWindow(
+    win,
+    '[data-alien-hominid-player]',
+    './assets/flashgames/Alien%20Hominid/content/uploads.ungrounded.net/59000/59593_alien_booya202c.swf',
+    'Alien Hominid'
+  );
+}
+
 function renderGamesWindow(){
   const win = document.getElementById('win_games');
   if(!win) return;
@@ -1660,6 +1669,15 @@ function renderGamesWindow(){
     const backButton = win.querySelector('[data-games-action="back"]');
     if(backButton) backButton.addEventListener('click', backToGamesHub);
     initDuckAdventureInWindow(win);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'alien-hominid'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '640';
+    content.dataset.fitMinH = state.isMobile ? '360' : '480';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    initAlienHominidInWindow(win);
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
@@ -2184,6 +2202,12 @@ function openGameFromHub(id){
   }
   if(id === 'duck-adventure'){
     state.games.view = 'duck-adventure';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'alien-hominid'){
+    state.games.view = 'alien-hominid';
     state.games.selectedId = id;
     renderGamesWindow();
     return;
@@ -7986,7 +8010,7 @@ function resetDesktopLayoutPreservingContent(){
   state.iconLabels = {};
   saveIconLabels();
 
-  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'duck-adventure'] };
+  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'duck-adventure', 'alien-hominid'] };
   saveFolders();
 
   const coreIds = new Set(
@@ -8614,7 +8638,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'duck-adventure'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'duck-adventure', 'alien-hominid'] };
 }
 
 function saveFolders(){
@@ -11935,6 +11959,7 @@ function installLongPress(el, getTarget){
           'games.antbuster': 'Antbuster',
           'games.bowman2': 'Bowman 2',
           'games.duckAdventure': 'A Duck Has An Adventure',
+          'games.alienHominid': 'Alien Hominid',
           'games.flash.loadError': 'Could not load the Flash emulator. Please reload and try again.',
           'games.back': 'Back',
           'games.empty': 'No games yet.',
@@ -12602,6 +12627,7 @@ function installLongPress(el, getTarget){
           'games.antbuster': 'Antbuster',
           'games.bowman2': 'Bowman 2',
           'games.duckAdventure': 'A Duck Has An Adventure',
+          'games.alienHominid': 'Alien Hominid',
           'games.flash.loadError': 'Não foi possível carregar o emulador Flash. Atualize a página e tente novamente.',
           'games.back': 'Voltar',
           'games.empty': 'Sem jogos ainda.',
@@ -15695,13 +15721,14 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
-          if(state.games.view === 'sewer-skater' || state.games.view === 'antbuster' || state.games.view === 'bowman-2' || state.games.view === 'duck-adventure'){
+          if(state.games.view === 'sewer-skater' || state.games.view === 'antbuster' || state.games.view === 'bowman-2' || state.games.view === 'duck-adventure' || state.games.view === 'alien-hominid'){
             const isAntbuster = state.games.view === 'antbuster';
             const isBowman2 = state.games.view === 'bowman-2';
             const isDuckAdventure = state.games.view === 'duck-adventure';
-            const titleKey = isAntbuster ? 'games.antbuster' : isBowman2 ? 'games.bowman2' : isDuckAdventure ? 'games.duckAdventure' : 'games.sewerSkater';
-            const title = isAntbuster ? 'Antbuster' : isBowman2 ? 'Bowman 2' : isDuckAdventure ? 'A Duck Has An Adventure' : 'Sewer Skater';
-            const playerAttribute = isAntbuster ? 'data-antbuster-player' : isBowman2 ? 'data-bowman-2-player' : isDuckAdventure ? 'data-duck-adventure-player' : 'data-sewer-skater-player';
+            const isAlienHominid = state.games.view === 'alien-hominid';
+            const titleKey = isAntbuster ? 'games.antbuster' : isBowman2 ? 'games.bowman2' : isDuckAdventure ? 'games.duckAdventure' : isAlienHominid ? 'games.alienHominid' : 'games.sewerSkater';
+            const title = isAntbuster ? 'Antbuster' : isBowman2 ? 'Bowman 2' : isDuckAdventure ? 'A Duck Has An Adventure' : isAlienHominid ? 'Alien Hominid' : 'Sewer Skater';
+            const playerAttribute = isAntbuster ? 'data-antbuster-player' : isBowman2 ? 'data-bowman-2-player' : isDuckAdventure ? 'data-duck-adventure-player' : isAlienHominid ? 'data-alien-hominid-player' : 'data-sewer-skater-player';
             return `
               <div class="sewer-skater-shell">
                 <div class="sewer-skater-toolbar">
@@ -15798,6 +15825,16 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'duck-adventure', iconFile:'./assets/flashgames/A Duck Has An Adventure/A Duck Has An Adventure.png' }, t('games.duckAdventure'), 64)}
                   </div>
                   <span data-i18n="games.duckAdventure">A Duck Has An Adventure</span>
+                </button>
+              `;
+            }
+            if(id === 'alien-hominid'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="alien-hominid">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'alien-hominid', iconFile:'./assets/flashgames/Alien Hominid/Alien Hominid.png' }, t('games.alienHominid'), 64)}
+                  </div>
+                  <span data-i18n="games.alienHominid">Alien Hominid</span>
                 </button>
               `;
             }
@@ -22494,6 +22531,7 @@ function renderBlissOSAppMenu(){
         if(!state.folders.games.includes('antbuster')) state.folders.games.push('antbuster');
         if(!state.folders.games.includes('bowman-2')) state.folders.games.push('bowman-2');
         if(!state.folders.games.includes('duck-adventure')) state.folders.games.push('duck-adventure');
+        if(!state.folders.games.includes('alien-hominid')) state.folders.games.push('alien-hominid');
         state.folders.games = state.folders.games.filter(id => id !== 'flash-element-td2');
         state.snake.highScore = loadSnakeHighScore();
         state.minesweeper.highScore = loadMinesweeperHighScore();
