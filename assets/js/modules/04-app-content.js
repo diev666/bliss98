@@ -1039,14 +1039,14 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
-          if(state.games.view === 'sewer-skater' || state.games.view === 'antbuster' || state.games.view === 'bowman-2' || state.games.view === 'duck-adventure' || state.games.view === 'alien-hominid'){
+          if(state.games.view === 'sewer-skater' || state.games.view === 'antbuster' || state.games.view === 'bowman-2' || state.games.view === 'alien-hominid' || state.games.view === 'happy-wheels-demo'){
             const isAntbuster = state.games.view === 'antbuster';
             const isBowman2 = state.games.view === 'bowman-2';
-            const isDuckAdventure = state.games.view === 'duck-adventure';
             const isAlienHominid = state.games.view === 'alien-hominid';
-            const titleKey = isAntbuster ? 'games.antbuster' : isBowman2 ? 'games.bowman2' : isDuckAdventure ? 'games.duckAdventure' : isAlienHominid ? 'games.alienHominid' : 'games.sewerSkater';
-            const title = isAntbuster ? 'Antbuster' : isBowman2 ? 'Bowman 2' : isDuckAdventure ? 'A Duck Has An Adventure' : isAlienHominid ? 'Alien Hominid' : 'Sewer Skater';
-            const playerAttribute = isAntbuster ? 'data-antbuster-player' : isBowman2 ? 'data-bowman-2-player' : isDuckAdventure ? 'data-duck-adventure-player' : isAlienHominid ? 'data-alien-hominid-player' : 'data-sewer-skater-player';
+            const isHappyWheelsDemo = state.games.view === 'happy-wheels-demo';
+            const titleKey = isAntbuster ? 'games.antbuster' : isBowman2 ? 'games.bowman2' : isAlienHominid ? 'games.alienHominid' : isHappyWheelsDemo ? 'games.happyWheelsDemo' : 'games.sewerSkater';
+            const title = isAntbuster ? 'Antbuster' : isBowman2 ? 'Bowman 2' : isAlienHominid ? 'Alien Hominid' : isHappyWheelsDemo ? 'Happy Wheels Demo' : 'Sewer Skater';
+            const playerAttribute = isAntbuster ? 'data-antbuster-player' : isBowman2 ? 'data-bowman-2-player' : isAlienHominid ? 'data-alien-hominid-player' : isHappyWheelsDemo ? 'data-happy-wheels-demo-player' : 'data-sewer-skater-player';
             return `
               <div class="sewer-skater-shell">
                 <div class="sewer-skater-toolbar">
@@ -1136,16 +1136,6 @@ Eu sou o buffalo branco extinto`
                 </button>
               `;
             }
-            if(id === 'duck-adventure'){
-              return `
-                <button class="games-item games-card" type="button" data-game-id="duck-adventure">
-                  <div class="games-icon pixel">
-                    ${getThemedIconHtml({ icon:'game', id:'duck-adventure', iconFile:'./assets/flashgames/A Duck Has An Adventure/A Duck Has An Adventure.png' }, t('games.duckAdventure'), 64)}
-                  </div>
-                  <span data-i18n="games.duckAdventure">A Duck Has An Adventure</span>
-                </button>
-              `;
-            }
             if(id === 'alien-hominid'){
               return `
                 <button class="games-item games-card" type="button" data-game-id="alien-hominid">
@@ -1153,6 +1143,16 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'alien-hominid', iconFile:'./assets/flashgames/Alien Hominid/Alien Hominid.png' }, t('games.alienHominid'), 64)}
                   </div>
                   <span data-i18n="games.alienHominid">Alien Hominid</span>
+                </button>
+              `;
+            }
+            if(id === 'happy-wheels-demo'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="happy-wheels-demo">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'happy-wheels-demo', iconFile:'./assets/flashgames/Happy Wheels Demo/Happy Wheels Demo.png' }, t('games.happyWheelsDemo'), 64)}
+                  </div>
+                  <span data-i18n="games.happyWheelsDemo">Happy Wheels Demo</span>
                 </button>
               `;
             }

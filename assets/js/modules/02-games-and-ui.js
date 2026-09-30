@@ -94,21 +94,21 @@ function initBowman2InWindow(win){
   );
 }
 
-function initDuckAdventureInWindow(win){
-  initRuffleGameInWindow(
-    win,
-    '[data-duck-adventure-player]',
-    './assets/flashgames/A%20Duck%20Has%20An%20Adventure/content/kongregate.com/duckadventure/duckadventure.swf',
-    'A Duck Has An Adventure'
-  );
-}
-
 function initAlienHominidInWindow(win){
   initRuffleGameInWindow(
     win,
     '[data-alien-hominid-player]',
     './assets/flashgames/Alien%20Hominid/content/uploads.ungrounded.net/59000/59593_alien_booya202c.swf',
     'Alien Hominid'
+  );
+}
+
+function initHappyWheelsDemoInWindow(win){
+  initRuffleGameInWindow(
+    win,
+    '[data-happy-wheels-demo-player]',
+    './assets/flashgames/Happy%20Wheels%20Demo/content/uploads.ungrounded.net/547000/547504_hw_demo.swf',
+    'Happy Wheels Demo'
   );
 }
 
@@ -241,21 +241,21 @@ function renderGamesWindow(){
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
-  if(state.games.view === 'duck-adventure'){
-    content.dataset.fitMinW = state.isMobile ? '320' : '640';
-    content.dataset.fitMinH = state.isMobile ? '360' : '480';
-    const backButton = win.querySelector('[data-games-action="back"]');
-    if(backButton) backButton.addEventListener('click', backToGamesHub);
-    initDuckAdventureInWindow(win);
-    if(!mobileGameView) smartFitWindow(win, 'tabChange');
-    return;
-  }
   if(state.games.view === 'alien-hominid'){
     content.dataset.fitMinW = state.isMobile ? '320' : '640';
     content.dataset.fitMinH = state.isMobile ? '360' : '480';
     const backButton = win.querySelector('[data-games-action="back"]');
     if(backButton) backButton.addEventListener('click', backToGamesHub);
     initAlienHominidInWindow(win);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'happy-wheels-demo'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '640';
+    content.dataset.fitMinH = state.isMobile ? '360' : '480';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    initHappyWheelsDemoInWindow(win);
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
@@ -778,14 +778,14 @@ function openGameFromHub(id){
     renderGamesWindow();
     return;
   }
-  if(id === 'duck-adventure'){
-    state.games.view = 'duck-adventure';
+  if(id === 'alien-hominid'){
+    state.games.view = 'alien-hominid';
     state.games.selectedId = id;
     renderGamesWindow();
     return;
   }
-  if(id === 'alien-hominid'){
-    state.games.view = 'alien-hominid';
+  if(id === 'happy-wheels-demo'){
+    state.games.view = 'happy-wheels-demo';
     state.games.selectedId = id;
     renderGamesWindow();
     return;
@@ -6588,7 +6588,7 @@ function resetDesktopLayoutPreservingContent(){
   state.iconLabels = {};
   saveIconLabels();
 
-  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'duck-adventure', 'alien-hominid'] };
+  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'alien-hominid', 'happy-wheels-demo'] };
   saveFolders();
 
   const coreIds = new Set(
@@ -7216,7 +7216,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'duck-adventure', 'alien-hominid'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'alien-hominid', 'happy-wheels-demo'] };
 }
 
 function saveFolders(){
