@@ -1458,6 +1458,15 @@ function initSewerSkaterInWindow(win){
   initRuffleGameInWindow(win, '[data-sewer-skater-player]', './assets/flashgames/sewer-skater/sewer-skater.swf', 'Sewer Skater');
 }
 
+function initAntbusterInWindow(win){
+  initRuffleGameInWindow(
+    win,
+    '[data-antbuster-player]',
+    './assets/flashgames/Antbuster/content/localflash/antbuster-522817f.swf',
+    'Antbuster'
+  );
+}
+
 function renderGamesWindow(){
   const win = document.getElementById('win_games');
   if(!win) return;
@@ -1564,6 +1573,15 @@ function renderGamesWindow(){
     const backButton = win.querySelector('[data-games-action="back"]');
     if(backButton) backButton.addEventListener('click', backToGamesHub);
     initSewerSkaterInWindow(win);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'antbuster'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '640';
+    content.dataset.fitMinH = state.isMobile ? '360' : '480';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    initAntbusterInWindow(win);
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
@@ -2070,6 +2088,12 @@ function openGameFromHub(id){
   }
   if(id === 'sewer-skater'){
     state.games.view = 'sewer-skater';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'antbuster'){
+    state.games.view = 'antbuster';
     state.games.selectedId = id;
     renderGamesWindow();
     return;
@@ -7872,7 +7896,7 @@ function resetDesktopLayoutPreservingContent(){
   state.iconLabels = {};
   saveIconLabels();
 
-  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
+  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster'] };
   saveFolders();
 
   const coreIds = new Set(
@@ -8500,7 +8524,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster'] };
 }
 
 function saveFolders(){
@@ -11818,6 +11842,7 @@ function installLongPress(el, getTarget){
           'games.minesweeper': 'Minesweeper',
           'games.dopeSkate': 'Dope Skate (beta)',
           'games.sewerSkater': 'Sewer Skater',
+          'games.antbuster': 'Antbuster',
           'games.flash.loadError': 'Could not load the Flash emulator. Please reload and try again.',
           'games.back': 'Back',
           'games.empty': 'No games yet.',
@@ -12482,6 +12507,7 @@ function installLongPress(el, getTarget){
           'games.minesweeper': 'Campo Minado',
           'games.dopeSkate': 'Dope Skate (beta)',
           'games.sewerSkater': 'Sewer Skater',
+          'games.antbuster': 'Antbuster',
           'games.flash.loadError': 'Não foi possível carregar o emulador Flash. Atualize a página e tente novamente.',
           'games.back': 'Voltar',
           'games.empty': 'Sem jogos ainda.',
@@ -15575,14 +15601,17 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
-          if(state.games.view === 'sewer-skater'){
+          if(state.games.view === 'sewer-skater' || state.games.view === 'antbuster'){
+            const isAntbuster = state.games.view === 'antbuster';
+            const titleKey = isAntbuster ? 'games.antbuster' : 'games.sewerSkater';
+            const playerAttribute = isAntbuster ? 'data-antbuster-player' : 'data-sewer-skater-player';
             return `
               <div class="sewer-skater-shell">
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
-                  <h2 data-i18n="games.sewerSkater">Sewer Skater</h2>
+                  <h2 data-i18n="${titleKey}">${isAntbuster ? 'Antbuster' : 'Sewer Skater'}</h2>
                 </div>
-                <div class="sewer-skater-stage" data-sewer-skater-player aria-live="polite"></div>
+                <div class="sewer-skater-stage" ${playerAttribute} aria-live="polite"></div>
               </div>
             `;
           }
@@ -15642,6 +15671,16 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'sewer-skater', iconFile:'./assets/flashgames/sewer-skater/skatesewer.jpg' }, t('games.sewerSkater'), 64)}
                   </div>
                   <span data-i18n="games.sewerSkater">Sewer Skater</span>
+                </button>
+              `;
+            }
+            if(id === 'antbuster'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="antbuster">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'antbuster', iconFile:'./assets/flashgames/Antbuster/Antbuster.png' }, t('games.antbuster'), 64)}
+                  </div>
+                  <span data-i18n="games.antbuster">Antbuster</span>
                 </button>
               `;
             }
@@ -22310,6 +22349,7 @@ function renderBlissOSAppMenu(){
         if(!state.folders.games.includes('minesweeper')) state.folders.games.splice(Math.min(1, state.folders.games.length), 0, 'minesweeper');
         if(!state.folders.games.includes('dope-skate')) state.folders.games.push('dope-skate');
         if(!state.folders.games.includes('sewer-skater')) state.folders.games.push('sewer-skater');
+        if(!state.folders.games.includes('antbuster')) state.folders.games.push('antbuster');
         state.folders.games = state.folders.games.filter(id => id !== 'flash-element-td2');
         state.snake.highScore = loadSnakeHighScore();
         state.minesweeper.highScore = loadMinesweeperHighScore();

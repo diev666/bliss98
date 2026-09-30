@@ -36,6 +36,15 @@ function initSewerSkaterInWindow(win){
   initRuffleGameInWindow(win, '[data-sewer-skater-player]', './assets/flashgames/sewer-skater/sewer-skater.swf', 'Sewer Skater');
 }
 
+function initAntbusterInWindow(win){
+  initRuffleGameInWindow(
+    win,
+    '[data-antbuster-player]',
+    './assets/flashgames/Antbuster/content/localflash/antbuster-522817f.swf',
+    'Antbuster'
+  );
+}
+
 function renderGamesWindow(){
   const win = document.getElementById('win_games');
   if(!win) return;
@@ -142,6 +151,15 @@ function renderGamesWindow(){
     const backButton = win.querySelector('[data-games-action="back"]');
     if(backButton) backButton.addEventListener('click', backToGamesHub);
     initSewerSkaterInWindow(win);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'antbuster'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '640';
+    content.dataset.fitMinH = state.isMobile ? '360' : '480';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    initAntbusterInWindow(win);
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
@@ -648,6 +666,12 @@ function openGameFromHub(id){
   }
   if(id === 'sewer-skater'){
     state.games.view = 'sewer-skater';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'antbuster'){
+    state.games.view = 'antbuster';
     state.games.selectedId = id;
     renderGamesWindow();
     return;
@@ -6450,7 +6474,7 @@ function resetDesktopLayoutPreservingContent(){
   state.iconLabels = {};
   saveIconLabels();
 
-  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
+  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster'] };
   saveFolders();
 
   const coreIds = new Set(
@@ -7078,7 +7102,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster'] };
 }
 
 function saveFolders(){

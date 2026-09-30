@@ -59,6 +59,7 @@
         if(!state.folders.games.includes('minesweeper')) state.folders.games.splice(Math.min(1, state.folders.games.length), 0, 'minesweeper');
         if(!state.folders.games.includes('dope-skate')) state.folders.games.push('dope-skate');
         if(!state.folders.games.includes('sewer-skater')) state.folders.games.push('sewer-skater');
+        if(!state.folders.games.includes('antbuster')) state.folders.games.push('antbuster');
         state.folders.games = state.folders.games.filter(id => id !== 'flash-element-td2');
         state.snake.highScore = loadSnakeHighScore();
         state.minesweeper.highScore = loadMinesweeperHighScore();

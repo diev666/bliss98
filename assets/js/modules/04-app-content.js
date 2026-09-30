@@ -1039,14 +1039,17 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
-          if(state.games.view === 'sewer-skater'){
+          if(state.games.view === 'sewer-skater' || state.games.view === 'antbuster'){
+            const isAntbuster = state.games.view === 'antbuster';
+            const titleKey = isAntbuster ? 'games.antbuster' : 'games.sewerSkater';
+            const playerAttribute = isAntbuster ? 'data-antbuster-player' : 'data-sewer-skater-player';
             return `
               <div class="sewer-skater-shell">
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
-                  <h2 data-i18n="games.sewerSkater">Sewer Skater</h2>
+                  <h2 data-i18n="${titleKey}">${isAntbuster ? 'Antbuster' : 'Sewer Skater'}</h2>
                 </div>
-                <div class="sewer-skater-stage" data-sewer-skater-player aria-live="polite"></div>
+                <div class="sewer-skater-stage" ${playerAttribute} aria-live="polite"></div>
               </div>
             `;
           }
@@ -1106,6 +1109,16 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'sewer-skater', iconFile:'./assets/flashgames/sewer-skater/skatesewer.jpg' }, t('games.sewerSkater'), 64)}
                   </div>
                   <span data-i18n="games.sewerSkater">Sewer Skater</span>
+                </button>
+              `;
+            }
+            if(id === 'antbuster'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="antbuster">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'antbuster', iconFile:'./assets/flashgames/Antbuster/Antbuster.png' }, t('games.antbuster'), 64)}
+                  </div>
+                  <span data-i18n="games.antbuster">Antbuster</span>
                 </button>
               `;
             }
