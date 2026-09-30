@@ -33,10 +33,6 @@ function initSewerSkaterInWindow(win){
   initRuffleGameInWindow(win, '[data-sewer-skater-player]', './assets/flashgames/sewer-skater/sewer-skater.swf', 'Sewer Skater');
 }
 
-function initFlashElementTd2InWindow(win){
-  initRuffleGameInWindow(win, '[data-flash-element-td2-player]', './assets/flashgames/Flash%20Element%20TD%202/content/storage.cloud.casualcollective.com/zones/pub/7/flashelementtd2.v9.swf', 'Flash Element TD 2');
-}
-
 function renderGamesWindow(){
   const win = document.getElementById('win_games');
   if(!win) return;
@@ -143,15 +139,6 @@ function renderGamesWindow(){
     const backButton = win.querySelector('[data-games-action="back"]');
     if(backButton) backButton.addEventListener('click', backToGamesHub);
     initSewerSkaterInWindow(win);
-    if(!mobileGameView) smartFitWindow(win, 'tabChange');
-    return;
-  }
-  if(state.games.view === 'flash-element-td2'){
-    content.dataset.fitMinW = state.isMobile ? '320' : '700';
-    content.dataset.fitMinH = state.isMobile ? '360' : '525';
-    const backButton = win.querySelector('[data-games-action="back"]');
-    if(backButton) backButton.addEventListener('click', backToGamesHub);
-    initFlashElementTd2InWindow(win);
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
@@ -658,12 +645,6 @@ function openGameFromHub(id){
   }
   if(id === 'sewer-skater'){
     state.games.view = 'sewer-skater';
-    state.games.selectedId = id;
-    renderGamesWindow();
-    return;
-  }
-  if(id === 'flash-element-td2'){
-    state.games.view = 'flash-element-td2';
     state.games.selectedId = id;
     renderGamesWindow();
     return;
@@ -6466,7 +6447,7 @@ function resetDesktopLayoutPreservingContent(){
   state.iconLabels = {};
   saveIconLabels();
 
-  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'flash-element-td2'] };
+  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
   saveFolders();
 
   const coreIds = new Set(
@@ -7094,7 +7075,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'flash-element-td2'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
 }
 
 function saveFolders(){

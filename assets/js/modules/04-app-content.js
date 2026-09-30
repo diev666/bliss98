@@ -1050,17 +1050,6 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
-          if(state.games.view === 'flash-element-td2'){
-            return `
-              <div class="sewer-skater-shell">
-                <div class="sewer-skater-toolbar">
-                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
-                  <h2 data-i18n="games.flashElementTd2">Flash Element TD 2</h2>
-                </div>
-                <div class="sewer-skater-stage" data-flash-element-td2-player aria-live="polite"></div>
-              </div>
-            `;
-          }
           if(state.games.view === 'leaderboard'){
             const lb = getGamesLeaderboard();
             const rows = lb.items.map(item => `
@@ -1117,16 +1106,6 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'sewer-skater', iconFile:'./assets/flashgames/sewer-skater/skatesewer.jpg' }, t('games.sewerSkater'), 64)}
                   </div>
                   <span data-i18n="games.sewerSkater">Sewer Skater</span>
-                </button>
-              `;
-            }
-            if(id === 'flash-element-td2'){
-              return `
-                <button class="games-item games-card" type="button" data-game-id="flash-element-td2">
-                  <div class="games-icon pixel">
-                    ${getThemedIconHtml({ icon:'game', id:'flash-element-td2', iconFile:'./assets/flashgames/Flash Element TD 2/Flash Element TD 2.jpg' }, t('games.flashElementTd2'), 64)}
-                  </div>
-                  <span data-i18n="games.flashElementTd2">Flash Element TD 2</span>
                 </button>
               `;
             }
