@@ -36,21 +36,6 @@ function initSewerSkaterInWindow(win){
   initRuffleGameInWindow(win, '[data-sewer-skater-player]', './assets/flashgames/sewer-skater/sewer-skater.swf', 'Sewer Skater');
 }
 
-function initBlacksmithLabInWindow(win){
-  initRuffleGameInWindow(
-    win,
-    '[data-blacksmith-lab-player]',
-    './assets/flashgames/Blacksmith%20Lab/blacksmith-lab-179700ef7.swf',
-    'Blacksmith Lab',
-    {
-      parameters: {
-        kongregate_api_path: new URL('./assets/flashgames/Blacksmith%20Lab/API_AS3_Local.swf', document.baseURI).href
-      },
-      upgradeToHttps: true
-    }
-  );
-}
-
 function renderGamesWindow(){
   const win = document.getElementById('win_games');
   if(!win) return;
@@ -157,15 +142,6 @@ function renderGamesWindow(){
     const backButton = win.querySelector('[data-games-action="back"]');
     if(backButton) backButton.addEventListener('click', backToGamesHub);
     initSewerSkaterInWindow(win);
-    if(!mobileGameView) smartFitWindow(win, 'tabChange');
-    return;
-  }
-  if(state.games.view === 'blacksmith-lab'){
-    content.dataset.fitMinW = state.isMobile ? '320' : '700';
-    content.dataset.fitMinH = state.isMobile ? '360' : '525';
-    const backButton = win.querySelector('[data-games-action="back"]');
-    if(backButton) backButton.addEventListener('click', backToGamesHub);
-    initBlacksmithLabInWindow(win);
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
@@ -672,12 +648,6 @@ function openGameFromHub(id){
   }
   if(id === 'sewer-skater'){
     state.games.view = 'sewer-skater';
-    state.games.selectedId = id;
-    renderGamesWindow();
-    return;
-  }
-  if(id === 'blacksmith-lab'){
-    state.games.view = 'blacksmith-lab';
     state.games.selectedId = id;
     renderGamesWindow();
     return;
@@ -6480,7 +6450,7 @@ function resetDesktopLayoutPreservingContent(){
   state.iconLabels = {};
   saveIconLabels();
 
-  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'blacksmith-lab'] };
+  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
   saveFolders();
 
   const coreIds = new Set(
@@ -7108,7 +7078,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'blacksmith-lab'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
 }
 
 function saveFolders(){

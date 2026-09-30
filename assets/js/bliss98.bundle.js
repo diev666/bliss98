@@ -1458,21 +1458,6 @@ function initSewerSkaterInWindow(win){
   initRuffleGameInWindow(win, '[data-sewer-skater-player]', './assets/flashgames/sewer-skater/sewer-skater.swf', 'Sewer Skater');
 }
 
-function initBlacksmithLabInWindow(win){
-  initRuffleGameInWindow(
-    win,
-    '[data-blacksmith-lab-player]',
-    './assets/flashgames/Blacksmith%20Lab/blacksmith-lab-179700ef7.swf',
-    'Blacksmith Lab',
-    {
-      parameters: {
-        kongregate_api_path: new URL('./assets/flashgames/Blacksmith%20Lab/API_AS3_Local.swf', document.baseURI).href
-      },
-      upgradeToHttps: true
-    }
-  );
-}
-
 function renderGamesWindow(){
   const win = document.getElementById('win_games');
   if(!win) return;
@@ -1579,15 +1564,6 @@ function renderGamesWindow(){
     const backButton = win.querySelector('[data-games-action="back"]');
     if(backButton) backButton.addEventListener('click', backToGamesHub);
     initSewerSkaterInWindow(win);
-    if(!mobileGameView) smartFitWindow(win, 'tabChange');
-    return;
-  }
-  if(state.games.view === 'blacksmith-lab'){
-    content.dataset.fitMinW = state.isMobile ? '320' : '700';
-    content.dataset.fitMinH = state.isMobile ? '360' : '525';
-    const backButton = win.querySelector('[data-games-action="back"]');
-    if(backButton) backButton.addEventListener('click', backToGamesHub);
-    initBlacksmithLabInWindow(win);
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
@@ -2094,12 +2070,6 @@ function openGameFromHub(id){
   }
   if(id === 'sewer-skater'){
     state.games.view = 'sewer-skater';
-    state.games.selectedId = id;
-    renderGamesWindow();
-    return;
-  }
-  if(id === 'blacksmith-lab'){
-    state.games.view = 'blacksmith-lab';
     state.games.selectedId = id;
     renderGamesWindow();
     return;
@@ -7902,7 +7872,7 @@ function resetDesktopLayoutPreservingContent(){
   state.iconLabels = {};
   saveIconLabels();
 
-  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'blacksmith-lab'] };
+  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
   saveFolders();
 
   const coreIds = new Set(
@@ -8530,7 +8500,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'blacksmith-lab'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
 }
 
 function saveFolders(){
@@ -11848,7 +11818,6 @@ function installLongPress(el, getTarget){
           'games.minesweeper': 'Minesweeper',
           'games.dopeSkate': 'Dope Skate (beta)',
           'games.sewerSkater': 'Sewer Skater',
-          'games.blacksmithLab': 'Blacksmith Lab',
           'games.flash.loadError': 'Could not load the Flash emulator. Please reload and try again.',
           'games.back': 'Back',
           'games.empty': 'No games yet.',
@@ -12513,7 +12482,6 @@ function installLongPress(el, getTarget){
           'games.minesweeper': 'Campo Minado',
           'games.dopeSkate': 'Dope Skate (beta)',
           'games.sewerSkater': 'Sewer Skater',
-          'games.blacksmithLab': 'Blacksmith Lab',
           'games.flash.loadError': 'Não foi possível carregar o emulador Flash. Atualize a página e tente novamente.',
           'games.back': 'Voltar',
           'games.empty': 'Sem jogos ainda.',
@@ -15618,17 +15586,6 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
-          if(state.games.view === 'blacksmith-lab'){
-            return `
-              <div class="sewer-skater-shell">
-                <div class="sewer-skater-toolbar">
-                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
-                  <h2 data-i18n="games.blacksmithLab">Blacksmith Lab</h2>
-                </div>
-                <div class="sewer-skater-stage" data-blacksmith-lab-player aria-live="polite"></div>
-              </div>
-            `;
-          }
           if(state.games.view === 'leaderboard'){
             const lb = getGamesLeaderboard();
             const rows = lb.items.map(item => `
@@ -15685,16 +15642,6 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'sewer-skater', iconFile:'./assets/flashgames/sewer-skater/skatesewer.jpg' }, t('games.sewerSkater'), 64)}
                   </div>
                   <span data-i18n="games.sewerSkater">Sewer Skater</span>
-                </button>
-              `;
-            }
-            if(id === 'blacksmith-lab'){
-              return `
-                <button class="games-item games-card" type="button" data-game-id="blacksmith-lab">
-                  <div class="games-icon pixel">
-                    ${getThemedIconHtml({ icon:'game', id:'blacksmith-lab', iconFile:'./assets/flashgames/Blacksmith Lab/Blacksmith Lab..png' }, t('games.blacksmithLab'), 64)}
-                  </div>
-                  <span data-i18n="games.blacksmithLab">Blacksmith Lab</span>
                 </button>
               `;
             }
@@ -22358,11 +22305,11 @@ function renderBlissOSAppMenu(){
         state.folders = loadFolders();
         if(!Array.isArray(state.folders.games)) state.folders.games = [];
         state.folders.games = state.folders.games.filter(id => id !== 'skate-freestyle');
+        state.folders.games = state.folders.games.filter(id => id !== 'blacksmith-lab');
         if(!state.folders.games.includes('snake')) state.folders.games.unshift('snake');
         if(!state.folders.games.includes('minesweeper')) state.folders.games.splice(Math.min(1, state.folders.games.length), 0, 'minesweeper');
         if(!state.folders.games.includes('dope-skate')) state.folders.games.push('dope-skate');
         if(!state.folders.games.includes('sewer-skater')) state.folders.games.push('sewer-skater');
-        if(!state.folders.games.includes('blacksmith-lab')) state.folders.games.push('blacksmith-lab');
         state.folders.games = state.folders.games.filter(id => id !== 'flash-element-td2');
         state.snake.highScore = loadSnakeHighScore();
         state.minesweeper.highScore = loadMinesweeperHighScore();
