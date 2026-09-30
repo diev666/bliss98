@@ -1421,35 +1421,6 @@ function updateOpenWindowTitleIcons(){
 
 /* ===== Module: 02-games-and-ui.js ===== */
 let sewerSkaterRufflePromise = null;
-let dirPlayerPromise = null;
-
-function initSkateFreestyleInWindow(win){
-  const container = win && win.querySelector('[data-skate-freestyle-player]');
-  if(!container) return;
-  const showError = () => {
-    if(container.isConnected) container.textContent = t('games.shockwave.loadError');
-  };
-  if(!dirPlayerPromise){
-    dirPlayerPromise = new Promise((resolve, reject)=>{
-      const script = document.createElement('script');
-      script.src = './assets/js/dirplayer/dirplayer-polyfill.js';
-      script.onload = resolve;
-      script.onerror = reject;
-      document.head.appendChild(script);
-    });
-  }
-  dirPlayerPromise.then(()=>{
-    if(!container.isConnected) return;
-    if(!window.DirPlayer || typeof window.DirPlayer.init !== 'function'){
-      throw new Error('DirPlayer did not initialize');
-    }
-    window.DirPlayer.init();
-  }).catch((error)=>{
-    console.error('Could not load Skate Freestyle:', error);
-    showError();
-  });
-}
-
 function initSewerSkaterInWindow(win){
   const container = win && win.querySelector('[data-sewer-skater-player]');
   if(!container) return;
@@ -1586,15 +1557,6 @@ function renderGamesWindow(){
     const backButton = win.querySelector('[data-games-action="back"]');
     if(backButton) backButton.addEventListener('click', backToGamesHub);
     initSewerSkaterInWindow(win);
-    if(!mobileGameView) smartFitWindow(win, 'tabChange');
-    return;
-  }
-  if(state.games.view === 'skate-freestyle'){
-    content.dataset.fitMinW = state.isMobile ? '320' : '640';
-    content.dataset.fitMinH = state.isMobile ? '360' : '500';
-    const backButton = win.querySelector('[data-games-action="back"]');
-    if(backButton) backButton.addEventListener('click', backToGamesHub);
-    initSkateFreestyleInWindow(win);
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
@@ -2101,12 +2063,6 @@ function openGameFromHub(id){
   }
   if(id === 'sewer-skater'){
     state.games.view = 'sewer-skater';
-    state.games.selectedId = id;
-    renderGamesWindow();
-    return;
-  }
-  if(id === 'skate-freestyle'){
-    state.games.view = 'skate-freestyle';
     state.games.selectedId = id;
     renderGamesWindow();
     return;
@@ -7909,7 +7865,7 @@ function resetDesktopLayoutPreservingContent(){
   state.iconLabels = {};
   saveIconLabels();
 
-  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'skate-freestyle'] };
+  state.folders = { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
   saveFolders();
 
   const coreIds = new Set(
@@ -8537,7 +8493,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'skate-freestyle'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater'] };
 }
 
 function saveFolders(){
@@ -11856,8 +11812,6 @@ function installLongPress(el, getTarget){
           'games.dopeSkate': 'Dope Skate (beta)',
           'games.sewerSkater': 'Sewer Skater',
           'games.flash.loadError': 'Could not load the Flash emulator. Please reload and try again.',
-          'games.skateFreestyle': 'Skate Freestyle',
-          'games.shockwave.loadError': 'Could not load the Shockwave emulator. Please reload and try again.',
           'games.back': 'Back',
           'games.empty': 'No games yet.',
           'games.tab.hub': 'Games',
@@ -12522,8 +12476,6 @@ function installLongPress(el, getTarget){
           'games.dopeSkate': 'Dope Skate (beta)',
           'games.sewerSkater': 'Sewer Skater',
           'games.flash.loadError': 'Não foi possível carregar o emulador Flash. Atualize a página e tente novamente.',
-          'games.skateFreestyle': 'Skate Freestyle',
-          'games.shockwave.loadError': 'Não foi possível carregar o emulador Shockwave. Atualize a página e tente novamente.',
           'games.back': 'Voltar',
           'games.empty': 'Sem jogos ainda.',
           'games.tab.hub': 'Jogos',
@@ -15627,20 +15579,6 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
-          if(state.games.view === 'skate-freestyle'){
-            const movieUrl = './assets/flashgames/Skate%20Freestyle/content/comoquierascolacao.com/juegos/skatefreestyle/skate_freestyle.dcr';
-            return `
-              <div class="shockwave-game-shell">
-                <div class="shockwave-game-toolbar">
-                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
-                  <h2 data-i18n="games.skateFreestyle">Skate Freestyle</h2>
-                </div>
-                <div class="shockwave-game-stage" data-skate-freestyle-player>
-                  <embed src="${movieUrl}" type="application/x-director" width="640" height="480" aria-label="Skate Freestyle">
-                </div>
-              </div>
-            `;
-          }
           if(state.games.view === 'leaderboard'){
             const lb = getGamesLeaderboard();
             const rows = lb.items.map(item => `
@@ -15697,16 +15635,6 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'sewer-skater', iconFile:'./assets/flashgames/sewer-skater/skatesewer.jpg' }, t('games.sewerSkater'), 64)}
                   </div>
                   <span data-i18n="games.sewerSkater">Sewer Skater</span>
-                </button>
-              `;
-            }
-            if(id === 'skate-freestyle'){
-              return `
-                <button class="games-item games-card" type="button" data-game-id="skate-freestyle">
-                  <div class="games-icon pixel">
-                    ${getThemedIconHtml({ icon:'game', id:'skate-freestyle', iconFile:'./assets/flashgames/Skate Freestyle/skatefreestyle.png' }, t('games.skateFreestyle'), 64)}
-                  </div>
-                  <span data-i18n="games.skateFreestyle">Skate Freestyle</span>
                 </button>
               `;
             }
@@ -22369,11 +22297,11 @@ function renderBlissOSAppMenu(){
         state.games.bigIcons = loadGamesBigIcons();
         state.folders = loadFolders();
         if(!Array.isArray(state.folders.games)) state.folders.games = [];
+        state.folders.games = state.folders.games.filter(id => id !== 'skate-freestyle');
         if(!state.folders.games.includes('snake')) state.folders.games.unshift('snake');
         if(!state.folders.games.includes('minesweeper')) state.folders.games.splice(Math.min(1, state.folders.games.length), 0, 'minesweeper');
         if(!state.folders.games.includes('dope-skate')) state.folders.games.push('dope-skate');
         if(!state.folders.games.includes('sewer-skater')) state.folders.games.push('sewer-skater');
-        if(!state.folders.games.includes('skate-freestyle')) state.folders.games.push('skate-freestyle');
         state.snake.highScore = loadSnakeHighScore();
         state.minesweeper.highScore = loadMinesweeperHighScore();
         state.dopeSkate.highScore = loadDopeSkateHighScore();
