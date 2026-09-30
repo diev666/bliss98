@@ -633,6 +633,10 @@
           'contact.label.instagramBLISS': 'Instagram (BLISS):',
           'diev.title': 'DIEV',
           'diev.p1': 'Página oficial do DIEV.',
+          'diev.instagramTitle': 'Latest from Instagram.',
+          'diev.instagramLoading': 'Loading…',
+          'diev.instagramUnavailable': 'Unable to load right now.',
+          'diev.instagramAlt': 'DIEV Instagram',
 
           'player.title': 'BLISS Media Player',
           'player.now': 'Now playing:',
@@ -1287,6 +1291,10 @@
           'contact.label.instagramBLISS': 'Instagram (BLISS):',
           'diev.title': 'DIEV',
           'diev.p1': 'Página oficial do DIEV.',
+          'diev.instagramTitle': 'Últimos do Instagram.',
+          'diev.instagramLoading': 'Carregando…',
+          'diev.instagramUnavailable': 'Não foi possível carregar agora.',
+          'diev.instagramAlt': 'Instagram do DIEV',
 
           'player.title': 'BLISS Media Player',
           'player.now': 'Tocando:',

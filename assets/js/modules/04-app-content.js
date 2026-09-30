@@ -63,6 +63,10 @@
         { img: './assets/icons/Clothes.png', url: 'https://www.instagram.com/blissworldweb/' },
         { img: './assets/icons/Clothes.png', url: 'https://www.instagram.com/blissworldweb/' }
       ];
+      const DIEV_INSTAGRAM_FALLBACK = Array.from({ length:6 }, () => ({
+        img:'./assets/icons/DIEV.png',
+        url:'https://www.instagram.com/die.verson/'
+      }));
 
       const VIDEO_CHANNEL_URL = 'https://www.youtube.com/@DIEVBLISS';
 
@@ -1201,7 +1205,11 @@ Eu sou o buffalo branco extinto`
             <img class="pixel" src="./assets/gifs/smilehue.gif" alt="smile hue gif" style="display:block; width:min(100%, 280px); height:auto;" loading="lazy" />
           </div>
         `,
-        diev: () => `<p>${t('diev.p1')}</p>`,
+        diev: () => `
+          <p class="tiny" data-i18n="diev.instagramTitle">${t('diev.instagramTitle')}</p>
+          <div class="clothes-grid" id="dievInstagramGrid"></div>
+          <div class="tiny clothes-status" id="dievInstagramStatus" data-i18n="diev.instagramLoading">${t('diev.instagramLoading')}</div>
+        `,
         settings: () => `
           <div class="settings-shell">
             <div class="settings-tabs" role="tablist" aria-label="Settings">

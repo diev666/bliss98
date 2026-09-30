@@ -64,6 +64,9 @@
           sort: 'new',
           preview: true,
         },
+        dievInstagram: {
+          items: [],
+        },
         mediaplayer: {
           selected: new Set(),
           shuffle: false,
@@ -231,6 +234,9 @@
       const CLOTHES_PROFILE_USERNAME = 'blissworldweb';
       const CLOTHES_PROFILE_QUERY_ID = '34579740524958711';
       const CLOTHES_PROFILE_URL = 'https://www.instagram.com/blissworldweb/';
+      const DIEV_INSTAGRAM_CACHE_KEY = 'bliss98_diev_instagram_cache';
+      const DIEV_INSTAGRAM_PROFILE_USERNAME = 'die.verson';
+      const DIEV_INSTAGRAM_PROFILE_URL = 'https://www.instagram.com/die.verson/';
       const CLOTHES_SIZING_URL = 'https://www.instagram.com/direct/new/?username=blissworldweb';
       const SNAKE_HIGH_KEY = 'bliss98_snake_highscore';
       const MINESWEEPER_HIGH_KEY = 'bliss98_minesweeper_highscore';
@@ -6879,7 +6885,7 @@ function parseJsonFromJinaText(raw){
   return null;
 }
 
-function parseInstagramGraphqlResponse(payload){
+function parseInstagramGraphqlResponse(payload, profileUrl, fallbackImage){
   const connection = payload && payload.data && payload.data.xdt_api__v1__feed__user_timeline_graphql_connection;
   const edges = connection && Array.isArray(connection.edges) ? connection.edges : [];
   const items = [];
@@ -6896,8 +6902,8 @@ function parseInstagramGraphqlResponse(payload){
     if(!postUrl && !imageUrl) continue;
     const likes = Number(node.like_count);
     items.push({
-      url: postUrl || CLOTHES_PROFILE_URL,
-      img: imageUrl || './assets/icons/Clothes.png',
+      url: postUrl || profileUrl,
+      img: imageUrl || fallbackImage,
       likes: Number.isFinite(likes) ? likes : null,
     });
     if(items.length >= 12) break;
@@ -6913,9 +6919,9 @@ function isClothesFallbackCache(items){
   });
 }
 
-function fetchClothesFromInstagram(){
+function fetchInstagramProfile(username, profileUrl, fallbackImage){
   const variables = encodeURIComponent(JSON.stringify({
-    username: CLOTHES_PROFILE_USERNAME,
+    username,
     first: 12,
     data: {}
   }));
@@ -6924,11 +6930,19 @@ function fetchClothesFromInstagram(){
     .then(res => res.ok ? res.text() : Promise.reject(new Error('bad')))
     .then(raw => {
       const payload = parseJsonFromJinaText(raw);
-      const items = parseInstagramGraphqlResponse(payload);
+      const items = parseInstagramGraphqlResponse(payload, profileUrl, fallbackImage);
       if(items.length) return items;
-      return parseInstagramHtml(raw);
+      return parseInstagramHtml(raw).map(item => ({ ...item, url: item.url || profileUrl }));
     })
     .catch(() => []);
+}
+
+function fetchClothesFromInstagram(){
+  return fetchInstagramProfile(CLOTHES_PROFILE_USERNAME, CLOTHES_PROFILE_URL, './assets/icons/Clothes.png');
+}
+
+function fetchDievInstagram(){
+  return fetchInstagramProfile(DIEV_INSTAGRAM_PROFILE_USERNAME, DIEV_INSTAGRAM_PROFILE_URL, './assets/icons/DIEV.png');
 }
 
 function getSortedClothesItems(items){
@@ -6944,21 +6958,72 @@ function getSortedClothesItems(items){
   });
 }
 
-function renderClothesItems(winEl, items){
-  const grid = winEl.querySelector('#clothesGrid');
+function renderInstagramItems(grid, items, profileUrl, fallbackImage, alt){
   if(!grid) return;
-  const profile = CLOTHES_PROFILE_URL;
-  const alt = t('clothes.thumbAlt');
   grid.innerHTML = items.map(item => {
-    const href = escapeHTML(item.url || profile);
-    const img = escapeHTML(item.img || './assets/icons/Clothes.png');
+    const href = escapeHTML(item.url || profileUrl);
+    const img = escapeHTML(item.img || fallbackImage);
     const altText = escapeHTML(alt);
     return `
-      <a class="clothes-item" href="${href}" data-clothes-url="${href}" target="_blank" rel="noopener noreferrer" aria-label="${altText}">
+      <a class="clothes-item" href="${href}" target="_blank" rel="noopener noreferrer" aria-label="${altText}">
         <img class="clothes-thumb" src="${img}" alt="${altText}" loading="lazy" />
       </a>
     `;
   }).join('');
+}
+
+function renderClothesItems(winEl, items){
+  const grid = winEl.querySelector('#clothesGrid');
+  renderInstagramItems(grid, items, CLOTHES_PROFILE_URL, './assets/icons/Clothes.png', t('clothes.thumbAlt'));
+}
+
+function loadDievInstagramCache(){
+  try{
+    const parsed = JSON.parse(localStorage.getItem(DIEV_INSTAGRAM_CACHE_KEY) || 'null');
+    if(!parsed || !Array.isArray(parsed.items) || !parsed.ts || (Date.now() - parsed.ts) > CLOTHES_CACHE_TTL) return null;
+    return parsed.items;
+  } catch { return null; }
+}
+
+function saveDievInstagramCache(items){
+  try{ localStorage.setItem(DIEV_INSTAGRAM_CACHE_KEY, JSON.stringify({ ts:Date.now(), items })); } catch {}
+}
+
+function applyDievInstagramState(winEl){
+  const win = winEl || document.getElementById('win_diev');
+  const grid = win && win.querySelector('#dievInstagramGrid');
+  if(!grid) return;
+  renderInstagramItems(grid, state.dievInstagram.items, DIEV_INSTAGRAM_PROFILE_URL, './assets/icons/DIEV.png', t('diev.instagramAlt'));
+}
+
+function initDievInstagramWindow(winEl){
+  const win = winEl || document.getElementById('win_diev');
+  if(!win) return;
+  const status = win.querySelector('#dievInstagramStatus');
+  const updateStatus = key => {
+    if(!status) return;
+    status.textContent = key ? t(key) : '';
+    status.classList.toggle('hidden', !key);
+  };
+  if(state.dievInstagram.items.length){
+    applyDievInstagramState(win);
+    updateStatus(null);
+    return;
+  }
+  const cached = loadDievInstagramCache();
+  if(cached && cached.length){
+    state.dievInstagram.items = cached;
+    applyDievInstagramState(win);
+    updateStatus(null);
+    return;
+  }
+  updateStatus('diev.instagramLoading');
+  fetchDievInstagram().then(items => {
+    if(items.length) saveDievInstagramCache(items);
+    state.dievInstagram.items = (items.length ? items : DIEV_INSTAGRAM_FALLBACK).slice();
+    applyDievInstagramState(win);
+    updateStatus(null);
+  });
 }
 
 function applyClothesState(winEl){
@@ -12277,6 +12342,10 @@ function installLongPress(el, getTarget){
           'contact.label.instagramBLISS': 'Instagram (BLISS):',
           'diev.title': 'DIEV',
           'diev.p1': 'Página oficial do DIEV.',
+          'diev.instagramTitle': 'Latest from Instagram.',
+          'diev.instagramLoading': 'Loading…',
+          'diev.instagramUnavailable': 'Unable to load right now.',
+          'diev.instagramAlt': 'DIEV Instagram',
 
           'player.title': 'BLISS Media Player',
           'player.now': 'Now playing:',
@@ -12931,6 +13000,10 @@ function installLongPress(el, getTarget){
           'contact.label.instagramBLISS': 'Instagram (BLISS):',
           'diev.title': 'DIEV',
           'diev.p1': 'Página oficial do DIEV.',
+          'diev.instagramTitle': 'Últimos do Instagram.',
+          'diev.instagramLoading': 'Carregando…',
+          'diev.instagramUnavailable': 'Não foi possível carregar agora.',
+          'diev.instagramAlt': 'Instagram do DIEV',
 
           'player.title': 'BLISS Media Player',
           'player.now': 'Tocando:',
@@ -14469,6 +14542,10 @@ function installLongPress(el, getTarget){
         { img: './assets/icons/Clothes.png', url: 'https://www.instagram.com/blissworldweb/' },
         { img: './assets/icons/Clothes.png', url: 'https://www.instagram.com/blissworldweb/' }
       ];
+      const DIEV_INSTAGRAM_FALLBACK = Array.from({ length:6 }, () => ({
+        img:'./assets/icons/DIEV.png',
+        url:'https://www.instagram.com/die.verson/'
+      }));
 
       const VIDEO_CHANNEL_URL = 'https://www.youtube.com/@DIEVBLISS';
 
@@ -15607,7 +15684,11 @@ Eu sou o buffalo branco extinto`
             <img class="pixel" src="./assets/gifs/smilehue.gif" alt="smile hue gif" style="display:block; width:min(100%, 280px); height:auto;" loading="lazy" />
           </div>
         `,
-        diev: () => `<p>${t('diev.p1')}</p>`,
+        diev: () => `
+          <p class="tiny" data-i18n="diev.instagramTitle">${t('diev.instagramTitle')}</p>
+          <div class="clothes-grid" id="dievInstagramGrid"></div>
+          <div class="tiny clothes-status" id="dievInstagramStatus" data-i18n="diev.instagramLoading">${t('diev.instagramLoading')}</div>
+        `,
         settings: () => `
           <div class="settings-shell">
             <div class="settings-tabs" role="tablist" aria-label="Settings">
@@ -19431,6 +19512,7 @@ function toggleFitWindow(appId) {
         if(appId === 'mediaplayer') { setTimeout(mpInitInWindow, 0); }
         if(appId === 'trash') { updateTrashIconUI(); }
         if(appId === 'clothes') { setTimeout(()=>initClothesWindow(el), 0); }
+        if(appId === 'diev') { setTimeout(()=>initDievInstagramWindow(el), 0); }
         if(appId === 'settings') {
           setTimeout(()=>{
             initSettingsTabs(el);

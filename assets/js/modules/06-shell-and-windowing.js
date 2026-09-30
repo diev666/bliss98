@@ -2224,6 +2224,7 @@ function toggleFitWindow(appId) {
         if(appId === 'mediaplayer') { setTimeout(mpInitInWindow, 0); }
         if(appId === 'trash') { updateTrashIconUI(); }
         if(appId === 'clothes') { setTimeout(()=>initClothesWindow(el), 0); }
+        if(appId === 'diev') { setTimeout(()=>initDievInstagramWindow(el), 0); }
         if(appId === 'settings') {
           setTimeout(()=>{
             initSettingsTabs(el);

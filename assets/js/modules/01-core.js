@@ -60,6 +60,9 @@
           sort: 'new',
           preview: true,
         },
+        dievInstagram: {
+          items: [],
+        },
         mediaplayer: {
           selected: new Set(),
           shuffle: false,
@@ -227,6 +230,9 @@
       const CLOTHES_PROFILE_USERNAME = 'blissworldweb';
       const CLOTHES_PROFILE_QUERY_ID = '34579740524958711';
       const CLOTHES_PROFILE_URL = 'https://www.instagram.com/blissworldweb/';
+      const DIEV_INSTAGRAM_CACHE_KEY = 'bliss98_diev_instagram_cache';
+      const DIEV_INSTAGRAM_PROFILE_USERNAME = 'die.verson';
+      const DIEV_INSTAGRAM_PROFILE_URL = 'https://www.instagram.com/die.verson/';
       const CLOTHES_SIZING_URL = 'https://www.instagram.com/direct/new/?username=blissworldweb';
       const SNAKE_HIGH_KEY = 'bliss98_snake_highscore';
       const MINESWEEPER_HIGH_KEY = 'bliss98_minesweeper_highscore';
