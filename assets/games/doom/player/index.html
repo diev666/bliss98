@@ -19,6 +19,17 @@
     image-rendering: pixelated; outline: none;
     background: #000;
   }
+  #mouseTip {
+    position: absolute; z-index: 12; right: 14px; bottom: 14px;
+    max-width: min(360px, calc(100% - 28px)); padding: 9px 13px;
+    border: 1px solid rgba(255,255,255,0.18); border-radius: 7px;
+    background: rgba(8,8,8,0.82); color: #f2e8d8;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.5);
+    font: 12px/1.4 system-ui, sans-serif; text-align: right;
+    pointer-events: none; opacity: 1; transition: opacity 220ms ease;
+  }
+  #mouseTip.hidden { display: none; }
+  #mouseTip.fading { opacity: 0; }
 
   #boot {
     position: absolute; inset: 0; z-index: 20;
@@ -62,6 +73,7 @@
 <div id="wrap">
   <div id="screen">
     <canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas>
+    <div id="mouseTip" class="hidden" role="status" aria-live="polite"></div>
     <div id="boot">
       <div id="bootTitle">DOOM</div>
       <div id="bootHint">Freedoom &middot; Chocolate Doom (WebAssembly)</div>
@@ -104,8 +116,20 @@
   var pad = document.getElementById('pad');
   var screen = document.getElementById('screen');
   var logEl = document.getElementById('log');
+  var mouseTip = document.getElementById('mouseTip');
   var touchControlsEnabled = false;
   var started = false;
+  var mouseTipTimer = 0;
+
+  function showMouseTip(message) {
+    window.clearTimeout(mouseTipTimer);
+    mouseTip.textContent = message;
+    mouseTip.classList.remove('hidden', 'fading');
+    mouseTipTimer = window.setTimeout(function () {
+      mouseTip.classList.add('fading');
+      window.setTimeout(function () { mouseTip.classList.add('hidden'); }, 240);
+    }, 4200);
+  }
 
   function restoreGameFocus() {
     if (!started) { return; }
@@ -114,12 +138,22 @@
   }
   canvas.addEventListener('pointerdown', restoreGameFocus);
   canvas.addEventListener('click', restoreGameFocus);
+  document.addEventListener('keydown', function (event) {
+    if (!started || (event.key !== 'F12' && event.keyCode !== 123) || document.pointerLockElement !== canvas) { return; }
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    document.exitPointerLock();
+    showMouseTip('Mouse released. Click inside DOOM to capture it again.');
+  }, true);
   window.addEventListener('focus', restoreGameFocus);
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') { restoreGameFocus(); }
   });
   document.addEventListener('pointerlockchange', function () {
-    if (document.pointerLockElement === canvas) { restoreGameFocus(); }
+    if (document.pointerLockElement === canvas) {
+      restoreGameFocus();
+      if (started) { showMouseTip('Mouse captured. Press F12 to release it.'); }
+    }
   });
 
   var lines = 0;
@@ -313,6 +347,7 @@
       window.requestAnimationFrame(fitCanvasToGameAspect);
       boot.classList.add('hidden');
       pad.classList.toggle('hidden', !touchControlsEnabled);
+      showMouseTip('Press F12 to release the mouse. Click inside DOOM to capture it again.');
     } catch (e) {
       err('[main] threw: ' + (e && e.message ? e.message : e));
       bootBtn.disabled = false;
