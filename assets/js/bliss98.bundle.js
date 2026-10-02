@@ -15853,7 +15853,7 @@ Eu sou o buffalo branco extinto`
                   <button class="btn bevel doom-touch-controls" type="button" data-doom-touch-controls aria-pressed="false" data-i18n="games.doom.touchControls">Touch Controls</button>
                   <a class="btn bevel doom-open-link" href="./assets/games/doom/player/README.md" target="_blank" rel="noopener noreferrer" data-i18n="games.doom.credits">Credits &amp; licenses</a>
                 </div>
-                <iframe class="doom-player-frame" src="./assets/games/doom/player/index.html" title="DOOM powered by Freedoom" allow="autoplay; fullscreen; gamepad" allowfullscreen></iframe>
+                <iframe class="doom-player-frame" src="./assets/games/doom/player/index.html" title="DOOM powered by Freedoom" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
             `;
           }
