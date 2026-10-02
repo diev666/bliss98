@@ -105,6 +105,22 @@
   var screen = document.getElementById('screen');
   var logEl = document.getElementById('log');
   var touchControlsEnabled = false;
+  var started = false;
+
+  function restoreGameFocus() {
+    if (!started) { return; }
+    try { canvas.focus({ preventScroll: true }); }
+    catch (e) { canvas.focus(); }
+  }
+  canvas.addEventListener('pointerdown', restoreGameFocus);
+  canvas.addEventListener('click', restoreGameFocus);
+  window.addEventListener('focus', restoreGameFocus);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') { restoreGameFocus(); }
+  });
+  document.addEventListener('pointerlockchange', function () {
+    if (document.pointerLockElement === canvas) { restoreGameFocus(); }
+  });
 
   var lines = 0;
   function fitCanvasToGameAspect() {
@@ -230,8 +246,6 @@
   // Mirrors the upstream launcher's known-good sequence: never auto-run main,
   // preload the data files as run-dependencies, then callMain() explicitly.
   var PRELOAD = ['freedoom1.wad', 'default.cfg'];
-  var started = false;
-
   window.Module = {
     canvas: canvas,
     elementPointerLock: true,
