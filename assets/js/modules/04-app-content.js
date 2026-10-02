@@ -1067,9 +1067,14 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.doom">DOOM</h2>
-                  <a class="btn bevel doom-open-link" href="https://joeheyming.github.io/doom/" target="_blank" rel="noopener noreferrer" data-i18n="games.doom.open">Open in browser</a>
                 </div>
-                <iframe class="doom-frame" src="https://joeheyming.github.io/doom/" title="DOOM" allow="autoplay; fullscreen; pointer-lock; gamepad" allowfullscreen loading="lazy"></iframe>
+                <div class="doom-launch-panel">
+                  <div class="doom-launch-mark" aria-hidden="true">D</div>
+                  <h3 data-i18n="games.doom">DOOM</h3>
+                  <p data-i18n="games.doom.embedNote">This version needs a secure, isolated browser tab, so it cannot run inside this window.</p>
+                  <a class="btn bevel doom-open-link" href="https://joeheyming.github.io/doom/" target="_blank" rel="noopener noreferrer" data-i18n="games.doom.open">Open in browser</a>
+                  <small data-i18n="games.doom.resetNote">If it still shows an error, use “Reset and reload” on the DOOM page.</small>
+                </div>
               </div>
             `;
           }
