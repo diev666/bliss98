@@ -1650,6 +1650,23 @@ function renderGamesWindow(){
     content.dataset.fitMinH = state.isMobile ? '420' : '680';
     const backButton = win.querySelector('[data-games-action="back"]');
     if(backButton) backButton.addEventListener('click', backToGamesHub);
+    const touchControlsButton = win.querySelector('[data-doom-touch-controls]');
+    const doomFrame = win.querySelector('.doom-player-frame');
+    if(touchControlsButton && doomFrame){
+      const sendTouchControlsState = enabled => {
+        if(doomFrame.contentWindow){
+          doomFrame.contentWindow.postMessage({ type:'bliss-doom-touch-controls', enabled }, window.location.origin);
+        }
+      };
+      touchControlsButton.addEventListener('click', ()=>{
+        const enabled = touchControlsButton.getAttribute('aria-pressed') !== 'true';
+        touchControlsButton.setAttribute('aria-pressed', String(enabled));
+        sendTouchControlsState(enabled);
+      });
+      doomFrame.addEventListener('load', ()=>{
+        sendTouchControlsState(touchControlsButton.getAttribute('aria-pressed') === 'true');
+      }, { once:true });
+    }
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
@@ -12026,6 +12043,7 @@ function installLongPress(el, getTarget){
           'games.doom': 'DOOM',
           'games.doom.open': 'Open in browser',
           'games.doom.credits': 'Credits & licenses',
+          'games.doom.touchControls': 'Touch Controls',
           'games.minesweeper': 'Minesweeper',
           'games.dopeSkate': 'Dope Skate (beta)',
           'games.sewerSkater': 'Sewer Skater',
@@ -12700,6 +12718,7 @@ function installLongPress(el, getTarget){
           'games.doom': 'DOOM',
           'games.doom.open': 'Abrir no navegador',
           'games.doom.credits': 'Créditos e licenças',
+          'games.doom.touchControls': 'Touch Controls',
           'games.minesweeper': 'Campo Minado',
           'games.dopeSkate': 'Dope Skate (beta)',
           'games.sewerSkater': 'Sewer Skater',
@@ -15831,6 +15850,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.doom">DOOM</h2>
+                  <button class="btn bevel doom-touch-controls" type="button" data-doom-touch-controls aria-pressed="false" data-i18n="games.doom.touchControls">Touch Controls</button>
                   <a class="btn bevel doom-open-link" href="./assets/games/doom/player/README.md" target="_blank" rel="noopener noreferrer" data-i18n="games.doom.credits">Credits &amp; licenses</a>
                 </div>
                 <iframe class="doom-player-frame" src="./assets/games/doom/player/index.html" title="DOOM powered by Freedoom" allow="autoplay; fullscreen; gamepad" allowfullscreen></iframe>

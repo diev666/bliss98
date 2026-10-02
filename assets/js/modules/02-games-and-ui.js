@@ -228,6 +228,23 @@ function renderGamesWindow(){
     content.dataset.fitMinH = state.isMobile ? '420' : '680';
     const backButton = win.querySelector('[data-games-action="back"]');
     if(backButton) backButton.addEventListener('click', backToGamesHub);
+    const touchControlsButton = win.querySelector('[data-doom-touch-controls]');
+    const doomFrame = win.querySelector('.doom-player-frame');
+    if(touchControlsButton && doomFrame){
+      const sendTouchControlsState = enabled => {
+        if(doomFrame.contentWindow){
+          doomFrame.contentWindow.postMessage({ type:'bliss-doom-touch-controls', enabled }, window.location.origin);
+        }
+      };
+      touchControlsButton.addEventListener('click', ()=>{
+        const enabled = touchControlsButton.getAttribute('aria-pressed') !== 'true';
+        touchControlsButton.setAttribute('aria-pressed', String(enabled));
+        sendTouchControlsState(enabled);
+      });
+      doomFrame.addEventListener('load', ()=>{
+        sendTouchControlsState(touchControlsButton.getAttribute('aria-pressed') === 'true');
+      }, { once:true });
+    }
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }

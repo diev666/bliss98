@@ -103,7 +103,7 @@
   var bootBtn = document.getElementById('bootBtn');
   var pad = document.getElementById('pad');
   var logEl = document.getElementById('log');
-  var useTouchControls = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || navigator.maxTouchPoints > 0;
+  var touchControlsEnabled = false;
 
   var lines = 0;
   function log(msg, cls) {
@@ -116,6 +116,13 @@
   }
   function info(m) { log(m, 'i'); }
   function err(m) { log(m, 'e'); }
+
+  window.addEventListener('message', function (event) {
+    if (event.source !== window.parent || event.origin !== window.location.origin) { return; }
+    if (!event.data || event.data.type !== 'bliss-doom-touch-controls') { return; }
+    touchControlsEnabled = event.data.enabled === true;
+    pad.classList.toggle('hidden', !touchControlsEnabled || !started);
+  });
 
   if (window.location.protocol === 'file:') {
     document.getElementById('bootHint').textContent = 'Open BLISS through Run BLISS locally.bat, then visit http://127.0.0.1:4173/';
@@ -271,7 +278,7 @@
       callMain(args);
       info('[main] returned');
       boot.classList.add('hidden');
-      if (useTouchControls) { pad.classList.remove('hidden'); }
+      pad.classList.toggle('hidden', !touchControlsEnabled);
     } catch (e) {
       err('[main] threw: ' + (e && e.message ? e.message : e));
       bootBtn.disabled = false;
