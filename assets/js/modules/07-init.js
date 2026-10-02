@@ -65,6 +65,7 @@
         if(!state.folders.games.includes('alien-hominid')) state.folders.games.push('alien-hominid');
         if(!state.folders.games.includes('happy-wheels-demo')) state.folders.games.push('happy-wheels-demo');
         if(!state.folders.games.includes('line-rider-beta-2')) state.folders.games.push('line-rider-beta-2');
+        if(!state.folders.games.includes('doom')) state.folders.games.push('doom');
         state.folders.games = state.folders.games.filter(id => id !== 'flash-element-td2');
         state.snake.highScore = loadSnakeHighScore();
         state.minesweeper.highScore = loadMinesweeperHighScore();

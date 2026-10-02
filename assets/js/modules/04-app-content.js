@@ -1061,6 +1061,18 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
+          if(state.games.view === 'doom'){
+            return `
+              <div class="doom-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.doom">DOOM</h2>
+                  <a class="btn bevel doom-open-link" href="https://joeheyming.github.io/doom/" target="_blank" rel="noopener noreferrer" data-i18n="games.doom.open">Open in browser</a>
+                </div>
+                <iframe class="doom-frame" src="https://joeheyming.github.io/doom/" title="DOOM" allow="autoplay; fullscreen; pointer-lock; gamepad" allowfullscreen loading="lazy"></iframe>
+              </div>
+            `;
+          }
           if(state.games.view === 'leaderboard'){
             const lb = getGamesLeaderboard();
             const rows = lb.items.map(item => `
@@ -1097,6 +1109,16 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'snake', iconFile:'./assets/icons/snake.png' }, t('games.snake'), 64)}
                   </div>
                   <span data-i18n="games.snake">Snake</span>
+                </button>
+              `;
+            }
+            if(id === 'doom'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="doom">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'doom', iconFile:'./assets/games/doom/doom.png' }, t('games.doom'), 64)}
+                  </div>
+                  <span data-i18n="games.doom">DOOM</span>
                 </button>
               `;
             }

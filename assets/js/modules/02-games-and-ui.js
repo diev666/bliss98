@@ -223,6 +223,15 @@ function renderGamesWindow(){
     return;
   }
 
+  if(state.games.view === 'doom'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '960';
+    content.dataset.fitMinH = state.isMobile ? '420' : '680';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+
   if(state.games.view === 'snake'){
     content.dataset.fitMinW = state.isMobile ? '280' : '500';
     content.dataset.fitMinH = state.isMobile ? '280' : '620';
@@ -795,6 +804,12 @@ function bindMobileOverlay(gameId, overlay){
 }
 
 function openGameFromHub(id){
+  if(id === 'doom'){
+    state.games.view = 'doom';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
   if(id === 'snake'){
     state.games.view = 'snake';
     state.games.selectedId = 'snake';
@@ -7269,7 +7284,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'alien-hominid', 'happy-wheels-demo', 'line-rider-beta-2'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'alien-hominid', 'happy-wheels-demo', 'line-rider-beta-2', 'doom'] };
 }
 
 function saveFolders(){

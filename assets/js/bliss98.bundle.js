@@ -1645,6 +1645,15 @@ function renderGamesWindow(){
     return;
   }
 
+  if(state.games.view === 'doom'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '960';
+    content.dataset.fitMinH = state.isMobile ? '420' : '680';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+
   if(state.games.view === 'snake'){
     content.dataset.fitMinW = state.isMobile ? '280' : '500';
     content.dataset.fitMinH = state.isMobile ? '280' : '620';
@@ -2217,6 +2226,12 @@ function bindMobileOverlay(gameId, overlay){
 }
 
 function openGameFromHub(id){
+  if(id === 'doom'){
+    state.games.view = 'doom';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
   if(id === 'snake'){
     state.games.view = 'snake';
     state.games.selectedId = 'snake';
@@ -8691,7 +8706,7 @@ function loadFolders(){
     const raw = localStorage.getItem(FOLDER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
-  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'alien-hominid', 'happy-wheels-demo', 'line-rider-beta-2'] };
+  return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'alien-hominid', 'happy-wheels-demo', 'line-rider-beta-2', 'doom'] };
 }
 
 function saveFolders(){
@@ -12008,6 +12023,8 @@ function installLongPress(el, getTarget){
           'app.seeker.file': 'File Seeker',
           'app.seeker.short': 'Seeker',
           'games.snake': 'Snake',
+          'games.doom': 'DOOM',
+          'games.doom.open': 'Open in browser',
           'games.minesweeper': 'Minesweeper',
           'games.dopeSkate': 'Dope Skate (beta)',
           'games.sewerSkater': 'Sewer Skater',
@@ -12679,6 +12696,8 @@ function installLongPress(el, getTarget){
           'app.seeker.file': 'File Seeker',
           'app.seeker.short': 'Seeker',
           'games.snake': 'Snake',
+          'games.doom': 'DOOM',
+          'games.doom.open': 'Abrir no navegador',
           'games.minesweeper': 'Campo Minado',
           'games.dopeSkate': 'Dope Skate (beta)',
           'games.sewerSkater': 'Sewer Skater',
@@ -15804,6 +15823,18 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
+          if(state.games.view === 'doom'){
+            return `
+              <div class="doom-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.doom">DOOM</h2>
+                  <a class="btn bevel doom-open-link" href="https://joeheyming.github.io/doom/" target="_blank" rel="noopener noreferrer" data-i18n="games.doom.open">Open in browser</a>
+                </div>
+                <iframe class="doom-frame" src="https://joeheyming.github.io/doom/" title="DOOM" allow="autoplay; fullscreen; pointer-lock; gamepad" allowfullscreen loading="lazy"></iframe>
+              </div>
+            `;
+          }
           if(state.games.view === 'leaderboard'){
             const lb = getGamesLeaderboard();
             const rows = lb.items.map(item => `
@@ -15840,6 +15871,16 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'snake', iconFile:'./assets/icons/snake.png' }, t('games.snake'), 64)}
                   </div>
                   <span data-i18n="games.snake">Snake</span>
+                </button>
+              `;
+            }
+            if(id === 'doom'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="doom">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'doom', iconFile:'./assets/games/doom/doom.png' }, t('games.doom'), 64)}
+                  </div>
+                  <span data-i18n="games.doom">DOOM</span>
                 </button>
               `;
             }
@@ -22618,6 +22659,7 @@ function renderBlissOSAppMenu(){
         if(!state.folders.games.includes('alien-hominid')) state.folders.games.push('alien-hominid');
         if(!state.folders.games.includes('happy-wheels-demo')) state.folders.games.push('happy-wheels-demo');
         if(!state.folders.games.includes('line-rider-beta-2')) state.folders.games.push('line-rider-beta-2');
+        if(!state.folders.games.includes('doom')) state.folders.games.push('doom');
         state.folders.games = state.folders.games.filter(id => id !== 'flash-element-td2');
         state.snake.highScore = loadSnakeHighScore();
         state.minesweeper.highScore = loadMinesweeperHighScore();
