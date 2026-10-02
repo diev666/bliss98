@@ -103,6 +103,7 @@
   var bootBtn = document.getElementById('bootBtn');
   var pad = document.getElementById('pad');
   var logEl = document.getElementById('log');
+  var useTouchControls = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || navigator.maxTouchPoints > 0;
 
   var lines = 0;
   function log(msg, cls) {
@@ -115,6 +116,14 @@
   }
   function info(m) { log(m, 'i'); }
   function err(m) { log(m, 'e'); }
+
+  if (window.location.protocol === 'file:') {
+    document.getElementById('bootHint').textContent = 'Open BLISS through Run BLISS locally.bat, then visit http://127.0.0.1:4173/';
+    bootBtn.disabled = true;
+    bootBtn.textContent = 'LOCAL SERVER REQUIRED';
+    err('WebAssembly cannot load from file://. Start the local BLISS server and open its localhost address.');
+    return;
+  }
 
   window.onerror = function (message, src, line) {
     err('EXCEPTION: ' + message + ' @' + line);
@@ -262,7 +271,7 @@
       callMain(args);
       info('[main] returned');
       boot.classList.add('hidden');
-      pad.classList.remove('hidden');
+      if (useTouchControls) { pad.classList.remove('hidden'); }
     } catch (e) {
       err('[main] threw: ' + (e && e.message ? e.message : e));
       bootBtn.disabled = false;
