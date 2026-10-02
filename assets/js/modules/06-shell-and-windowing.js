@@ -4377,12 +4377,8 @@ function renderBlissOSAppMenu(){
       }
 
       function enter(){
-        const name = $('#username').value.trim();
-        if(!name){
-          showMessage('dialog.loginEmpty.title', 'dialog.loginEmpty.body');
-          $('#username').focus();
-          return;
-        }
+        const name = $('#username').value.trim() || 'Anonymous';
+        $('#username').value = name;
         state.didAutoPlayThisSession = false;
         setUser(name);
         showDesktop();
