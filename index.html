@@ -2931,6 +2931,7 @@
         align-items:center;
         gap:clamp(18px, 4vh, 30px);
       }
+      .login-mobile-note{display:none;}
       .login-panel{
         width:100%;
         padding:14px;
@@ -3162,6 +3163,21 @@
         #login{
           align-items:center;
           padding:32px 0 calc(32px + env(safe-area-inset-bottom));
+        }
+        .login-mobile-note{
+          display:block;
+          position:absolute;
+          top:calc(env(safe-area-inset-top) + 12px);
+          left:16px;
+          right:16px;
+          margin:0;
+          color:rgba(190,196,208,.72);
+          font-family:inherit;
+          font-size:clamp(12px, 3.4vw, 15px);
+          font-weight:700;
+          line-height:1.35;
+          text-align:center;
+          pointer-events:none;
         }
         .login-shell{
           width:100%;
@@ -12203,6 +12219,7 @@
       </div>
 
       <div id="login">
+        <p class="login-mobile-note" data-i18n="login.mobileNote">For the best experience, use a desktop computer.</p>
         <div class="login-shell">
           <div class="login-panel bevel">
             <div class="login-title">
@@ -12236,7 +12253,7 @@
             <!-- Build version: bump by +0.01 on every visual/code update -->
             <div class="tiny login-meta">
               <span data-i18n="login.copyright">© BLISS / DIEV — Bliss 98 OS</span>
-              <span class="login-version" id="loginVersion">Version: 1.60</span>
+              <span class="login-version" id="loginVersion">Version: 1.61</span>
             </div>
           </div>
 

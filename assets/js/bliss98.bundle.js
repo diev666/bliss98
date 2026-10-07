@@ -11987,6 +11987,7 @@ function installLongPress(el, getTarget){
 /* ===== Module: 03-i18n-and-theme.js ===== */
       const I18N = {
         en: {
+          'login.mobileNote': 'For the best experience, use a desktop computer.',
           'login.sub': 'Enter your name to login',
           'login.labelName': 'Name:',
           'login.placeholder': 'Enter your name',
@@ -12662,6 +12663,7 @@ function installLongPress(el, getTarget){
           'dialog.playerHowTo.body': 'Add songs by dragging audio files into the player window, or click Add songs… to choose files.'
         },
         pt: {
+          'login.mobileNote': 'Para uma melhor experiência, use um computador desktop.',
           'login.sub': 'Digite seu nome para entrar',
           'login.labelName': 'Nome:',
           'login.placeholder': 'Digite seu nome',
