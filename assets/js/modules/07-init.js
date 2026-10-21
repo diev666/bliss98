@@ -53,6 +53,9 @@
         state.games.bigIcons = loadGamesBigIcons();
         state.folders = loadFolders();
         if(!Array.isArray(state.folders.games)) state.folders.games = [];
+        const hadViceCityInGamesFolder = state.folders.games.includes('vice-city');
+        state.folders.games = state.folders.games.filter(id => id !== 'vice-city');
+        state.viceCityDefaultPlacementPending = hadViceCityInGamesFolder;
         state.folders.games = state.folders.games.filter(id => id !== 'skate-freestyle');
         state.folders.games = state.folders.games.filter(id => id !== 'blacksmith-lab');
         state.folders.games = state.folders.games.filter(id => id !== 'duck-adventure');
@@ -67,6 +70,7 @@
         if(!state.folders.games.includes('line-rider-beta-2')) state.folders.games.push('line-rider-beta-2');
         if(!state.folders.games.includes('doom')) state.folders.games.push('doom');
         state.folders.games = state.folders.games.filter(id => id !== 'flash-element-td2');
+        if(hadViceCityInGamesFolder) saveFolders();
         state.snake.highScore = loadSnakeHighScore();
         state.minesweeper.highScore = loadMinesweeperHighScore();
         state.dopeSkate.highScore = loadDopeSkateHighScore();
@@ -78,7 +82,8 @@
         state.trashSelection = new Set();
         initDesktopFs();
         const savedDock = loadDockItems();
-        state.dockItems = normalizeDockItems(savedDock == null ? getDefaultDockItems() : savedDock);
+        const shouldUpgradeDockDefaults = savedDock == null || isLegacyDefaultDockItems(savedDock);
+        state.dockItems = normalizeDockItems(shouldUpgradeDockDefaults ? getDefaultDockItems() : savedDock);
         saveDockItems();
 
         // Apply translations immediately (default is English)

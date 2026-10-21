@@ -120,6 +120,20 @@
   var touchControlsEnabled = false;
   var started = false;
   var mouseTipTimer = 0;
+  window.blissGameVolume = 1;
+  window.setBlissGameVolume = function (value) {
+    var volume = Number(value);
+    window.blissGameVolume = Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 1;
+    var audio = window.Module && window.Module.SDL2 && window.Module.SDL2.audio;
+    if (audio && audio.masterGain) {
+      audio.masterGain.gain.setTargetAtTime(window.blissGameVolume, audio.masterGain.context.currentTime, 0.02);
+    }
+  };
+  window.addEventListener('message', function (event) {
+    if (event.source !== window.parent || event.origin !== window.location.origin) return;
+    if (!event.data || event.data.type !== 'bliss-game-audio') return;
+    window.setBlissGameVolume(event.data.volume);
+  });
 
   function showMouseTip(message) {
     window.clearTimeout(mouseTipTimer);

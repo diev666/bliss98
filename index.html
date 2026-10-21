@@ -1705,14 +1705,26 @@
         position:fixed;
         pointer-events:none;
         z-index:12000;
-        border:1px dotted var(--selection-border);
+        border:2px dotted #111;
         background:transparent;
         box-sizing:border-box;
         will-change:left,top,width,height,transform,opacity;
-        opacity:0.95;
+        opacity:1;
+        image-rendering:pixelated;
       }
-      body.dark .app-open-selection{
-        border-color:#9ec5ff;
+      .app-open-selection.trail{
+        border-width:1px;
+      }
+      .app-window-transition-ghost{
+        position:fixed;
+        pointer-events:none;
+        z-index:12000;
+        box-sizing:border-box;
+        border:2px dotted #111;
+        background:transparent;
+        transform-origin:top left;
+        will-change:transform,clip-path,opacity;
+        image-rendering:pixelated;
       }
 
       .blissos-apple-menu{
@@ -6471,11 +6483,13 @@
         min-height:420px;
         overflow:hidden;
       }
-      #win_games .content[data-games-view="doom"]{ display:flex; flex-direction:column; min-height:420px; overflow:hidden; }
+      #win_games .content:is([data-games-view="doom"], [data-games-view="vice-city"], [data-games-view="8-ball-pool"], [data-games-view="age-of-war"], [data-games-view="age-of-war-2"], [data-games-view="american-racing"], [data-games-view="animator-vs-animation-game"], [data-games-view="apple-shooter"], [data-games-view="bad-piggies"], [data-games-view="ducklife5"], [data-games-view="ed-edd-n-eddys-candy-machine-deluxe"], [data-games-view="papas-burgeria"], [data-games-view="papas-cheeseria"], [data-games-view="papas-sushiria"], [data-games-view="papas-pastaria"]){ display:flex; flex-direction:column; min-height:420px; overflow:hidden; }
       .doom-shell{ display:flex; flex:1; min-height:0; flex-direction:column; gap:8px; }
       .doom-open-link{ margin-left:auto; text-decoration:none; }
       .doom-touch-controls[aria-pressed="true"]{ box-shadow:inset 0 0 0 2px rgba(255,255,255,0.45); }
       .doom-player-frame{ display:block; flex:1; width:100%; min-height:360px; border:0; border-radius:4px; background:#000; }
+      :is(.eight-ball-pool-shell, .age-of-war-shell, .age-of-war-2-shell, .american-racing-shell, .animator-vs-animation-game-shell, .apple-shooter-shell, .bad-piggies-shell, .ducklife5-shell, .ed-edd-n-eddys-candy-machine-deluxe-shell, .papas-burgeria-shell, .papas-cheeseria-shell, .papas-sushiria-shell, .papas-pastaria-shell) .doom-player-frame{ min-height:0; }
+      .vice-city-player-frame{ min-height:0; height:100%; }
       .doom-game-icon{ display:flex; align-items:center; justify-content:center; width:64px; height:64px; box-sizing:border-box; border:3px solid #f2c26b; background:linear-gradient(145deg,#601b12,#170909); color:#f2c26b; font:bold 48px/1 Georgia,serif; text-shadow:2px 2px #210806; }
       .sewer-skater-shell{
         display:flex;
@@ -6488,15 +6502,34 @@
         display:flex;
         align-items:center;
         gap:12px;
+        flex-wrap:wrap;
       }
       .sewer-skater-toolbar h2{ margin:0; font-size:16px; }
       .flash-audio-button{
         width:32px;
         height:28px;
-        margin-left:auto;
+        margin-left:0;
         padding:0;
         justify-content:center;
       }
+      .game-audio-controls{
+        display:flex;
+        align-items:center;
+        gap:5px;
+        margin-left:auto;
+        flex:0 0 auto;
+      }
+      .game-audio-controls .flash-audio-button{ flex:0 0 32px; }
+      .game-audio-slider-wrap{ display:flex; align-items:center; }
+      .game-audio-slider-wrap input{
+        width:86px;
+        height:18px;
+        margin:0;
+        accent-color:var(--button-face);
+        cursor:pointer;
+      }
+      .game-audio-value{ min-width:30px; text-align:right; }
+      .doom-open-link{ margin-left:0; }
       .flash-audio-button svg{
         width:17px;
         height:17px;
@@ -6574,6 +6607,13 @@
       }
       body[data-theme="blissos"] .rubberband {
         box-shadow: none; /* Reset Win98 specific shadow */
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] .rubberband{
+        border:1px solid rgba(150,205,255,0.95);
+        border-radius:9px;
+        box-sizing:border-box;
+        box-shadow:0 0 0 1px rgba(30,92,190,0.3);
+        background:rgba(55,125,235,0.22);
       }
 
       /* While dragging/resizing/selecting, hard-disable selection everywhere */
@@ -6747,6 +6787,39 @@
         box-shadow:none;
         color:#f4f0e6;
       }
+      .games-hub-list{ display:flex; flex-direction:column; gap:14px; }
+      .games-items-group{ width:100%; }
+      .games-favorites-heading{ margin:2px 8px 8px; color:#f1d49a; font-size:14px; font-weight:700; }
+      .games-favorites-divider{ height:1px; margin:10px 8px 0; background:#9b6b38; box-shadow:0 1px rgba(255,255,255,0.12); }
+      .games-context-menu{
+        position:fixed;
+        z-index:10050;
+        min-width:210px;
+        padding:3px;
+        color:#f4f0e6;
+        background:linear-gradient(180deg, #79502b, #543619);
+        border:1px solid #bd8b4e;
+        box-shadow:2px 3px 8px rgba(0,0,0,0.42), inset 0 0 0 1px rgba(255,224,173,0.18);
+        font:13px Tahoma, Arial, sans-serif;
+      }
+      .games-context-item{
+        display:flex;
+        align-items:center;
+        width:100%;
+        min-height:25px;
+        gap:8px;
+        padding:3px 7px;
+        border:0;
+        color:inherit;
+        background:transparent;
+        text-align:left;
+        font:inherit;
+        cursor:pointer;
+      }
+      .games-context-item:hover:not(:disabled), .games-context-item:focus-visible{ color:#211609; background:#e3bd79; outline:none; }
+      .games-context-item:disabled{ opacity:.55; cursor:default; }
+      .games-context-check{ display:inline-block; width:16px; text-align:center; }
+      .games-context-separator{ height:1px; margin:3px 2px; background:#bd8b4e; box-shadow:0 1px rgba(255,228,182,0.12); }
       .games-tabs{
         display:flex;
         gap:8px;
@@ -12430,6 +12503,6 @@
         });
       })();
     </script>
-    <script defer src="./assets/js/bliss98.bundle.js?v=20260930-multiselect-trash"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20261021-window-maximize-fix"></script>
   </body>
 </html>

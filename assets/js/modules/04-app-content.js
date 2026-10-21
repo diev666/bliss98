@@ -745,6 +745,7 @@ Eu sou o buffalo branco extinto`
                 <div class="skate-topbar">
                   <button class="skate-btn ghost" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 class="skate-title" data-i18n="games.dopeSkate">Dope Skate</h2>
+                  ${gameAudioControlsHtml()}
                   <div class="skate-topbar-actions">
                     <button class="skate-btn subtle" type="button" data-skate-action="menu" data-i18n="skate.action.menu">Menu</button>
                   </div>
@@ -960,6 +961,7 @@ Eu sou o buffalo branco extinto`
                   <div class="snake-header">
                     <div class="snake-topbar">
                       <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                      ${gameAudioControlsHtml()}
                     </div>
                     <h2 class="snake-title">${t('games.snake')}</h2>
                   </div>
@@ -999,6 +1001,7 @@ Eu sou o buffalo branco extinto`
                       <p class="tiny mine-tagline" data-i18n="minesweeper.tagline">“Watch your step, one wrong move could be your last.”</p>
                     </div>
                     <button class="btn bevel" type="button" data-mine-action="restart" data-i18n="minesweeper.action.restart">Restart</button>
+                    ${gameAudioControlsHtml()}
                   </div>
                   <div class="mine-controls">
                     <label class="mine-control">
@@ -1053,9 +1056,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="${titleKey}">${title}</h2>
-                  <button class="btn bevel flash-audio-button" type="button" data-games-action="flash-audio" data-i18n-aria="games.flash.mute" aria-pressed="false" data-i18n-title="games.flash.mute" title="Mute game audio">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M15 9a5 5 0 0 1 0 6m2-9a9 9 0 0 1 0 12"/></svg>
-                  </button>
+                  ${gameAudioControlsHtml()}
                 </div>
                 <div class="sewer-skater-stage" ${playerAttribute} aria-live="polite"></div>
               </div>
@@ -1068,9 +1069,160 @@ Eu sou o buffalo branco extinto`
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.doom">DOOM</h2>
                   <button class="btn bevel doom-touch-controls" type="button" data-doom-touch-controls aria-pressed="false" data-i18n="games.doom.touchControls">Touch Controls</button>
-                  <a class="btn bevel doom-open-link" href="./assets/games/doom/player/README.md" target="_blank" rel="noopener noreferrer" data-i18n="games.doom.credits">Credits &amp; licenses</a>
+                  ${gameAudioControlsHtml()}
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="doom" data-i18n="games.doom.credits">Credits &amp; licenses</button>
                 </div>
-                <iframe class="doom-player-frame" src="./assets/games/doom/player/index.html" title="DOOM powered by Freedoom" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+                <iframe class="doom-player-frame" data-game-audio-frame src="./assets/games/doom/player/index.html" title="DOOM powered by Freedoom" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'vice-city'){
+            return `
+              <div class="doom-shell vice-city-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.viceCity">GTA Vice City</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="vice-city" data-i18n="games.viceCity.credits">Credits &amp; licenses</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://vc.quenq.com/" title="GTA Vice City hosted by Quenq" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === '8-ball-pool'){
+            return `
+              <div class="doom-shell eight-ball-pool-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.eightBallPool">8 Ball Pool</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="8-ball-pool" data-i18n="games.eightBallPool.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/8-ball-pool/" title="8 Ball Pool hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'age-of-war'){
+            return `
+              <div class="doom-shell age-of-war-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.ageOfWar">Age of War</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="age-of-war" data-i18n="games.ageOfWar.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/age-of-war/" title="Age of War hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'age-of-war-2'){
+            return `
+              <div class="doom-shell quenq-arcade-shell age-of-war-2-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.ageOfWar2">Age of War 2</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="age-of-war-2" data-i18n="games.ageOfWar2.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/ageofwar2/" title="Age of War 2 hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'american-racing'){
+            return `
+              <div class="doom-shell quenq-arcade-shell american-racing-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.americanRacing">American Racing</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="american-racing" data-i18n="games.americanRacing.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/american-racing/" title="American Racing hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'animator-vs-animation-game'){
+            return `
+              <div class="doom-shell quenq-arcade-shell animator-vs-animation-game-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.animatorVsAnimationGame">Animator vs Animation Game</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="animator-vs-animation-game" data-i18n="games.animatorVsAnimationGame.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/animator-vs-animation-game/" title="Animator vs Animation Game hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'apple-shooter'){
+            return `
+              <div class="doom-shell quenq-arcade-shell apple-shooter-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.appleShooter">Apple Shooter</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="apple-shooter" data-i18n="games.appleShooter.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/apple-shooter/" title="Apple Shooter hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'bad-piggies'){
+            return `
+              <div class="doom-shell quenq-arcade-shell bad-piggies-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.badPiggies">Bad Piggies</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="bad-piggies" data-i18n="games.badPiggies.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/bad-piggies/" title="Bad Piggies hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'ducklife5'){
+            return `
+              <div class="doom-shell quenq-arcade-shell ducklife5-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.duckLife5">DuckLife 5</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="ducklife5" data-i18n="games.duckLife5.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/ducklife5/" title="DuckLife 5 hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'ed-edd-n-eddys-candy-machine-deluxe'){
+            return `
+              <div class="doom-shell quenq-arcade-shell ed-edd-n-eddys-candy-machine-deluxe-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.edEddNEddysCandyMachineDeluxe">Ed, Edd n Eddy’s Candy Machine Deluxe</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="ed-edd-n-eddys-candy-machine-deluxe" data-i18n="games.edEddNEddysCandyMachineDeluxe.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/ed-edd-n-eddys-candy-machine-deluxe/" title="Ed, Edd n Eddy’s Candy Machine Deluxe hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'papas-burgeria'){
+            return `
+              <div class="doom-shell quenq-arcade-shell papas-burgeria-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.papasBurgeria">Papa’s Burgeria</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="papas-burgeria" data-i18n="games.papasBurgeria.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/papas-burgeria/" title="Papa’s Burgeria hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          const quenqPapaGames = {
+            'papas-cheeseria': { titleKey:'games.papasCheeseria', creditsKey:'games.papasCheeseria.credits', title:'Papa’s Cheeseria' },
+            'papas-sushiria': { titleKey:'games.papasSushiria', creditsKey:'games.papasSushiria.credits', title:'Papa’s Sushiria' },
+            'papas-pastaria': { titleKey:'games.papasPastaria', creditsKey:'games.papasPastaria.credits', title:'Papa’s Pastaria' },
+          };
+          if(quenqPapaGames[state.games.view]){
+            const game = quenqPapaGames[state.games.view];
+            return `
+              <div class="doom-shell quenq-arcade-shell ${state.games.view}-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="${game.titleKey}">${game.title}</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="${state.games.view}" data-i18n="${game.creditsKey}">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/${state.games.view}/" title="${game.title} hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
             `;
           }
@@ -1102,7 +1254,10 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
-          const items = (state.folders.games || []).map(id => {
+          const allGameIds = sortGameIdsAlphabetically(getGamesHubIds());
+          const favoriteGameIds = sortGameIdsAlphabetically(gameFavorites.filter(id => allGameIds.includes(id)));
+          const regularGameIds = allGameIds.filter(id => !favoriteGameIds.includes(id));
+          const renderGameItems = ids => ids.map(id => {
             if(id === 'snake'){
               return `
                 <button class="games-item games-card" type="button" data-game-id="snake">
@@ -1120,6 +1275,132 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'doom', iconFile:'./assets/games/doom/doom.png' }, t('games.doom'), 64)}
                   </div>
                   <span data-i18n="games.doom">DOOM</span>
+                </button>
+              `;
+            }
+            if(id === 'vice-city'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="vice-city">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'vice-city', iconFile:'./assets/games/vc/vc.png' }, t('games.viceCity'), 64)}
+                  </div>
+                  <span data-i18n="games.viceCity">GTA Vice City</span>
+                </button>
+              `;
+            }
+            if(id === '8-ball-pool'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="8-ball-pool">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'8-ball-pool', iconFile:'./assets/games/8ballpool.jpg' }, t('games.eightBallPool'), 64)}
+                  </div>
+                  <span data-i18n="games.eightBallPool">8 Ball Pool</span>
+                </button>
+              `;
+            }
+            if(id === 'age-of-war'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="age-of-war">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'age-of-war', iconFile:'./assets/games/Age of War.webp' }, t('games.ageOfWar'), 64)}
+                  </div>
+                  <span data-i18n="games.ageOfWar">Age of War</span>
+                </button>
+              `;
+            }
+            if(id === 'age-of-war-2'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="age-of-war-2">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'age-of-war-2', iconFile:'./assets/games/Age of War 2.png' }, t('games.ageOfWar2'), 64)}
+                  </div>
+                  <span data-i18n="games.ageOfWar2">Age of War 2</span>
+                </button>
+              `;
+            }
+            if(id === 'american-racing'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="american-racing">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'american-racing', iconFile:'./assets/games/american racing.jpg' }, t('games.americanRacing'), 64)}
+                  </div>
+                  <span data-i18n="games.americanRacing">American Racing</span>
+                </button>
+              `;
+            }
+            if(id === 'animator-vs-animation-game'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="animator-vs-animation-game">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'animator-vs-animation-game', iconFile:'./assets/games/animator vs animation.png' }, t('games.animatorVsAnimationGame'), 64)}
+                  </div>
+                  <span data-i18n="games.animatorVsAnimationGame">Animator vs Animation Game</span>
+                </button>
+              `;
+            }
+            if(id === 'apple-shooter'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="apple-shooter">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'apple-shooter', iconFile:'./assets/games/Apple shooter.png' }, t('games.appleShooter'), 64)}
+                  </div>
+                  <span data-i18n="games.appleShooter">Apple Shooter</span>
+                </button>
+              `;
+            }
+            if(id === 'bad-piggies'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="bad-piggies">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'bad-piggies', iconFile:'./assets/games/bad piggies.webp' }, t('games.badPiggies'), 64)}
+                  </div>
+                  <span data-i18n="games.badPiggies">Bad Piggies</span>
+                </button>
+              `;
+            }
+            if(id === 'ducklife5'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="ducklife5">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'ducklife5', iconFile:'./assets/games/DuckLife 5.png' }, t('games.duckLife5'), 64)}
+                  </div>
+                  <span data-i18n="games.duckLife5">DuckLife 5</span>
+                </button>
+              `;
+            }
+            if(id === 'ed-edd-n-eddys-candy-machine-deluxe'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="ed-edd-n-eddys-candy-machine-deluxe">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'ed-edd-n-eddys-candy-machine-deluxe', iconFile:'./assets/games/Ed, Edd n Eddy’s Candy Machine Deluxe.webp' }, t('games.edEddNEddysCandyMachineDeluxe'), 64)}
+                  </div>
+                  <span data-i18n="games.edEddNEddysCandyMachineDeluxe">Ed, Edd n Eddy’s Candy Machine Deluxe</span>
+                </button>
+              `;
+            }
+            if(id === 'papas-burgeria'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="papas-burgeria">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'papas-burgeria', iconFile:'./assets/games/Papa’s Burgeria.png' }, t('games.papasBurgeria'), 64)}
+                  </div>
+                  <span data-i18n="games.papasBurgeria">Papa’s Burgeria</span>
+                </button>
+              `;
+            }
+            const papaGameCards = {
+              'papas-cheeseria': { titleKey:'games.papasCheeseria', title:'Papa’s Cheeseria', iconFile:'./assets/games/Papa’s Cheeseria.jpeg' },
+              'papas-sushiria': { titleKey:'games.papasSushiria', title:'Papa’s Sushiria', iconFile:'./assets/games/Papa’s Sushiria.jpg' },
+              'papas-pastaria': { titleKey:'games.papasPastaria', title:'Papa’s Pastaria', iconFile:'./assets/games/Papa’s Pastaria.jpg' },
+            };
+            if(papaGameCards[id]){
+              const game = papaGameCards[id];
+              return `
+                <button class="games-item games-card" type="button" data-game-id="${id}">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id, iconFile:game.iconFile }, t(game.titleKey), 64)}
+                  </div>
+                  <span data-i18n="${game.titleKey}">${game.title}</span>
                 </button>
               `;
             }
@@ -1214,6 +1495,16 @@ Eu sou o buffalo branco extinto`
               </button>
             `;
           }).join('');
+          const favorites = favoriteGameIds.length ? `
+            <section class="games-favorites-section" aria-label="${t('games.context.favoritesHeading')}">
+              <h3 class="games-favorites-heading" data-i18n="games.context.favoritesHeading">${t('games.context.favoritesHeading')}</h3>
+              <div class="games-items-group ${state.games.layout === 'list' ? 'games-list' : 'games-grid'}${state.games.bigIcons && state.games.layout === 'grid' ? ' games-big' : ''}" data-game-items-group>
+                ${renderGameItems(favoriteGameIds)}
+              </div>
+              <div class="games-favorites-divider" aria-hidden="true"></div>
+            </section>
+          ` : '';
+          const regularItems = renderGameItems(regularGameIds);
 
           return `
             <div class="games-shell">
@@ -1223,8 +1514,9 @@ Eu sou o buffalo branco extinto`
                     <button class="games-tab${state.games.view === 'list' ? ' active' : ''}" type="button" data-games-tab="hub" data-i18n="games.tab.hub">Games</button>
                     <button class="games-tab${state.games.view === 'leaderboard' ? ' active' : ''}" type="button" data-games-tab="leaderboard" data-i18n="games.tab.leaderboard">Leaderboard</button>
                   </div>
-                  <div id="gamesList" class="${state.games.layout === 'list' ? 'games-list' : `games-grid${state.games.bigIcons ? ' games-big' : ''}`}">
-                    ${items || `<div class="tiny" data-i18n="games.empty">${t('games.empty')}</div>`}
+                  <div id="gamesList" class="games-hub-list">
+                    ${favorites}
+                    ${regularItems ? `<div class="games-items-group ${state.games.layout === 'list' ? 'games-list' : 'games-grid'}${state.games.bigIcons && state.games.layout === 'grid' ? ' games-big' : ''}" data-game-items-group>${regularItems}</div>` : (!favorites ? `<div class="tiny" data-i18n="games.empty">${t('games.empty')}</div>` : '')}
                   </div>
                 </div>
               </div>

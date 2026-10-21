@@ -438,7 +438,8 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
       ];
 
       const VIRTUAL_ICONS = [
-        { id:'snake', titleKey:'games.snake', iconFile:'./assets/icons/snake.png' }
+        { id:'snake', titleKey:'games.snake', iconFile:'./assets/icons/snake.png' },
+        { id:'vice-city', titleKey:'games.viceCity', iconFile:'./assets/games/vc/vc.png' }
       ];
 
       function initSfx(){
@@ -706,13 +707,15 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
           const existing = getFsItem(id);
           const idx = APPS.concat(VIRTUAL_ICONS).findIndex(it => it.id === id);
           const def = layout[id] || legacyDefaultIconPos(Math.max(0, idx));
-          const hasSaved = !!iconPosCache[id];
+          const forceViceCityDefault = id === 'vice-city' && state.viceCityDefaultPlacementPending;
+          if(forceViceCityDefault) delete iconPosCache[id];
+          const hasSaved = !forceViceCityDefault && !!iconPosCache[id];
           const saved = hasSaved ? iconPosCache[id] : def;
           const base = existing || { id, type, appId: id };
           const parentId = base.parentId || null;
           const needsPos = parentId == null;
-          const x = needsPos ? (hasSaved ? saved.x : (useThemeDefaultPositions ? saved.x : (Number.isFinite(base.x) ? base.x : saved.x))) : base.x;
-          const y = needsPos ? (hasSaved ? saved.y : (useThemeDefaultPositions ? saved.y : (Number.isFinite(base.y) ? base.y : saved.y))) : base.y;
+          const x = needsPos ? (forceViceCityDefault ? def.x : (hasSaved ? saved.x : (useThemeDefaultPositions ? saved.x : (Number.isFinite(base.x) ? base.x : saved.x)))) : base.x;
+          const y = needsPos ? (forceViceCityDefault ? def.y : (hasSaved ? saved.y : (useThemeDefaultPositions ? saved.y : (Number.isFinite(base.y) ? base.y : saved.y)))) : base.y;
           const next = {
             ...base,
             id,
@@ -737,6 +740,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
 
         if(iconPosDirty) saveIconPositions(iconPosCache);
         saveDesktopFs();
+        state.viceCityDefaultPlacementPending = false;
       }
 
       function legacyDefaultIconPos(index){
@@ -1058,6 +1062,9 @@ function getThemedIconHtml(item, label, size=32){
 
 function getFsIconHtml(item, label, size = 32){
   if(!item) return iconSVG('file', state.settings.theme);
+  if(item.type === 'game-shortcut'){
+    return getThemedIconHtml({ icon:'game', id:item.id, iconFile:item.iconFile || './assets/icons/Games.png' }, label, size);
+  }
   if(item.type === 'app'){
     const app = getAppById(item.appId || item.id);
     return app ? getThemedIconHtml(app, label, size) : iconSVG('app', state.settings.theme);
@@ -1154,11 +1161,15 @@ function getDefaultIconLayout(){
   const height = area.height > (ICON_SIZE.h + 6) ? area.height : fallbackHeight;
   const metrics = getGridMetricsForSize(width, height);
   const isMobile = width <= 520;
-  const order = ['seeker','settings','games','about','videos','mediaplayer','diev','art','contact','poetry','music','clothes'];
+  const order = ['seeker','settings','games','vice-city','about','videos','mediaplayer','diev','art','contact','poetry','music','clothes'];
   const available = APPS.filter(app => app.showOnDesktop !== false && app.id !== 'trash' && !state.trash.has(app.id) && !isInFolder(app.id));
-  const availableIds = new Set(available.map(app => app.id));
+  const virtualAvailable = VIRTUAL_ICONS.filter(icon =>
+    icon.id !== 'trash' && !state.trash.has(icon.id) && !isInFolder(icon.id)
+  ).map(icon => icon.id);
+  const availableIds = new Set(available.map(app => app.id).concat(virtualAvailable));
+  const allAvailableIds = available.map(app => app.id).concat(virtualAvailable);
   const ordered = order.filter(id => availableIds.has(id)).concat(
-    available.map(app => app.id).filter(id => !order.includes(id))
+    allAvailableIds.filter(id => !order.includes(id))
   );
 
   const layout = {};
@@ -1167,42 +1178,24 @@ function getDefaultIconLayout(){
 
   const alignRight = !isMobile && shouldAlignDesktopIconsRight();
 
-  if(isMobile){
-    const cols = Math.max(1, Math.floor((width - 6) / metrics.stepX));
-    const rows = Math.max(1, Math.floor((height - 6) / metrics.stepY));
-    const trashCell = { col: cols - 1, row: rows - 1 };
-    let i = 0;
-    ordered.forEach(id => {
-      let col = i % cols;
-      let row = Math.floor(i / cols);
-      if(col === trashCell.col && row === trashCell.row){
-        i += 1;
-        col = i % cols;
-        row = Math.floor(i / cols);
-      }
-      const x = clamp(col * metrics.stepX, 0, maxX);
-      const y = clamp(row * metrics.stepY, 0, maxY);
-      layout[id] = snapToGridClamped(x, y, metrics);
-      i += 1;
-    });
-  } else {
-    let col = 0;
-    let row = 0;
-    const maxRows = Math.max(1, Math.floor((height - 6) / metrics.stepY));
-    const usableRows = alignRight ? Math.min(6, maxRows) : maxRows;
-    const cols = Math.max(1, Math.floor((width - 6) / metrics.stepX));
-    ordered.forEach(id => {
-      const actualCol = alignRight ? Math.max(0, (cols - 1) - col) : col;
-      const x = clamp(actualCol * metrics.stepX, 0, maxX);
-      const y = clamp(row * metrics.stepY, 0, maxY);
-      layout[id] = snapToGridClamped(x, y, metrics);
-      row += 1;
-      if(row >= usableRows){
-        row = 0;
-        col += 1;
-      }
-    });
-  }
+  const rows = Math.max(1, Math.floor((height - 6) / metrics.stepY));
+  const cols = Math.max(1, Math.floor((width - 6) / metrics.stepX));
+  const trashCell = isMobile ? { col: cols - 1, row: rows - 1 } : null;
+  let cellIndex = 0;
+  ordered.forEach(id => {
+    let col = Math.floor(cellIndex / rows);
+    let row = cellIndex % rows;
+    if(trashCell && col === trashCell.col && row === trashCell.row){
+      cellIndex += 1;
+      col = Math.floor(cellIndex / rows);
+      row = cellIndex % rows;
+    }
+    const actualCol = alignRight ? Math.max(0, (cols - 1) - col) : col;
+    const x = clamp(actualCol * metrics.stepX, 0, maxX);
+    const y = clamp(row * metrics.stepY, 0, maxY);
+    layout[id] = snapToGridClamped(x, y, metrics);
+    cellIndex += 1;
+  });
 
   const trashX = snapToGridClamped(maxX, maxY, metrics).x;
   const trashY = snapToGridClamped(maxX, maxY, metrics).y;
@@ -1230,6 +1223,7 @@ function moveIconsToTrash(ids){
   });
   state.trashSelection = new Set();
   saveTrash();
+  saveDesktopFs();
   renderIcons();
   refreshOpenFolderWindows();
   renderTrashWindow();
@@ -1248,6 +1242,7 @@ function restoreFromTrash(ids){
   });
   state.trashSelection = new Set();
   saveTrash();
+  saveDesktopFs();
   renderIcons();
   refreshOpenFolderWindows();
   renderTrashWindow();
@@ -1370,6 +1365,43 @@ function renderTrashWindow(){
   if(!content) return;
   content.innerHTML = CONTENT.trash();
   applyI18nTo(win);
+  content.querySelectorAll('[data-trash-id]').forEach(itemEl => {
+    const id = itemEl.dataset.trashId;
+    itemEl.classList.toggle('selected', state.trashSelection.has(id));
+    itemEl.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if(e.ctrlKey || e.metaKey){
+        if(state.trashSelection.has(id)) state.trashSelection.delete(id);
+        else state.trashSelection.add(id);
+      } else {
+        state.trashSelection = new Set([id]);
+      }
+      renderTrashWindow();
+    });
+    itemEl.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if(!state.trashSelection.has(id)) state.trashSelection = new Set([id]);
+      renderTrashWindow();
+      openCtxMenu(e.clientX, e.clientY, 'trash', null, { selectedIds:Array.from(state.trashSelection) });
+    });
+  });
+  installRubberbandSelection(content, '[data-trash-id]',
+    ()=>Array.from(state.trashSelection),
+    ids=>{
+      state.trashSelection = new Set(ids.filter(id=>state.trash.has(id)));
+      content.querySelectorAll('[data-trash-id]').forEach(el=>el.classList.toggle('selected', state.trashSelection.has(el.dataset.trashId)));
+    }
+  );
+  if(content.dataset.trashContextBound !== '1'){
+    content.dataset.trashContextBound = '1';
+    content.addEventListener('contextmenu', e => {
+      if(e.target.closest('[data-trash-id]')) return;
+      e.preventDefault();
+      openCtxMenu(e.clientX, e.clientY, 'trash', null, { selectedIds:Array.from(state.trashSelection) });
+    });
+  }
   content.classList.toggle('trash-empty', state.trash.size === 0);
   const emptyBtn = win.querySelector('[data-trash-action="empty"]');
   if(emptyBtn) emptyBtn.disabled = state.trash.size === 0;

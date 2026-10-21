@@ -724,7 +724,12 @@ var ASM_CONSTS = {
    SDL2.audio.currentOutputBuffer = e["outputBuffer"];
    dynCall("vi", $2, [ $3 ]);
   };
-  SDL2.audio.scriptProcessorNode["connect"](SDL2.audioContext["destination"]);
+  if (!SDL2.audio.masterGain) {
+   SDL2.audio.masterGain = SDL2.audioContext.createGain();
+   SDL2.audio.masterGain.connect(SDL2.audioContext.destination);
+  }
+  SDL2.audio.masterGain.gain.value = typeof window.blissGameVolume === "number" ? window.blissGameVolume : 1;
+  SDL2.audio.scriptProcessorNode["connect"](SDL2.audio.masterGain);
  },
  451341: ($0, $1) => {
   var SDL2 = Module["SDL2"];

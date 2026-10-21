@@ -1,4 +1,126 @@
 let sewerSkaterRufflePromise = null;
+const GAME_FAVORITES_KEY = 'bliss98_games_favorites';
+function loadGameFavorites(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(GAME_FAVORITES_KEY) || '[]');
+    return Array.isArray(raw) ? Array.from(new Set(raw.filter(id => typeof id === 'string'))) : [];
+  } catch { return []; }
+}
+let gameFavorites = loadGameFavorites();
+
+function saveGameFavorites(){
+  try{ localStorage.setItem(GAME_FAVORITES_KEY, JSON.stringify(gameFavorites)); } catch {}
+}
+
+function isGameFavorite(id){ return gameFavorites.includes(id); }
+
+function toggleGameFavorite(id){
+  if(!id) return;
+  gameFavorites = isGameFavorite(id) ? gameFavorites.filter(item => item !== id) : [...gameFavorites, id];
+  saveGameFavorites();
+}
+
+const GAME_AUDIO_KEY = 'bliss98_game_audio_settings';
+function loadGameAudioSettings(){
+  try{
+    const raw = localStorage.getItem(GAME_AUDIO_KEY);
+    if(!raw) return { volume:0.8, muted:false };
+    const parsed = JSON.parse(raw);
+    return {
+      volume: Number.isFinite(parsed.volume) ? clamp(parsed.volume, 0, 1) : 0.8,
+      muted: !!parsed.muted,
+    };
+  } catch {
+    return { volume:0.8, muted:false };
+  }
+}
+let gameAudioSettings = loadGameAudioSettings();
+
+function getEffectiveGameVolume(){
+  return gameAudioSettings.muted ? 0 : gameAudioSettings.volume;
+}
+
+function saveGameAudioSettings(){
+  try{ localStorage.setItem(GAME_AUDIO_KEY, JSON.stringify(gameAudioSettings)); } catch {}
+}
+
+function gameAudioControlsHtml(){
+  return `
+    <div class="game-audio-controls" role="group" aria-label="${t('games.audio')}" data-game-audio-controls>
+      <button class="btn bevel flash-audio-button" type="button" data-game-audio-mute aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M15 9a5 5 0 0 1 0 6m2-9a9 9 0 0 1 0 12"/></svg>
+      </button>
+      <label class="game-audio-slider-wrap">
+        <input type="range" min="0" max="100" step="1" data-game-audio-slider aria-label="${t('games.volume')}" title="${t('games.volume')}" />
+      </label>
+      <span class="tiny game-audio-value" data-game-audio-value>80%</span>
+    </div>
+  `;
+}
+
+function updateGameAudioControls(root=document){
+  if(!root || !root.querySelectorAll) return;
+  const muted = gameAudioSettings.muted || gameAudioSettings.volume <= 0;
+  root.querySelectorAll('[data-game-audio-mute]').forEach(button=>setFlashAudioButtonState(button, muted));
+  const value = Math.round(gameAudioSettings.volume * 100);
+  root.querySelectorAll('[data-game-audio-slider]').forEach(slider=>{ slider.value = String(value); });
+  root.querySelectorAll('[data-game-audio-value]').forEach(label=>{ label.textContent = `${value}%`; });
+}
+
+function sendGameAudioToFrame(frame){
+  if(!frame || !frame.contentWindow) return;
+  const volume = getEffectiveGameVolume();
+  try{
+    const frameOrigin = new URL(frame.src, document.baseURI).origin;
+    frame.contentWindow.postMessage({ type:'bliss-game-audio', volume }, frameOrigin);
+    if(frameOrigin === window.location.origin && typeof frame.contentWindow.setBlissGameVolume === 'function'){
+      frame.contentWindow.setBlissGameVolume(volume);
+    }
+  } catch {}
+}
+
+function applyGameAudioToWindow(root){
+  if(!root) return;
+  const volume = getEffectiveGameVolume();
+  if(typeof root._gameAudioApply === 'function') root._gameAudioApply(volume);
+  root.querySelectorAll('[data-game-audio-frame]').forEach(frame=>sendGameAudioToFrame(frame));
+}
+
+function bindGameAudioControls(root){
+  if(!root) return;
+  if(root.dataset.gameAudioBound !== '1'){
+    root.dataset.gameAudioBound = '1';
+    root.addEventListener('click', e=>{
+      const button = e.target.closest && e.target.closest('[data-game-audio-mute]');
+      if(!button || !root.contains(button)) return;
+      if(gameAudioSettings.muted || gameAudioSettings.volume <= 0){
+        gameAudioSettings.volume = 0.8;
+        gameAudioSettings.muted = false;
+      } else {
+        gameAudioSettings.muted = true;
+      }
+      saveGameAudioSettings();
+      updateGameAudioControls(root);
+      applyGameAudioToWindow(root);
+    });
+    root.addEventListener('input', e=>{
+      if(!e.target.matches || !e.target.matches('[data-game-audio-slider]')) return;
+      gameAudioSettings.volume = clamp((Number(e.target.value) || 0) / 100, 0, 1);
+      gameAudioSettings.muted = gameAudioSettings.volume <= 0;
+      saveGameAudioSettings();
+      updateGameAudioControls(document);
+      applyGameAudioToWindow(root);
+    });
+  }
+  root.querySelectorAll('[data-game-audio-frame]').forEach(frame=>{
+    if(frame.dataset.gameAudioLoadBound === '1') return;
+    frame.dataset.gameAudioLoadBound = '1';
+    frame.addEventListener('load', ()=>sendGameAudioToFrame(frame));
+  });
+  updateGameAudioControls(root);
+  applyGameAudioToWindow(root);
+}
+
 function setFlashAudioButtonState(button, muted){
   if(!button) return;
   const label = t(muted ? 'games.flash.unmute' : 'games.flash.mute');
@@ -72,23 +194,9 @@ function initRuffleGameInWindow(win, playerSelector, swfPath, gameName, loadOpti
     player.setAttribute('aria-label', gameName);
     container.replaceChildren(player);
     const playerApi = player.ruffle();
-    const audioButton = win.querySelector('[data-games-action="flash-audio"]');
-    if(audioButton){
-      audioButton.addEventListener('click', ()=>{
-        const muted = audioButton.dataset.muted === 'true';
-        if(muted){
-          const restoreVolume = Number(audioButton.dataset.restoreVolume) || 1;
-          playerApi.volume = restoreVolume;
-          setFlashAudioButtonState(audioButton, false);
-        } else {
-          const currentVolume = Number(playerApi.volume);
-          audioButton.dataset.restoreVolume = String(currentVolume > 0 ? currentVolume : 1);
-          playerApi.volume = 0;
-          setFlashAudioButtonState(audioButton, true);
-        }
-      });
-      setFlashAudioButtonState(audioButton, Number(playerApi.volume) === 0);
-    }
+    win._gameAudioApply = volume=>{ playerApi.volume = volume; };
+    playerApi.volume = getEffectiveGameVolume();
+    updateGameAudioControls(win);
     return playerApi.load({
       url: new URL(swfPath, document.baseURI).href,
       ...loadOptions
@@ -150,9 +258,121 @@ function initLineRiderBeta2InWindow(win){
   );
 }
 
+let activeGamesContextMenu = null;
+let activeGamesContextCleanup = null;
+
+function closeGamesContextMenu(){
+  if(activeGamesContextCleanup){ activeGamesContextCleanup(); activeGamesContextCleanup = null; }
+  if(activeGamesContextMenu){ activeGamesContextMenu.remove(); activeGamesContextMenu = null; }
+}
+
+function isGameOnDesktop(gameId){
+  const shortcut = getFsItem(`game-shortcut-${gameId}`);
+  if(shortcut && shortcut.parentId == null && !state.trash.has(shortcut.id)) return true;
+  const item = getFsItem(gameId);
+  return !!item && item.parentId == null && !state.trash.has(item.id) && (item.type === 'app' || item.type === 'virtual');
+}
+
+function addGameToDesktop(gameId){
+  if(!gameId || isGameOnDesktop(gameId)) return;
+  const shortcutId = `game-shortcut-${gameId}`;
+  if(state.trash.has(shortcutId)){
+    restoreFromTrash([shortcutId]);
+    return;
+  }
+  const iconFiles = {
+    snake:'./assets/icons/snake.png', doom:'./assets/games/doom/doom.png',
+    'vice-city':'./assets/games/vc/vc.png', '8-ball-pool':'./assets/games/8ballpool.jpg',
+    'bad-piggies':'./assets/games/bad piggies.webp',
+    'apple-shooter':'./assets/games/Apple shooter.png',
+    'animator-vs-animation-game':'./assets/games/animator vs animation.png',
+    'american-racing':'./assets/games/american racing.jpg',
+    'age-of-war':'./assets/games/Age of War.webp', 'age-of-war-2':'./assets/games/Age of War 2.png',
+    'ducklife5':'./assets/games/DuckLife 5.png',
+    'ed-edd-n-eddys-candy-machine-deluxe':'./assets/games/Ed, Edd n Eddy’s Candy Machine Deluxe.webp',
+    'papas-burgeria':'./assets/games/Papa’s Burgeria.png',
+    'papas-cheeseria':'./assets/games/Papa’s Cheeseria.jpeg',
+    'papas-sushiria':'./assets/games/Papa’s Sushiria.jpg',
+    'papas-pastaria':'./assets/games/Papa’s Pastaria.jpg',
+    'dope-skate':'./assets/icons/dope-skate.png',
+    'sewer-skater':'./assets/flashgames/sewer-skater/skatesewer.jpg',
+    antbuster:'./assets/flashgames/Antbuster/Antbuster.png',
+    'bowman-2':'./assets/flashgames/Bowman 2/Bowman 2.png',
+    'alien-hominid':'./assets/flashgames/Alien Hominid/Alien Hominid.png',
+    'happy-wheels-demo':'./assets/flashgames/Happy Wheels Demo/Happy Wheels Demo.png',
+    'line-rider-beta-2':'./assets/flashgames/Line Rider Beta 2/Line Rider Beta 2.png',
+    minesweeper:'./assets/icons/minesweeper.svg',
+  };
+  const placed = getFreeIconPlacement(null, { x:0, y:0 }, null, [shortcutId]);
+  upsertFsItem({
+    id:shortcutId,
+    type:'game-shortcut',
+    gameId,
+    name:getGameNameForSort(gameId),
+    iconFile:iconFiles[gameId] || './assets/icons/Games.png',
+    parentId:null,
+    x:placed.x,
+    y:placed.y,
+  }, { save:false, syncIconPos:false });
+  saveDesktopFs();
+  renderIcons();
+}
+
+function openGamesContextMenu(win, x, y, gameId=null){
+  closeGamesContextMenu();
+  const menu = document.createElement('div');
+  menu.className = 'games-context-menu';
+  menu.setAttribute('role', 'menu');
+  const addItem = (action, label, check='', disabled=false)=>`
+    <button class="games-context-item${disabled ? ' disabled' : ''}" type="button" role="menuitem" data-games-context-action="${action}" ${disabled ? 'disabled' : ''}>
+      <span class="games-context-check" aria-hidden="true">${check}</span><span>${label}</span>
+    </button>`;
+  menu.innerHTML = [
+    addItem('refresh', t('games.context.refresh')),
+    gameId ? '<div class="games-context-separator"></div>' : '',
+    gameId ? addItem('favorite', t(isGameFavorite(gameId) ? 'games.context.removeFavorite' : 'games.context.addFavorite')) : '',
+    gameId ? addItem('desktop', t('games.context.addDesktop'), '', isGameOnDesktop(gameId)) : '',
+    '<div class="games-context-separator"></div>',
+    addItem('grid', t('games.context.grid'), state.games.layout === 'grid' ? '✓' : ''),
+  ].filter(Boolean).join('');
+  document.body.appendChild(menu);
+  activeGamesContextMenu = menu;
+  const rect = menu.getBoundingClientRect();
+  menu.style.left = `${clamp(x, 6, Math.max(6, window.innerWidth - rect.width - 6))}px`;
+  menu.style.top = `${clamp(y, 6, Math.max(6, window.innerHeight - rect.height - 6))}px`;
+  const onAction = e=>{
+    const button = e.target.closest('[data-games-context-action]');
+    if(!button || button.disabled) return;
+    const action = button.dataset.gamesContextAction;
+    closeGamesContextMenu();
+    if(action === 'refresh'){
+      if(state.games.view === 'list') renderGamesWindow();
+    } else if(action === 'favorite' && gameId){
+      toggleGameFavorite(gameId);
+      renderGamesWindow();
+    } else if(action === 'desktop' && gameId){
+      addGameToDesktop(gameId);
+    } else if(action === 'grid'){
+      state.games.layout = state.games.layout === 'grid' ? 'list' : 'grid';
+      saveGamesLayout();
+      renderGamesWindow();
+    }
+  };
+  const onOutside = e=>{ if(!menu.contains(e.target)) closeGamesContextMenu(); };
+  const onKey = e=>{ if(e.key === 'Escape') closeGamesContextMenu(); };
+  menu.addEventListener('click', onAction);
+  window.addEventListener('pointerdown', onOutside, true);
+  window.addEventListener('keydown', onKey, true);
+  activeGamesContextCleanup = ()=>{
+    window.removeEventListener('pointerdown', onOutside, true);
+    window.removeEventListener('keydown', onKey, true);
+  };
+}
+
 function renderGamesWindow(){
   const win = document.getElementById('win_games');
   if(!win) return;
+  closeGamesContextMenu();
   if(state.games.view === 'dope-skate'){
     // Dope Skate now runs as a standalone app window.
     state.games.view = 'list';
@@ -161,6 +381,9 @@ function renderGamesWindow(){
     win.addEventListener('contextmenu', (e)=>{
       e.preventDefault();
       e.stopPropagation();
+      if(state.games.view !== 'list') return;
+      const card = e.target.closest('[data-game-id]');
+      openGamesContextMenu(win, e.clientX, e.clientY, card ? card.dataset.gameId : null);
     });
     win.dataset.ctxGuard = '1';
   }
@@ -174,6 +397,12 @@ function renderGamesWindow(){
   delete content.dataset.fitMaxW;
   delete content.dataset.fitMaxH;
   applyI18nTo(win);
+  win._gameAudioApply = null;
+  bindGameAudioControls(win);
+  win.querySelector('[data-game-credits]')?.addEventListener('click', e=>{
+    e.preventDefault();
+    openGameCredits(e.currentTarget.dataset.gameCredits);
+  });
   const mobileGameView = isMobileGameMode() && (state.games.view === 'snake' || state.games.view === 'minesweeper');
   if(state.games.view === 'snake' || state.games.view === 'minesweeper'){
     enterMobileFullscreen(state.games.view, win);
@@ -188,11 +417,10 @@ function renderGamesWindow(){
     if(state.games.selectedId && !items.some(item => item.dataset.gameId === state.games.selectedId)){
       state.games.selectedId = firstId;
     }
-    const listEl = win.querySelector('#gamesList');
-    if(listEl){
+    win.querySelectorAll('[data-game-items-group]').forEach(listEl=>{
       const layout = state.games.layout === 'list' ? 'games-list' : 'games-grid';
-      listEl.className = layout + (state.games.layout === 'grid' && state.games.bigIcons ? ' games-big' : '');
-    }
+      listEl.className = `games-items-group ${layout}` + (state.games.layout === 'grid' && state.games.bigIcons ? ' games-big' : '');
+    });
 
     items.forEach(item => {
       const id = item.dataset.gameId;
@@ -245,6 +473,102 @@ function renderGamesWindow(){
         sendTouchControlsState(touchControlsButton.getAttribute('aria-pressed') === 'true');
       }, { once:true });
     }
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'vice-city'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '960';
+    content.dataset.fitMinH = state.isMobile ? '420' : '680';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === '8-ball-pool'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'age-of-war'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'age-of-war-2'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'american-racing'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'animator-vs-animation-game'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'apple-shooter'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'bad-piggies'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'ducklife5'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'ed-edd-n-eddys-candy-machine-deluxe'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'papas-burgeria'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(['papas-cheeseria', 'papas-sushiria', 'papas-pastaria'].includes(state.games.view)){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
@@ -359,6 +683,12 @@ function renderDopeSkateWindow(){
   content.dataset.fitMinH = state.isMobile ? '280' : '820';
   content.dataset.gamesView = 'dope-skate';
   applyI18nTo(win);
+  win._gameAudioApply = volume=>{
+    if(dopeSkate.audio.ctx && dopeSkate.audio.masterGain){
+      dopeSkate.audio.masterGain.gain.setTargetAtTime(volume, dopeSkate.audio.ctx.currentTime, 0.02);
+    }
+  };
+  bindGameAudioControls(win);
   const mobileGameView = isMobileGameMode();
   if(mobileGameView){
     enterMobileFullscreen('dope-skate', win);
@@ -380,9 +710,151 @@ function initDopeSkateWindow(){
   renderDopeSkateWindow();
 }
 
+function getGameNameForSort(id){
+  const titleKeys = {
+    'vice-city': 'games.viceCity',
+    '8-ball-pool': 'games.eightBallPool',
+    'age-of-war': 'games.ageOfWar',
+    'age-of-war-2': 'games.ageOfWar2',
+    'american-racing': 'games.americanRacing',
+    'animator-vs-animation-game': 'games.animatorVsAnimationGame',
+    'apple-shooter': 'games.appleShooter',
+    'bad-piggies': 'games.badPiggies',
+    ducklife5: 'games.duckLife5',
+    'ed-edd-n-eddys-candy-machine-deluxe': 'games.edEddNEddysCandyMachineDeluxe',
+    'papas-burgeria': 'games.papasBurgeria',
+    'papas-cheeseria': 'games.papasCheeseria',
+    'papas-sushiria': 'games.papasSushiria',
+    'papas-pastaria': 'games.papasPastaria',
+    snake: 'games.snake',
+    minesweeper: 'games.minesweeper',
+    doom: 'games.doom',
+    'dope-skate': 'games.dopeSkate',
+    'sewer-skater': 'games.sewerSkater',
+    antbuster: 'games.antbuster',
+    'bowman-2': 'games.bowman2',
+    'alien-hominid': 'games.alienHominid',
+    'happy-wheels-demo': 'games.happyWheelsDemo',
+    'line-rider-beta-2': 'games.lineRiderBeta2',
+  };
+  if(titleKeys[id]) return t(titleKeys[id]);
+  const app = getAppById(id);
+  return app ? t(app.titleKey) : String(id || '');
+}
+
+function sortGameIdsAlphabetically(ids){
+  const locale = state.lang === 'pt' ? 'pt-BR' : 'en';
+  return (Array.isArray(ids) ? ids : []).slice().sort((a, b)=>
+    getGameNameForSort(a).localeCompare(getGameNameForSort(b), locale, { sensitivity:'base', numeric:true })
+  );
+}
+
+function getGamesHubIds(){
+  return Array.from(new Set([...(state.folders.games || []), 'vice-city', '8-ball-pool', 'age-of-war', 'age-of-war-2', 'american-racing', 'animator-vs-animation-game', 'apple-shooter', 'bad-piggies', 'ducklife5', 'ed-edd-n-eddys-candy-machine-deluxe', 'papas-burgeria', 'papas-cheeseria', 'papas-sushiria', 'papas-pastaria']));
+}
+
+// Keep source notes beside the game IDs so future Quenq embeds can reuse this in-app credits window.
+const GAME_CREDIT_INFO = {
+  'vice-city': {
+    descriptionKey:'games.credits.viceCity',
+    sourceUrl:'https://quenq.com/apps/vice-city/',
+    sourceLabel:'Quenq Apps',
+  },
+  '8-ball-pool': {
+    descriptionKey:'games.credits.eightBallPool',
+    sourceUrl:'https://quenq.com/arcade/8-ball-pool/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'age-of-war': {
+    descriptionKey:'games.credits.ageOfWar',
+    sourceUrl:'https://quenq.com/arcade/age-of-war/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'age-of-war-2': {
+    descriptionKey:'games.credits.ageOfWar2',
+    sourceUrl:'https://quenq.com/arcade/ageofwar2/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'american-racing': {
+    descriptionKey:'games.credits.americanRacing',
+    sourceUrl:'https://quenq.com/arcade/american-racing/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'animator-vs-animation-game': {
+    descriptionKey:'games.credits.animatorVsAnimationGame',
+    sourceUrl:'https://quenq.com/arcade/animator-vs-animation-game/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'apple-shooter': {
+    descriptionKey:'games.credits.appleShooter',
+    sourceUrl:'https://quenq.com/arcade/apple-shooter/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'bad-piggies': {
+    descriptionKey:'games.credits.badPiggies',
+    sourceUrl:'https://quenq.com/arcade/bad-piggies/',
+    sourceLabel:'Quenq Arcade',
+  },
+  ducklife5: {
+    descriptionKey:'games.credits.duckLife5',
+    sourceUrl:'https://quenq.com/arcade/ducklife5/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'ed-edd-n-eddys-candy-machine-deluxe': {
+    descriptionKey:'games.credits.edEddNEddysCandyMachineDeluxe',
+    sourceUrl:'https://quenq.com/arcade/ed-edd-n-eddys-candy-machine-deluxe/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'papas-burgeria': {
+    descriptionKey:'games.credits.papasBurgeria',
+    sourceUrl:'https://quenq.com/arcade/papas-burgeria/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'papas-cheeseria': {
+    descriptionKey:'games.credits.papasCheeseria',
+    sourceUrl:'https://quenq.com/arcade/papas-cheeseria/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'papas-sushiria': {
+    descriptionKey:'games.credits.papasSushiria',
+    sourceUrl:'https://quenq.com/arcade/papas-sushiria/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'papas-pastaria': {
+    descriptionKey:'games.credits.papasPastaria',
+    sourceUrl:'https://quenq.com/arcade/papas-pastaria/',
+    sourceLabel:'Quenq Arcade',
+  },
+  doom: {
+    descriptionKey:'games.credits.doom',
+    sourceUrl:'https://github.com/Saketh-Chandra/doom-wasm-pwa',
+    sourceLabel:'doom-wasm-pwa on GitHub',
+    extraLinks:[{ url:'https://freedoom.github.io/', label:'Freedoom' }],
+  },
+};
+
+function openGameCredits(gameId){
+  const info = GAME_CREDIT_INFO[gameId];
+  const modal = document.getElementById('modal');
+  if(!info || !modal) return;
+  const titleEl = document.getElementById('modalTitle');
+  const bodyEl = document.getElementById('modalBody');
+  const actionsEl = document.getElementById('modalActions');
+  if(!titleEl || !bodyEl || !actionsEl) return;
+
+  const links = [{ url:info.sourceUrl, label:info.sourceLabel }].concat(info.extraLinks || []);
+  titleEl.textContent = `${t('games.credits.title')} — ${getGameNameForSort(gameId)}`;
+  bodyEl.innerHTML = `
+    <p style="margin:0 0 10px;">${t(info.descriptionKey)}</p>
+    <p style="margin:0;">${links.map(link => `<a href="${link.url}" target="_blank" rel="noopener noreferrer">${link.label}</a>`).join(' · ')}</p>
+  `;
+  actionsEl.innerHTML = `<button class="btn bevel" type="button" data-modal-action="close" style="font-weight:700;">${t('common.ok')}</button>`;
+  modal.classList.remove('hidden');
+  actionsEl.querySelector('button')?.focus();
+}
+
 function getFirstGameId(){
-  const items = state.folders.games || [];
-  return items[0] || null;
+  return sortGameIdsAlphabetically(getGamesHubIds())[0] || null;
 }
 
 const MOBILE_GAME_DEBUG = new URLSearchParams(window.location.search).get('mobile') === '1';
@@ -821,6 +1293,78 @@ function bindMobileOverlay(gameId, overlay){
 }
 
 function openGameFromHub(id){
+  if(id === 'vice-city'){
+    state.games.view = 'vice-city';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === '8-ball-pool'){
+    state.games.view = '8-ball-pool';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'age-of-war'){
+    state.games.view = 'age-of-war';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'age-of-war-2'){
+    state.games.view = 'age-of-war-2';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'american-racing'){
+    state.games.view = 'american-racing';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'animator-vs-animation-game'){
+    state.games.view = 'animator-vs-animation-game';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'apple-shooter'){
+    state.games.view = 'apple-shooter';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'bad-piggies'){
+    state.games.view = 'bad-piggies';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'ducklife5'){
+    state.games.view = 'ducklife5';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'ed-edd-n-eddys-candy-machine-deluxe'){
+    state.games.view = 'ed-edd-n-eddys-candy-machine-deluxe';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'papas-burgeria'){
+    state.games.view = 'papas-burgeria';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(['papas-cheeseria', 'papas-sushiria', 'papas-pastaria'].includes(id)){
+    state.games.view = id;
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
   if(id === 'doom'){
     state.games.view = 'doom';
     state.games.selectedId = id;
@@ -2705,6 +3249,7 @@ let dopeSkate = {
   data: null,
   audio: {
     ctx: null,
+    masterGain: null,
     enabled: false,
     unlocked: false,
   },
@@ -5619,6 +6164,11 @@ function dopeSkateUnlockAudio(){
     if(!dopeSkate.audio.ctx){
       dopeSkate.audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
     }
+    if(!dopeSkate.audio.masterGain){
+      dopeSkate.audio.masterGain = dopeSkate.audio.ctx.createGain();
+      dopeSkate.audio.masterGain.gain.value = getEffectiveGameVolume();
+      dopeSkate.audio.masterGain.connect(dopeSkate.audio.ctx.destination);
+    }
     dopeSkate.audio.ctx.resume();
     dopeSkate.audio.unlocked = true;
   } catch {}
@@ -5643,7 +6193,7 @@ function dopeSkatePlaySound(name){
   };
   osc.frequency.value = tones[name] || 300;
   osc.connect(gain);
-  gain.connect(ctx.destination);
+  gain.connect(dopeSkate.audio.masterGain || ctx.destination);
   const now = ctx.currentTime;
   gain.gain.exponentialRampToValueAtTime(vol * 0.25, now + 0.02);
   gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
@@ -5652,12 +6202,7 @@ function dopeSkatePlaySound(name){
 }
 
 function dopeSkateGetVolume(){
-  if(typeof mp === 'object' && mp && typeof mp.vol === 'number'){
-    return clamp(mp.vol, 0, 1);
-  }
-  const volEl = document.getElementById('mpVol');
-  const val = volEl ? parseFloat(volEl.value) : 0.6;
-  return Number.isFinite(val) ? Math.max(0, Math.min(1, val)) : 0.6;
+  return 0.6;
 }
 
 function loadClothesCache(){
@@ -6445,8 +6990,13 @@ function arrangeIcons(parentId = null, containerEl = null){
     refreshOpenFolderWindows();
     return;
   }
-  const metrics = getGridMetrics();
-  const layout = getDefaultIconLayout();
+  const desktopAreaEl = $('#desktopArea');
+  const iconGridEl = $('#iconGrid');
+  const desktopRect = desktopAreaEl ? desktopAreaEl.getBoundingClientRect() : { width:window.innerWidth, height:window.innerHeight };
+  const iconGridRect = iconGridEl ? iconGridEl.getBoundingClientRect() : null;
+  const availableWidth = iconGridRect && iconGridRect.width > 0 ? iconGridRect.width : desktopRect.width;
+  const availableHeight = iconGridRect && iconGridRect.height > 0 ? iconGridRect.height : desktopRect.height;
+  const metrics = getGridMetricsForSize(availableWidth, availableHeight);
   const iconPosCache = loadIconPositions();
   const occupied = new Map();
   const placedIds = new Set();
@@ -6457,21 +7007,24 @@ function arrangeIcons(parentId = null, containerEl = null){
     placedIds.add(id);
   };
 
-  Object.entries(layout).forEach(([id, pos])=>{
-    const item = getFsItem(id) || ensureFsItemForApp(id, { save: false });
-    if(!item) return;
-    if(state.trash.has(id)) return;
-    if((state.folders.games || []).includes(id)) return;
-    if(item.parentId) return;
-    placeItem(id, pos);
-  });
-
-  const rootItems = Object.values(state.fs.items || {}).filter(it => it.parentId == null && !state.trash.has(it.id));
-  rootItems.forEach(it => {
-    if(placedIds.has(it.id)) return;
-    if((state.folders.games || []).includes(it.id)) return;
-    const base = Number.isFinite(it.x) && Number.isFinite(it.y) ? { x: it.x, y: it.y } : { x: 0, y: 0 };
-    placeItem(it.id, base);
+  APPS.filter(app => app.showOnDesktop !== false).forEach(app => ensureFsItemForApp(app.id, { save:false }));
+  VIRTUAL_ICONS.forEach(icon => ensureFsItemForApp(icon.id, { save:false }));
+  const locale = state.lang === 'pt' ? 'pt-BR' : 'en';
+  const rootItems = Object.values(state.fs.items || {})
+    .filter(item => item.parentId == null && isDesktopVisibleItem(item))
+    .sort((a, b)=>getFsItemLabel(a).localeCompare(getFsItemLabel(b), locale, { sensitivity:'base', numeric:true }) || a.id.localeCompare(b.id));
+  const usableRows = Math.max(1, metrics.rows);
+  const alignRight = shouldAlignDesktopIconsRight() && !state.isMobile;
+  const maxCols = metrics.cols;
+  rootItems.forEach((item, index)=>{
+    const col = Math.floor(index / usableRows);
+    const row = index % usableRows;
+    const actualCol = alignRight ? Math.max(0, maxCols - 1 - col) : col;
+    const pos = {
+      x: clamp(actualCol * metrics.stepX, 0, Math.max(0, (metrics.cols - 1) * metrics.stepX)),
+      y: clamp(row * metrics.stepY, 0, Math.max(0, (metrics.rows - 1) * metrics.stepY)),
+    };
+    placeItem(item.id, pos);
   });
 
   saveIconPositions(iconPosCache);
@@ -7299,7 +7852,11 @@ function saveIconLabels(){
 function loadFolders(){
   try{
     const raw = localStorage.getItem(FOLDER_KEY);
-    if(raw) return JSON.parse(raw);
+    if(raw){
+      const folders = JSON.parse(raw);
+      if(!Array.isArray(folders.games)) folders.games = [];
+      return folders;
+    }
   } catch {}
   return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'alien-hominid', 'happy-wheels-demo', 'line-rider-beta-2', 'doom'] };
 }
@@ -8223,13 +8780,12 @@ function getVirtualIconById(id){
 }
 
 function openAppFromDesktopIcon(appId, iconEl){
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(!state.settings.appOpenAnim || reduceMotion || !iconEl){
-    openApp(appId);
+  if(!state.animations || !state.settings.appOpenAnim || !iconEl || document.body.matches('[data-theme="blissos"][data-blissos-style="aqua"]')){
+    openApp(appId, { sourceEl: iconEl || null });
     return;
   }
   cancelAppOpenAnimation({ revealPending: true });
-  const winEl = openApp(appId, { deferReveal: true, skipAnimOpen: true });
+  const winEl = openApp(appId, { deferReveal: true, skipAnimOpen: true, sourceEl: iconEl });
   if(!winEl){
     openApp(appId);
     return;
@@ -8260,7 +8816,21 @@ function openIconById(id, opts = {}){
   if(!fsItem) fsItem = ensureFsItemForApp(id, { save: false }) || fsItem;
   if(id === 'trash'){
     if(state.windows.has('trash')) closeApp('trash');
-    openSeekerSection('trash');
+    openSeekerSection('trash', { sourceEl });
+    return;
+  }
+  if(fsItem && fsItem.type === 'game-shortcut' && fsItem.gameId){
+    const gameId = fsItem.gameId;
+    if(gameId === 'dope-skate'){
+      openGameFromHub(gameId);
+    } else if(!state.windows.has('games')){
+      state.games.view = gameId;
+      state.games.selectedId = gameId;
+      openAppFromDesktopIcon('games', sourceEl);
+      renderGamesWindow();
+    } else {
+      openGameFromHub(gameId);
+    }
     return;
   }
   if(id === 'snake'){
@@ -8272,6 +8842,17 @@ function openIconById(id, opts = {}){
       openApp('games');
       renderGamesWindow();
     }
+    return;
+  }
+  if(id === 'vice-city'){
+    state.games.view = 'vice-city';
+    state.games.selectedId = id;
+    if(isDesktopIcon && !state.windows.has('games')){
+      openAppFromDesktopIcon('games', sourceEl);
+    } else {
+      openApp('games');
+    }
+    renderGamesWindow();
     return;
   }
   if(id === 'minesweeper'){
@@ -8297,7 +8878,7 @@ function openIconById(id, opts = {}){
     openAppFromDesktopIcon(id, sourceEl);
     return;
   }
-  openApp(id);
+  openApp(id, { sourceEl });
 }
 
 let fsIdCounter = 0;
@@ -8309,6 +8890,7 @@ function generateFsId(prefix){
 
 function getFsItemLabel(item){
   if(!item) return '';
+  if(item.type === 'game-shortcut') return getGameNameForSort(item.gameId);
   if(item.type === 'app'){
     const app = getAppById(item.appId || item.id);
     return app ? getIconLabel(app) : (item.name || item.id);
@@ -8321,7 +8903,7 @@ function getFsItemLabel(item){
 }
 
 function isInFolder(id){
-  if((state.folders.games || []).includes(id)) return true;
+  if(id !== 'vice-city' && (state.folders.games || []).includes(id)) return true;
   const item = getFsItem(id);
   return !!(item && item.parentId);
 }
@@ -8330,7 +8912,8 @@ function isDesktopVisibleItem(item){
   if(!item || item.parentId != null) return false;
   if(item.id === 'trash' && state.settings.theme === 'blissos') return false;
   if(item.id !== 'trash' && state.trash.has(item.id)) return false;
-  if((state.folders.games || []).includes(item.id)) return false;
+  if(item.type === 'game-shortcut') return true;
+  if(item.id !== 'vice-city' && (state.folders.games || []).includes(item.id)) return false;
   if(item.type === 'app'){
     const app = getAppById(item.appId || item.id);
     return !!app && app.showOnDesktop !== false;
@@ -8541,11 +9124,15 @@ function moveDraggedItemsToFolderTarget(ids, folderId, opts = {}){
   let restoredAny = false;
   filtered.forEach((id, idx) => {
     if(!canPlaceItemInFolder(id, folderId, { allowTrashed: true })) return;
-    if(state.trash.has(id)){
+    const wasTrashed = state.trash.has(id);
+    const trashedItem = getFsItem(id);
+    if(wasTrashed){
       state.trash.delete(id);
       restoredAny = true;
     }
-    const preferred = basePreferred
+    const preferred = wasTrashed && folderId == null && trashedItem?.type === 'game-shortcut'
+      ? { x: trashedItem.x || 0, y: trashedItem.y || 0 }
+      : basePreferred
       ? {
           x: Math.max(0, Math.floor(basePreferred.x + (idx * 16))),
           y: Math.max(0, Math.floor(basePreferred.y + (idx * 14))),
@@ -8836,7 +9423,7 @@ function openFolderWindow(folderId, opts = {}){
     : folderId;
   const seekerWasOpen = state.windows.has('seeker');
   rememberSeekerRecent({ kind:'folder', id:targetFolderId }, { refresh: false });
-  const winEl = openSeekerSection(getSeekerSectionForFolderId(targetFolderId));
+  const winEl = openSeekerSection(getSeekerSectionForFolderId(targetFolderId), { sourceEl: opts.sourceEl || null });
   if(seekerWasOpen) playSfx('fileOpen');
   return winEl;
 }
@@ -8886,6 +9473,9 @@ function openTxtFileWindow(txtId, opts = {}){
     mediaplayerFixed: false,
     deferReveal: false,
     skipAnimOpen: false,
+    animationOriginEl: opts.sourceEl || null,
+    animationOriginKind: opts.sourceEl && opts.sourceEl.closest('#blissosDock') ? 'dock' : opts.sourceEl && opts.sourceEl.closest('#taskQuickLaunch') ? 'quicklaunch' : 'desktop',
+    animationOriginRect: opts.sourceEl ? opts.sourceEl.getBoundingClientRect() : null,
     smartFitPromise: Promise.resolve(getWindowRectFromState({ left: rect.left, top: rect.top, width: rect.width, height: rect.height })),
     kind: 'txt',
     txtId,
@@ -9127,9 +9717,7 @@ function makeGameItemDraggable(itemEl, id){
       const overWindow = topTarget && topTarget.closest ? topTarget.closest('.window') : null;
 
       if(isOverTrashWindow(e.clientX, e.clientY) || isOverTrash(e.clientX, e.clientY)){
-        moveIconsToTrash([id]);
-        refreshOpenFolderWindows();
-        renderGamesWindow();
+        // Games remain in the Games hub; dragging a card to the trash does not delete it.
       } else if(!isOverGamesWindow(e.clientX, e.clientY)){
         const folderTarget = getFolderDropTargetAt(e.clientX, e.clientY, dragEls, [id]);
         if(folderTarget){
@@ -9141,14 +9729,22 @@ function makeGameItemDraggable(itemEl, id){
           refreshOpenFolderWindows();
           renderGamesWindow();
         } else if(isOverDesktopArea(e.clientX, e.clientY) && !overWindow){
-          removeFromFolder('games', [id]);
           const preferred = getDesktopPosFromClient(e.clientX, e.clientY);
-          moveItemToFolder(id, null, { force: true, save: false, iconPosCache, preferredPos: preferred });
-          saveIconPositions(iconPosCache);
+          const shortcutId = `game-shortcut-${id}`;
+          const iconSrc = itemEl.querySelector('img')?.getAttribute('src') || '';
+          const placed = getFreeIconPlacement(null, preferred, null, [shortcutId]);
+          upsertFsItem({
+            id: shortcutId,
+            type: 'game-shortcut',
+            gameId: id,
+            name: getGameNameForSort(id),
+            iconFile: iconSrc,
+            parentId: null,
+            x: placed.x,
+            y: placed.y,
+          }, { save: false, syncIconPos: false });
           saveDesktopFs();
           renderIcons();
-          refreshOpenFolderWindows();
-          renderGamesWindow();
         }
       }
     }
@@ -9344,6 +9940,7 @@ function ensureSeekerState(){
   if(state.seeker.view !== 'list' && state.seeker.view !== 'icons') state.seeker.view = 'icons';
   if(typeof state.seeker.search !== 'string') state.seeker.search = '';
   if(!Array.isArray(state.seeker.recent)) state.seeker.recent = [];
+  if(!Array.isArray(state.seeker.selectedKeys)) state.seeker.selectedKeys = [];
   if(typeof state.seeker.selectedKey !== 'string') state.seeker.selectedKey = '';
   if(typeof state.seeker.lastClickKey !== 'string') state.seeker.lastClickKey = '';
   if(typeof state.seeker.lastClickTs !== 'number') state.seeker.lastClickTs = 0;
@@ -9800,6 +10397,94 @@ function getFsIdFromSeekerEntry(entry){
   return null;
 }
 
+function installRubberbandSelection(container, selector, getCurrentSelection, setSelection){
+  if(!container) return;
+  container._rubberbandGetCurrentSelection = getCurrentSelection;
+  container._rubberbandSetSelection = setSelection;
+  if(container.dataset.rubberbandBound === '1'){
+    if(!container.querySelector('.seeker-selection-box')){
+      const replacementBox = document.createElement('div');
+      replacementBox.className = 'rubberband seeker-selection-box hidden';
+      container.appendChild(replacementBox);
+    }
+    return;
+  }
+  container.dataset.rubberbandBound = '1';
+  if(getComputedStyle(container).position === 'static') container.style.position = 'relative';
+  const box = document.createElement('div');
+  box.className = 'rubberband seeker-selection-box hidden';
+  container.appendChild(box);
+  let down = false;
+  let active = false;
+  let pointerId = null;
+  let startX = 0;
+  let startY = 0;
+  let additive = false;
+
+  const updateBox = (x, y)=>{
+    const activeBox = container.querySelector('.seeker-selection-box');
+    if(!activeBox) return;
+    const left = Math.min(startX, x);
+    const top = Math.min(startY, y);
+    activeBox.style.left = `${left + container.scrollLeft}px`;
+    activeBox.style.top = `${top + container.scrollTop}px`;
+    activeBox.style.width = `${Math.abs(x - startX)}px`;
+    activeBox.style.height = `${Math.abs(y - startY)}px`;
+  };
+  const onPointerDown = e=>{
+    if(e.pointerType === 'mouse' && e.button !== 0) return;
+    if(e.target.closest && e.target.closest(selector)) return;
+    down = true;
+    active = false;
+    pointerId = e.pointerId;
+    const rect = container.getBoundingClientRect();
+    startX = e.clientX - rect.left;
+    startY = e.clientY - rect.top;
+    additive = !!(e.ctrlKey || e.metaKey);
+    try{ container.setPointerCapture(pointerId); } catch {}
+  };
+  const onPointerMove = e=>{
+    if(!down || e.pointerId !== pointerId) return;
+    const rect = container.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    if(!active && Math.abs(x - startX) + Math.abs(y - startY) > 6){
+      active = true;
+      container.querySelector('.seeker-selection-box')?.classList.remove('hidden');
+      document.body.classList.add('dragging');
+      if(!additive) container._rubberbandSetSelection([]);
+    }
+    if(!active) return;
+    e.preventDefault();
+    updateBox(x, y);
+    const region = { left:Math.min(e.clientX, startX + rect.left), right:Math.max(e.clientX, startX + rect.left), top:Math.min(e.clientY, startY + rect.top), bottom:Math.max(e.clientY, startY + rect.top) };
+    const selected = new Set(additive ? container._rubberbandGetCurrentSelection() : []);
+    container.querySelectorAll(selector).forEach(item=>{
+      const itemRect = item.getBoundingClientRect();
+      const hit = !(itemRect.right < region.left || itemRect.left > region.right || itemRect.bottom < region.top || itemRect.top > region.bottom);
+      if(hit) selected.add(item.dataset.seekerItem || item.dataset.trashId);
+    });
+    container._rubberbandSetSelection(Array.from(selected));
+  };
+  const onPointerUp = e=>{
+    if(!down || (pointerId !== null && e.pointerId !== pointerId)) return;
+    down = false;
+    try{ container.releasePointerCapture(pointerId); } catch {}
+    if(active){
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    active = false;
+    pointerId = null;
+    container.querySelector('.seeker-selection-box')?.classList.add('hidden');
+    document.body.classList.remove('dragging');
+  };
+  container.addEventListener('pointerdown', onPointerDown);
+  container.addEventListener('pointermove', onPointerMove);
+  container.addEventListener('pointerup', onPointerUp);
+  container.addEventListener('pointercancel', onPointerUp);
+}
+
 function makeSeekerItemDraggable(itemEl, shell){
   if(!itemEl || !shell || itemEl.dataset.seekerDragBound === '1') return;
   itemEl.dataset.seekerDragBound = '1';
@@ -9956,6 +10641,10 @@ function openSeekerSection(sectionId, opts = {}){
 
 function openSeekerItem(item){
   if(!item) return;
+  if(item.kind === 'game-shortcut' && state.trash.has(item.id)){
+    restoreFromTrash([item.id]);
+    return;
+  }
   if(item.kind === 'app'){
     openApp(item.id);
     return;
@@ -10047,11 +10736,29 @@ function renderSeekerWindow(winEl){
   if(itemsHost){
     itemsHost.classList.toggle('seeker-items-list', seeker.view === 'list');
     itemsHost.classList.toggle('seeker-items-icons', seeker.view !== 'list');
+    if(itemsHost.dataset.trashContextBound !== '1'){
+      itemsHost.dataset.trashContextBound = '1';
+      itemsHost.addEventListener('contextmenu', e=>{
+        if(normalizeSeekerSection(ensureSeekerState().section) !== 'trash') return;
+        e.preventDefault();
+        e.stopPropagation();
+        const itemEl = e.target.closest && e.target.closest('[data-seeker-item]');
+        if(itemEl){
+          const key = itemEl.dataset.seekerItem;
+          const item = (shell._seekerItems || []).find(entry=>entry.key === key);
+          if(item && !state.trashSelection.has(item.id)){
+            state.trashSelection = new Set([item.id]);
+            seeker.selectedKeys = [key];
+          }
+        }
+        openCtxMenu(e.clientX, e.clientY, 'trash', null, { selectedIds:Array.from(state.trashSelection) });
+      });
+    }
     if(filtered.length === 0){
       itemsHost.innerHTML = `<div class="seeker-empty tiny">${t('seeker.empty')}</div>`;
     } else if(seeker.view === 'list'){
       itemsHost.innerHTML = filtered.map(item => `
-        <button class="seeker-item seeker-item-row${item.key === seeker.selectedKey ? ' selected' : ''}" type="button" data-seeker-item="${item.key}">
+        <button class="seeker-item seeker-item-row${seeker.selectedKeys.includes(item.key) ? ' selected' : ''}" type="button" data-seeker-item="${item.key}">
           <span class="seeker-item-icon pixel">${item.iconHtml}</span>
           <span class="seeker-item-copy">
             <span class="seeker-item-label">${escapeHTML(item.label)}</span>
@@ -10061,7 +10768,7 @@ function renderSeekerWindow(winEl){
       `).join('');
     } else {
       itemsHost.innerHTML = filtered.map(item => `
-        <button class="seeker-item seeker-item-card${item.key === seeker.selectedKey ? ' selected' : ''}" type="button" data-seeker-item="${item.key}">
+        <button class="seeker-item seeker-item-card${seeker.selectedKeys.includes(item.key) ? ' selected' : ''}" type="button" data-seeker-item="${item.key}">
           <span class="seeker-item-icon pixel">${item.iconHtml}</span>
           <span class="seeker-item-label">${escapeHTML(item.label)}</span>
         </button>
@@ -10070,6 +10777,17 @@ function renderSeekerWindow(winEl){
     itemsHost.querySelectorAll('[data-seeker-item]').forEach(itemEl => {
       makeSeekerItemDraggable(itemEl, shell);
     });
+    installRubberbandSelection(itemsHost, '[data-seeker-item]',
+      ()=>ensureSeekerState().selectedKeys,
+      keys=>{
+        seeker.selectedKeys = keys;
+        itemsHost.querySelectorAll('[data-seeker-item]').forEach(el=>el.classList.toggle('selected', keys.includes(el.dataset.seekerItem)));
+        if(section === 'trash'){
+          const selectedIds = filtered.filter(item=>keys.includes(item.key)).map(item=>item.id);
+          state.trashSelection = new Set(selectedIds);
+        }
+      }
+    );
   }
 
   if(statusEl){
@@ -10142,9 +10860,18 @@ function initSeekerWindow(winEl){
         const item = items.find(it => it.key === key);
         const seeker = ensureSeekerState();
         seeker.selectedKey = key || '';
+        if(e.ctrlKey || e.metaKey){
+          if(seeker.selectedKeys.includes(key)) seeker.selectedKeys = seeker.selectedKeys.filter(selected => selected !== key);
+          else seeker.selectedKeys = seeker.selectedKeys.concat(key);
+        } else {
+          seeker.selectedKeys = [key];
+        }
         shell.querySelectorAll('[data-seeker-item]').forEach(el => {
-          el.classList.toggle('selected', el === itemBtn);
+          el.classList.toggle('selected', seeker.selectedKeys.includes(el.dataset.seekerItem));
         });
+        if(normalizeSeekerSection(seeker.section) === 'trash'){
+          state.trashSelection = new Set(filtered.filter(entry=>seeker.selectedKeys.includes(entry.key)).map(entry=>entry.id));
+        }
         if(!item) return;
 
         // Keyboard activation should keep single-activate behavior for accessibility.
@@ -10239,6 +10966,7 @@ function renderCtxMenu(){
 
   const isIcon = ctxState.target === 'icon' && !!ctxState.appId;
   const isDock = ctxState.target === 'dock' && !!ctxState.appId;
+  const isTrashMenu = ctxState.target === 'trash';
   const isBliss98Theme = state.settings.theme === 'bliss98';
   const fsItem = ctxState.appId ? getFsItem(ctxState.appId) : null;
   const itemType = ctxState.itemType || (fsItem ? fsItem.type : null);
@@ -10247,6 +10975,10 @@ function renderCtxMenu(){
   const items = [];
   if(isDock){
     const disableRemove = ctxState.itemType === 'trash' || ctxState.appId === 'trash' || (ctxState.itemType === 'app' && ctxState.appId === 'seeker');
+    if(ctxState.itemType === 'trash' || ctxState.appId === 'trash'){
+      items.push({ action:'emptyTrash', label:t('ctx.emptyTrash'), disabled:state.trash.size === 0 });
+      items.push({ sep:true });
+    }
     items.push({ action:'removeDock', label:t('ctx.removeDock'), disabled: disableRemove });
     menu.innerHTML = items.map(it => {
       if(it.sep) return `<div class="ctx-sep"></div>`;
@@ -10262,15 +10994,32 @@ function renderCtxMenu(){
     }).join('');
     return;
   }
-  if(isIcon){
-    items.push({ action:'open', label:t('ctx.open') });
-    items.push({ sep:true });
-    if(ctxState.appId === 'trash'){
-      items.push({ action:'emptyTrash', label:t('ctx.emptyTrash') });
-      const docked = isDockItemPresent('trash', 'trash');
-      items.push({ action:'addDock', label: docked ? t('ctx.alreadyDock') : t('ctx.addDock'), disabled: docked });
+  if(isTrashMenu){
+    const selectedTrashIds = Array.from(state.trashSelection || []).filter(id => state.trash.has(id));
+    const restoreLabel = selectedTrashIds.length
+      ? t('ctx.restoreSelectedItems')
+      : t('ctx.restoreAllItems');
+    items.push({ action:'refresh', label:t('ctx.refresh') });
+    items.push({ action:'emptyTrash', label:t('ctx.emptyTrash'), disabled:state.trash.size === 0 });
+    items.push({
+      action:'restoreTrashItems',
+      label:restoreLabel,
+      disabled:state.trash.size === 0 || (selectedTrashIds.length === 0 && ctxState.selectedIds.length > 0),
+    });
+    if(isIcon){
       items.push({ sep:true });
+      items.push({ action:'open', label:t('ctx.open') });
+      const docked = isDockItemPresent('trash', 'trash');
+      items.push({ action:'addDock', label:docked ? t('ctx.alreadyDock') : t('ctx.addDock'), disabled:docked });
+    }
+  } else if(isIcon){
+    items.push({ action:'open', label:t('ctx.open') });
+    if(ctxState.appId === 'trash'){
+      items.push({ action:'emptyTrash', label:t('ctx.emptyTrash'), disabled:state.trash.size === 0 });
+      const docked = isDockItemPresent('trash', 'trash');
+      items.push({ action:'addDock', label:docked ? t('ctx.alreadyDock') : t('ctx.addDock'), disabled:docked });
     } else {
+      items.push({ sep:true });
       items.push({ action:'rename', label:t('ctx.rename') });
       items.push({ action:'crop', label:t('ctx.crop') });
       items.push({ action:'copy', label:t('ctx.copy') });
@@ -10293,9 +11042,10 @@ function renderCtxMenu(){
     }
   }
 
-  if(!isIcon){
+  if(!isIcon && !isTrashMenu){
     items.push({ action:'newTxt', label:t('ctx.newTextFile') });
     items.push({ action:'newFolder', label:t('ctx.newFolder') });
+    if(ctxState.target === 'desktop') items.push({ action:'refresh', label:t('ctx.refresh') });
     items.push({ sep:true });
     items.push({ action:'arrange', label:t('ctx.arrange') });
     if(ctxState.parentId == null){
@@ -10380,6 +11130,16 @@ function closeCtxMenu(){
 }
 
 function handleCtxAction(action){
+  if(action === 'refresh'){
+    renderIcons();
+    refreshOpenFolderWindows();
+    refreshOpenSeekerWindows();
+    renderTrashWindow();
+  }
+  if(action === 'restoreTrashItems'){
+    const selected = Array.from(state.trashSelection || []).filter(id => state.trash.has(id));
+    restoreFromTrash(selected.length ? selected : Array.from(state.trash));
+  }
   if(action === 'open' && ctxState.target === 'icon' && ctxState.appId){
     openIconById(ctxState.appId);
   }
@@ -10456,7 +11216,11 @@ function handleCtxAction(action){
     moveIconsToTrash(ids);
     refreshOpenFolderWindows();
   }
-  if(action === 'emptyTrash' && ctxState.target === 'icon' && ctxState.appId === 'trash'){
+  if(action === 'emptyTrash' && (
+    ctxState.target === 'trash' ||
+    (ctxState.target === 'icon' && ctxState.appId === 'trash') ||
+    (ctxState.target === 'dock' && (ctxState.itemType === 'trash' || ctxState.appId === 'trash'))
+  )){
     emptyTrash();
   }
   if(action === 'duplicateTxt' && ctxState.target === 'icon' && ctxState.appId){

@@ -54,6 +54,50 @@
           'app.seeker.file': 'File Seeker',
           'app.seeker.short': 'Seeker',
           'games.snake': 'Snake',
+          'games.viceCity': 'GTA Vice City',
+          'games.viceCity.credits': 'Credits & licenses',
+          'games.credits.title': 'Credits and project info',
+          'games.credits.viceCity': 'This Bliss entry embeds GTA Vice City Web Edition from Quenq Apps, a browser-based port of the classic open-world game. Quenq hosts the playable version; visit its original page for details.',
+          'games.eightBallPool': '8 Ball Pool',
+          'games.eightBallPool.credits': 'Credits & source',
+          'games.credits.eightBallPool': 'This browser game is embedded from Quenq Arcade. Open the original Quenq page for the game and its project information.',
+          'games.ageOfWar': 'Age of War',
+          'games.ageOfWar.credits': 'Credits & source',
+          'games.credits.ageOfWar': 'This browser version of Age of War is embedded from Quenq Arcade. The original strategy game was created by Louissi; visit the Quenq page for the playable version and project details.',
+          'games.ageOfWar2': 'Age of War 2',
+          'games.ageOfWar2.credits': 'Credits & source',
+          'games.credits.ageOfWar2': 'This Bliss entry embeds Age of War 2 from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.americanRacing': 'American Racing',
+          'games.americanRacing.credits': 'Credits & source',
+          'games.credits.americanRacing': 'This Bliss entry embeds American Racing from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.animatorVsAnimationGame': 'Animator vs Animation Game',
+          'games.animatorVsAnimationGame.credits': 'Credits & source',
+          'games.credits.animatorVsAnimationGame': 'This Bliss entry embeds Animator vs Animation Game from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.appleShooter': 'Apple Shooter',
+          'games.appleShooter.credits': 'Credits & source',
+          'games.credits.appleShooter': 'This Bliss entry embeds Apple Shooter from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.badPiggies': 'Bad Piggies',
+          'games.badPiggies.credits': 'Credits & source',
+          'games.credits.badPiggies': 'This Bliss entry embeds Bad Piggies from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.duckLife5': 'DuckLife 5',
+          'games.duckLife5.credits': 'Credits & source',
+          'games.credits.duckLife5': 'This Bliss entry embeds DuckLife 5, a classic Flash simulation game preserved by Quenq Arcade. Quenq hosts the playable version; visit its original page for more information.',
+          'games.edEddNEddysCandyMachineDeluxe': 'Ed, Edd n Eddy’s Candy Machine Deluxe',
+          'games.edEddNEddysCandyMachineDeluxe.credits': 'Credits & source',
+          'games.credits.edEddNEddysCandyMachineDeluxe': 'This Bliss entry embeds Ed, Edd n Eddy’s Candy Machine Deluxe from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.papasBurgeria': 'Papa’s Burgeria',
+          'games.papasBurgeria.credits': 'Credits & source',
+          'games.credits.papasBurgeria': 'This Bliss entry embeds Papa’s Burgeria, a 2010 simulation game developed by Flipline Studios and preserved by Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.papasCheeseria': 'Papa’s Cheeseria',
+          'games.papasCheeseria.credits': 'Credits & source',
+          'games.credits.papasCheeseria': 'This Bliss entry embeds Papa’s Cheeseria from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.papasSushiria': 'Papa’s Sushiria',
+          'games.papasSushiria.credits': 'Credits & source',
+          'games.credits.papasSushiria': 'This Bliss entry embeds Papa’s Sushiria, a 2016 simulation game developed by Flipline Studios and preserved by Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.papasPastaria': 'Papa’s Pastaria',
+          'games.papasPastaria.credits': 'Credits & source',
+          'games.credits.papasPastaria': 'This Bliss entry embeds Papa’s Pastaria, a 2013 simulation game developed by Flipline Studios and preserved by Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.credits.doom': 'This local Bliss build runs the Chocolate Doom engine compiled to WebAssembly with Freedoom’s free replacement game data. The upstream project and Freedoom are linked below; license files are included with the game.',
           'games.doom': 'DOOM',
           'games.doom.open': 'Open in browser',
           'games.doom.credits': 'Credits & licenses',
@@ -66,9 +110,17 @@
           'games.alienHominid': 'Alien Hominid',
           'games.happyWheelsDemo': 'Happy Wheels Demo',
           'games.lineRiderBeta2': 'Line Rider Beta 2',
+          'games.context.favoritesHeading': 'Favorites',
+          'games.context.refresh': 'Refresh',
+          'games.context.addFavorite': 'Add to Favorites',
+          'games.context.removeFavorite': 'Remove from Favorites',
+          'games.context.addDesktop': 'Add to Desktop',
+          'games.context.grid': 'Grid',
           'games.flash.loadError': 'Could not load the Flash emulator. Please reload and try again.',
           'games.flash.mute': 'Mute game audio',
           'games.flash.unmute': 'Unmute game audio',
+          'games.audio': 'Game audio controls',
+          'games.volume': 'Game volume',
           'games.back': 'Back',
           'games.empty': 'No games yet.',
           'games.tab.hub': 'Games',
@@ -238,6 +290,9 @@
           'ctx.copy': 'Copy',
           'ctx.moveTrash': 'Move to Trash',
           'ctx.emptyTrash': 'Empty Trash',
+          'ctx.restoreAllItems': 'Restore All Items',
+          'ctx.restoreSelectedItems': 'Restore Selected Items',
+          'ctx.refresh': 'Refresh',
           'ctx.addDock': 'Add to Dock',
           'ctx.removeDock': 'Remove from Dock',
           'ctx.alreadyDock': 'Already in Dock',
@@ -356,7 +411,7 @@
           'settings.animations.on': 'On',
           'settings.animations.off': 'Off',
           'settings.appOpenAnim.title': 'App open animation',
-          'settings.appOpenAnim.desc': 'Animate a dotted selection box from the icon to the window.',
+          'settings.appOpenAnim.desc': 'Animate windows opening from and closing to their icon.',
           'settings.appOpenAnim.on': 'On',
           'settings.appOpenAnim.off': 'Off',
           'settings.wallpaperTab': 'Wallpaper',
@@ -518,16 +573,13 @@
           'menu.art.slideshow': 'Slideshow',
           'menu.art.credits': 'Credits',
 
-          'menu.games.openFolder': 'Open Games Folder',
-          'menu.games.download': 'Download…',
           'menu.games.copy': 'Copy',
           'menu.games.selectAll': 'Select All',
           'menu.games.grid': 'Grid',
-          'menu.games.sort': 'Sort by',
-          'menu.games.sort.new': 'New',
-          'menu.games.sort.favorite': 'Favorite',
           'menu.games.howto': 'How to Play',
           'menu.games.requirements': 'Requirements',
+          'dialog.gamesRequirements.title': 'Requirements',
+          'dialog.gamesRequirements.body': 'First requirement: a brain. Preferably switched on.<br><br>Some games are best played on a desktop with a mouse and keyboard. An internet connection helps too; apparently the web still needs the web.',
 
           'menu.videos.openChannel': 'Open Channel',
           'menu.videos.copyLink': 'Copy Link',
@@ -730,6 +782,50 @@
           'app.seeker.file': 'File Seeker',
           'app.seeker.short': 'Seeker',
           'games.snake': 'Snake',
+          'games.viceCity': 'GTA Vice City',
+          'games.viceCity.credits': 'Créditos e licenças',
+          'games.credits.title': 'Créditos e informações do projeto',
+          'games.credits.viceCity': 'Esta versão do Bliss incorpora o GTA Vice City Web Edition do Quenq Apps, um port do clássico jogo de mundo aberto para navegador. O Quenq hospeda a versão jogável; visite a página original para saber mais.',
+          'games.eightBallPool': '8 Ball Pool',
+          'games.eightBallPool.credits': 'Créditos e origem',
+          'games.credits.eightBallPool': 'Este jogo de navegador está incorporado do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.ageOfWar': 'Age of War',
+          'games.ageOfWar.credits': 'Créditos e origem',
+          'games.credits.ageOfWar': 'Esta versão de Age of War para navegador está incorporada do Quenq Arcade. O jogo de estratégia original foi criado por Louissi; acesse a página do Quenq para jogar e ver os detalhes do projeto.',
+          'games.ageOfWar2': 'Age of War 2',
+          'games.ageOfWar2.credits': 'Créditos e origem',
+          'games.credits.ageOfWar2': 'Esta entrada do Bliss incorpora Age of War 2 do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.americanRacing': 'American Racing',
+          'games.americanRacing.credits': 'Créditos e origem',
+          'games.credits.americanRacing': 'Esta entrada do Bliss incorpora American Racing do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.animatorVsAnimationGame': 'Animator vs Animation Game',
+          'games.animatorVsAnimationGame.credits': 'Créditos e origem',
+          'games.credits.animatorVsAnimationGame': 'Esta entrada do Bliss incorpora Animator vs Animation Game do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.appleShooter': 'Apple Shooter',
+          'games.appleShooter.credits': 'Créditos e origem',
+          'games.credits.appleShooter': 'Esta entrada do Bliss incorpora Apple Shooter do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.badPiggies': 'Bad Piggies',
+          'games.badPiggies.credits': 'Créditos e origem',
+          'games.credits.badPiggies': 'Esta entrada do Bliss incorpora Bad Piggies do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.duckLife5': 'DuckLife 5',
+          'games.duckLife5.credits': 'Créditos e origem',
+          'games.credits.duckLife5': 'Esta entrada do Bliss incorpora DuckLife 5, um jogo clássico de simulação em Flash preservado pelo Quenq Arcade. O Quenq hospeda a versão jogável; acesse a página original para saber mais.',
+          'games.edEddNEddysCandyMachineDeluxe': 'Ed, Edd n Eddy’s Candy Machine Deluxe',
+          'games.edEddNEddysCandyMachineDeluxe.credits': 'Créditos e origem',
+          'games.credits.edEddNEddysCandyMachineDeluxe': 'Esta entrada do Bliss incorpora Ed, Edd n Eddy’s Candy Machine Deluxe do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.papasBurgeria': 'Papa’s Burgeria',
+          'games.papasBurgeria.credits': 'Créditos e origem',
+          'games.credits.papasBurgeria': 'Esta entrada do Bliss incorpora Papa’s Burgeria, um jogo de simulação de 2010 desenvolvido pela Flipline Studios e preservado pelo Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.papasCheeseria': 'Papa’s Cheeseria',
+          'games.papasCheeseria.credits': 'Créditos e origem',
+          'games.credits.papasCheeseria': 'Esta entrada do Bliss incorpora Papa’s Cheeseria do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.papasSushiria': 'Papa’s Sushiria',
+          'games.papasSushiria.credits': 'Créditos e origem',
+          'games.credits.papasSushiria': 'Esta entrada do Bliss incorpora Papa’s Sushiria, um jogo de simulação de 2016 desenvolvido pela Flipline Studios e preservado pelo Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.papasPastaria': 'Papa’s Pastaria',
+          'games.papasPastaria.credits': 'Créditos e origem',
+          'games.credits.papasPastaria': 'Esta entrada do Bliss incorpora Papa’s Pastaria, um jogo de simulação de 2013 desenvolvido pela Flipline Studios e preservado pelo Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.credits.doom': 'Esta versão local do Bliss usa o motor Chocolate Doom compilado para WebAssembly junto aos dados gratuitos do Freedoom, que substituem os dados do jogo original. Os links do projeto de origem e do Freedoom estão abaixo; os arquivos de licença acompanham o jogo.',
           'games.doom': 'DOOM',
           'games.doom.open': 'Abrir no navegador',
           'games.doom.credits': 'Créditos e licenças',
@@ -742,9 +838,17 @@
           'games.alienHominid': 'Alien Hominid',
           'games.happyWheelsDemo': 'Happy Wheels Demo',
           'games.lineRiderBeta2': 'Line Rider Beta 2',
+          'games.context.favoritesHeading': 'Favoritos',
+          'games.context.refresh': 'Atualizar',
+          'games.context.addFavorite': 'Adicionar aos Favoritos',
+          'games.context.removeFavorite': 'Remover dos Favoritos',
+          'games.context.addDesktop': 'Adicionar ao Desktop',
+          'games.context.grid': 'Grade',
           'games.flash.loadError': 'Não foi possível carregar o emulador Flash. Atualize a página e tente novamente.',
           'games.flash.mute': 'Silenciar áudio do jogo',
           'games.flash.unmute': 'Ativar áudio do jogo',
+          'games.audio': 'Controles de áudio do jogo',
+          'games.volume': 'Volume do jogo',
           'games.back': 'Voltar',
           'games.empty': 'Sem jogos ainda.',
           'games.tab.hub': 'Jogos',
@@ -910,6 +1014,9 @@
           'ctx.copy': 'Copiar',
           'ctx.moveTrash': 'Mover para Lixeira',
           'ctx.emptyTrash': 'Esvaziar Lixeira',
+          'ctx.restoreAllItems': 'Restaurar Todos os Itens',
+          'ctx.restoreSelectedItems': 'Restaurar Itens Selecionados',
+          'ctx.refresh': 'Atualizar',
           'ctx.addDock': 'Adicionar ao Dock',
           'ctx.removeDock': 'Remover do Dock',
           'ctx.alreadyDock': 'Ja esta no Dock',
@@ -1028,7 +1135,7 @@
           'settings.animations.on': 'Ligado',
           'settings.animations.off': 'Desligado',
           'settings.appOpenAnim.title': 'Animacao ao abrir app',
-          'settings.appOpenAnim.desc': 'Anima uma caixa pontilhada do icone ate a janela.',
+          'settings.appOpenAnim.desc': 'Anime as janelas abrindo a partir do ícone e fechando de volta para ele.',
           'settings.appOpenAnim.on': 'Ligado',
           'settings.appOpenAnim.off': 'Desligado',
           'settings.wallpaperTab': 'Papel de parede',
@@ -1190,16 +1297,13 @@
           'menu.art.slideshow': 'Apresentação',
           'menu.art.credits': 'Créditos',
 
-          'menu.games.openFolder': 'Abrir pasta de jogos',
-          'menu.games.download': 'Download…',
           'menu.games.copy': 'Copiar',
           'menu.games.selectAll': 'Selecionar tudo',
           'menu.games.grid': 'Grade',
-          'menu.games.sort': 'Ordenar por',
-          'menu.games.sort.new': 'Novidades',
-          'menu.games.sort.favorite': 'Favorito',
           'menu.games.howto': 'Como Jogar',
           'menu.games.requirements': 'Requisitos',
+          'dialog.gamesRequirements.title': 'Requisitos',
+          'dialog.gamesRequirements.body': 'Primeiro requisito: um cérebro. De preferência, ligado.<br><br>Alguns jogos ficam melhores em um computador com mouse e teclado. Uma conexão com a internet também ajuda — aparentemente, a web ainda precisa da web.',
 
           'menu.videos.openChannel': 'Abrir canal',
           'menu.videos.copyLink': 'Copiar link',
@@ -1413,6 +1517,7 @@
         state.lang = (lang === 'pt') ? 'pt' : 'en';
         localStorage.setItem('bliss98_lang', state.lang);
         applyI18n();
+        if(state.games.view === 'list' && state.windows.has('games')) renderGamesWindow();
       }
       
       function hexToRgb(hex) {
@@ -1631,10 +1736,6 @@
             items.push({ labelKey:'menu.art.openGallery', action:'art:openGallery' });
             items.push({ labelKey:'menu.art.saveImage', action:'art:saveImage' });
           }
-          if(appId === 'games'){
-            items.push({ labelKey:'menu.games.openFolder', action:'games:openFolder' });
-            items.push({ labelKey:'menu.games.download', action:'games:download' });
-          }
           if(appId === 'videos'){
             items.push({ labelKey:'menu.videos.openChannel', action:'videos:openChannel' });
             items.push({ labelKey:'menu.videos.copyLink', action:'videos:copyLink' });
@@ -1768,15 +1869,7 @@
             items.push({ labelKey:'menu.art.slideshow', action:'art:slideshow' });
           }
           if(appId === 'games'){
-            items.push({ labelKey:'menu.games.grid', action:'games:grid' });
-            items.push({
-              type:'submenu',
-              labelKey:'menu.games.sort',
-              items:[
-                { labelKey:'menu.games.sort.new', action:'games:sortNew' },
-                { labelKey:'menu.games.sort.favorite', action:'games:sortFavorite' }
-              ]
-            });
+            items.push({ labelKey:'menu.games.grid', action:'games:grid', type:'checkbox', checked:state.games.layout === 'grid' });
           }
           if(appId === 'videos'){
             items.push({
@@ -2468,6 +2561,10 @@
           showMessage('dialog.gamesHowTo.title', 'dialog.gamesHowTo.body');
           return;
         }
+        if(action === 'games:requirements'){
+          showMessage('dialog.gamesRequirements.title', 'dialog.gamesRequirements.body');
+          return;
+        }
 
         if(action === 'art:openGallery' || action === 'art:saveImage' || action === 'art:slideshow' || action === 'art:credits'){
           showMessage('dialog.notAvailable.title', 'dialog.notAvailable.body');
@@ -2496,10 +2593,6 @@
           return;
         }
 
-        if(action === 'games:openFolder' || action === 'games:download' || action === 'games:sortNew' || action === 'games:sortFavorite' || action === 'games:requirements'){
-          showMessage('dialog.notAvailable.title', 'dialog.notAvailable.body');
-          return;
-        }
         if(action === 'games:copy' || action === 'games:selectAll'){
           if(action === 'games:selectAll' && winId) selectAllInWindow(winId);
           if(action === 'games:copy'){

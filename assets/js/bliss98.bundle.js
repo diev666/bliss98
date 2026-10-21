@@ -442,7 +442,8 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
       ];
 
       const VIRTUAL_ICONS = [
-        { id:'snake', titleKey:'games.snake', iconFile:'./assets/icons/snake.png' }
+        { id:'snake', titleKey:'games.snake', iconFile:'./assets/icons/snake.png' },
+        { id:'vice-city', titleKey:'games.viceCity', iconFile:'./assets/games/vc/vc.png' }
       ];
 
       function initSfx(){
@@ -710,13 +711,15 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
           const existing = getFsItem(id);
           const idx = APPS.concat(VIRTUAL_ICONS).findIndex(it => it.id === id);
           const def = layout[id] || legacyDefaultIconPos(Math.max(0, idx));
-          const hasSaved = !!iconPosCache[id];
+          const forceViceCityDefault = id === 'vice-city' && state.viceCityDefaultPlacementPending;
+          if(forceViceCityDefault) delete iconPosCache[id];
+          const hasSaved = !forceViceCityDefault && !!iconPosCache[id];
           const saved = hasSaved ? iconPosCache[id] : def;
           const base = existing || { id, type, appId: id };
           const parentId = base.parentId || null;
           const needsPos = parentId == null;
-          const x = needsPos ? (hasSaved ? saved.x : (useThemeDefaultPositions ? saved.x : (Number.isFinite(base.x) ? base.x : saved.x))) : base.x;
-          const y = needsPos ? (hasSaved ? saved.y : (useThemeDefaultPositions ? saved.y : (Number.isFinite(base.y) ? base.y : saved.y))) : base.y;
+          const x = needsPos ? (forceViceCityDefault ? def.x : (hasSaved ? saved.x : (useThemeDefaultPositions ? saved.x : (Number.isFinite(base.x) ? base.x : saved.x)))) : base.x;
+          const y = needsPos ? (forceViceCityDefault ? def.y : (hasSaved ? saved.y : (useThemeDefaultPositions ? saved.y : (Number.isFinite(base.y) ? base.y : saved.y)))) : base.y;
           const next = {
             ...base,
             id,
@@ -741,6 +744,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
 
         if(iconPosDirty) saveIconPositions(iconPosCache);
         saveDesktopFs();
+        state.viceCityDefaultPlacementPending = false;
       }
 
       function legacyDefaultIconPos(index){
@@ -1062,6 +1066,9 @@ function getThemedIconHtml(item, label, size=32){
 
 function getFsIconHtml(item, label, size = 32){
   if(!item) return iconSVG('file', state.settings.theme);
+  if(item.type === 'game-shortcut'){
+    return getThemedIconHtml({ icon:'game', id:item.id, iconFile:item.iconFile || './assets/icons/Games.png' }, label, size);
+  }
   if(item.type === 'app'){
     const app = getAppById(item.appId || item.id);
     return app ? getThemedIconHtml(app, label, size) : iconSVG('app', state.settings.theme);
@@ -1158,11 +1165,15 @@ function getDefaultIconLayout(){
   const height = area.height > (ICON_SIZE.h + 6) ? area.height : fallbackHeight;
   const metrics = getGridMetricsForSize(width, height);
   const isMobile = width <= 520;
-  const order = ['seeker','settings','games','about','videos','mediaplayer','diev','art','contact','poetry','music','clothes'];
+  const order = ['seeker','settings','games','vice-city','about','videos','mediaplayer','diev','art','contact','poetry','music','clothes'];
   const available = APPS.filter(app => app.showOnDesktop !== false && app.id !== 'trash' && !state.trash.has(app.id) && !isInFolder(app.id));
-  const availableIds = new Set(available.map(app => app.id));
+  const virtualAvailable = VIRTUAL_ICONS.filter(icon =>
+    icon.id !== 'trash' && !state.trash.has(icon.id) && !isInFolder(icon.id)
+  ).map(icon => icon.id);
+  const availableIds = new Set(available.map(app => app.id).concat(virtualAvailable));
+  const allAvailableIds = available.map(app => app.id).concat(virtualAvailable);
   const ordered = order.filter(id => availableIds.has(id)).concat(
-    available.map(app => app.id).filter(id => !order.includes(id))
+    allAvailableIds.filter(id => !order.includes(id))
   );
 
   const layout = {};
@@ -1171,42 +1182,24 @@ function getDefaultIconLayout(){
 
   const alignRight = !isMobile && shouldAlignDesktopIconsRight();
 
-  if(isMobile){
-    const cols = Math.max(1, Math.floor((width - 6) / metrics.stepX));
-    const rows = Math.max(1, Math.floor((height - 6) / metrics.stepY));
-    const trashCell = { col: cols - 1, row: rows - 1 };
-    let i = 0;
-    ordered.forEach(id => {
-      let col = i % cols;
-      let row = Math.floor(i / cols);
-      if(col === trashCell.col && row === trashCell.row){
-        i += 1;
-        col = i % cols;
-        row = Math.floor(i / cols);
-      }
-      const x = clamp(col * metrics.stepX, 0, maxX);
-      const y = clamp(row * metrics.stepY, 0, maxY);
-      layout[id] = snapToGridClamped(x, y, metrics);
-      i += 1;
-    });
-  } else {
-    let col = 0;
-    let row = 0;
-    const maxRows = Math.max(1, Math.floor((height - 6) / metrics.stepY));
-    const usableRows = alignRight ? Math.min(6, maxRows) : maxRows;
-    const cols = Math.max(1, Math.floor((width - 6) / metrics.stepX));
-    ordered.forEach(id => {
-      const actualCol = alignRight ? Math.max(0, (cols - 1) - col) : col;
-      const x = clamp(actualCol * metrics.stepX, 0, maxX);
-      const y = clamp(row * metrics.stepY, 0, maxY);
-      layout[id] = snapToGridClamped(x, y, metrics);
-      row += 1;
-      if(row >= usableRows){
-        row = 0;
-        col += 1;
-      }
-    });
-  }
+  const rows = Math.max(1, Math.floor((height - 6) / metrics.stepY));
+  const cols = Math.max(1, Math.floor((width - 6) / metrics.stepX));
+  const trashCell = isMobile ? { col: cols - 1, row: rows - 1 } : null;
+  let cellIndex = 0;
+  ordered.forEach(id => {
+    let col = Math.floor(cellIndex / rows);
+    let row = cellIndex % rows;
+    if(trashCell && col === trashCell.col && row === trashCell.row){
+      cellIndex += 1;
+      col = Math.floor(cellIndex / rows);
+      row = cellIndex % rows;
+    }
+    const actualCol = alignRight ? Math.max(0, (cols - 1) - col) : col;
+    const x = clamp(actualCol * metrics.stepX, 0, maxX);
+    const y = clamp(row * metrics.stepY, 0, maxY);
+    layout[id] = snapToGridClamped(x, y, metrics);
+    cellIndex += 1;
+  });
 
   const trashX = snapToGridClamped(maxX, maxY, metrics).x;
   const trashY = snapToGridClamped(maxX, maxY, metrics).y;
@@ -1234,6 +1227,7 @@ function moveIconsToTrash(ids){
   });
   state.trashSelection = new Set();
   saveTrash();
+  saveDesktopFs();
   renderIcons();
   refreshOpenFolderWindows();
   renderTrashWindow();
@@ -1252,6 +1246,7 @@ function restoreFromTrash(ids){
   });
   state.trashSelection = new Set();
   saveTrash();
+  saveDesktopFs();
   renderIcons();
   refreshOpenFolderWindows();
   renderTrashWindow();
@@ -1374,6 +1369,43 @@ function renderTrashWindow(){
   if(!content) return;
   content.innerHTML = CONTENT.trash();
   applyI18nTo(win);
+  content.querySelectorAll('[data-trash-id]').forEach(itemEl => {
+    const id = itemEl.dataset.trashId;
+    itemEl.classList.toggle('selected', state.trashSelection.has(id));
+    itemEl.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if(e.ctrlKey || e.metaKey){
+        if(state.trashSelection.has(id)) state.trashSelection.delete(id);
+        else state.trashSelection.add(id);
+      } else {
+        state.trashSelection = new Set([id]);
+      }
+      renderTrashWindow();
+    });
+    itemEl.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if(!state.trashSelection.has(id)) state.trashSelection = new Set([id]);
+      renderTrashWindow();
+      openCtxMenu(e.clientX, e.clientY, 'trash', null, { selectedIds:Array.from(state.trashSelection) });
+    });
+  });
+  installRubberbandSelection(content, '[data-trash-id]',
+    ()=>Array.from(state.trashSelection),
+    ids=>{
+      state.trashSelection = new Set(ids.filter(id=>state.trash.has(id)));
+      content.querySelectorAll('[data-trash-id]').forEach(el=>el.classList.toggle('selected', state.trashSelection.has(el.dataset.trashId)));
+    }
+  );
+  if(content.dataset.trashContextBound !== '1'){
+    content.dataset.trashContextBound = '1';
+    content.addEventListener('contextmenu', e => {
+      if(e.target.closest('[data-trash-id]')) return;
+      e.preventDefault();
+      openCtxMenu(e.clientX, e.clientY, 'trash', null, { selectedIds:Array.from(state.trashSelection) });
+    });
+  }
   content.classList.toggle('trash-empty', state.trash.size === 0);
   const emptyBtn = win.querySelector('[data-trash-action="empty"]');
   if(emptyBtn) emptyBtn.disabled = state.trash.size === 0;
@@ -1421,6 +1453,128 @@ function updateOpenWindowTitleIcons(){
 
 /* ===== Module: 02-games-and-ui.js ===== */
 let sewerSkaterRufflePromise = null;
+const GAME_FAVORITES_KEY = 'bliss98_games_favorites';
+function loadGameFavorites(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(GAME_FAVORITES_KEY) || '[]');
+    return Array.isArray(raw) ? Array.from(new Set(raw.filter(id => typeof id === 'string'))) : [];
+  } catch { return []; }
+}
+let gameFavorites = loadGameFavorites();
+
+function saveGameFavorites(){
+  try{ localStorage.setItem(GAME_FAVORITES_KEY, JSON.stringify(gameFavorites)); } catch {}
+}
+
+function isGameFavorite(id){ return gameFavorites.includes(id); }
+
+function toggleGameFavorite(id){
+  if(!id) return;
+  gameFavorites = isGameFavorite(id) ? gameFavorites.filter(item => item !== id) : [...gameFavorites, id];
+  saveGameFavorites();
+}
+
+const GAME_AUDIO_KEY = 'bliss98_game_audio_settings';
+function loadGameAudioSettings(){
+  try{
+    const raw = localStorage.getItem(GAME_AUDIO_KEY);
+    if(!raw) return { volume:0.8, muted:false };
+    const parsed = JSON.parse(raw);
+    return {
+      volume: Number.isFinite(parsed.volume) ? clamp(parsed.volume, 0, 1) : 0.8,
+      muted: !!parsed.muted,
+    };
+  } catch {
+    return { volume:0.8, muted:false };
+  }
+}
+let gameAudioSettings = loadGameAudioSettings();
+
+function getEffectiveGameVolume(){
+  return gameAudioSettings.muted ? 0 : gameAudioSettings.volume;
+}
+
+function saveGameAudioSettings(){
+  try{ localStorage.setItem(GAME_AUDIO_KEY, JSON.stringify(gameAudioSettings)); } catch {}
+}
+
+function gameAudioControlsHtml(){
+  return `
+    <div class="game-audio-controls" role="group" aria-label="${t('games.audio')}" data-game-audio-controls>
+      <button class="btn bevel flash-audio-button" type="button" data-game-audio-mute aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M15 9a5 5 0 0 1 0 6m2-9a9 9 0 0 1 0 12"/></svg>
+      </button>
+      <label class="game-audio-slider-wrap">
+        <input type="range" min="0" max="100" step="1" data-game-audio-slider aria-label="${t('games.volume')}" title="${t('games.volume')}" />
+      </label>
+      <span class="tiny game-audio-value" data-game-audio-value>80%</span>
+    </div>
+  `;
+}
+
+function updateGameAudioControls(root=document){
+  if(!root || !root.querySelectorAll) return;
+  const muted = gameAudioSettings.muted || gameAudioSettings.volume <= 0;
+  root.querySelectorAll('[data-game-audio-mute]').forEach(button=>setFlashAudioButtonState(button, muted));
+  const value = Math.round(gameAudioSettings.volume * 100);
+  root.querySelectorAll('[data-game-audio-slider]').forEach(slider=>{ slider.value = String(value); });
+  root.querySelectorAll('[data-game-audio-value]').forEach(label=>{ label.textContent = `${value}%`; });
+}
+
+function sendGameAudioToFrame(frame){
+  if(!frame || !frame.contentWindow) return;
+  const volume = getEffectiveGameVolume();
+  try{
+    const frameOrigin = new URL(frame.src, document.baseURI).origin;
+    frame.contentWindow.postMessage({ type:'bliss-game-audio', volume }, frameOrigin);
+    if(frameOrigin === window.location.origin && typeof frame.contentWindow.setBlissGameVolume === 'function'){
+      frame.contentWindow.setBlissGameVolume(volume);
+    }
+  } catch {}
+}
+
+function applyGameAudioToWindow(root){
+  if(!root) return;
+  const volume = getEffectiveGameVolume();
+  if(typeof root._gameAudioApply === 'function') root._gameAudioApply(volume);
+  root.querySelectorAll('[data-game-audio-frame]').forEach(frame=>sendGameAudioToFrame(frame));
+}
+
+function bindGameAudioControls(root){
+  if(!root) return;
+  if(root.dataset.gameAudioBound !== '1'){
+    root.dataset.gameAudioBound = '1';
+    root.addEventListener('click', e=>{
+      const button = e.target.closest && e.target.closest('[data-game-audio-mute]');
+      if(!button || !root.contains(button)) return;
+      if(gameAudioSettings.muted || gameAudioSettings.volume <= 0){
+        gameAudioSettings.volume = 0.8;
+        gameAudioSettings.muted = false;
+      } else {
+        gameAudioSettings.muted = true;
+      }
+      saveGameAudioSettings();
+      updateGameAudioControls(root);
+      applyGameAudioToWindow(root);
+    });
+    root.addEventListener('input', e=>{
+      if(!e.target.matches || !e.target.matches('[data-game-audio-slider]')) return;
+      gameAudioSettings.volume = clamp((Number(e.target.value) || 0) / 100, 0, 1);
+      gameAudioSettings.muted = gameAudioSettings.volume <= 0;
+      saveGameAudioSettings();
+      updateGameAudioControls(document);
+      applyGameAudioToWindow(root);
+    });
+  }
+  root.querySelectorAll('[data-game-audio-frame]').forEach(frame=>{
+    if(frame.dataset.gameAudioLoadBound === '1') return;
+    frame.dataset.gameAudioLoadBound = '1';
+    frame.addEventListener('load', ()=>sendGameAudioToFrame(frame));
+  });
+  updateGameAudioControls(root);
+  applyGameAudioToWindow(root);
+}
+
 function setFlashAudioButtonState(button, muted){
   if(!button) return;
   const label = t(muted ? 'games.flash.unmute' : 'games.flash.mute');
@@ -1494,23 +1648,9 @@ function initRuffleGameInWindow(win, playerSelector, swfPath, gameName, loadOpti
     player.setAttribute('aria-label', gameName);
     container.replaceChildren(player);
     const playerApi = player.ruffle();
-    const audioButton = win.querySelector('[data-games-action="flash-audio"]');
-    if(audioButton){
-      audioButton.addEventListener('click', ()=>{
-        const muted = audioButton.dataset.muted === 'true';
-        if(muted){
-          const restoreVolume = Number(audioButton.dataset.restoreVolume) || 1;
-          playerApi.volume = restoreVolume;
-          setFlashAudioButtonState(audioButton, false);
-        } else {
-          const currentVolume = Number(playerApi.volume);
-          audioButton.dataset.restoreVolume = String(currentVolume > 0 ? currentVolume : 1);
-          playerApi.volume = 0;
-          setFlashAudioButtonState(audioButton, true);
-        }
-      });
-      setFlashAudioButtonState(audioButton, Number(playerApi.volume) === 0);
-    }
+    win._gameAudioApply = volume=>{ playerApi.volume = volume; };
+    playerApi.volume = getEffectiveGameVolume();
+    updateGameAudioControls(win);
     return playerApi.load({
       url: new URL(swfPath, document.baseURI).href,
       ...loadOptions
@@ -1572,9 +1712,121 @@ function initLineRiderBeta2InWindow(win){
   );
 }
 
+let activeGamesContextMenu = null;
+let activeGamesContextCleanup = null;
+
+function closeGamesContextMenu(){
+  if(activeGamesContextCleanup){ activeGamesContextCleanup(); activeGamesContextCleanup = null; }
+  if(activeGamesContextMenu){ activeGamesContextMenu.remove(); activeGamesContextMenu = null; }
+}
+
+function isGameOnDesktop(gameId){
+  const shortcut = getFsItem(`game-shortcut-${gameId}`);
+  if(shortcut && shortcut.parentId == null && !state.trash.has(shortcut.id)) return true;
+  const item = getFsItem(gameId);
+  return !!item && item.parentId == null && !state.trash.has(item.id) && (item.type === 'app' || item.type === 'virtual');
+}
+
+function addGameToDesktop(gameId){
+  if(!gameId || isGameOnDesktop(gameId)) return;
+  const shortcutId = `game-shortcut-${gameId}`;
+  if(state.trash.has(shortcutId)){
+    restoreFromTrash([shortcutId]);
+    return;
+  }
+  const iconFiles = {
+    snake:'./assets/icons/snake.png', doom:'./assets/games/doom/doom.png',
+    'vice-city':'./assets/games/vc/vc.png', '8-ball-pool':'./assets/games/8ballpool.jpg',
+    'bad-piggies':'./assets/games/bad piggies.webp',
+    'apple-shooter':'./assets/games/Apple shooter.png',
+    'animator-vs-animation-game':'./assets/games/animator vs animation.png',
+    'american-racing':'./assets/games/american racing.jpg',
+    'age-of-war':'./assets/games/Age of War.webp', 'age-of-war-2':'./assets/games/Age of War 2.png',
+    'ducklife5':'./assets/games/DuckLife 5.png',
+    'ed-edd-n-eddys-candy-machine-deluxe':'./assets/games/Ed, Edd n Eddy’s Candy Machine Deluxe.webp',
+    'papas-burgeria':'./assets/games/Papa’s Burgeria.png',
+    'papas-cheeseria':'./assets/games/Papa’s Cheeseria.jpeg',
+    'papas-sushiria':'./assets/games/Papa’s Sushiria.jpg',
+    'papas-pastaria':'./assets/games/Papa’s Pastaria.jpg',
+    'dope-skate':'./assets/icons/dope-skate.png',
+    'sewer-skater':'./assets/flashgames/sewer-skater/skatesewer.jpg',
+    antbuster:'./assets/flashgames/Antbuster/Antbuster.png',
+    'bowman-2':'./assets/flashgames/Bowman 2/Bowman 2.png',
+    'alien-hominid':'./assets/flashgames/Alien Hominid/Alien Hominid.png',
+    'happy-wheels-demo':'./assets/flashgames/Happy Wheels Demo/Happy Wheels Demo.png',
+    'line-rider-beta-2':'./assets/flashgames/Line Rider Beta 2/Line Rider Beta 2.png',
+    minesweeper:'./assets/icons/minesweeper.svg',
+  };
+  const placed = getFreeIconPlacement(null, { x:0, y:0 }, null, [shortcutId]);
+  upsertFsItem({
+    id:shortcutId,
+    type:'game-shortcut',
+    gameId,
+    name:getGameNameForSort(gameId),
+    iconFile:iconFiles[gameId] || './assets/icons/Games.png',
+    parentId:null,
+    x:placed.x,
+    y:placed.y,
+  }, { save:false, syncIconPos:false });
+  saveDesktopFs();
+  renderIcons();
+}
+
+function openGamesContextMenu(win, x, y, gameId=null){
+  closeGamesContextMenu();
+  const menu = document.createElement('div');
+  menu.className = 'games-context-menu';
+  menu.setAttribute('role', 'menu');
+  const addItem = (action, label, check='', disabled=false)=>`
+    <button class="games-context-item${disabled ? ' disabled' : ''}" type="button" role="menuitem" data-games-context-action="${action}" ${disabled ? 'disabled' : ''}>
+      <span class="games-context-check" aria-hidden="true">${check}</span><span>${label}</span>
+    </button>`;
+  menu.innerHTML = [
+    addItem('refresh', t('games.context.refresh')),
+    gameId ? '<div class="games-context-separator"></div>' : '',
+    gameId ? addItem('favorite', t(isGameFavorite(gameId) ? 'games.context.removeFavorite' : 'games.context.addFavorite')) : '',
+    gameId ? addItem('desktop', t('games.context.addDesktop'), '', isGameOnDesktop(gameId)) : '',
+    '<div class="games-context-separator"></div>',
+    addItem('grid', t('games.context.grid'), state.games.layout === 'grid' ? '✓' : ''),
+  ].filter(Boolean).join('');
+  document.body.appendChild(menu);
+  activeGamesContextMenu = menu;
+  const rect = menu.getBoundingClientRect();
+  menu.style.left = `${clamp(x, 6, Math.max(6, window.innerWidth - rect.width - 6))}px`;
+  menu.style.top = `${clamp(y, 6, Math.max(6, window.innerHeight - rect.height - 6))}px`;
+  const onAction = e=>{
+    const button = e.target.closest('[data-games-context-action]');
+    if(!button || button.disabled) return;
+    const action = button.dataset.gamesContextAction;
+    closeGamesContextMenu();
+    if(action === 'refresh'){
+      if(state.games.view === 'list') renderGamesWindow();
+    } else if(action === 'favorite' && gameId){
+      toggleGameFavorite(gameId);
+      renderGamesWindow();
+    } else if(action === 'desktop' && gameId){
+      addGameToDesktop(gameId);
+    } else if(action === 'grid'){
+      state.games.layout = state.games.layout === 'grid' ? 'list' : 'grid';
+      saveGamesLayout();
+      renderGamesWindow();
+    }
+  };
+  const onOutside = e=>{ if(!menu.contains(e.target)) closeGamesContextMenu(); };
+  const onKey = e=>{ if(e.key === 'Escape') closeGamesContextMenu(); };
+  menu.addEventListener('click', onAction);
+  window.addEventListener('pointerdown', onOutside, true);
+  window.addEventListener('keydown', onKey, true);
+  activeGamesContextCleanup = ()=>{
+    window.removeEventListener('pointerdown', onOutside, true);
+    window.removeEventListener('keydown', onKey, true);
+  };
+}
+
 function renderGamesWindow(){
   const win = document.getElementById('win_games');
   if(!win) return;
+  closeGamesContextMenu();
   if(state.games.view === 'dope-skate'){
     // Dope Skate now runs as a standalone app window.
     state.games.view = 'list';
@@ -1583,6 +1835,9 @@ function renderGamesWindow(){
     win.addEventListener('contextmenu', (e)=>{
       e.preventDefault();
       e.stopPropagation();
+      if(state.games.view !== 'list') return;
+      const card = e.target.closest('[data-game-id]');
+      openGamesContextMenu(win, e.clientX, e.clientY, card ? card.dataset.gameId : null);
     });
     win.dataset.ctxGuard = '1';
   }
@@ -1596,6 +1851,12 @@ function renderGamesWindow(){
   delete content.dataset.fitMaxW;
   delete content.dataset.fitMaxH;
   applyI18nTo(win);
+  win._gameAudioApply = null;
+  bindGameAudioControls(win);
+  win.querySelector('[data-game-credits]')?.addEventListener('click', e=>{
+    e.preventDefault();
+    openGameCredits(e.currentTarget.dataset.gameCredits);
+  });
   const mobileGameView = isMobileGameMode() && (state.games.view === 'snake' || state.games.view === 'minesweeper');
   if(state.games.view === 'snake' || state.games.view === 'minesweeper'){
     enterMobileFullscreen(state.games.view, win);
@@ -1610,11 +1871,10 @@ function renderGamesWindow(){
     if(state.games.selectedId && !items.some(item => item.dataset.gameId === state.games.selectedId)){
       state.games.selectedId = firstId;
     }
-    const listEl = win.querySelector('#gamesList');
-    if(listEl){
+    win.querySelectorAll('[data-game-items-group]').forEach(listEl=>{
       const layout = state.games.layout === 'list' ? 'games-list' : 'games-grid';
-      listEl.className = layout + (state.games.layout === 'grid' && state.games.bigIcons ? ' games-big' : '');
-    }
+      listEl.className = `games-items-group ${layout}` + (state.games.layout === 'grid' && state.games.bigIcons ? ' games-big' : '');
+    });
 
     items.forEach(item => {
       const id = item.dataset.gameId;
@@ -1667,6 +1927,102 @@ function renderGamesWindow(){
         sendTouchControlsState(touchControlsButton.getAttribute('aria-pressed') === 'true');
       }, { once:true });
     }
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'vice-city'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '960';
+    content.dataset.fitMinH = state.isMobile ? '420' : '680';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === '8-ball-pool'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'age-of-war'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'age-of-war-2'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'american-racing'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'animator-vs-animation-game'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'apple-shooter'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'bad-piggies'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'ducklife5'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'ed-edd-n-eddys-candy-machine-deluxe'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(state.games.view === 'papas-burgeria'){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
+    if(!mobileGameView) smartFitWindow(win, 'tabChange');
+    return;
+  }
+  if(['papas-cheeseria', 'papas-sushiria', 'papas-pastaria'].includes(state.games.view)){
+    content.dataset.fitMinW = state.isMobile ? '320' : '900';
+    content.dataset.fitMinH = state.isMobile ? '420' : '620';
+    const backButton = win.querySelector('[data-games-action="back"]');
+    if(backButton) backButton.addEventListener('click', backToGamesHub);
     if(!mobileGameView) smartFitWindow(win, 'tabChange');
     return;
   }
@@ -1781,6 +2137,12 @@ function renderDopeSkateWindow(){
   content.dataset.fitMinH = state.isMobile ? '280' : '820';
   content.dataset.gamesView = 'dope-skate';
   applyI18nTo(win);
+  win._gameAudioApply = volume=>{
+    if(dopeSkate.audio.ctx && dopeSkate.audio.masterGain){
+      dopeSkate.audio.masterGain.gain.setTargetAtTime(volume, dopeSkate.audio.ctx.currentTime, 0.02);
+    }
+  };
+  bindGameAudioControls(win);
   const mobileGameView = isMobileGameMode();
   if(mobileGameView){
     enterMobileFullscreen('dope-skate', win);
@@ -1802,9 +2164,151 @@ function initDopeSkateWindow(){
   renderDopeSkateWindow();
 }
 
+function getGameNameForSort(id){
+  const titleKeys = {
+    'vice-city': 'games.viceCity',
+    '8-ball-pool': 'games.eightBallPool',
+    'age-of-war': 'games.ageOfWar',
+    'age-of-war-2': 'games.ageOfWar2',
+    'american-racing': 'games.americanRacing',
+    'animator-vs-animation-game': 'games.animatorVsAnimationGame',
+    'apple-shooter': 'games.appleShooter',
+    'bad-piggies': 'games.badPiggies',
+    ducklife5: 'games.duckLife5',
+    'ed-edd-n-eddys-candy-machine-deluxe': 'games.edEddNEddysCandyMachineDeluxe',
+    'papas-burgeria': 'games.papasBurgeria',
+    'papas-cheeseria': 'games.papasCheeseria',
+    'papas-sushiria': 'games.papasSushiria',
+    'papas-pastaria': 'games.papasPastaria',
+    snake: 'games.snake',
+    minesweeper: 'games.minesweeper',
+    doom: 'games.doom',
+    'dope-skate': 'games.dopeSkate',
+    'sewer-skater': 'games.sewerSkater',
+    antbuster: 'games.antbuster',
+    'bowman-2': 'games.bowman2',
+    'alien-hominid': 'games.alienHominid',
+    'happy-wheels-demo': 'games.happyWheelsDemo',
+    'line-rider-beta-2': 'games.lineRiderBeta2',
+  };
+  if(titleKeys[id]) return t(titleKeys[id]);
+  const app = getAppById(id);
+  return app ? t(app.titleKey) : String(id || '');
+}
+
+function sortGameIdsAlphabetically(ids){
+  const locale = state.lang === 'pt' ? 'pt-BR' : 'en';
+  return (Array.isArray(ids) ? ids : []).slice().sort((a, b)=>
+    getGameNameForSort(a).localeCompare(getGameNameForSort(b), locale, { sensitivity:'base', numeric:true })
+  );
+}
+
+function getGamesHubIds(){
+  return Array.from(new Set([...(state.folders.games || []), 'vice-city', '8-ball-pool', 'age-of-war', 'age-of-war-2', 'american-racing', 'animator-vs-animation-game', 'apple-shooter', 'bad-piggies', 'ducklife5', 'ed-edd-n-eddys-candy-machine-deluxe', 'papas-burgeria', 'papas-cheeseria', 'papas-sushiria', 'papas-pastaria']));
+}
+
+// Keep source notes beside the game IDs so future Quenq embeds can reuse this in-app credits window.
+const GAME_CREDIT_INFO = {
+  'vice-city': {
+    descriptionKey:'games.credits.viceCity',
+    sourceUrl:'https://quenq.com/apps/vice-city/',
+    sourceLabel:'Quenq Apps',
+  },
+  '8-ball-pool': {
+    descriptionKey:'games.credits.eightBallPool',
+    sourceUrl:'https://quenq.com/arcade/8-ball-pool/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'age-of-war': {
+    descriptionKey:'games.credits.ageOfWar',
+    sourceUrl:'https://quenq.com/arcade/age-of-war/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'age-of-war-2': {
+    descriptionKey:'games.credits.ageOfWar2',
+    sourceUrl:'https://quenq.com/arcade/ageofwar2/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'american-racing': {
+    descriptionKey:'games.credits.americanRacing',
+    sourceUrl:'https://quenq.com/arcade/american-racing/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'animator-vs-animation-game': {
+    descriptionKey:'games.credits.animatorVsAnimationGame',
+    sourceUrl:'https://quenq.com/arcade/animator-vs-animation-game/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'apple-shooter': {
+    descriptionKey:'games.credits.appleShooter',
+    sourceUrl:'https://quenq.com/arcade/apple-shooter/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'bad-piggies': {
+    descriptionKey:'games.credits.badPiggies',
+    sourceUrl:'https://quenq.com/arcade/bad-piggies/',
+    sourceLabel:'Quenq Arcade',
+  },
+  ducklife5: {
+    descriptionKey:'games.credits.duckLife5',
+    sourceUrl:'https://quenq.com/arcade/ducklife5/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'ed-edd-n-eddys-candy-machine-deluxe': {
+    descriptionKey:'games.credits.edEddNEddysCandyMachineDeluxe',
+    sourceUrl:'https://quenq.com/arcade/ed-edd-n-eddys-candy-machine-deluxe/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'papas-burgeria': {
+    descriptionKey:'games.credits.papasBurgeria',
+    sourceUrl:'https://quenq.com/arcade/papas-burgeria/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'papas-cheeseria': {
+    descriptionKey:'games.credits.papasCheeseria',
+    sourceUrl:'https://quenq.com/arcade/papas-cheeseria/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'papas-sushiria': {
+    descriptionKey:'games.credits.papasSushiria',
+    sourceUrl:'https://quenq.com/arcade/papas-sushiria/',
+    sourceLabel:'Quenq Arcade',
+  },
+  'papas-pastaria': {
+    descriptionKey:'games.credits.papasPastaria',
+    sourceUrl:'https://quenq.com/arcade/papas-pastaria/',
+    sourceLabel:'Quenq Arcade',
+  },
+  doom: {
+    descriptionKey:'games.credits.doom',
+    sourceUrl:'https://github.com/Saketh-Chandra/doom-wasm-pwa',
+    sourceLabel:'doom-wasm-pwa on GitHub',
+    extraLinks:[{ url:'https://freedoom.github.io/', label:'Freedoom' }],
+  },
+};
+
+function openGameCredits(gameId){
+  const info = GAME_CREDIT_INFO[gameId];
+  const modal = document.getElementById('modal');
+  if(!info || !modal) return;
+  const titleEl = document.getElementById('modalTitle');
+  const bodyEl = document.getElementById('modalBody');
+  const actionsEl = document.getElementById('modalActions');
+  if(!titleEl || !bodyEl || !actionsEl) return;
+
+  const links = [{ url:info.sourceUrl, label:info.sourceLabel }].concat(info.extraLinks || []);
+  titleEl.textContent = `${t('games.credits.title')} — ${getGameNameForSort(gameId)}`;
+  bodyEl.innerHTML = `
+    <p style="margin:0 0 10px;">${t(info.descriptionKey)}</p>
+    <p style="margin:0;">${links.map(link => `<a href="${link.url}" target="_blank" rel="noopener noreferrer">${link.label}</a>`).join(' · ')}</p>
+  `;
+  actionsEl.innerHTML = `<button class="btn bevel" type="button" data-modal-action="close" style="font-weight:700;">${t('common.ok')}</button>`;
+  modal.classList.remove('hidden');
+  actionsEl.querySelector('button')?.focus();
+}
+
 function getFirstGameId(){
-  const items = state.folders.games || [];
-  return items[0] || null;
+  return sortGameIdsAlphabetically(getGamesHubIds())[0] || null;
 }
 
 const MOBILE_GAME_DEBUG = new URLSearchParams(window.location.search).get('mobile') === '1';
@@ -2243,6 +2747,78 @@ function bindMobileOverlay(gameId, overlay){
 }
 
 function openGameFromHub(id){
+  if(id === 'vice-city'){
+    state.games.view = 'vice-city';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === '8-ball-pool'){
+    state.games.view = '8-ball-pool';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'age-of-war'){
+    state.games.view = 'age-of-war';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'age-of-war-2'){
+    state.games.view = 'age-of-war-2';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'american-racing'){
+    state.games.view = 'american-racing';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'animator-vs-animation-game'){
+    state.games.view = 'animator-vs-animation-game';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'apple-shooter'){
+    state.games.view = 'apple-shooter';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'bad-piggies'){
+    state.games.view = 'bad-piggies';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'ducklife5'){
+    state.games.view = 'ducklife5';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'ed-edd-n-eddys-candy-machine-deluxe'){
+    state.games.view = 'ed-edd-n-eddys-candy-machine-deluxe';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(id === 'papas-burgeria'){
+    state.games.view = 'papas-burgeria';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
+  if(['papas-cheeseria', 'papas-sushiria', 'papas-pastaria'].includes(id)){
+    state.games.view = id;
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
   if(id === 'doom'){
     state.games.view = 'doom';
     state.games.selectedId = id;
@@ -4127,6 +4703,7 @@ let dopeSkate = {
   data: null,
   audio: {
     ctx: null,
+    masterGain: null,
     enabled: false,
     unlocked: false,
   },
@@ -7041,6 +7618,11 @@ function dopeSkateUnlockAudio(){
     if(!dopeSkate.audio.ctx){
       dopeSkate.audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
     }
+    if(!dopeSkate.audio.masterGain){
+      dopeSkate.audio.masterGain = dopeSkate.audio.ctx.createGain();
+      dopeSkate.audio.masterGain.gain.value = getEffectiveGameVolume();
+      dopeSkate.audio.masterGain.connect(dopeSkate.audio.ctx.destination);
+    }
     dopeSkate.audio.ctx.resume();
     dopeSkate.audio.unlocked = true;
   } catch {}
@@ -7065,7 +7647,7 @@ function dopeSkatePlaySound(name){
   };
   osc.frequency.value = tones[name] || 300;
   osc.connect(gain);
-  gain.connect(ctx.destination);
+  gain.connect(dopeSkate.audio.masterGain || ctx.destination);
   const now = ctx.currentTime;
   gain.gain.exponentialRampToValueAtTime(vol * 0.25, now + 0.02);
   gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
@@ -7074,12 +7656,7 @@ function dopeSkatePlaySound(name){
 }
 
 function dopeSkateGetVolume(){
-  if(typeof mp === 'object' && mp && typeof mp.vol === 'number'){
-    return clamp(mp.vol, 0, 1);
-  }
-  const volEl = document.getElementById('mpVol');
-  const val = volEl ? parseFloat(volEl.value) : 0.6;
-  return Number.isFinite(val) ? Math.max(0, Math.min(1, val)) : 0.6;
+  return 0.6;
 }
 
 function loadClothesCache(){
@@ -7867,8 +8444,13 @@ function arrangeIcons(parentId = null, containerEl = null){
     refreshOpenFolderWindows();
     return;
   }
-  const metrics = getGridMetrics();
-  const layout = getDefaultIconLayout();
+  const desktopAreaEl = $('#desktopArea');
+  const iconGridEl = $('#iconGrid');
+  const desktopRect = desktopAreaEl ? desktopAreaEl.getBoundingClientRect() : { width:window.innerWidth, height:window.innerHeight };
+  const iconGridRect = iconGridEl ? iconGridEl.getBoundingClientRect() : null;
+  const availableWidth = iconGridRect && iconGridRect.width > 0 ? iconGridRect.width : desktopRect.width;
+  const availableHeight = iconGridRect && iconGridRect.height > 0 ? iconGridRect.height : desktopRect.height;
+  const metrics = getGridMetricsForSize(availableWidth, availableHeight);
   const iconPosCache = loadIconPositions();
   const occupied = new Map();
   const placedIds = new Set();
@@ -7879,21 +8461,24 @@ function arrangeIcons(parentId = null, containerEl = null){
     placedIds.add(id);
   };
 
-  Object.entries(layout).forEach(([id, pos])=>{
-    const item = getFsItem(id) || ensureFsItemForApp(id, { save: false });
-    if(!item) return;
-    if(state.trash.has(id)) return;
-    if((state.folders.games || []).includes(id)) return;
-    if(item.parentId) return;
-    placeItem(id, pos);
-  });
-
-  const rootItems = Object.values(state.fs.items || {}).filter(it => it.parentId == null && !state.trash.has(it.id));
-  rootItems.forEach(it => {
-    if(placedIds.has(it.id)) return;
-    if((state.folders.games || []).includes(it.id)) return;
-    const base = Number.isFinite(it.x) && Number.isFinite(it.y) ? { x: it.x, y: it.y } : { x: 0, y: 0 };
-    placeItem(it.id, base);
+  APPS.filter(app => app.showOnDesktop !== false).forEach(app => ensureFsItemForApp(app.id, { save:false }));
+  VIRTUAL_ICONS.forEach(icon => ensureFsItemForApp(icon.id, { save:false }));
+  const locale = state.lang === 'pt' ? 'pt-BR' : 'en';
+  const rootItems = Object.values(state.fs.items || {})
+    .filter(item => item.parentId == null && isDesktopVisibleItem(item))
+    .sort((a, b)=>getFsItemLabel(a).localeCompare(getFsItemLabel(b), locale, { sensitivity:'base', numeric:true }) || a.id.localeCompare(b.id));
+  const usableRows = Math.max(1, metrics.rows);
+  const alignRight = shouldAlignDesktopIconsRight() && !state.isMobile;
+  const maxCols = metrics.cols;
+  rootItems.forEach((item, index)=>{
+    const col = Math.floor(index / usableRows);
+    const row = index % usableRows;
+    const actualCol = alignRight ? Math.max(0, maxCols - 1 - col) : col;
+    const pos = {
+      x: clamp(actualCol * metrics.stepX, 0, Math.max(0, (metrics.cols - 1) * metrics.stepX)),
+      y: clamp(row * metrics.stepY, 0, Math.max(0, (metrics.rows - 1) * metrics.stepY)),
+    };
+    placeItem(item.id, pos);
   });
 
   saveIconPositions(iconPosCache);
@@ -8721,7 +9306,11 @@ function saveIconLabels(){
 function loadFolders(){
   try{
     const raw = localStorage.getItem(FOLDER_KEY);
-    if(raw) return JSON.parse(raw);
+    if(raw){
+      const folders = JSON.parse(raw);
+      if(!Array.isArray(folders.games)) folders.games = [];
+      return folders;
+    }
   } catch {}
   return { games: ['snake', 'minesweeper', 'dope-skate', 'sewer-skater', 'antbuster', 'bowman-2', 'alien-hominid', 'happy-wheels-demo', 'line-rider-beta-2', 'doom'] };
 }
@@ -9645,13 +10234,12 @@ function getVirtualIconById(id){
 }
 
 function openAppFromDesktopIcon(appId, iconEl){
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(!state.settings.appOpenAnim || reduceMotion || !iconEl){
-    openApp(appId);
+  if(!state.animations || !state.settings.appOpenAnim || !iconEl || document.body.matches('[data-theme="blissos"][data-blissos-style="aqua"]')){
+    openApp(appId, { sourceEl: iconEl || null });
     return;
   }
   cancelAppOpenAnimation({ revealPending: true });
-  const winEl = openApp(appId, { deferReveal: true, skipAnimOpen: true });
+  const winEl = openApp(appId, { deferReveal: true, skipAnimOpen: true, sourceEl: iconEl });
   if(!winEl){
     openApp(appId);
     return;
@@ -9682,7 +10270,21 @@ function openIconById(id, opts = {}){
   if(!fsItem) fsItem = ensureFsItemForApp(id, { save: false }) || fsItem;
   if(id === 'trash'){
     if(state.windows.has('trash')) closeApp('trash');
-    openSeekerSection('trash');
+    openSeekerSection('trash', { sourceEl });
+    return;
+  }
+  if(fsItem && fsItem.type === 'game-shortcut' && fsItem.gameId){
+    const gameId = fsItem.gameId;
+    if(gameId === 'dope-skate'){
+      openGameFromHub(gameId);
+    } else if(!state.windows.has('games')){
+      state.games.view = gameId;
+      state.games.selectedId = gameId;
+      openAppFromDesktopIcon('games', sourceEl);
+      renderGamesWindow();
+    } else {
+      openGameFromHub(gameId);
+    }
     return;
   }
   if(id === 'snake'){
@@ -9694,6 +10296,17 @@ function openIconById(id, opts = {}){
       openApp('games');
       renderGamesWindow();
     }
+    return;
+  }
+  if(id === 'vice-city'){
+    state.games.view = 'vice-city';
+    state.games.selectedId = id;
+    if(isDesktopIcon && !state.windows.has('games')){
+      openAppFromDesktopIcon('games', sourceEl);
+    } else {
+      openApp('games');
+    }
+    renderGamesWindow();
     return;
   }
   if(id === 'minesweeper'){
@@ -9719,7 +10332,7 @@ function openIconById(id, opts = {}){
     openAppFromDesktopIcon(id, sourceEl);
     return;
   }
-  openApp(id);
+  openApp(id, { sourceEl });
 }
 
 let fsIdCounter = 0;
@@ -9731,6 +10344,7 @@ function generateFsId(prefix){
 
 function getFsItemLabel(item){
   if(!item) return '';
+  if(item.type === 'game-shortcut') return getGameNameForSort(item.gameId);
   if(item.type === 'app'){
     const app = getAppById(item.appId || item.id);
     return app ? getIconLabel(app) : (item.name || item.id);
@@ -9743,7 +10357,7 @@ function getFsItemLabel(item){
 }
 
 function isInFolder(id){
-  if((state.folders.games || []).includes(id)) return true;
+  if(id !== 'vice-city' && (state.folders.games || []).includes(id)) return true;
   const item = getFsItem(id);
   return !!(item && item.parentId);
 }
@@ -9752,7 +10366,8 @@ function isDesktopVisibleItem(item){
   if(!item || item.parentId != null) return false;
   if(item.id === 'trash' && state.settings.theme === 'blissos') return false;
   if(item.id !== 'trash' && state.trash.has(item.id)) return false;
-  if((state.folders.games || []).includes(item.id)) return false;
+  if(item.type === 'game-shortcut') return true;
+  if(item.id !== 'vice-city' && (state.folders.games || []).includes(item.id)) return false;
   if(item.type === 'app'){
     const app = getAppById(item.appId || item.id);
     return !!app && app.showOnDesktop !== false;
@@ -9963,11 +10578,15 @@ function moveDraggedItemsToFolderTarget(ids, folderId, opts = {}){
   let restoredAny = false;
   filtered.forEach((id, idx) => {
     if(!canPlaceItemInFolder(id, folderId, { allowTrashed: true })) return;
-    if(state.trash.has(id)){
+    const wasTrashed = state.trash.has(id);
+    const trashedItem = getFsItem(id);
+    if(wasTrashed){
       state.trash.delete(id);
       restoredAny = true;
     }
-    const preferred = basePreferred
+    const preferred = wasTrashed && folderId == null && trashedItem?.type === 'game-shortcut'
+      ? { x: trashedItem.x || 0, y: trashedItem.y || 0 }
+      : basePreferred
       ? {
           x: Math.max(0, Math.floor(basePreferred.x + (idx * 16))),
           y: Math.max(0, Math.floor(basePreferred.y + (idx * 14))),
@@ -10258,7 +10877,7 @@ function openFolderWindow(folderId, opts = {}){
     : folderId;
   const seekerWasOpen = state.windows.has('seeker');
   rememberSeekerRecent({ kind:'folder', id:targetFolderId }, { refresh: false });
-  const winEl = openSeekerSection(getSeekerSectionForFolderId(targetFolderId));
+  const winEl = openSeekerSection(getSeekerSectionForFolderId(targetFolderId), { sourceEl: opts.sourceEl || null });
   if(seekerWasOpen) playSfx('fileOpen');
   return winEl;
 }
@@ -10308,6 +10927,9 @@ function openTxtFileWindow(txtId, opts = {}){
     mediaplayerFixed: false,
     deferReveal: false,
     skipAnimOpen: false,
+    animationOriginEl: opts.sourceEl || null,
+    animationOriginKind: opts.sourceEl && opts.sourceEl.closest('#blissosDock') ? 'dock' : opts.sourceEl && opts.sourceEl.closest('#taskQuickLaunch') ? 'quicklaunch' : 'desktop',
+    animationOriginRect: opts.sourceEl ? opts.sourceEl.getBoundingClientRect() : null,
     smartFitPromise: Promise.resolve(getWindowRectFromState({ left: rect.left, top: rect.top, width: rect.width, height: rect.height })),
     kind: 'txt',
     txtId,
@@ -10549,9 +11171,7 @@ function makeGameItemDraggable(itemEl, id){
       const overWindow = topTarget && topTarget.closest ? topTarget.closest('.window') : null;
 
       if(isOverTrashWindow(e.clientX, e.clientY) || isOverTrash(e.clientX, e.clientY)){
-        moveIconsToTrash([id]);
-        refreshOpenFolderWindows();
-        renderGamesWindow();
+        // Games remain in the Games hub; dragging a card to the trash does not delete it.
       } else if(!isOverGamesWindow(e.clientX, e.clientY)){
         const folderTarget = getFolderDropTargetAt(e.clientX, e.clientY, dragEls, [id]);
         if(folderTarget){
@@ -10563,14 +11183,22 @@ function makeGameItemDraggable(itemEl, id){
           refreshOpenFolderWindows();
           renderGamesWindow();
         } else if(isOverDesktopArea(e.clientX, e.clientY) && !overWindow){
-          removeFromFolder('games', [id]);
           const preferred = getDesktopPosFromClient(e.clientX, e.clientY);
-          moveItemToFolder(id, null, { force: true, save: false, iconPosCache, preferredPos: preferred });
-          saveIconPositions(iconPosCache);
+          const shortcutId = `game-shortcut-${id}`;
+          const iconSrc = itemEl.querySelector('img')?.getAttribute('src') || '';
+          const placed = getFreeIconPlacement(null, preferred, null, [shortcutId]);
+          upsertFsItem({
+            id: shortcutId,
+            type: 'game-shortcut',
+            gameId: id,
+            name: getGameNameForSort(id),
+            iconFile: iconSrc,
+            parentId: null,
+            x: placed.x,
+            y: placed.y,
+          }, { save: false, syncIconPos: false });
           saveDesktopFs();
           renderIcons();
-          refreshOpenFolderWindows();
-          renderGamesWindow();
         }
       }
     }
@@ -10766,6 +11394,7 @@ function ensureSeekerState(){
   if(state.seeker.view !== 'list' && state.seeker.view !== 'icons') state.seeker.view = 'icons';
   if(typeof state.seeker.search !== 'string') state.seeker.search = '';
   if(!Array.isArray(state.seeker.recent)) state.seeker.recent = [];
+  if(!Array.isArray(state.seeker.selectedKeys)) state.seeker.selectedKeys = [];
   if(typeof state.seeker.selectedKey !== 'string') state.seeker.selectedKey = '';
   if(typeof state.seeker.lastClickKey !== 'string') state.seeker.lastClickKey = '';
   if(typeof state.seeker.lastClickTs !== 'number') state.seeker.lastClickTs = 0;
@@ -11222,6 +11851,94 @@ function getFsIdFromSeekerEntry(entry){
   return null;
 }
 
+function installRubberbandSelection(container, selector, getCurrentSelection, setSelection){
+  if(!container) return;
+  container._rubberbandGetCurrentSelection = getCurrentSelection;
+  container._rubberbandSetSelection = setSelection;
+  if(container.dataset.rubberbandBound === '1'){
+    if(!container.querySelector('.seeker-selection-box')){
+      const replacementBox = document.createElement('div');
+      replacementBox.className = 'rubberband seeker-selection-box hidden';
+      container.appendChild(replacementBox);
+    }
+    return;
+  }
+  container.dataset.rubberbandBound = '1';
+  if(getComputedStyle(container).position === 'static') container.style.position = 'relative';
+  const box = document.createElement('div');
+  box.className = 'rubberband seeker-selection-box hidden';
+  container.appendChild(box);
+  let down = false;
+  let active = false;
+  let pointerId = null;
+  let startX = 0;
+  let startY = 0;
+  let additive = false;
+
+  const updateBox = (x, y)=>{
+    const activeBox = container.querySelector('.seeker-selection-box');
+    if(!activeBox) return;
+    const left = Math.min(startX, x);
+    const top = Math.min(startY, y);
+    activeBox.style.left = `${left + container.scrollLeft}px`;
+    activeBox.style.top = `${top + container.scrollTop}px`;
+    activeBox.style.width = `${Math.abs(x - startX)}px`;
+    activeBox.style.height = `${Math.abs(y - startY)}px`;
+  };
+  const onPointerDown = e=>{
+    if(e.pointerType === 'mouse' && e.button !== 0) return;
+    if(e.target.closest && e.target.closest(selector)) return;
+    down = true;
+    active = false;
+    pointerId = e.pointerId;
+    const rect = container.getBoundingClientRect();
+    startX = e.clientX - rect.left;
+    startY = e.clientY - rect.top;
+    additive = !!(e.ctrlKey || e.metaKey);
+    try{ container.setPointerCapture(pointerId); } catch {}
+  };
+  const onPointerMove = e=>{
+    if(!down || e.pointerId !== pointerId) return;
+    const rect = container.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    if(!active && Math.abs(x - startX) + Math.abs(y - startY) > 6){
+      active = true;
+      container.querySelector('.seeker-selection-box')?.classList.remove('hidden');
+      document.body.classList.add('dragging');
+      if(!additive) container._rubberbandSetSelection([]);
+    }
+    if(!active) return;
+    e.preventDefault();
+    updateBox(x, y);
+    const region = { left:Math.min(e.clientX, startX + rect.left), right:Math.max(e.clientX, startX + rect.left), top:Math.min(e.clientY, startY + rect.top), bottom:Math.max(e.clientY, startY + rect.top) };
+    const selected = new Set(additive ? container._rubberbandGetCurrentSelection() : []);
+    container.querySelectorAll(selector).forEach(item=>{
+      const itemRect = item.getBoundingClientRect();
+      const hit = !(itemRect.right < region.left || itemRect.left > region.right || itemRect.bottom < region.top || itemRect.top > region.bottom);
+      if(hit) selected.add(item.dataset.seekerItem || item.dataset.trashId);
+    });
+    container._rubberbandSetSelection(Array.from(selected));
+  };
+  const onPointerUp = e=>{
+    if(!down || (pointerId !== null && e.pointerId !== pointerId)) return;
+    down = false;
+    try{ container.releasePointerCapture(pointerId); } catch {}
+    if(active){
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    active = false;
+    pointerId = null;
+    container.querySelector('.seeker-selection-box')?.classList.add('hidden');
+    document.body.classList.remove('dragging');
+  };
+  container.addEventListener('pointerdown', onPointerDown);
+  container.addEventListener('pointermove', onPointerMove);
+  container.addEventListener('pointerup', onPointerUp);
+  container.addEventListener('pointercancel', onPointerUp);
+}
+
 function makeSeekerItemDraggable(itemEl, shell){
   if(!itemEl || !shell || itemEl.dataset.seekerDragBound === '1') return;
   itemEl.dataset.seekerDragBound = '1';
@@ -11378,6 +12095,10 @@ function openSeekerSection(sectionId, opts = {}){
 
 function openSeekerItem(item){
   if(!item) return;
+  if(item.kind === 'game-shortcut' && state.trash.has(item.id)){
+    restoreFromTrash([item.id]);
+    return;
+  }
   if(item.kind === 'app'){
     openApp(item.id);
     return;
@@ -11469,11 +12190,29 @@ function renderSeekerWindow(winEl){
   if(itemsHost){
     itemsHost.classList.toggle('seeker-items-list', seeker.view === 'list');
     itemsHost.classList.toggle('seeker-items-icons', seeker.view !== 'list');
+    if(itemsHost.dataset.trashContextBound !== '1'){
+      itemsHost.dataset.trashContextBound = '1';
+      itemsHost.addEventListener('contextmenu', e=>{
+        if(normalizeSeekerSection(ensureSeekerState().section) !== 'trash') return;
+        e.preventDefault();
+        e.stopPropagation();
+        const itemEl = e.target.closest && e.target.closest('[data-seeker-item]');
+        if(itemEl){
+          const key = itemEl.dataset.seekerItem;
+          const item = (shell._seekerItems || []).find(entry=>entry.key === key);
+          if(item && !state.trashSelection.has(item.id)){
+            state.trashSelection = new Set([item.id]);
+            seeker.selectedKeys = [key];
+          }
+        }
+        openCtxMenu(e.clientX, e.clientY, 'trash', null, { selectedIds:Array.from(state.trashSelection) });
+      });
+    }
     if(filtered.length === 0){
       itemsHost.innerHTML = `<div class="seeker-empty tiny">${t('seeker.empty')}</div>`;
     } else if(seeker.view === 'list'){
       itemsHost.innerHTML = filtered.map(item => `
-        <button class="seeker-item seeker-item-row${item.key === seeker.selectedKey ? ' selected' : ''}" type="button" data-seeker-item="${item.key}">
+        <button class="seeker-item seeker-item-row${seeker.selectedKeys.includes(item.key) ? ' selected' : ''}" type="button" data-seeker-item="${item.key}">
           <span class="seeker-item-icon pixel">${item.iconHtml}</span>
           <span class="seeker-item-copy">
             <span class="seeker-item-label">${escapeHTML(item.label)}</span>
@@ -11483,7 +12222,7 @@ function renderSeekerWindow(winEl){
       `).join('');
     } else {
       itemsHost.innerHTML = filtered.map(item => `
-        <button class="seeker-item seeker-item-card${item.key === seeker.selectedKey ? ' selected' : ''}" type="button" data-seeker-item="${item.key}">
+        <button class="seeker-item seeker-item-card${seeker.selectedKeys.includes(item.key) ? ' selected' : ''}" type="button" data-seeker-item="${item.key}">
           <span class="seeker-item-icon pixel">${item.iconHtml}</span>
           <span class="seeker-item-label">${escapeHTML(item.label)}</span>
         </button>
@@ -11492,6 +12231,17 @@ function renderSeekerWindow(winEl){
     itemsHost.querySelectorAll('[data-seeker-item]').forEach(itemEl => {
       makeSeekerItemDraggable(itemEl, shell);
     });
+    installRubberbandSelection(itemsHost, '[data-seeker-item]',
+      ()=>ensureSeekerState().selectedKeys,
+      keys=>{
+        seeker.selectedKeys = keys;
+        itemsHost.querySelectorAll('[data-seeker-item]').forEach(el=>el.classList.toggle('selected', keys.includes(el.dataset.seekerItem)));
+        if(section === 'trash'){
+          const selectedIds = filtered.filter(item=>keys.includes(item.key)).map(item=>item.id);
+          state.trashSelection = new Set(selectedIds);
+        }
+      }
+    );
   }
 
   if(statusEl){
@@ -11564,9 +12314,18 @@ function initSeekerWindow(winEl){
         const item = items.find(it => it.key === key);
         const seeker = ensureSeekerState();
         seeker.selectedKey = key || '';
+        if(e.ctrlKey || e.metaKey){
+          if(seeker.selectedKeys.includes(key)) seeker.selectedKeys = seeker.selectedKeys.filter(selected => selected !== key);
+          else seeker.selectedKeys = seeker.selectedKeys.concat(key);
+        } else {
+          seeker.selectedKeys = [key];
+        }
         shell.querySelectorAll('[data-seeker-item]').forEach(el => {
-          el.classList.toggle('selected', el === itemBtn);
+          el.classList.toggle('selected', seeker.selectedKeys.includes(el.dataset.seekerItem));
         });
+        if(normalizeSeekerSection(seeker.section) === 'trash'){
+          state.trashSelection = new Set(filtered.filter(entry=>seeker.selectedKeys.includes(entry.key)).map(entry=>entry.id));
+        }
         if(!item) return;
 
         // Keyboard activation should keep single-activate behavior for accessibility.
@@ -11661,6 +12420,7 @@ function renderCtxMenu(){
 
   const isIcon = ctxState.target === 'icon' && !!ctxState.appId;
   const isDock = ctxState.target === 'dock' && !!ctxState.appId;
+  const isTrashMenu = ctxState.target === 'trash';
   const isBliss98Theme = state.settings.theme === 'bliss98';
   const fsItem = ctxState.appId ? getFsItem(ctxState.appId) : null;
   const itemType = ctxState.itemType || (fsItem ? fsItem.type : null);
@@ -11669,6 +12429,10 @@ function renderCtxMenu(){
   const items = [];
   if(isDock){
     const disableRemove = ctxState.itemType === 'trash' || ctxState.appId === 'trash' || (ctxState.itemType === 'app' && ctxState.appId === 'seeker');
+    if(ctxState.itemType === 'trash' || ctxState.appId === 'trash'){
+      items.push({ action:'emptyTrash', label:t('ctx.emptyTrash'), disabled:state.trash.size === 0 });
+      items.push({ sep:true });
+    }
     items.push({ action:'removeDock', label:t('ctx.removeDock'), disabled: disableRemove });
     menu.innerHTML = items.map(it => {
       if(it.sep) return `<div class="ctx-sep"></div>`;
@@ -11684,15 +12448,32 @@ function renderCtxMenu(){
     }).join('');
     return;
   }
-  if(isIcon){
-    items.push({ action:'open', label:t('ctx.open') });
-    items.push({ sep:true });
-    if(ctxState.appId === 'trash'){
-      items.push({ action:'emptyTrash', label:t('ctx.emptyTrash') });
-      const docked = isDockItemPresent('trash', 'trash');
-      items.push({ action:'addDock', label: docked ? t('ctx.alreadyDock') : t('ctx.addDock'), disabled: docked });
+  if(isTrashMenu){
+    const selectedTrashIds = Array.from(state.trashSelection || []).filter(id => state.trash.has(id));
+    const restoreLabel = selectedTrashIds.length
+      ? t('ctx.restoreSelectedItems')
+      : t('ctx.restoreAllItems');
+    items.push({ action:'refresh', label:t('ctx.refresh') });
+    items.push({ action:'emptyTrash', label:t('ctx.emptyTrash'), disabled:state.trash.size === 0 });
+    items.push({
+      action:'restoreTrashItems',
+      label:restoreLabel,
+      disabled:state.trash.size === 0 || (selectedTrashIds.length === 0 && ctxState.selectedIds.length > 0),
+    });
+    if(isIcon){
       items.push({ sep:true });
+      items.push({ action:'open', label:t('ctx.open') });
+      const docked = isDockItemPresent('trash', 'trash');
+      items.push({ action:'addDock', label:docked ? t('ctx.alreadyDock') : t('ctx.addDock'), disabled:docked });
+    }
+  } else if(isIcon){
+    items.push({ action:'open', label:t('ctx.open') });
+    if(ctxState.appId === 'trash'){
+      items.push({ action:'emptyTrash', label:t('ctx.emptyTrash'), disabled:state.trash.size === 0 });
+      const docked = isDockItemPresent('trash', 'trash');
+      items.push({ action:'addDock', label:docked ? t('ctx.alreadyDock') : t('ctx.addDock'), disabled:docked });
     } else {
+      items.push({ sep:true });
       items.push({ action:'rename', label:t('ctx.rename') });
       items.push({ action:'crop', label:t('ctx.crop') });
       items.push({ action:'copy', label:t('ctx.copy') });
@@ -11715,9 +12496,10 @@ function renderCtxMenu(){
     }
   }
 
-  if(!isIcon){
+  if(!isIcon && !isTrashMenu){
     items.push({ action:'newTxt', label:t('ctx.newTextFile') });
     items.push({ action:'newFolder', label:t('ctx.newFolder') });
+    if(ctxState.target === 'desktop') items.push({ action:'refresh', label:t('ctx.refresh') });
     items.push({ sep:true });
     items.push({ action:'arrange', label:t('ctx.arrange') });
     if(ctxState.parentId == null){
@@ -11802,6 +12584,16 @@ function closeCtxMenu(){
 }
 
 function handleCtxAction(action){
+  if(action === 'refresh'){
+    renderIcons();
+    refreshOpenFolderWindows();
+    refreshOpenSeekerWindows();
+    renderTrashWindow();
+  }
+  if(action === 'restoreTrashItems'){
+    const selected = Array.from(state.trashSelection || []).filter(id => state.trash.has(id));
+    restoreFromTrash(selected.length ? selected : Array.from(state.trash));
+  }
   if(action === 'open' && ctxState.target === 'icon' && ctxState.appId){
     openIconById(ctxState.appId);
   }
@@ -11878,7 +12670,11 @@ function handleCtxAction(action){
     moveIconsToTrash(ids);
     refreshOpenFolderWindows();
   }
-  if(action === 'emptyTrash' && ctxState.target === 'icon' && ctxState.appId === 'trash'){
+  if(action === 'emptyTrash' && (
+    ctxState.target === 'trash' ||
+    (ctxState.target === 'icon' && ctxState.appId === 'trash') ||
+    (ctxState.target === 'dock' && (ctxState.itemType === 'trash' || ctxState.appId === 'trash'))
+  )){
     emptyTrash();
   }
   if(action === 'duplicateTxt' && ctxState.target === 'icon' && ctxState.appId){
@@ -12041,6 +12837,50 @@ function installLongPress(el, getTarget){
           'app.seeker.file': 'File Seeker',
           'app.seeker.short': 'Seeker',
           'games.snake': 'Snake',
+          'games.viceCity': 'GTA Vice City',
+          'games.viceCity.credits': 'Credits & licenses',
+          'games.credits.title': 'Credits and project info',
+          'games.credits.viceCity': 'This Bliss entry embeds GTA Vice City Web Edition from Quenq Apps, a browser-based port of the classic open-world game. Quenq hosts the playable version; visit its original page for details.',
+          'games.eightBallPool': '8 Ball Pool',
+          'games.eightBallPool.credits': 'Credits & source',
+          'games.credits.eightBallPool': 'This browser game is embedded from Quenq Arcade. Open the original Quenq page for the game and its project information.',
+          'games.ageOfWar': 'Age of War',
+          'games.ageOfWar.credits': 'Credits & source',
+          'games.credits.ageOfWar': 'This browser version of Age of War is embedded from Quenq Arcade. The original strategy game was created by Louissi; visit the Quenq page for the playable version and project details.',
+          'games.ageOfWar2': 'Age of War 2',
+          'games.ageOfWar2.credits': 'Credits & source',
+          'games.credits.ageOfWar2': 'This Bliss entry embeds Age of War 2 from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.americanRacing': 'American Racing',
+          'games.americanRacing.credits': 'Credits & source',
+          'games.credits.americanRacing': 'This Bliss entry embeds American Racing from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.animatorVsAnimationGame': 'Animator vs Animation Game',
+          'games.animatorVsAnimationGame.credits': 'Credits & source',
+          'games.credits.animatorVsAnimationGame': 'This Bliss entry embeds Animator vs Animation Game from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.appleShooter': 'Apple Shooter',
+          'games.appleShooter.credits': 'Credits & source',
+          'games.credits.appleShooter': 'This Bliss entry embeds Apple Shooter from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.badPiggies': 'Bad Piggies',
+          'games.badPiggies.credits': 'Credits & source',
+          'games.credits.badPiggies': 'This Bliss entry embeds Bad Piggies from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.duckLife5': 'DuckLife 5',
+          'games.duckLife5.credits': 'Credits & source',
+          'games.credits.duckLife5': 'This Bliss entry embeds DuckLife 5, a classic Flash simulation game preserved by Quenq Arcade. Quenq hosts the playable version; visit its original page for more information.',
+          'games.edEddNEddysCandyMachineDeluxe': 'Ed, Edd n Eddy’s Candy Machine Deluxe',
+          'games.edEddNEddysCandyMachineDeluxe.credits': 'Credits & source',
+          'games.credits.edEddNEddysCandyMachineDeluxe': 'This Bliss entry embeds Ed, Edd n Eddy’s Candy Machine Deluxe from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.papasBurgeria': 'Papa’s Burgeria',
+          'games.papasBurgeria.credits': 'Credits & source',
+          'games.credits.papasBurgeria': 'This Bliss entry embeds Papa’s Burgeria, a 2010 simulation game developed by Flipline Studios and preserved by Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.papasCheeseria': 'Papa’s Cheeseria',
+          'games.papasCheeseria.credits': 'Credits & source',
+          'games.credits.papasCheeseria': 'This Bliss entry embeds Papa’s Cheeseria from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.papasSushiria': 'Papa’s Sushiria',
+          'games.papasSushiria.credits': 'Credits & source',
+          'games.credits.papasSushiria': 'This Bliss entry embeds Papa’s Sushiria, a 2016 simulation game developed by Flipline Studios and preserved by Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.papasPastaria': 'Papa’s Pastaria',
+          'games.papasPastaria.credits': 'Credits & source',
+          'games.credits.papasPastaria': 'This Bliss entry embeds Papa’s Pastaria, a 2013 simulation game developed by Flipline Studios and preserved by Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
+          'games.credits.doom': 'This local Bliss build runs the Chocolate Doom engine compiled to WebAssembly with Freedoom’s free replacement game data. The upstream project and Freedoom are linked below; license files are included with the game.',
           'games.doom': 'DOOM',
           'games.doom.open': 'Open in browser',
           'games.doom.credits': 'Credits & licenses',
@@ -12053,9 +12893,17 @@ function installLongPress(el, getTarget){
           'games.alienHominid': 'Alien Hominid',
           'games.happyWheelsDemo': 'Happy Wheels Demo',
           'games.lineRiderBeta2': 'Line Rider Beta 2',
+          'games.context.favoritesHeading': 'Favorites',
+          'games.context.refresh': 'Refresh',
+          'games.context.addFavorite': 'Add to Favorites',
+          'games.context.removeFavorite': 'Remove from Favorites',
+          'games.context.addDesktop': 'Add to Desktop',
+          'games.context.grid': 'Grid',
           'games.flash.loadError': 'Could not load the Flash emulator. Please reload and try again.',
           'games.flash.mute': 'Mute game audio',
           'games.flash.unmute': 'Unmute game audio',
+          'games.audio': 'Game audio controls',
+          'games.volume': 'Game volume',
           'games.back': 'Back',
           'games.empty': 'No games yet.',
           'games.tab.hub': 'Games',
@@ -12225,6 +13073,9 @@ function installLongPress(el, getTarget){
           'ctx.copy': 'Copy',
           'ctx.moveTrash': 'Move to Trash',
           'ctx.emptyTrash': 'Empty Trash',
+          'ctx.restoreAllItems': 'Restore All Items',
+          'ctx.restoreSelectedItems': 'Restore Selected Items',
+          'ctx.refresh': 'Refresh',
           'ctx.addDock': 'Add to Dock',
           'ctx.removeDock': 'Remove from Dock',
           'ctx.alreadyDock': 'Already in Dock',
@@ -12343,7 +13194,7 @@ function installLongPress(el, getTarget){
           'settings.animations.on': 'On',
           'settings.animations.off': 'Off',
           'settings.appOpenAnim.title': 'App open animation',
-          'settings.appOpenAnim.desc': 'Animate a dotted selection box from the icon to the window.',
+          'settings.appOpenAnim.desc': 'Animate windows opening from and closing to their icon.',
           'settings.appOpenAnim.on': 'On',
           'settings.appOpenAnim.off': 'Off',
           'settings.wallpaperTab': 'Wallpaper',
@@ -12505,16 +13356,13 @@ function installLongPress(el, getTarget){
           'menu.art.slideshow': 'Slideshow',
           'menu.art.credits': 'Credits',
 
-          'menu.games.openFolder': 'Open Games Folder',
-          'menu.games.download': 'Download…',
           'menu.games.copy': 'Copy',
           'menu.games.selectAll': 'Select All',
           'menu.games.grid': 'Grid',
-          'menu.games.sort': 'Sort by',
-          'menu.games.sort.new': 'New',
-          'menu.games.sort.favorite': 'Favorite',
           'menu.games.howto': 'How to Play',
           'menu.games.requirements': 'Requirements',
+          'dialog.gamesRequirements.title': 'Requirements',
+          'dialog.gamesRequirements.body': 'First requirement: a brain. Preferably switched on.<br><br>Some games are best played on a desktop with a mouse and keyboard. An internet connection helps too; apparently the web still needs the web.',
 
           'menu.videos.openChannel': 'Open Channel',
           'menu.videos.copyLink': 'Copy Link',
@@ -12717,6 +13565,50 @@ function installLongPress(el, getTarget){
           'app.seeker.file': 'File Seeker',
           'app.seeker.short': 'Seeker',
           'games.snake': 'Snake',
+          'games.viceCity': 'GTA Vice City',
+          'games.viceCity.credits': 'Créditos e licenças',
+          'games.credits.title': 'Créditos e informações do projeto',
+          'games.credits.viceCity': 'Esta versão do Bliss incorpora o GTA Vice City Web Edition do Quenq Apps, um port do clássico jogo de mundo aberto para navegador. O Quenq hospeda a versão jogável; visite a página original para saber mais.',
+          'games.eightBallPool': '8 Ball Pool',
+          'games.eightBallPool.credits': 'Créditos e origem',
+          'games.credits.eightBallPool': 'Este jogo de navegador está incorporado do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.ageOfWar': 'Age of War',
+          'games.ageOfWar.credits': 'Créditos e origem',
+          'games.credits.ageOfWar': 'Esta versão de Age of War para navegador está incorporada do Quenq Arcade. O jogo de estratégia original foi criado por Louissi; acesse a página do Quenq para jogar e ver os detalhes do projeto.',
+          'games.ageOfWar2': 'Age of War 2',
+          'games.ageOfWar2.credits': 'Créditos e origem',
+          'games.credits.ageOfWar2': 'Esta entrada do Bliss incorpora Age of War 2 do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.americanRacing': 'American Racing',
+          'games.americanRacing.credits': 'Créditos e origem',
+          'games.credits.americanRacing': 'Esta entrada do Bliss incorpora American Racing do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.animatorVsAnimationGame': 'Animator vs Animation Game',
+          'games.animatorVsAnimationGame.credits': 'Créditos e origem',
+          'games.credits.animatorVsAnimationGame': 'Esta entrada do Bliss incorpora Animator vs Animation Game do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.appleShooter': 'Apple Shooter',
+          'games.appleShooter.credits': 'Créditos e origem',
+          'games.credits.appleShooter': 'Esta entrada do Bliss incorpora Apple Shooter do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.badPiggies': 'Bad Piggies',
+          'games.badPiggies.credits': 'Créditos e origem',
+          'games.credits.badPiggies': 'Esta entrada do Bliss incorpora Bad Piggies do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.duckLife5': 'DuckLife 5',
+          'games.duckLife5.credits': 'Créditos e origem',
+          'games.credits.duckLife5': 'Esta entrada do Bliss incorpora DuckLife 5, um jogo clássico de simulação em Flash preservado pelo Quenq Arcade. O Quenq hospeda a versão jogável; acesse a página original para saber mais.',
+          'games.edEddNEddysCandyMachineDeluxe': 'Ed, Edd n Eddy’s Candy Machine Deluxe',
+          'games.edEddNEddysCandyMachineDeluxe.credits': 'Créditos e origem',
+          'games.credits.edEddNEddysCandyMachineDeluxe': 'Esta entrada do Bliss incorpora Ed, Edd n Eddy’s Candy Machine Deluxe do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.papasBurgeria': 'Papa’s Burgeria',
+          'games.papasBurgeria.credits': 'Créditos e origem',
+          'games.credits.papasBurgeria': 'Esta entrada do Bliss incorpora Papa’s Burgeria, um jogo de simulação de 2010 desenvolvido pela Flipline Studios e preservado pelo Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.papasCheeseria': 'Papa’s Cheeseria',
+          'games.papasCheeseria.credits': 'Créditos e origem',
+          'games.credits.papasCheeseria': 'Esta entrada do Bliss incorpora Papa’s Cheeseria do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.papasSushiria': 'Papa’s Sushiria',
+          'games.papasSushiria.credits': 'Créditos e origem',
+          'games.credits.papasSushiria': 'Esta entrada do Bliss incorpora Papa’s Sushiria, um jogo de simulação de 2016 desenvolvido pela Flipline Studios e preservado pelo Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.papasPastaria': 'Papa’s Pastaria',
+          'games.papasPastaria.credits': 'Créditos e origem',
+          'games.credits.papasPastaria': 'Esta entrada do Bliss incorpora Papa’s Pastaria, um jogo de simulação de 2013 desenvolvido pela Flipline Studios e preservado pelo Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
+          'games.credits.doom': 'Esta versão local do Bliss usa o motor Chocolate Doom compilado para WebAssembly junto aos dados gratuitos do Freedoom, que substituem os dados do jogo original. Os links do projeto de origem e do Freedoom estão abaixo; os arquivos de licença acompanham o jogo.',
           'games.doom': 'DOOM',
           'games.doom.open': 'Abrir no navegador',
           'games.doom.credits': 'Créditos e licenças',
@@ -12729,9 +13621,17 @@ function installLongPress(el, getTarget){
           'games.alienHominid': 'Alien Hominid',
           'games.happyWheelsDemo': 'Happy Wheels Demo',
           'games.lineRiderBeta2': 'Line Rider Beta 2',
+          'games.context.favoritesHeading': 'Favoritos',
+          'games.context.refresh': 'Atualizar',
+          'games.context.addFavorite': 'Adicionar aos Favoritos',
+          'games.context.removeFavorite': 'Remover dos Favoritos',
+          'games.context.addDesktop': 'Adicionar ao Desktop',
+          'games.context.grid': 'Grade',
           'games.flash.loadError': 'Não foi possível carregar o emulador Flash. Atualize a página e tente novamente.',
           'games.flash.mute': 'Silenciar áudio do jogo',
           'games.flash.unmute': 'Ativar áudio do jogo',
+          'games.audio': 'Controles de áudio do jogo',
+          'games.volume': 'Volume do jogo',
           'games.back': 'Voltar',
           'games.empty': 'Sem jogos ainda.',
           'games.tab.hub': 'Jogos',
@@ -12897,6 +13797,9 @@ function installLongPress(el, getTarget){
           'ctx.copy': 'Copiar',
           'ctx.moveTrash': 'Mover para Lixeira',
           'ctx.emptyTrash': 'Esvaziar Lixeira',
+          'ctx.restoreAllItems': 'Restaurar Todos os Itens',
+          'ctx.restoreSelectedItems': 'Restaurar Itens Selecionados',
+          'ctx.refresh': 'Atualizar',
           'ctx.addDock': 'Adicionar ao Dock',
           'ctx.removeDock': 'Remover do Dock',
           'ctx.alreadyDock': 'Ja esta no Dock',
@@ -13015,7 +13918,7 @@ function installLongPress(el, getTarget){
           'settings.animations.on': 'Ligado',
           'settings.animations.off': 'Desligado',
           'settings.appOpenAnim.title': 'Animacao ao abrir app',
-          'settings.appOpenAnim.desc': 'Anima uma caixa pontilhada do icone ate a janela.',
+          'settings.appOpenAnim.desc': 'Anime as janelas abrindo a partir do ícone e fechando de volta para ele.',
           'settings.appOpenAnim.on': 'Ligado',
           'settings.appOpenAnim.off': 'Desligado',
           'settings.wallpaperTab': 'Papel de parede',
@@ -13177,16 +14080,13 @@ function installLongPress(el, getTarget){
           'menu.art.slideshow': 'Apresentação',
           'menu.art.credits': 'Créditos',
 
-          'menu.games.openFolder': 'Abrir pasta de jogos',
-          'menu.games.download': 'Download…',
           'menu.games.copy': 'Copiar',
           'menu.games.selectAll': 'Selecionar tudo',
           'menu.games.grid': 'Grade',
-          'menu.games.sort': 'Ordenar por',
-          'menu.games.sort.new': 'Novidades',
-          'menu.games.sort.favorite': 'Favorito',
           'menu.games.howto': 'Como Jogar',
           'menu.games.requirements': 'Requisitos',
+          'dialog.gamesRequirements.title': 'Requisitos',
+          'dialog.gamesRequirements.body': 'Primeiro requisito: um cérebro. De preferência, ligado.<br><br>Alguns jogos ficam melhores em um computador com mouse e teclado. Uma conexão com a internet também ajuda — aparentemente, a web ainda precisa da web.',
 
           'menu.videos.openChannel': 'Abrir canal',
           'menu.videos.copyLink': 'Copiar link',
@@ -13400,6 +14300,7 @@ function installLongPress(el, getTarget){
         state.lang = (lang === 'pt') ? 'pt' : 'en';
         localStorage.setItem('bliss98_lang', state.lang);
         applyI18n();
+        if(state.games.view === 'list' && state.windows.has('games')) renderGamesWindow();
       }
       
       function hexToRgb(hex) {
@@ -13618,10 +14519,6 @@ function installLongPress(el, getTarget){
             items.push({ labelKey:'menu.art.openGallery', action:'art:openGallery' });
             items.push({ labelKey:'menu.art.saveImage', action:'art:saveImage' });
           }
-          if(appId === 'games'){
-            items.push({ labelKey:'menu.games.openFolder', action:'games:openFolder' });
-            items.push({ labelKey:'menu.games.download', action:'games:download' });
-          }
           if(appId === 'videos'){
             items.push({ labelKey:'menu.videos.openChannel', action:'videos:openChannel' });
             items.push({ labelKey:'menu.videos.copyLink', action:'videos:copyLink' });
@@ -13755,15 +14652,7 @@ function installLongPress(el, getTarget){
             items.push({ labelKey:'menu.art.slideshow', action:'art:slideshow' });
           }
           if(appId === 'games'){
-            items.push({ labelKey:'menu.games.grid', action:'games:grid' });
-            items.push({
-              type:'submenu',
-              labelKey:'menu.games.sort',
-              items:[
-                { labelKey:'menu.games.sort.new', action:'games:sortNew' },
-                { labelKey:'menu.games.sort.favorite', action:'games:sortFavorite' }
-              ]
-            });
+            items.push({ labelKey:'menu.games.grid', action:'games:grid', type:'checkbox', checked:state.games.layout === 'grid' });
           }
           if(appId === 'videos'){
             items.push({
@@ -14455,6 +15344,10 @@ function installLongPress(el, getTarget){
           showMessage('dialog.gamesHowTo.title', 'dialog.gamesHowTo.body');
           return;
         }
+        if(action === 'games:requirements'){
+          showMessage('dialog.gamesRequirements.title', 'dialog.gamesRequirements.body');
+          return;
+        }
 
         if(action === 'art:openGallery' || action === 'art:saveImage' || action === 'art:slideshow' || action === 'art:credits'){
           showMessage('dialog.notAvailable.title', 'dialog.notAvailable.body');
@@ -14483,10 +15376,6 @@ function installLongPress(el, getTarget){
           return;
         }
 
-        if(action === 'games:openFolder' || action === 'games:download' || action === 'games:sortNew' || action === 'games:sortFavorite' || action === 'games:requirements'){
-          showMessage('dialog.notAvailable.title', 'dialog.notAvailable.body');
-          return;
-        }
         if(action === 'games:copy' || action === 'games:selectAll'){
           if(action === 'games:selectAll' && winId) selectAllInWindow(winId);
           if(action === 'games:copy'){
@@ -15530,6 +16419,7 @@ Eu sou o buffalo branco extinto`
                 <div class="skate-topbar">
                   <button class="skate-btn ghost" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 class="skate-title" data-i18n="games.dopeSkate">Dope Skate</h2>
+                  ${gameAudioControlsHtml()}
                   <div class="skate-topbar-actions">
                     <button class="skate-btn subtle" type="button" data-skate-action="menu" data-i18n="skate.action.menu">Menu</button>
                   </div>
@@ -15745,6 +16635,7 @@ Eu sou o buffalo branco extinto`
                   <div class="snake-header">
                     <div class="snake-topbar">
                       <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                      ${gameAudioControlsHtml()}
                     </div>
                     <h2 class="snake-title">${t('games.snake')}</h2>
                   </div>
@@ -15784,6 +16675,7 @@ Eu sou o buffalo branco extinto`
                       <p class="tiny mine-tagline" data-i18n="minesweeper.tagline">“Watch your step, one wrong move could be your last.”</p>
                     </div>
                     <button class="btn bevel" type="button" data-mine-action="restart" data-i18n="minesweeper.action.restart">Restart</button>
+                    ${gameAudioControlsHtml()}
                   </div>
                   <div class="mine-controls">
                     <label class="mine-control">
@@ -15838,9 +16730,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="${titleKey}">${title}</h2>
-                  <button class="btn bevel flash-audio-button" type="button" data-games-action="flash-audio" data-i18n-aria="games.flash.mute" aria-pressed="false" data-i18n-title="games.flash.mute" title="Mute game audio">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M15 9a5 5 0 0 1 0 6m2-9a9 9 0 0 1 0 12"/></svg>
-                  </button>
+                  ${gameAudioControlsHtml()}
                 </div>
                 <div class="sewer-skater-stage" ${playerAttribute} aria-live="polite"></div>
               </div>
@@ -15853,9 +16743,160 @@ Eu sou o buffalo branco extinto`
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.doom">DOOM</h2>
                   <button class="btn bevel doom-touch-controls" type="button" data-doom-touch-controls aria-pressed="false" data-i18n="games.doom.touchControls">Touch Controls</button>
-                  <a class="btn bevel doom-open-link" href="./assets/games/doom/player/README.md" target="_blank" rel="noopener noreferrer" data-i18n="games.doom.credits">Credits &amp; licenses</a>
+                  ${gameAudioControlsHtml()}
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="doom" data-i18n="games.doom.credits">Credits &amp; licenses</button>
                 </div>
-                <iframe class="doom-player-frame" src="./assets/games/doom/player/index.html" title="DOOM powered by Freedoom" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+                <iframe class="doom-player-frame" data-game-audio-frame src="./assets/games/doom/player/index.html" title="DOOM powered by Freedoom" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'vice-city'){
+            return `
+              <div class="doom-shell vice-city-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.viceCity">GTA Vice City</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="vice-city" data-i18n="games.viceCity.credits">Credits &amp; licenses</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://vc.quenq.com/" title="GTA Vice City hosted by Quenq" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === '8-ball-pool'){
+            return `
+              <div class="doom-shell eight-ball-pool-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.eightBallPool">8 Ball Pool</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="8-ball-pool" data-i18n="games.eightBallPool.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/8-ball-pool/" title="8 Ball Pool hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'age-of-war'){
+            return `
+              <div class="doom-shell age-of-war-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.ageOfWar">Age of War</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="age-of-war" data-i18n="games.ageOfWar.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/age-of-war/" title="Age of War hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'age-of-war-2'){
+            return `
+              <div class="doom-shell quenq-arcade-shell age-of-war-2-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.ageOfWar2">Age of War 2</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="age-of-war-2" data-i18n="games.ageOfWar2.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/ageofwar2/" title="Age of War 2 hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'american-racing'){
+            return `
+              <div class="doom-shell quenq-arcade-shell american-racing-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.americanRacing">American Racing</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="american-racing" data-i18n="games.americanRacing.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/american-racing/" title="American Racing hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'animator-vs-animation-game'){
+            return `
+              <div class="doom-shell quenq-arcade-shell animator-vs-animation-game-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.animatorVsAnimationGame">Animator vs Animation Game</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="animator-vs-animation-game" data-i18n="games.animatorVsAnimationGame.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/animator-vs-animation-game/" title="Animator vs Animation Game hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'apple-shooter'){
+            return `
+              <div class="doom-shell quenq-arcade-shell apple-shooter-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.appleShooter">Apple Shooter</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="apple-shooter" data-i18n="games.appleShooter.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/apple-shooter/" title="Apple Shooter hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'bad-piggies'){
+            return `
+              <div class="doom-shell quenq-arcade-shell bad-piggies-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.badPiggies">Bad Piggies</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="bad-piggies" data-i18n="games.badPiggies.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/bad-piggies/" title="Bad Piggies hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'ducklife5'){
+            return `
+              <div class="doom-shell quenq-arcade-shell ducklife5-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.duckLife5">DuckLife 5</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="ducklife5" data-i18n="games.duckLife5.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/ducklife5/" title="DuckLife 5 hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'ed-edd-n-eddys-candy-machine-deluxe'){
+            return `
+              <div class="doom-shell quenq-arcade-shell ed-edd-n-eddys-candy-machine-deluxe-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.edEddNEddysCandyMachineDeluxe">Ed, Edd n Eddy’s Candy Machine Deluxe</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="ed-edd-n-eddys-candy-machine-deluxe" data-i18n="games.edEddNEddysCandyMachineDeluxe.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/ed-edd-n-eddys-candy-machine-deluxe/" title="Ed, Edd n Eddy’s Candy Machine Deluxe hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'papas-burgeria'){
+            return `
+              <div class="doom-shell quenq-arcade-shell papas-burgeria-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.papasBurgeria">Papa’s Burgeria</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="papas-burgeria" data-i18n="games.papasBurgeria.credits">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/papas-burgeria/" title="Papa’s Burgeria hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          const quenqPapaGames = {
+            'papas-cheeseria': { titleKey:'games.papasCheeseria', creditsKey:'games.papasCheeseria.credits', title:'Papa’s Cheeseria' },
+            'papas-sushiria': { titleKey:'games.papasSushiria', creditsKey:'games.papasSushiria.credits', title:'Papa’s Sushiria' },
+            'papas-pastaria': { titleKey:'games.papasPastaria', creditsKey:'games.papasPastaria.credits', title:'Papa’s Pastaria' },
+          };
+          if(quenqPapaGames[state.games.view]){
+            const game = quenqPapaGames[state.games.view];
+            return `
+              <div class="doom-shell quenq-arcade-shell ${state.games.view}-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="${game.titleKey}">${game.title}</h2>
+                  <button class="btn bevel doom-open-link" type="button" data-game-credits="${state.games.view}" data-i18n="${game.creditsKey}">Credits &amp; source</button>
+                </div>
+                <iframe class="doom-player-frame" src="https://static.quenq.com/games/${state.games.view}/" title="${game.title} hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
             `;
           }
@@ -15887,7 +16928,10 @@ Eu sou o buffalo branco extinto`
               </div>
             `;
           }
-          const items = (state.folders.games || []).map(id => {
+          const allGameIds = sortGameIdsAlphabetically(getGamesHubIds());
+          const favoriteGameIds = sortGameIdsAlphabetically(gameFavorites.filter(id => allGameIds.includes(id)));
+          const regularGameIds = allGameIds.filter(id => !favoriteGameIds.includes(id));
+          const renderGameItems = ids => ids.map(id => {
             if(id === 'snake'){
               return `
                 <button class="games-item games-card" type="button" data-game-id="snake">
@@ -15905,6 +16949,132 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'doom', iconFile:'./assets/games/doom/doom.png' }, t('games.doom'), 64)}
                   </div>
                   <span data-i18n="games.doom">DOOM</span>
+                </button>
+              `;
+            }
+            if(id === 'vice-city'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="vice-city">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'vice-city', iconFile:'./assets/games/vc/vc.png' }, t('games.viceCity'), 64)}
+                  </div>
+                  <span data-i18n="games.viceCity">GTA Vice City</span>
+                </button>
+              `;
+            }
+            if(id === '8-ball-pool'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="8-ball-pool">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'8-ball-pool', iconFile:'./assets/games/8ballpool.jpg' }, t('games.eightBallPool'), 64)}
+                  </div>
+                  <span data-i18n="games.eightBallPool">8 Ball Pool</span>
+                </button>
+              `;
+            }
+            if(id === 'age-of-war'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="age-of-war">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'age-of-war', iconFile:'./assets/games/Age of War.webp' }, t('games.ageOfWar'), 64)}
+                  </div>
+                  <span data-i18n="games.ageOfWar">Age of War</span>
+                </button>
+              `;
+            }
+            if(id === 'age-of-war-2'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="age-of-war-2">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'age-of-war-2', iconFile:'./assets/games/Age of War 2.png' }, t('games.ageOfWar2'), 64)}
+                  </div>
+                  <span data-i18n="games.ageOfWar2">Age of War 2</span>
+                </button>
+              `;
+            }
+            if(id === 'american-racing'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="american-racing">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'american-racing', iconFile:'./assets/games/american racing.jpg' }, t('games.americanRacing'), 64)}
+                  </div>
+                  <span data-i18n="games.americanRacing">American Racing</span>
+                </button>
+              `;
+            }
+            if(id === 'animator-vs-animation-game'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="animator-vs-animation-game">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'animator-vs-animation-game', iconFile:'./assets/games/animator vs animation.png' }, t('games.animatorVsAnimationGame'), 64)}
+                  </div>
+                  <span data-i18n="games.animatorVsAnimationGame">Animator vs Animation Game</span>
+                </button>
+              `;
+            }
+            if(id === 'apple-shooter'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="apple-shooter">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'apple-shooter', iconFile:'./assets/games/Apple shooter.png' }, t('games.appleShooter'), 64)}
+                  </div>
+                  <span data-i18n="games.appleShooter">Apple Shooter</span>
+                </button>
+              `;
+            }
+            if(id === 'bad-piggies'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="bad-piggies">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'bad-piggies', iconFile:'./assets/games/bad piggies.webp' }, t('games.badPiggies'), 64)}
+                  </div>
+                  <span data-i18n="games.badPiggies">Bad Piggies</span>
+                </button>
+              `;
+            }
+            if(id === 'ducklife5'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="ducklife5">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'ducklife5', iconFile:'./assets/games/DuckLife 5.png' }, t('games.duckLife5'), 64)}
+                  </div>
+                  <span data-i18n="games.duckLife5">DuckLife 5</span>
+                </button>
+              `;
+            }
+            if(id === 'ed-edd-n-eddys-candy-machine-deluxe'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="ed-edd-n-eddys-candy-machine-deluxe">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'ed-edd-n-eddys-candy-machine-deluxe', iconFile:'./assets/games/Ed, Edd n Eddy’s Candy Machine Deluxe.webp' }, t('games.edEddNEddysCandyMachineDeluxe'), 64)}
+                  </div>
+                  <span data-i18n="games.edEddNEddysCandyMachineDeluxe">Ed, Edd n Eddy’s Candy Machine Deluxe</span>
+                </button>
+              `;
+            }
+            if(id === 'papas-burgeria'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="papas-burgeria">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'papas-burgeria', iconFile:'./assets/games/Papa’s Burgeria.png' }, t('games.papasBurgeria'), 64)}
+                  </div>
+                  <span data-i18n="games.papasBurgeria">Papa’s Burgeria</span>
+                </button>
+              `;
+            }
+            const papaGameCards = {
+              'papas-cheeseria': { titleKey:'games.papasCheeseria', title:'Papa’s Cheeseria', iconFile:'./assets/games/Papa’s Cheeseria.jpeg' },
+              'papas-sushiria': { titleKey:'games.papasSushiria', title:'Papa’s Sushiria', iconFile:'./assets/games/Papa’s Sushiria.jpg' },
+              'papas-pastaria': { titleKey:'games.papasPastaria', title:'Papa’s Pastaria', iconFile:'./assets/games/Papa’s Pastaria.jpg' },
+            };
+            if(papaGameCards[id]){
+              const game = papaGameCards[id];
+              return `
+                <button class="games-item games-card" type="button" data-game-id="${id}">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id, iconFile:game.iconFile }, t(game.titleKey), 64)}
+                  </div>
+                  <span data-i18n="${game.titleKey}">${game.title}</span>
                 </button>
               `;
             }
@@ -15999,6 +17169,16 @@ Eu sou o buffalo branco extinto`
               </button>
             `;
           }).join('');
+          const favorites = favoriteGameIds.length ? `
+            <section class="games-favorites-section" aria-label="${t('games.context.favoritesHeading')}">
+              <h3 class="games-favorites-heading" data-i18n="games.context.favoritesHeading">${t('games.context.favoritesHeading')}</h3>
+              <div class="games-items-group ${state.games.layout === 'list' ? 'games-list' : 'games-grid'}${state.games.bigIcons && state.games.layout === 'grid' ? ' games-big' : ''}" data-game-items-group>
+                ${renderGameItems(favoriteGameIds)}
+              </div>
+              <div class="games-favorites-divider" aria-hidden="true"></div>
+            </section>
+          ` : '';
+          const regularItems = renderGameItems(regularGameIds);
 
           return `
             <div class="games-shell">
@@ -16008,8 +17188,9 @@ Eu sou o buffalo branco extinto`
                     <button class="games-tab${state.games.view === 'list' ? ' active' : ''}" type="button" data-games-tab="hub" data-i18n="games.tab.hub">Games</button>
                     <button class="games-tab${state.games.view === 'leaderboard' ? ' active' : ''}" type="button" data-games-tab="leaderboard" data-i18n="games.tab.leaderboard">Leaderboard</button>
                   </div>
-                  <div id="gamesList" class="${state.games.layout === 'list' ? 'games-list' : `games-grid${state.games.bigIcons ? ' games-big' : ''}`}">
-                    ${items || `<div class="tiny" data-i18n="games.empty">${t('games.empty')}</div>`}
+                  <div id="gamesList" class="games-hub-list">
+                    ${favorites}
+                    ${regularItems ? `<div class="games-items-group ${state.games.layout === 'list' ? 'games-list' : 'games-grid'}${state.games.bigIcons && state.games.layout === 'grid' ? ' games-big' : ''}" data-game-items-group>${regularItems}</div>` : (!favorites ? `<div class="tiny" data-i18n="games.empty">${t('games.empty')}</div>` : '')}
                   </div>
                 </div>
               </div>
@@ -19219,11 +20400,7 @@ function relayoutWindowsToViewport(){
     if(!winEl || winEl.classList.contains('mobile-game')) return;
 
     if(w.fit && !w.minimized && !winEl.classList.contains('hidden')){
-      if(state.isMobile){
-        assignWindowRect(winEl, w, getMobileMaximizedRect());
-      } else {
-        smartFitWindow(winEl, 'maximize').catch(()=>{});
-      }
+      assignWindowRect(winEl, w, getMobileMaximizedRect());
       return;
     }
 
@@ -19296,9 +20473,18 @@ function scheduleWindowRelayout(){
   });
 }
 
+function usesClassicWindowAnimation(){
+  return !document.body.matches('[data-theme="blissos"][data-blissos-style="aqua"]');
+}
+
+function shouldAnimateWindowIconTransition(){
+  return !!state.animations && !!state.settings.appOpenAnim && usesClassicWindowAnimation();
+}
+
 function revealWindowElement(winEl, wstate, opts = {}){
   if(!winEl || !wstate) return;
-  const skipAnim = !!opts.skipAnim || !!wstate.skipAnimOpen || !state.animations || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const animationEnabled = usesClassicWindowAnimation() ? shouldAnimateWindowIconTransition() : !!state.animations;
+  const skipAnim = !!opts.skipAnim || !!wstate.skipAnimOpen || !animationEnabled;
   wstate.deferReveal = false;
   winEl.style.visibility = 'visible';
   if(skipAnim){
@@ -19320,6 +20506,7 @@ function revealWindow(appId, opts = {}){
 const appOpenAnimState = {
   overlay: null,
   animation: null,
+  animationFrame: 0,
   token: 0,
   appId: null,
 };
@@ -19329,15 +20516,85 @@ function cancelAppOpenAnimation(opts = {}){
   if(appOpenAnimState.animation){
     try{ appOpenAnimState.animation.cancel(); } catch {}
   }
-  if(appOpenAnimState.overlay){
-    appOpenAnimState.overlay.remove();
-  }
+  if(appOpenAnimState.animationFrame) cancelAnimationFrame(appOpenAnimState.animationFrame);
+  document.querySelectorAll('.app-open-selection[data-transition-token="' + appOpenAnimState.token + '"]').forEach(el=>el.remove());
+  if(appOpenAnimState.overlay) appOpenAnimState.overlay.remove();
   appOpenAnimState.overlay = null;
   appOpenAnimState.animation = null;
+  appOpenAnimState.animationFrame = 0;
   appOpenAnimState.appId = null;
   if(opts.revealPending && pendingAppId && state.windows.has(pendingAppId)){
     revealWindow(pendingAppId, { skipAnim: true, renderTasks: true });
   }
+}
+
+function animateWindowOutline(fromRect, toRect, opts = {}){
+  const duration = opts.duration || 460;
+  const trails = [
+    { lag:0.08, opacity:0.34, scale:0.97 },
+    { lag:0.16, opacity:0.22, scale:0.94 },
+    { lag:0.24, opacity:0.12, scale:0.91 },
+  ];
+  const token = opts.token == null ? '' : String(opts.token);
+  const boxes = trails.map(()=>{
+    const box = document.createElement('div');
+    box.className = 'app-open-selection trail';
+    if(token) box.dataset.transitionToken = token;
+    document.body.appendChild(box);
+    return box;
+  });
+  const main = document.createElement('div');
+  main.className = 'app-open-selection';
+  if(token) main.dataset.transitionToken = token;
+  document.body.appendChild(main);
+  const allBoxes = boxes.concat(main);
+  const setRect = (el, p, opacity=1, scale=1)=>{
+    const left = fromRect.left + (toRect.left - fromRect.left) * p;
+    const top = fromRect.top + (toRect.top - fromRect.top) * p;
+    const width = fromRect.width + (toRect.width - fromRect.width) * p;
+    const height = fromRect.height + (toRect.height - fromRect.height) * p;
+    const insetX = width * (1-scale) / 2;
+    const insetY = height * (1-scale) / 2;
+    el.style.left = `${left + insetX}px`;
+    el.style.top = `${top + insetY}px`;
+    el.style.width = `${width * scale}px`;
+    el.style.height = `${height * scale}px`;
+    el.style.opacity = String(opacity);
+  };
+  let raf = 0;
+  let startTime = 0;
+  let finished = false;
+  const finish = ()=>{
+    if(finished) return;
+    finished = true;
+    if(raf) cancelAnimationFrame(raf);
+    allBoxes.forEach(el=>el.remove());
+    if(typeof opts.onFinish === 'function') opts.onFinish();
+  };
+  const step = now=>{
+    if(finished) return;
+    if(!startTime) startTime = now;
+    const raw = Math.min(1, (now - startTime) / duration);
+    const progress = 1 - Math.pow(1 - raw, 2.2);
+    trails.forEach((trail, index)=>{
+      const trailProgress = Math.max(0, progress - trail.lag);
+      setRect(boxes[index], trailProgress, trail.opacity * Math.min(1, progress * 5), trail.scale);
+    });
+    setRect(main, progress);
+    if(raw >= 1){ finish(); return; }
+    raf = requestAnimationFrame(step);
+    if(typeof opts.onFrame === 'function') opts.onFrame(raf);
+  };
+  raf = requestAnimationFrame(step);
+  if(typeof opts.onFrame === 'function') opts.onFrame(raf);
+  return {
+    cancel(){
+      if(finished) return;
+      finished = true;
+      if(raf) cancelAnimationFrame(raf);
+      allBoxes.forEach(el=>el.remove());
+    }
+  };
 }
 
 function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
@@ -19345,8 +20602,7 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
     if(typeof onDone === 'function') onDone();
     return;
   }
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(reduceMotion){
+  if(!state.animations || !usesClassicWindowAnimation()){
     if(typeof onDone === 'function') onDone();
     return;
   }
@@ -19357,91 +20613,43 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
     return;
   }
 
-  const overlay = document.createElement('div');
-  overlay.className = 'app-open-selection';
-  overlay.style.left = `${startRect.left}px`;
-  overlay.style.top = `${startRect.top}px`;
-  overlay.style.width = `${startRect.width}px`;
-  overlay.style.height = `${startRect.height}px`;
-  document.body.appendChild(overlay);
-
   const token = ++appOpenAnimState.token;
-  appOpenAnimState.overlay = overlay;
+  appOpenAnimState.overlay = null;
   appOpenAnimState.appId = appId || null;
-
-  const duration = state.isMobile ? 240 : 210;
-  const easing = 'cubic-bezier(0.2, 0.7, 0.2, 1)';
-  let animation = null;
-  try{
-    animation = overlay.animate([
-      { left: `${startRect.left}px`, top: `${startRect.top}px`, width: `${startRect.width}px`, height: `${startRect.height}px`, opacity: 0.95 },
-      { left: `${targetRect.left}px`, top: `${targetRect.top}px`, width: `${targetRect.width}px`, height: `${targetRect.height}px`, opacity: 1 }
-    ], { duration, easing, fill: 'forwards' });
-  } catch {}
-
   const finish = ()=>{
     if(token !== appOpenAnimState.token) return;
     cancelAppOpenAnimation();
     if(typeof onDone === 'function') onDone();
   };
-
-  if(animation){
-    appOpenAnimState.animation = animation;
-    animation.addEventListener('finish', finish, { once: true });
-    animation.addEventListener('cancel', finish, { once: true });
-  } else {
-    overlay.style.transition = `all ${duration}ms ${easing}`;
-    requestAnimationFrame(()=>{
-      overlay.style.left = `${targetRect.left}px`;
-      overlay.style.top = `${targetRect.top}px`;
-      overlay.style.width = `${targetRect.width}px`;
-      overlay.style.height = `${targetRect.height}px`;
-    });
-    window.setTimeout(finish, duration + 30);
-  }
+  appOpenAnimState.animation = animateWindowOutline(startRect, targetRect, {
+    duration:460,
+    token,
+    onFinish:finish,
+    onFrame:raf=>{ appOpenAnimState.animationFrame = raf; }
+  });
 }
 
-      function animateAppLaunch(iconEl, winEl){
-        if (!iconEl || !winEl) return;
+      function animateAppLaunch(iconEl, winEl, capturedRect){
+        if ((!iconEl && !capturedRect) || !winEl) return;
         // Capture the final geometry before hiding the window
         const finalRect = winEl.getBoundingClientRect();
         // Hide the real window until the animation finishes
         const prevVisibility = winEl.style.visibility;
         winEl.style.visibility = 'hidden';
         // Starting geometry from the icon
-        const startRect = iconEl.getBoundingClientRect();
-        const ghost = document.createElement('div');
-        ghost.className = 'dock-genie-ghost';
-        const winStyle = window.getComputedStyle(winEl);
-        // Use the window's background colour for the ghost or fall back to the panel background
-        ghost.style.background = winStyle.backgroundColor || getComputedStyle(document.documentElement).getPropertyValue('--panel-bg') || '#fff';
-        ghost.style.borderRadius = winStyle.borderRadius || '4px';
-        ghost.style.left = `${startRect.left}px`;
-        ghost.style.top = `${startRect.top}px`;
-        ghost.style.width = `${startRect.width}px`;
-        ghost.style.height = `${startRect.height}px`;
-        ghost.style.transformOrigin = 'top left';
-        document.body.appendChild(ghost);
-        const dx = finalRect.left - startRect.left;
-        const dy = finalRect.top - startRect.top;
-        const scaleX = finalRect.width / startRect.width;
-        const scaleY = finalRect.height / startRect.height;
-        const duration = 280; // Snappy duration for a quick feel
-        const keyframes = [
-          { transform:'translate(0px,0px) scale(1,1)', clipPath:'inset(0% 0% 0% 0%)' },
-          { transform:`translate(${dx*0.5}px,${dy*0.5}px) scale(${(1+scaleX)/2},${(1+scaleY)/2})`, clipPath:'inset(10% 10% 10% 10%)' },
-          { transform:`translate(${dx}px,${dy}px) scale(${scaleX},${scaleY})`, clipPath:'inset(0% 0% 0% 0%)' }
-        ];
-        const anim = ghost.animate(keyframes,{ duration: duration, easing:'ease-in-out', fill:'forwards' });
-        anim.addEventListener('finish', () => {
-          ghost.remove();
-          winEl.style.visibility = prevVisibility || '';
+        const startRect = capturedRect || iconEl.getBoundingClientRect();
+        if(!startRect.width || !startRect.height){ winEl.style.visibility = prevVisibility || ''; return; }
+        animateWindowOutline(startRect, finalRect, {
+          duration:460,
+          onFinish:()=>{ winEl.style.visibility = prevVisibility || ''; }
         });
       }
 
       function openApp(appId, opts = {}){
         const app = APPS.find(a=>a.id===appId);
         if(!app) return null;
+        const sourceRect = opts.sourceRect || (opts.sourceEl && opts.sourceEl.getBoundingClientRect());
+        const sourceKind = opts.sourceKind || (opts.sourceEl && (opts.sourceEl.closest('#blissosDock') ? 'dock' : opts.sourceEl.closest('#taskQuickLaunch') ? 'quicklaunch' : opts.sourceEl.closest('#taskButtons') ? 'taskbar' : 'desktop'));
         if(appId === 'trash'){
           if(state.windows.has('trash')) closeApp('trash');
           if(typeof openSeekerSection === 'function'){
@@ -19517,6 +20725,9 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
           mediaplayerFixed: appId === 'mediaplayer',
           deferReveal,
           skipAnimOpen: !!opts.skipAnimOpen,
+          animationOriginEl: opts.sourceEl || null,
+          animationOriginKind: sourceKind || 'desktop',
+          animationOriginRect: sourceRect || null,
           smartFitPromise: Promise.resolve(getWindowRectFromState({ left: rect.left, top: rect.top, width: rect.width, height: rect.height })),
         };
         state.windows.set(appId, wstate);
@@ -19527,9 +20738,11 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
         }
         
         // Apply launch animation if enabled
-        if(!deferReveal && winEl && state.animations && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
-          const iconEl = document.querySelector(`[data-app-id="${appId}"]`) || document.querySelector(`[data-blissos-open-app="${appId}"]`);
-          animateAppLaunch(iconEl, winEl);
+        if(!deferReveal && winEl && state.animations){
+          const iconEl = (opts.sourceEl && opts.sourceEl.isConnected && opts.sourceEl) || document.querySelector(`#iconGrid [data-app-id="${appId}"]`) || document.querySelector(`#blissosDock [data-dock-win-id="${appId}"]`) || document.querySelector(`#taskButtons [data-task-id="${appId}"]`);
+          wstate.animationOriginEl = iconEl || null;
+          wstate.animationOriginRect = sourceRect || null;
+          animateAppLaunch(iconEl, winEl, usesClassicWindowAnimation() ? sourceRect : null);
         }
         return winEl;
       }
@@ -19574,7 +20787,16 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
         renderTaskButtons();
         
         if(el){
-          if(state.animations){
+          const origin = w.animationOriginEl && w.animationOriginEl.isConnected
+            ? w.animationOriginEl
+            : (w.animationOriginKind === 'dock' ? document.querySelector(`#blissosDock [data-dock-win-id="${appId}"]`)
+              : w.animationOriginKind === 'quicklaunch' ? document.querySelector(`#taskQuickLaunch [data-app-id="${appId}"]`)
+              : w.animationOriginKind === 'taskbar' ? document.querySelector(`#taskButtons [data-task-id="${appId}"]`)
+              : document.querySelector(`#iconGrid [data-app-id="${appId}"]`)) || document.querySelector(`#taskButtons [data-task-id="${appId}"]`);
+          const originRect = origin ? origin.getBoundingClientRect() : w.animationOriginRect;
+          if(shouldAnimateWindowIconTransition() && originRect && originRect.width && originRect.height){
+            animateAppCloseToIcon(el, originRect, ()=>el.remove());
+          } else if(shouldAnimateWindowIconTransition() || (!usesClassicWindowAnimation() && state.animations)){
             el.classList.add('anim-close');
             el.addEventListener('animationend', ()=>{ el.remove(); }, { once:true });
           } else {
@@ -19582,6 +20804,13 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
           }
         }
         updateBlissOSActiveApp();
+      }
+
+      function animateAppCloseToIcon(winEl, to, onDone){
+        const from = winEl.getBoundingClientRect();
+        if(!from.width || !from.height || !to.width || !to.height){ onDone(); return; }
+        winEl.style.visibility = 'hidden';
+        animateWindowOutline(from, to, { duration:460, onFinish:onDone });
       }
       function minimizeApp(appId){
         const w = state.windows.get(appId);
@@ -19703,62 +20932,41 @@ function toggleFitWindow(appId) {
   const fromRect = winEl.getBoundingClientRect();
   const allowGenie = state.settings.theme !== 'blissos' && !shouldReduceMotion();
   const fitDuration = state.isMobile ? Math.round(TASKBAR_GENIE.duration * 0.85) : TASKBAR_GENIE.duration;
-
-  // Desktop maximize is idempotent: repeated clicks keep fitting to content and never restore old rect.
-  if(!state.isMobile){
-    w.fit = true;
-    w.prevRect = null;
-    winEl.classList.add('fit');
-    if(btn) btn.textContent = '❐';
-    smartFitWindow(winEl, 'maximize').then(()=>{
-      if(!allowGenie) return;
-      const toRect = winEl.getBoundingClientRect();
-      if(Math.abs(toRect.width - fromRect.width) > 1 || Math.abs(toRect.height - fromRect.height) > 1 || Math.abs(toRect.left - fromRect.left) > 1 || Math.abs(toRect.top - fromRect.top) > 1){
-        animateWindowRectTransition(winEl, fromRect, toRect, { duration: fitDuration });
-      }
-    });
-    return;
-  }
-
+  let targetRect;
   if(w.fit){
     w.fit = false;
     winEl.classList.remove('fit');
     if(btn) btn.textContent = '□';
-    let restorePromise = null;
     if(w.prevRect){
       const area = $('#desktopArea').getBoundingClientRect();
-      const restored = normalizeWindowRect(w.prevRect, area, 16);
-      assignWindowRect(winEl, w, restored);
+      targetRect = normalizeWindowRect(w.prevRect, area, 16);
       w.prevRect = null;
-      restorePromise = Promise.resolve(restored);
-    } else {
-      restorePromise = smartFitWindow(winEl, 'restore');
     }
-    restorePromise.then(()=>{
+  } else {
+    w.prevRect = { left:w.left, top:w.top, width:w.width, height:w.height };
+    w.fit = true;
+    winEl.classList.add('fit');
+    if(btn) btn.textContent = '❐';
+    targetRect = getMobileMaximizedRect();
+  }
+
+  if(targetRect){
+    assignWindowRect(winEl, w, targetRect);
+  } else {
+    smartFitWindow(winEl, 'restore').then(()=>{
       if(!allowGenie) return;
       const toRect = winEl.getBoundingClientRect();
       if(Math.abs(toRect.width - fromRect.width) > 1 || Math.abs(toRect.height - fromRect.height) > 1 || Math.abs(toRect.left - fromRect.left) > 1 || Math.abs(toRect.top - fromRect.top) > 1){
-        animateWindowRectTransition(winEl, fromRect, toRect, { duration: fitDuration });
+        animateWindowRectTransition(winEl, fromRect, toRect, { duration:fitDuration });
       }
     });
     return;
   }
-
-  w.prevRect = { left: w.left, top: w.top, width: w.width, height: w.height };
-  w.fit = true;
-  winEl.classList.add('fit');
-  if(btn) btn.textContent = '❐';
-  Promise.resolve().then(()=>{
-    const rect = getMobileMaximizedRect();
-    assignWindowRect(winEl, w, rect);
-    return rect;
-  }).then(()=>{
-    if(!allowGenie) return;
-    const toRect = winEl.getBoundingClientRect();
-    if(Math.abs(toRect.width - fromRect.width) > 1 || Math.abs(toRect.height - fromRect.height) > 1 || Math.abs(toRect.left - fromRect.left) > 1 || Math.abs(toRect.top - fromRect.top) > 1){
-      animateWindowRectTransition(winEl, fromRect, toRect, { duration: fitDuration });
-    }
-  });
+  if(!allowGenie) return;
+  const toRect = winEl.getBoundingClientRect();
+  if(Math.abs(toRect.width - fromRect.width) > 1 || Math.abs(toRect.height - fromRect.height) > 1 || Math.abs(toRect.left - fromRect.left) > 1 || Math.abs(toRect.top - fromRect.top) > 1){
+    animateWindowRectTransition(winEl, fromRect, toRect, { duration:fitDuration });
+  }
 }
 
 
@@ -20587,11 +21795,12 @@ function toggleFitWindow(appId) {
           btn.type = 'button';
           btn.title = label;
           btn.setAttribute('aria-label', label);
+          btn.dataset.appId = app.id;
           btn.innerHTML = `<span style="width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;">${getThemedIconHtml(app, label, 16)}</span>`;
           btn.addEventListener('click', (e)=>{
             e.stopPropagation();
             closeStartMenu();
-            openIconById(app.id);
+            openIconById(app.id, { sourceEl: btn });
           });
           host.appendChild(btn);
         });
@@ -20604,6 +21813,14 @@ function toggleFitWindow(appId) {
         const wins = Array.from(state.windows.values()).sort((a,b)=>a.title.localeCompare(b.title));
         const signature = buildTaskButtonsSignature(wins);
         if(signature === taskButtonsRenderSignature && host.childElementCount === wins.length){
+          // focusWindow updates the pressed class directly for responsiveness,
+          // while minimized state can later return to the same cached signature.
+          // Reconcile the visual state even when the button markup is reused.
+          host.querySelectorAll('.task-item').forEach(btn => {
+            const win = state.windows.get(btn.dataset.taskId);
+            const isActive = !!win && !win.minimized && state.activeWindowId === win.id;
+            btn.classList.toggle('pressed', isActive);
+          });
           renderBlissOSDock();
           return;
         }
@@ -20850,7 +22067,7 @@ function renderBlissOSDock(){
               }
             } else if(item.refId){
               queueLeopardDockBounce(btn);
-              openIconById(item.refId);
+              openIconById(item.refId, { sourceEl: btn });
             }
           });
           btn.addEventListener('contextmenu', (e)=>{
@@ -20893,7 +22110,7 @@ function renderBlissOSDock(){
               return;
             }
             triggerLeopardDockBounce(btn);
-            openIconById('trash');
+            openIconById('trash', { sourceEl: btn });
           });
           btn.addEventListener('contextmenu', (e)=>{
             e.preventDefault();
@@ -21088,7 +22305,7 @@ const TASKBAR_MINIMIZE_GENIE = {
 };
 
 function shouldReduceMotion(){
-  return !state.animations || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return !state.animations;
 }
 
 function getTaskbarButtonRect(appId){
@@ -21244,6 +22461,7 @@ function getDockItemEl(appId){
 }
 
 const DEFAULT_DOCK_ORDER = ['seeker','music','clothes','videos','art','poetry','mediaplayer','diev','settings','trash'];
+const LEGACY_DEFAULT_DOCK_ORDER = DEFAULT_DOCK_ORDER.slice();
 
 function isTrashDockItem(item){
   return !!item && (item.type === 'trash' || (item.type === 'app' && item.refId === 'trash'));
@@ -21327,15 +22545,30 @@ function ensureTrashDockItem(items){
 }
 
 function getDefaultDockItems(){
-  const base = DEFAULT_DOCK_ORDER
-    .filter(id => !!getAppById(id))
-    .map(id => ({
+  const locale = state.lang === 'pt' ? 'pt-BR' : 'en';
+  const appIds = APPS
+    .filter(app => app.showOnDesktop !== false && app.id !== 'seeker' && app.id !== 'trash')
+    .slice()
+    .sort((a, b)=>getIconLabel(a).localeCompare(getIconLabel(b), locale, { sensitivity:'base', numeric:true }) || a.id.localeCompare(b.id))
+    .map(app => app.id);
+  const base = appIds.map(id => ({
       id: getDockItemKey('app', id),
       type: 'app',
       refId: id,
       iconPath: getDockItemIconPath('app', id),
     }));
   return ensureTrashDockItem(base);
+}
+
+function isLegacyDefaultDockItems(items){
+  if(!Array.isArray(items)) return false;
+  const expected = LEGACY_DEFAULT_DOCK_ORDER
+    .filter(id => id === 'trash' || !!getAppById(id))
+    .map(id => id === 'trash' ? 'trash:trash' : `app:${id}`);
+  const actual = items
+    .filter(item => item && item.refId)
+    .map(item => item.type === 'trash' || item.refId === 'trash' ? 'trash:trash' : `${item.type}:${item.refId}`);
+  return actual.length === expected.length && actual.every((key, index)=>key === expected[index]);
 }
 
 function getDockWindowIdForItem(item){
@@ -21741,49 +22974,39 @@ function bindDockDrag(btn, item, midEl, innerEl){
 }
 
 function animateGenie(ghost, fromRect, toRect, opts = {}){
-  const dx = (toRect.left + toRect.width / 2) - (fromRect.left + fromRect.width / 2);
-  const dy = (toRect.top + toRect.height / 2) - (fromRect.top + fromRect.height / 2);
-  const duration = opts.duration || 450;
-  const easing = opts.easing || 'cubic-bezier(0.45, 0.03, 0.52, 0.96)';
+  const toCx = toRect.left + toRect.width / 2;
+  const toCy = toRect.top + toRect.height / 2;
+  const fromCx = fromRect.left + fromRect.width / 2;
+  const fromCy = fromRect.top + fromRect.height / 2;
+  const dx = toCx - fromCx;
+  const dy = toCy - fromCy;
+  const duration = opts.duration || 680;
+  const easing = opts.easing || 'cubic-bezier(0.18, 0.72, 0.18, 1)';
+  const reverse = opts.direction === 'reverse';
 
-  const forwardKeyframes = [
-    {
-      transform: 'translate(0px,0px) scale(1)',
-      clipPath: 'inset(0% 0% 0% 0% round 6px)',
-      opacity: 1
-    },
-    {
-      transform: `translate(${dx * 0.5}px, ${dy * 0.5}px) scale(0.5)`,
-      clipPath: 'polygon(0% 0%, 100% 0%, 90% 60%, 10% 60%)',
-      opacity: 0.7
-    },
-    {
-      transform: `translate(${dx}px, ${dy}px) scale(0.1)`,
-      clipPath: 'inset(45% 45% 45% 45% round 12px)',
-      opacity: 0.2
-    }
+  // Keep the upper part broad while the lower edge gathers toward the Dock,
+  // then collapse the whole silhouette into the target. Matching polygon
+  // points let WAAPI interpolate the shape smoothly between these stages.
+  const shapes = [
+    'polygon(0% 0%,100% 0%,100% 28%,100% 56%,100% 82%,100% 100%,0% 82%,0% 56%,0% 28%)',
+    'polygon(0% 0%,100% 0%,94% 28%,82% 56%,61% 82%,50% 100%,39% 82%,18% 56%,6% 28%)',
+    'polygon(8% 0%,92% 0%,84% 24%,70% 49%,57% 76%,50% 100%,43% 76%,30% 49%,16% 24%)',
+    'polygon(47% 0%,53% 0%,54% 24%,53% 49%,52% 76%,50% 100%,48% 76%,47% 49%,46% 24%)',
   ];
-
-  const reverseKeyframes = [
-    {
-      transform: 'translate(0px,0px) scale(0.1)',
-      clipPath: 'inset(45% 45% 45% 45% round 12px)',
-      opacity: 0.2
-    },
-    {
-      transform: `translate(${dx * 0.5}px, ${dy * 0.5}px) scale(0.5)`,
-      clipPath: 'polygon(0% 0%, 100% 0%, 90% 60%, 10% 60%)',
-      opacity: 0.7
-    },
-    {
-      transform: `translate(${dx}px, ${dy}px) scale(1)`,
-      clipPath: 'inset(0% 0% 0% 0% round 6px)',
-      opacity: 1
-    }
-  ];
-
-  const finalKeyframes = opts.direction === 'reverse' ? reverseKeyframes : forwardKeyframes;
-  return ghost.animate(finalKeyframes, { duration, easing, fill: 'forwards' });
+  const scales = [1, 0.84, 0.55, 0.12];
+  const offsets = [0, 0.18, 0.56, 1];
+  const keyframes = shapes.map((clipPath, index) => {
+    const p = offsets[index];
+    const scale = scales[index];
+    return {
+      transform: `translate(${dx * p}px, ${dy * p}px) scale(${scale})`,
+      clipPath,
+      opacity: 1 - p * 0.72,
+      offset: p,
+    };
+  });
+  if(reverse) keyframes.reverse().forEach((frame, index) => { frame.offset = index / (keyframes.length - 1); });
+  return ghost.animate(keyframes, { duration, easing, fill: 'forwards' });
 }
 
 function cancelDockAnimation(appId){
@@ -21803,8 +23026,9 @@ function minimizeToDock(appId){
   cancelDockAnimation(appId);
   // Record last rect for restore
   w.lastRect = { left: w.left, top: w.top, width: w.width, height: w.height };
-  // Determine if motion should be reduced
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || !state.animations;
+  // The BlissOS/Aqua animation toggle is the user's explicit choice for this
+  // shell, so it takes precedence over the browser's reduced-motion setting.
+  const reduceMotion = !state.animations;
   // Mark minimized
   w.minimized = true;
   // Update active states
@@ -21846,8 +23070,11 @@ function minimizeToDock(appId){
   ghost.style.opacity = '1';
   document.body.appendChild(ghost);
   el.classList.add('hidden');
-  animateGenie(ghost, fromRect, toRect).onfinish = () => {
+  const anim = animateGenie(ghost, fromRect, toRect);
+  state.dockAnimations.set(appId, { anim, ghost });
+  anim.onfinish = () => {
     ghost.remove();
+    state.dockAnimations.delete(appId);
   };
 }
 
@@ -21873,7 +23100,9 @@ function restoreFromDock(appId){
   el.style.top = w.top + 'px';
   el.style.width = w.width + 'px';
   el.style.height = w.height + 'px';
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || !state.animations;
+  // Match minimize behavior: when the BlissOS/Aqua animations toggle is on,
+  // always play the reverse Genie even if the OS requests reduced motion.
+  const reduceMotion = !state.animations;
   el.classList.remove('hidden');
   if (reduceMotion) {
     if (state && state.hiddenApps) state.hiddenApps.delete(appId);
@@ -21889,12 +23118,7 @@ function restoreFromDock(appId){
   const iconRect = dockItem.getBoundingClientRect();
   const dockCx = iconRect.left + iconRect.width / 2;
   const dockCy = iconRect.top + iconRect.height / 2;
-  const winCx = toRect.left + toRect.width / 2;
-  const winCy = toRect.top + toRect.height / 2;
-  const dx = dockCx - winCx;
-  const dy = dockCy - winCy;
-  const scaleRaw = Math.min(iconRect.width / toRect.width, iconRect.height / toRect.height);
-  const startScale = clamp(scaleRaw, 0.08, 0.35);
+  const dockTargetRect = { left:dockCx - iconRect.width / 2, top:dockCy - iconRect.height / 2, width:iconRect.width, height:iconRect.height };
   const ghost = el.cloneNode(true);
   ghost.classList.add('dock-genie-ghost');
   ghost.style.left = toRect.left + 'px';
@@ -21905,14 +23129,7 @@ function restoreFromDock(appId){
   ghost.style.transformOrigin = 'center center';
   document.body.appendChild(ghost);
   el.style.opacity = '0';
-  const anim = ghost.animate([
-    { transform: `translate(${dx}px, ${dy}px) scale(${startScale})`, opacity: 0.35 },
-    { transform: 'translate(0px, 0px) scale(1)', opacity: 1 }
-  ], {
-    duration: 320,
-    easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)',
-    fill: 'forwards'
-  });
+  const anim = animateGenie(ghost, toRect, dockTargetRect, { direction:'reverse', duration:620 });
   state.dockAnimations.set(appId, { anim, ghost });
   anim.onfinish = () => {
     ghost.remove();
@@ -22667,6 +23884,9 @@ function renderBlissOSAppMenu(){
         state.games.bigIcons = loadGamesBigIcons();
         state.folders = loadFolders();
         if(!Array.isArray(state.folders.games)) state.folders.games = [];
+        const hadViceCityInGamesFolder = state.folders.games.includes('vice-city');
+        state.folders.games = state.folders.games.filter(id => id !== 'vice-city');
+        state.viceCityDefaultPlacementPending = hadViceCityInGamesFolder;
         state.folders.games = state.folders.games.filter(id => id !== 'skate-freestyle');
         state.folders.games = state.folders.games.filter(id => id !== 'blacksmith-lab');
         state.folders.games = state.folders.games.filter(id => id !== 'duck-adventure');
@@ -22681,6 +23901,7 @@ function renderBlissOSAppMenu(){
         if(!state.folders.games.includes('line-rider-beta-2')) state.folders.games.push('line-rider-beta-2');
         if(!state.folders.games.includes('doom')) state.folders.games.push('doom');
         state.folders.games = state.folders.games.filter(id => id !== 'flash-element-td2');
+        if(hadViceCityInGamesFolder) saveFolders();
         state.snake.highScore = loadSnakeHighScore();
         state.minesweeper.highScore = loadMinesweeperHighScore();
         state.dopeSkate.highScore = loadDopeSkateHighScore();
@@ -22692,7 +23913,8 @@ function renderBlissOSAppMenu(){
         state.trashSelection = new Set();
         initDesktopFs();
         const savedDock = loadDockItems();
-        state.dockItems = normalizeDockItems(savedDock == null ? getDefaultDockItems() : savedDock);
+        const shouldUpgradeDockDefaults = savedDock == null || isLegacyDefaultDockItems(savedDock);
+        state.dockItems = normalizeDockItems(shouldUpgradeDockDefaults ? getDefaultDockItems() : savedDock);
         saveDockItems();
 
         // Apply translations immediately (default is English)

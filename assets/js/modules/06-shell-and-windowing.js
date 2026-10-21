@@ -1520,11 +1520,7 @@ function relayoutWindowsToViewport(){
     if(!winEl || winEl.classList.contains('mobile-game')) return;
 
     if(w.fit && !w.minimized && !winEl.classList.contains('hidden')){
-      if(state.isMobile){
-        assignWindowRect(winEl, w, getMobileMaximizedRect());
-      } else {
-        smartFitWindow(winEl, 'maximize').catch(()=>{});
-      }
+      assignWindowRect(winEl, w, getMobileMaximizedRect());
       return;
     }
 
@@ -1597,9 +1593,18 @@ function scheduleWindowRelayout(){
   });
 }
 
+function usesClassicWindowAnimation(){
+  return !document.body.matches('[data-theme="blissos"][data-blissos-style="aqua"]');
+}
+
+function shouldAnimateWindowIconTransition(){
+  return !!state.animations && !!state.settings.appOpenAnim && usesClassicWindowAnimation();
+}
+
 function revealWindowElement(winEl, wstate, opts = {}){
   if(!winEl || !wstate) return;
-  const skipAnim = !!opts.skipAnim || !!wstate.skipAnimOpen || !state.animations || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const animationEnabled = usesClassicWindowAnimation() ? shouldAnimateWindowIconTransition() : !!state.animations;
+  const skipAnim = !!opts.skipAnim || !!wstate.skipAnimOpen || !animationEnabled;
   wstate.deferReveal = false;
   winEl.style.visibility = 'visible';
   if(skipAnim){
@@ -1621,6 +1626,7 @@ function revealWindow(appId, opts = {}){
 const appOpenAnimState = {
   overlay: null,
   animation: null,
+  animationFrame: 0,
   token: 0,
   appId: null,
 };
@@ -1630,15 +1636,85 @@ function cancelAppOpenAnimation(opts = {}){
   if(appOpenAnimState.animation){
     try{ appOpenAnimState.animation.cancel(); } catch {}
   }
-  if(appOpenAnimState.overlay){
-    appOpenAnimState.overlay.remove();
-  }
+  if(appOpenAnimState.animationFrame) cancelAnimationFrame(appOpenAnimState.animationFrame);
+  document.querySelectorAll('.app-open-selection[data-transition-token="' + appOpenAnimState.token + '"]').forEach(el=>el.remove());
+  if(appOpenAnimState.overlay) appOpenAnimState.overlay.remove();
   appOpenAnimState.overlay = null;
   appOpenAnimState.animation = null;
+  appOpenAnimState.animationFrame = 0;
   appOpenAnimState.appId = null;
   if(opts.revealPending && pendingAppId && state.windows.has(pendingAppId)){
     revealWindow(pendingAppId, { skipAnim: true, renderTasks: true });
   }
+}
+
+function animateWindowOutline(fromRect, toRect, opts = {}){
+  const duration = opts.duration || 460;
+  const trails = [
+    { lag:0.08, opacity:0.34, scale:0.97 },
+    { lag:0.16, opacity:0.22, scale:0.94 },
+    { lag:0.24, opacity:0.12, scale:0.91 },
+  ];
+  const token = opts.token == null ? '' : String(opts.token);
+  const boxes = trails.map(()=>{
+    const box = document.createElement('div');
+    box.className = 'app-open-selection trail';
+    if(token) box.dataset.transitionToken = token;
+    document.body.appendChild(box);
+    return box;
+  });
+  const main = document.createElement('div');
+  main.className = 'app-open-selection';
+  if(token) main.dataset.transitionToken = token;
+  document.body.appendChild(main);
+  const allBoxes = boxes.concat(main);
+  const setRect = (el, p, opacity=1, scale=1)=>{
+    const left = fromRect.left + (toRect.left - fromRect.left) * p;
+    const top = fromRect.top + (toRect.top - fromRect.top) * p;
+    const width = fromRect.width + (toRect.width - fromRect.width) * p;
+    const height = fromRect.height + (toRect.height - fromRect.height) * p;
+    const insetX = width * (1-scale) / 2;
+    const insetY = height * (1-scale) / 2;
+    el.style.left = `${left + insetX}px`;
+    el.style.top = `${top + insetY}px`;
+    el.style.width = `${width * scale}px`;
+    el.style.height = `${height * scale}px`;
+    el.style.opacity = String(opacity);
+  };
+  let raf = 0;
+  let startTime = 0;
+  let finished = false;
+  const finish = ()=>{
+    if(finished) return;
+    finished = true;
+    if(raf) cancelAnimationFrame(raf);
+    allBoxes.forEach(el=>el.remove());
+    if(typeof opts.onFinish === 'function') opts.onFinish();
+  };
+  const step = now=>{
+    if(finished) return;
+    if(!startTime) startTime = now;
+    const raw = Math.min(1, (now - startTime) / duration);
+    const progress = 1 - Math.pow(1 - raw, 2.2);
+    trails.forEach((trail, index)=>{
+      const trailProgress = Math.max(0, progress - trail.lag);
+      setRect(boxes[index], trailProgress, trail.opacity * Math.min(1, progress * 5), trail.scale);
+    });
+    setRect(main, progress);
+    if(raw >= 1){ finish(); return; }
+    raf = requestAnimationFrame(step);
+    if(typeof opts.onFrame === 'function') opts.onFrame(raf);
+  };
+  raf = requestAnimationFrame(step);
+  if(typeof opts.onFrame === 'function') opts.onFrame(raf);
+  return {
+    cancel(){
+      if(finished) return;
+      finished = true;
+      if(raf) cancelAnimationFrame(raf);
+      allBoxes.forEach(el=>el.remove());
+    }
+  };
 }
 
 function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
@@ -1646,8 +1722,7 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
     if(typeof onDone === 'function') onDone();
     return;
   }
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(reduceMotion){
+  if(!state.animations || !usesClassicWindowAnimation()){
     if(typeof onDone === 'function') onDone();
     return;
   }
@@ -1658,91 +1733,43 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
     return;
   }
 
-  const overlay = document.createElement('div');
-  overlay.className = 'app-open-selection';
-  overlay.style.left = `${startRect.left}px`;
-  overlay.style.top = `${startRect.top}px`;
-  overlay.style.width = `${startRect.width}px`;
-  overlay.style.height = `${startRect.height}px`;
-  document.body.appendChild(overlay);
-
   const token = ++appOpenAnimState.token;
-  appOpenAnimState.overlay = overlay;
+  appOpenAnimState.overlay = null;
   appOpenAnimState.appId = appId || null;
-
-  const duration = state.isMobile ? 240 : 210;
-  const easing = 'cubic-bezier(0.2, 0.7, 0.2, 1)';
-  let animation = null;
-  try{
-    animation = overlay.animate([
-      { left: `${startRect.left}px`, top: `${startRect.top}px`, width: `${startRect.width}px`, height: `${startRect.height}px`, opacity: 0.95 },
-      { left: `${targetRect.left}px`, top: `${targetRect.top}px`, width: `${targetRect.width}px`, height: `${targetRect.height}px`, opacity: 1 }
-    ], { duration, easing, fill: 'forwards' });
-  } catch {}
-
   const finish = ()=>{
     if(token !== appOpenAnimState.token) return;
     cancelAppOpenAnimation();
     if(typeof onDone === 'function') onDone();
   };
-
-  if(animation){
-    appOpenAnimState.animation = animation;
-    animation.addEventListener('finish', finish, { once: true });
-    animation.addEventListener('cancel', finish, { once: true });
-  } else {
-    overlay.style.transition = `all ${duration}ms ${easing}`;
-    requestAnimationFrame(()=>{
-      overlay.style.left = `${targetRect.left}px`;
-      overlay.style.top = `${targetRect.top}px`;
-      overlay.style.width = `${targetRect.width}px`;
-      overlay.style.height = `${targetRect.height}px`;
-    });
-    window.setTimeout(finish, duration + 30);
-  }
+  appOpenAnimState.animation = animateWindowOutline(startRect, targetRect, {
+    duration:460,
+    token,
+    onFinish:finish,
+    onFrame:raf=>{ appOpenAnimState.animationFrame = raf; }
+  });
 }
 
-      function animateAppLaunch(iconEl, winEl){
-        if (!iconEl || !winEl) return;
+      function animateAppLaunch(iconEl, winEl, capturedRect){
+        if ((!iconEl && !capturedRect) || !winEl) return;
         // Capture the final geometry before hiding the window
         const finalRect = winEl.getBoundingClientRect();
         // Hide the real window until the animation finishes
         const prevVisibility = winEl.style.visibility;
         winEl.style.visibility = 'hidden';
         // Starting geometry from the icon
-        const startRect = iconEl.getBoundingClientRect();
-        const ghost = document.createElement('div');
-        ghost.className = 'dock-genie-ghost';
-        const winStyle = window.getComputedStyle(winEl);
-        // Use the window's background colour for the ghost or fall back to the panel background
-        ghost.style.background = winStyle.backgroundColor || getComputedStyle(document.documentElement).getPropertyValue('--panel-bg') || '#fff';
-        ghost.style.borderRadius = winStyle.borderRadius || '4px';
-        ghost.style.left = `${startRect.left}px`;
-        ghost.style.top = `${startRect.top}px`;
-        ghost.style.width = `${startRect.width}px`;
-        ghost.style.height = `${startRect.height}px`;
-        ghost.style.transformOrigin = 'top left';
-        document.body.appendChild(ghost);
-        const dx = finalRect.left - startRect.left;
-        const dy = finalRect.top - startRect.top;
-        const scaleX = finalRect.width / startRect.width;
-        const scaleY = finalRect.height / startRect.height;
-        const duration = 280; // Snappy duration for a quick feel
-        const keyframes = [
-          { transform:'translate(0px,0px) scale(1,1)', clipPath:'inset(0% 0% 0% 0%)' },
-          { transform:`translate(${dx*0.5}px,${dy*0.5}px) scale(${(1+scaleX)/2},${(1+scaleY)/2})`, clipPath:'inset(10% 10% 10% 10%)' },
-          { transform:`translate(${dx}px,${dy}px) scale(${scaleX},${scaleY})`, clipPath:'inset(0% 0% 0% 0%)' }
-        ];
-        const anim = ghost.animate(keyframes,{ duration: duration, easing:'ease-in-out', fill:'forwards' });
-        anim.addEventListener('finish', () => {
-          ghost.remove();
-          winEl.style.visibility = prevVisibility || '';
+        const startRect = capturedRect || iconEl.getBoundingClientRect();
+        if(!startRect.width || !startRect.height){ winEl.style.visibility = prevVisibility || ''; return; }
+        animateWindowOutline(startRect, finalRect, {
+          duration:460,
+          onFinish:()=>{ winEl.style.visibility = prevVisibility || ''; }
         });
       }
 
       function openApp(appId, opts = {}){
         const app = APPS.find(a=>a.id===appId);
         if(!app) return null;
+        const sourceRect = opts.sourceRect || (opts.sourceEl && opts.sourceEl.getBoundingClientRect());
+        const sourceKind = opts.sourceKind || (opts.sourceEl && (opts.sourceEl.closest('#blissosDock') ? 'dock' : opts.sourceEl.closest('#taskQuickLaunch') ? 'quicklaunch' : opts.sourceEl.closest('#taskButtons') ? 'taskbar' : 'desktop'));
         if(appId === 'trash'){
           if(state.windows.has('trash')) closeApp('trash');
           if(typeof openSeekerSection === 'function'){
@@ -1818,6 +1845,9 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
           mediaplayerFixed: appId === 'mediaplayer',
           deferReveal,
           skipAnimOpen: !!opts.skipAnimOpen,
+          animationOriginEl: opts.sourceEl || null,
+          animationOriginKind: sourceKind || 'desktop',
+          animationOriginRect: sourceRect || null,
           smartFitPromise: Promise.resolve(getWindowRectFromState({ left: rect.left, top: rect.top, width: rect.width, height: rect.height })),
         };
         state.windows.set(appId, wstate);
@@ -1828,9 +1858,11 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
         }
         
         // Apply launch animation if enabled
-        if(!deferReveal && winEl && state.animations && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
-          const iconEl = document.querySelector(`[data-app-id="${appId}"]`) || document.querySelector(`[data-blissos-open-app="${appId}"]`);
-          animateAppLaunch(iconEl, winEl);
+        if(!deferReveal && winEl && state.animations){
+          const iconEl = (opts.sourceEl && opts.sourceEl.isConnected && opts.sourceEl) || document.querySelector(`#iconGrid [data-app-id="${appId}"]`) || document.querySelector(`#blissosDock [data-dock-win-id="${appId}"]`) || document.querySelector(`#taskButtons [data-task-id="${appId}"]`);
+          wstate.animationOriginEl = iconEl || null;
+          wstate.animationOriginRect = sourceRect || null;
+          animateAppLaunch(iconEl, winEl, usesClassicWindowAnimation() ? sourceRect : null);
         }
         return winEl;
       }
@@ -1875,7 +1907,16 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
         renderTaskButtons();
         
         if(el){
-          if(state.animations){
+          const origin = w.animationOriginEl && w.animationOriginEl.isConnected
+            ? w.animationOriginEl
+            : (w.animationOriginKind === 'dock' ? document.querySelector(`#blissosDock [data-dock-win-id="${appId}"]`)
+              : w.animationOriginKind === 'quicklaunch' ? document.querySelector(`#taskQuickLaunch [data-app-id="${appId}"]`)
+              : w.animationOriginKind === 'taskbar' ? document.querySelector(`#taskButtons [data-task-id="${appId}"]`)
+              : document.querySelector(`#iconGrid [data-app-id="${appId}"]`)) || document.querySelector(`#taskButtons [data-task-id="${appId}"]`);
+          const originRect = origin ? origin.getBoundingClientRect() : w.animationOriginRect;
+          if(shouldAnimateWindowIconTransition() && originRect && originRect.width && originRect.height){
+            animateAppCloseToIcon(el, originRect, ()=>el.remove());
+          } else if(shouldAnimateWindowIconTransition() || (!usesClassicWindowAnimation() && state.animations)){
             el.classList.add('anim-close');
             el.addEventListener('animationend', ()=>{ el.remove(); }, { once:true });
           } else {
@@ -1883,6 +1924,13 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
           }
         }
         updateBlissOSActiveApp();
+      }
+
+      function animateAppCloseToIcon(winEl, to, onDone){
+        const from = winEl.getBoundingClientRect();
+        if(!from.width || !from.height || !to.width || !to.height){ onDone(); return; }
+        winEl.style.visibility = 'hidden';
+        animateWindowOutline(from, to, { duration:460, onFinish:onDone });
       }
       function minimizeApp(appId){
         const w = state.windows.get(appId);
@@ -2004,62 +2052,41 @@ function toggleFitWindow(appId) {
   const fromRect = winEl.getBoundingClientRect();
   const allowGenie = state.settings.theme !== 'blissos' && !shouldReduceMotion();
   const fitDuration = state.isMobile ? Math.round(TASKBAR_GENIE.duration * 0.85) : TASKBAR_GENIE.duration;
-
-  // Desktop maximize is idempotent: repeated clicks keep fitting to content and never restore old rect.
-  if(!state.isMobile){
-    w.fit = true;
-    w.prevRect = null;
-    winEl.classList.add('fit');
-    if(btn) btn.textContent = '❐';
-    smartFitWindow(winEl, 'maximize').then(()=>{
-      if(!allowGenie) return;
-      const toRect = winEl.getBoundingClientRect();
-      if(Math.abs(toRect.width - fromRect.width) > 1 || Math.abs(toRect.height - fromRect.height) > 1 || Math.abs(toRect.left - fromRect.left) > 1 || Math.abs(toRect.top - fromRect.top) > 1){
-        animateWindowRectTransition(winEl, fromRect, toRect, { duration: fitDuration });
-      }
-    });
-    return;
-  }
-
+  let targetRect;
   if(w.fit){
     w.fit = false;
     winEl.classList.remove('fit');
     if(btn) btn.textContent = '□';
-    let restorePromise = null;
     if(w.prevRect){
       const area = $('#desktopArea').getBoundingClientRect();
-      const restored = normalizeWindowRect(w.prevRect, area, 16);
-      assignWindowRect(winEl, w, restored);
+      targetRect = normalizeWindowRect(w.prevRect, area, 16);
       w.prevRect = null;
-      restorePromise = Promise.resolve(restored);
-    } else {
-      restorePromise = smartFitWindow(winEl, 'restore');
     }
-    restorePromise.then(()=>{
+  } else {
+    w.prevRect = { left:w.left, top:w.top, width:w.width, height:w.height };
+    w.fit = true;
+    winEl.classList.add('fit');
+    if(btn) btn.textContent = '❐';
+    targetRect = getMobileMaximizedRect();
+  }
+
+  if(targetRect){
+    assignWindowRect(winEl, w, targetRect);
+  } else {
+    smartFitWindow(winEl, 'restore').then(()=>{
       if(!allowGenie) return;
       const toRect = winEl.getBoundingClientRect();
       if(Math.abs(toRect.width - fromRect.width) > 1 || Math.abs(toRect.height - fromRect.height) > 1 || Math.abs(toRect.left - fromRect.left) > 1 || Math.abs(toRect.top - fromRect.top) > 1){
-        animateWindowRectTransition(winEl, fromRect, toRect, { duration: fitDuration });
+        animateWindowRectTransition(winEl, fromRect, toRect, { duration:fitDuration });
       }
     });
     return;
   }
-
-  w.prevRect = { left: w.left, top: w.top, width: w.width, height: w.height };
-  w.fit = true;
-  winEl.classList.add('fit');
-  if(btn) btn.textContent = '❐';
-  Promise.resolve().then(()=>{
-    const rect = getMobileMaximizedRect();
-    assignWindowRect(winEl, w, rect);
-    return rect;
-  }).then(()=>{
-    if(!allowGenie) return;
-    const toRect = winEl.getBoundingClientRect();
-    if(Math.abs(toRect.width - fromRect.width) > 1 || Math.abs(toRect.height - fromRect.height) > 1 || Math.abs(toRect.left - fromRect.left) > 1 || Math.abs(toRect.top - fromRect.top) > 1){
-      animateWindowRectTransition(winEl, fromRect, toRect, { duration: fitDuration });
-    }
-  });
+  if(!allowGenie) return;
+  const toRect = winEl.getBoundingClientRect();
+  if(Math.abs(toRect.width - fromRect.width) > 1 || Math.abs(toRect.height - fromRect.height) > 1 || Math.abs(toRect.left - fromRect.left) > 1 || Math.abs(toRect.top - fromRect.top) > 1){
+    animateWindowRectTransition(winEl, fromRect, toRect, { duration:fitDuration });
+  }
 }
 
 
@@ -2888,11 +2915,12 @@ function toggleFitWindow(appId) {
           btn.type = 'button';
           btn.title = label;
           btn.setAttribute('aria-label', label);
+          btn.dataset.appId = app.id;
           btn.innerHTML = `<span style="width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;">${getThemedIconHtml(app, label, 16)}</span>`;
           btn.addEventListener('click', (e)=>{
             e.stopPropagation();
             closeStartMenu();
-            openIconById(app.id);
+            openIconById(app.id, { sourceEl: btn });
           });
           host.appendChild(btn);
         });
@@ -2905,6 +2933,14 @@ function toggleFitWindow(appId) {
         const wins = Array.from(state.windows.values()).sort((a,b)=>a.title.localeCompare(b.title));
         const signature = buildTaskButtonsSignature(wins);
         if(signature === taskButtonsRenderSignature && host.childElementCount === wins.length){
+          // focusWindow updates the pressed class directly for responsiveness,
+          // while minimized state can later return to the same cached signature.
+          // Reconcile the visual state even when the button markup is reused.
+          host.querySelectorAll('.task-item').forEach(btn => {
+            const win = state.windows.get(btn.dataset.taskId);
+            const isActive = !!win && !win.minimized && state.activeWindowId === win.id;
+            btn.classList.toggle('pressed', isActive);
+          });
           renderBlissOSDock();
           return;
         }
@@ -3151,7 +3187,7 @@ function renderBlissOSDock(){
               }
             } else if(item.refId){
               queueLeopardDockBounce(btn);
-              openIconById(item.refId);
+              openIconById(item.refId, { sourceEl: btn });
             }
           });
           btn.addEventListener('contextmenu', (e)=>{
@@ -3194,7 +3230,7 @@ function renderBlissOSDock(){
               return;
             }
             triggerLeopardDockBounce(btn);
-            openIconById('trash');
+            openIconById('trash', { sourceEl: btn });
           });
           btn.addEventListener('contextmenu', (e)=>{
             e.preventDefault();
@@ -3389,7 +3425,7 @@ const TASKBAR_MINIMIZE_GENIE = {
 };
 
 function shouldReduceMotion(){
-  return !state.animations || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return !state.animations;
 }
 
 function getTaskbarButtonRect(appId){
@@ -3545,6 +3581,7 @@ function getDockItemEl(appId){
 }
 
 const DEFAULT_DOCK_ORDER = ['seeker','music','clothes','videos','art','poetry','mediaplayer','diev','settings','trash'];
+const LEGACY_DEFAULT_DOCK_ORDER = DEFAULT_DOCK_ORDER.slice();
 
 function isTrashDockItem(item){
   return !!item && (item.type === 'trash' || (item.type === 'app' && item.refId === 'trash'));
@@ -3628,15 +3665,30 @@ function ensureTrashDockItem(items){
 }
 
 function getDefaultDockItems(){
-  const base = DEFAULT_DOCK_ORDER
-    .filter(id => !!getAppById(id))
-    .map(id => ({
+  const locale = state.lang === 'pt' ? 'pt-BR' : 'en';
+  const appIds = APPS
+    .filter(app => app.showOnDesktop !== false && app.id !== 'seeker' && app.id !== 'trash')
+    .slice()
+    .sort((a, b)=>getIconLabel(a).localeCompare(getIconLabel(b), locale, { sensitivity:'base', numeric:true }) || a.id.localeCompare(b.id))
+    .map(app => app.id);
+  const base = appIds.map(id => ({
       id: getDockItemKey('app', id),
       type: 'app',
       refId: id,
       iconPath: getDockItemIconPath('app', id),
     }));
   return ensureTrashDockItem(base);
+}
+
+function isLegacyDefaultDockItems(items){
+  if(!Array.isArray(items)) return false;
+  const expected = LEGACY_DEFAULT_DOCK_ORDER
+    .filter(id => id === 'trash' || !!getAppById(id))
+    .map(id => id === 'trash' ? 'trash:trash' : `app:${id}`);
+  const actual = items
+    .filter(item => item && item.refId)
+    .map(item => item.type === 'trash' || item.refId === 'trash' ? 'trash:trash' : `${item.type}:${item.refId}`);
+  return actual.length === expected.length && actual.every((key, index)=>key === expected[index]);
 }
 
 function getDockWindowIdForItem(item){
@@ -4042,49 +4094,39 @@ function bindDockDrag(btn, item, midEl, innerEl){
 }
 
 function animateGenie(ghost, fromRect, toRect, opts = {}){
-  const dx = (toRect.left + toRect.width / 2) - (fromRect.left + fromRect.width / 2);
-  const dy = (toRect.top + toRect.height / 2) - (fromRect.top + fromRect.height / 2);
-  const duration = opts.duration || 450;
-  const easing = opts.easing || 'cubic-bezier(0.45, 0.03, 0.52, 0.96)';
+  const toCx = toRect.left + toRect.width / 2;
+  const toCy = toRect.top + toRect.height / 2;
+  const fromCx = fromRect.left + fromRect.width / 2;
+  const fromCy = fromRect.top + fromRect.height / 2;
+  const dx = toCx - fromCx;
+  const dy = toCy - fromCy;
+  const duration = opts.duration || 680;
+  const easing = opts.easing || 'cubic-bezier(0.18, 0.72, 0.18, 1)';
+  const reverse = opts.direction === 'reverse';
 
-  const forwardKeyframes = [
-    {
-      transform: 'translate(0px,0px) scale(1)',
-      clipPath: 'inset(0% 0% 0% 0% round 6px)',
-      opacity: 1
-    },
-    {
-      transform: `translate(${dx * 0.5}px, ${dy * 0.5}px) scale(0.5)`,
-      clipPath: 'polygon(0% 0%, 100% 0%, 90% 60%, 10% 60%)',
-      opacity: 0.7
-    },
-    {
-      transform: `translate(${dx}px, ${dy}px) scale(0.1)`,
-      clipPath: 'inset(45% 45% 45% 45% round 12px)',
-      opacity: 0.2
-    }
+  // Keep the upper part broad while the lower edge gathers toward the Dock,
+  // then collapse the whole silhouette into the target. Matching polygon
+  // points let WAAPI interpolate the shape smoothly between these stages.
+  const shapes = [
+    'polygon(0% 0%,100% 0%,100% 28%,100% 56%,100% 82%,100% 100%,0% 82%,0% 56%,0% 28%)',
+    'polygon(0% 0%,100% 0%,94% 28%,82% 56%,61% 82%,50% 100%,39% 82%,18% 56%,6% 28%)',
+    'polygon(8% 0%,92% 0%,84% 24%,70% 49%,57% 76%,50% 100%,43% 76%,30% 49%,16% 24%)',
+    'polygon(47% 0%,53% 0%,54% 24%,53% 49%,52% 76%,50% 100%,48% 76%,47% 49%,46% 24%)',
   ];
-
-  const reverseKeyframes = [
-    {
-      transform: 'translate(0px,0px) scale(0.1)',
-      clipPath: 'inset(45% 45% 45% 45% round 12px)',
-      opacity: 0.2
-    },
-    {
-      transform: `translate(${dx * 0.5}px, ${dy * 0.5}px) scale(0.5)`,
-      clipPath: 'polygon(0% 0%, 100% 0%, 90% 60%, 10% 60%)',
-      opacity: 0.7
-    },
-    {
-      transform: `translate(${dx}px, ${dy}px) scale(1)`,
-      clipPath: 'inset(0% 0% 0% 0% round 6px)',
-      opacity: 1
-    }
-  ];
-
-  const finalKeyframes = opts.direction === 'reverse' ? reverseKeyframes : forwardKeyframes;
-  return ghost.animate(finalKeyframes, { duration, easing, fill: 'forwards' });
+  const scales = [1, 0.84, 0.55, 0.12];
+  const offsets = [0, 0.18, 0.56, 1];
+  const keyframes = shapes.map((clipPath, index) => {
+    const p = offsets[index];
+    const scale = scales[index];
+    return {
+      transform: `translate(${dx * p}px, ${dy * p}px) scale(${scale})`,
+      clipPath,
+      opacity: 1 - p * 0.72,
+      offset: p,
+    };
+  });
+  if(reverse) keyframes.reverse().forEach((frame, index) => { frame.offset = index / (keyframes.length - 1); });
+  return ghost.animate(keyframes, { duration, easing, fill: 'forwards' });
 }
 
 function cancelDockAnimation(appId){
@@ -4104,8 +4146,9 @@ function minimizeToDock(appId){
   cancelDockAnimation(appId);
   // Record last rect for restore
   w.lastRect = { left: w.left, top: w.top, width: w.width, height: w.height };
-  // Determine if motion should be reduced
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || !state.animations;
+  // The BlissOS/Aqua animation toggle is the user's explicit choice for this
+  // shell, so it takes precedence over the browser's reduced-motion setting.
+  const reduceMotion = !state.animations;
   // Mark minimized
   w.minimized = true;
   // Update active states
@@ -4147,8 +4190,11 @@ function minimizeToDock(appId){
   ghost.style.opacity = '1';
   document.body.appendChild(ghost);
   el.classList.add('hidden');
-  animateGenie(ghost, fromRect, toRect).onfinish = () => {
+  const anim = animateGenie(ghost, fromRect, toRect);
+  state.dockAnimations.set(appId, { anim, ghost });
+  anim.onfinish = () => {
     ghost.remove();
+    state.dockAnimations.delete(appId);
   };
 }
 
@@ -4174,7 +4220,9 @@ function restoreFromDock(appId){
   el.style.top = w.top + 'px';
   el.style.width = w.width + 'px';
   el.style.height = w.height + 'px';
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || !state.animations;
+  // Match minimize behavior: when the BlissOS/Aqua animations toggle is on,
+  // always play the reverse Genie even if the OS requests reduced motion.
+  const reduceMotion = !state.animations;
   el.classList.remove('hidden');
   if (reduceMotion) {
     if (state && state.hiddenApps) state.hiddenApps.delete(appId);
@@ -4190,12 +4238,7 @@ function restoreFromDock(appId){
   const iconRect = dockItem.getBoundingClientRect();
   const dockCx = iconRect.left + iconRect.width / 2;
   const dockCy = iconRect.top + iconRect.height / 2;
-  const winCx = toRect.left + toRect.width / 2;
-  const winCy = toRect.top + toRect.height / 2;
-  const dx = dockCx - winCx;
-  const dy = dockCy - winCy;
-  const scaleRaw = Math.min(iconRect.width / toRect.width, iconRect.height / toRect.height);
-  const startScale = clamp(scaleRaw, 0.08, 0.35);
+  const dockTargetRect = { left:dockCx - iconRect.width / 2, top:dockCy - iconRect.height / 2, width:iconRect.width, height:iconRect.height };
   const ghost = el.cloneNode(true);
   ghost.classList.add('dock-genie-ghost');
   ghost.style.left = toRect.left + 'px';
@@ -4206,14 +4249,7 @@ function restoreFromDock(appId){
   ghost.style.transformOrigin = 'center center';
   document.body.appendChild(ghost);
   el.style.opacity = '0';
-  const anim = ghost.animate([
-    { transform: `translate(${dx}px, ${dy}px) scale(${startScale})`, opacity: 0.35 },
-    { transform: 'translate(0px, 0px) scale(1)', opacity: 1 }
-  ], {
-    duration: 320,
-    easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)',
-    fill: 'forwards'
-  });
+  const anim = animateGenie(ghost, toRect, dockTargetRect, { direction:'reverse', duration:620 });
   state.dockAnimations.set(appId, { anim, ghost });
   anim.onfinish = () => {
     ghost.remove();
