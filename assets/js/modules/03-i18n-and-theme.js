@@ -1515,7 +1515,7 @@
 
       function setLang(lang){
         state.lang = (lang === 'pt') ? 'pt' : 'en';
-        localStorage.setItem('bliss98_lang', state.lang);
+        safeStorage.setItem('bliss98_lang', state.lang);
         applyI18n();
         if(state.games.view === 'list' && state.windows.has('games')) renderGamesWindow();
       }
@@ -1596,7 +1596,7 @@
       function setBlissosAccent(accent){
         state.settings.blissosAccent = accent;
         try {
-          localStorage.setItem(BLISSOS_ACCENT_KEY, accent);
+          safeStorage.setItem(BLISSOS_ACCENT_KEY, accent);
         } catch {}
         applyBlissosAccent(accent); // This function will apply the CSS variables
       }

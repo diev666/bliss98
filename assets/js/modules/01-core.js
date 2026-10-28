@@ -251,7 +251,7 @@ const RETRO_KEY = 'bliss98_retro_glow';
 const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
       function loadMobileControlsMode(){
         try{
-          const raw = localStorage.getItem(MOBILE_CONTROLS_KEY);
+          const raw = safeStorage.getItem(MOBILE_CONTROLS_KEY);
           return (raw === 'analog' || raw === 'dpad') ? raw : 'dpad';
         } catch {
           return 'dpad';
@@ -259,7 +259,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
       }
 
       function saveMobileControlsMode(mode){
-        try{ localStorage.setItem(MOBILE_CONTROLS_KEY, mode); } catch {}
+        try{ safeStorage.setItem(MOBILE_CONTROLS_KEY, mode); } catch {}
       }
 
       state.mobileControlsMode = loadMobileControlsMode();
@@ -562,7 +562,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
 
       function hasSavedIconPositionsForCurrentOs(){
         try{
-          return localStorage.getItem(getIconPositionsStorageKey()) !== null;
+          return safeStorage.getItem(getIconPositionsStorageKey()) !== null;
         } catch {
           return false;
         }
@@ -572,13 +572,13 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
         try{
           const theme = getCurrentOsThemeChoice();
           const key = getIconPositionsStorageKey(theme);
-          const raw = localStorage.getItem(key);
+          const raw = safeStorage.getItem(key);
           if(raw){
             const parsed = JSON.parse(raw);
             if(parsed && typeof parsed === 'object') return parsed;
           }
           if(theme !== 'bliss98') return {};
-          const legacy = localStorage.getItem(ICON_POS_KEY);
+          const legacy = safeStorage.getItem(ICON_POS_KEY);
           return legacy ? JSON.parse(legacy) : {};
         } catch {
           return {};
@@ -588,7 +588,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
       function saveIconPositions(pos){
         try{
           const key = getIconPositionsStorageKey();
-          localStorage.setItem(key, JSON.stringify(pos));
+          safeStorage.setItem(key, JSON.stringify(pos));
         } catch {}
       }
 
@@ -602,7 +602,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
 
       function loadDesktopFs(){
         try{
-          const raw = localStorage.getItem(DESKTOP_FS_KEY);
+          const raw = safeStorage.getItem(DESKTOP_FS_KEY);
           if(!raw) return {};
           const parsed = JSON.parse(raw);
           if(!parsed || !Array.isArray(parsed.items)) return {};
@@ -619,7 +619,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
       function saveDesktopFs(){
         try{
           const items = Object.values(state.fs.items || {});
-          localStorage.setItem(DESKTOP_FS_KEY, JSON.stringify({ version: state.fs.version || 1, items }));
+          safeStorage.setItem(DESKTOP_FS_KEY, JSON.stringify({ version: state.fs.version || 1, items }));
         } catch {}
       }
 
@@ -778,7 +778,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
 
 function loadGridSnap(){
   try{
-    const raw = localStorage.getItem(GRID_SNAP_KEY);
+    const raw = safeStorage.getItem(GRID_SNAP_KEY);
     if(raw === null) return true;
     return raw === '1';
   } catch {
@@ -788,13 +788,13 @@ function loadGridSnap(){
 
 function saveGridSnap(){
   try{
-    localStorage.setItem(GRID_SNAP_KEY, state.gridSnap ? '1' : '0');
+    safeStorage.setItem(GRID_SNAP_KEY, state.gridSnap ? '1' : '0');
   } catch {}
 }
 
 function loadDesktopIconsVisible(){
   try{
-    const raw = localStorage.getItem(DESKTOP_ICONS_KEY);
+    const raw = safeStorage.getItem(DESKTOP_ICONS_KEY);
     if(raw === null) return true;
     return raw !== '0';
   } catch {
@@ -804,7 +804,7 @@ function loadDesktopIconsVisible(){
 
 function saveDesktopIconsVisible(){
   try{
-    localStorage.setItem(DESKTOP_ICONS_KEY, state.settings.showDesktopIcons === false ? '0' : '1');
+    safeStorage.setItem(DESKTOP_ICONS_KEY, state.settings.showDesktopIcons === false ? '0' : '1');
   } catch {}
 }
 

@@ -8,7 +8,7 @@
         if(!params) return;
         const autoGame = (params.get('autogame') || '').trim().toLowerCase();
         if(autoGame !== 'snake' && autoGame !== 'minesweeper') return;
-        const rawUser = (params.get('user') || localStorage.getItem('bliss98_user') || 'PLAYER').trim();
+        const rawUser = (params.get('user') || safeStorage.getItem('bliss98_user') || 'PLAYER').trim();
         const user = rawUser || 'PLAYER';
         setUser(user);
         if($('#username')) $('#username').value = user;
@@ -21,10 +21,10 @@
       }
 
       (function init(){
-        const savedLang = localStorage.getItem('bliss98_lang') || 'en';
+        const savedLang = safeStorage.getItem('bliss98_lang') || 'en';
         state.lang = (savedLang === 'pt') ? 'pt' : 'en';
 
-        const saved = localStorage.getItem('bliss98_user');
+        const saved = safeStorage.getItem('bliss98_user');
         if(saved){ setUser(saved); $('#username').value = saved; }
 
         let osThemeChoice = getSavedOsTheme();

@@ -1,7 +1,7 @@
 
       function setUser(name){
         state.user = name;
-        localStorage.setItem('bliss98_user', name);
+        safeStorage.setItem('bliss98_user', name);
         $('#who').textContent = name ? name : '';
       }
 
@@ -1117,7 +1117,7 @@ function renderIcons(){
 
       function getSavedWindowRect(appId){
         try{
-          const raw = localStorage.getItem(`bliss98_window_${appId}`);
+          const raw = safeStorage.getItem(`bliss98_window_${appId}`);
           if(!raw) return null;
           const parsed = JSON.parse(raw);
           if(!parsed) return null;
@@ -4370,7 +4370,7 @@ function renderBlissOSAppMenu(){
       syncLoginOsButtons();
 
       $('#clearProfile').addEventListener('click', ()=>{
-        localStorage.removeItem('bliss98_user');
+        safeStorage.removeItem('bliss98_user');
         $('#username').value = '';
         $('#username').focus();
       });

@@ -2,16 +2,40 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover" />
+    <script>
+      window.safeStorage = (function(){
+        var fallback = new Map();
+        function call(method, args, fallbackValue){
+          try{ return window.localStorage[method].apply(window.localStorage, args); }
+          catch(error){
+            if(method === 'getItem') return fallback.has(args[0]) ? fallback.get(args[0]) : fallbackValue;
+            if(method === 'setItem'){ fallback.set(String(args[0]), String(args[1])); return; }
+            if(method === 'removeItem'){ fallback.delete(String(args[0])); return; }
+            if(method === 'clear'){ fallback.clear(); return; }
+            if(method === 'key') return Array.from(fallback.keys())[args[0]] || null;
+            return fallbackValue;
+          }
+        }
+        return {
+          getItem: function(key){ return call('getItem', [key], null); },
+          setItem: function(key, value){ call('setItem', [key, value]); },
+          removeItem: function(key){ call('removeItem', [key]); },
+          clear: function(){ call('clear', []); },
+          key: function(index){ return call('key', [index], null); },
+          get length(){ try{ return window.localStorage.length; } catch(error){ return fallback.size; } }
+        };
+      })();
+    </script>
     <script>
       (function(){
         var enabled = true;
         try{
-          var raw = localStorage.getItem('bliss98_oldcrt');
-          var theme = localStorage.getItem('bliss98_os_theme') || 'bliss98';
+          var raw = safeStorage.getItem('bliss98_oldcrt');
+          var theme = safeStorage.getItem('bliss98_os_theme') || 'bliss98';
           theme = (theme === 'blissos' || theme === 'blissaqua') ? theme : 'bliss98';
           enabled = theme !== 'blissaqua';
-          var profilesRaw = localStorage.getItem('bliss98_os_profiles');
+          var profilesRaw = safeStorage.getItem('bliss98_os_profiles');
           if(profilesRaw){
             var profiles = JSON.parse(profilesRaw);
             var profile = profiles && profiles[theme];
@@ -27,7 +51,12 @@
         document.documentElement.classList.toggle('old-crt', enabled);
       })();
     </script>
-    <title>BLISS 98</title>    <!-- Site icon (PNG transparente) -->
+    <title>BLISS 98</title>
+    <meta name="description" content="BLISS 98: um desktop retrô interativo com jogos, música, vídeos e personalização." />
+    <meta property="og:title" content="BLISS 98" />
+    <meta property="og:description" content="Um desktop retrô interativo com jogos, música, vídeos e personalização." />
+    <meta property="og:type" content="website" />
+    <!-- Site icon (PNG transparente) -->
     <link rel="icon" type="image/png" href="./assets/siteicon/bliss.png" sizes="512x512" />
     <link rel="icon" type="image/png" href="./assets/siteicon/bliss.png" sizes="192x192" />
     <link rel="icon" type="image/png" href="./assets/siteicon/bliss.png" sizes="32x32" />

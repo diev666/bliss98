@@ -255,7 +255,7 @@ const RETRO_KEY = 'bliss98_retro_glow';
 const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
       function loadMobileControlsMode(){
         try{
-          const raw = localStorage.getItem(MOBILE_CONTROLS_KEY);
+          const raw = safeStorage.getItem(MOBILE_CONTROLS_KEY);
           return (raw === 'analog' || raw === 'dpad') ? raw : 'dpad';
         } catch {
           return 'dpad';
@@ -263,7 +263,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
       }
 
       function saveMobileControlsMode(mode){
-        try{ localStorage.setItem(MOBILE_CONTROLS_KEY, mode); } catch {}
+        try{ safeStorage.setItem(MOBILE_CONTROLS_KEY, mode); } catch {}
       }
 
       state.mobileControlsMode = loadMobileControlsMode();
@@ -566,7 +566,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
 
       function hasSavedIconPositionsForCurrentOs(){
         try{
-          return localStorage.getItem(getIconPositionsStorageKey()) !== null;
+          return safeStorage.getItem(getIconPositionsStorageKey()) !== null;
         } catch {
           return false;
         }
@@ -576,13 +576,13 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
         try{
           const theme = getCurrentOsThemeChoice();
           const key = getIconPositionsStorageKey(theme);
-          const raw = localStorage.getItem(key);
+          const raw = safeStorage.getItem(key);
           if(raw){
             const parsed = JSON.parse(raw);
             if(parsed && typeof parsed === 'object') return parsed;
           }
           if(theme !== 'bliss98') return {};
-          const legacy = localStorage.getItem(ICON_POS_KEY);
+          const legacy = safeStorage.getItem(ICON_POS_KEY);
           return legacy ? JSON.parse(legacy) : {};
         } catch {
           return {};
@@ -592,7 +592,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
       function saveIconPositions(pos){
         try{
           const key = getIconPositionsStorageKey();
-          localStorage.setItem(key, JSON.stringify(pos));
+          safeStorage.setItem(key, JSON.stringify(pos));
         } catch {}
       }
 
@@ -606,7 +606,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
 
       function loadDesktopFs(){
         try{
-          const raw = localStorage.getItem(DESKTOP_FS_KEY);
+          const raw = safeStorage.getItem(DESKTOP_FS_KEY);
           if(!raw) return {};
           const parsed = JSON.parse(raw);
           if(!parsed || !Array.isArray(parsed.items)) return {};
@@ -623,7 +623,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
       function saveDesktopFs(){
         try{
           const items = Object.values(state.fs.items || {});
-          localStorage.setItem(DESKTOP_FS_KEY, JSON.stringify({ version: state.fs.version || 1, items }));
+          safeStorage.setItem(DESKTOP_FS_KEY, JSON.stringify({ version: state.fs.version || 1, items }));
         } catch {}
       }
 
@@ -782,7 +782,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
 
 function loadGridSnap(){
   try{
-    const raw = localStorage.getItem(GRID_SNAP_KEY);
+    const raw = safeStorage.getItem(GRID_SNAP_KEY);
     if(raw === null) return true;
     return raw === '1';
   } catch {
@@ -792,13 +792,13 @@ function loadGridSnap(){
 
 function saveGridSnap(){
   try{
-    localStorage.setItem(GRID_SNAP_KEY, state.gridSnap ? '1' : '0');
+    safeStorage.setItem(GRID_SNAP_KEY, state.gridSnap ? '1' : '0');
   } catch {}
 }
 
 function loadDesktopIconsVisible(){
   try{
-    const raw = localStorage.getItem(DESKTOP_ICONS_KEY);
+    const raw = safeStorage.getItem(DESKTOP_ICONS_KEY);
     if(raw === null) return true;
     return raw !== '0';
   } catch {
@@ -808,7 +808,7 @@ function loadDesktopIconsVisible(){
 
 function saveDesktopIconsVisible(){
   try{
-    localStorage.setItem(DESKTOP_ICONS_KEY, state.settings.showDesktopIcons === false ? '0' : '1');
+    safeStorage.setItem(DESKTOP_ICONS_KEY, state.settings.showDesktopIcons === false ? '0' : '1');
   } catch {}
 }
 
@@ -1456,14 +1456,14 @@ let sewerSkaterRufflePromise = null;
 const GAME_FAVORITES_KEY = 'bliss98_games_favorites';
 function loadGameFavorites(){
   try{
-    const raw = JSON.parse(localStorage.getItem(GAME_FAVORITES_KEY) || '[]');
+    const raw = JSON.parse(safeStorage.getItem(GAME_FAVORITES_KEY) || '[]');
     return Array.isArray(raw) ? Array.from(new Set(raw.filter(id => typeof id === 'string'))) : [];
   } catch { return []; }
 }
 let gameFavorites = loadGameFavorites();
 
 function saveGameFavorites(){
-  try{ localStorage.setItem(GAME_FAVORITES_KEY, JSON.stringify(gameFavorites)); } catch {}
+  try{ safeStorage.setItem(GAME_FAVORITES_KEY, JSON.stringify(gameFavorites)); } catch {}
 }
 
 function isGameFavorite(id){ return gameFavorites.includes(id); }
@@ -1477,7 +1477,7 @@ function toggleGameFavorite(id){
 const GAME_AUDIO_KEY = 'bliss98_game_audio_settings';
 function loadGameAudioSettings(){
   try{
-    const raw = localStorage.getItem(GAME_AUDIO_KEY);
+    const raw = safeStorage.getItem(GAME_AUDIO_KEY);
     if(!raw) return { volume:0.8, muted:false };
     const parsed = JSON.parse(raw);
     return {
@@ -1495,7 +1495,7 @@ function getEffectiveGameVolume(){
 }
 
 function saveGameAudioSettings(){
-  try{ localStorage.setItem(GAME_AUDIO_KEY, JSON.stringify(gameAudioSettings)); } catch {}
+  try{ safeStorage.setItem(GAME_AUDIO_KEY, JSON.stringify(gameAudioSettings)); } catch {}
 }
 
 function gameAudioControlsHtml(){
@@ -2950,7 +2950,7 @@ let snake = {
 
 function loadSnakeHighScore(){
   try{
-    const raw = localStorage.getItem(SNAKE_HIGH_KEY);
+    const raw = safeStorage.getItem(SNAKE_HIGH_KEY);
     const parsed = parseInt(raw || '0', 10);
     return Number.isFinite(parsed) ? parsed : 0;
   } catch {
@@ -2959,12 +2959,12 @@ function loadSnakeHighScore(){
 }
 
 function saveSnakeHighScore(score){
-  try{ localStorage.setItem(SNAKE_HIGH_KEY, String(score)); } catch {}
+  try{ safeStorage.setItem(SNAKE_HIGH_KEY, String(score)); } catch {}
 }
 
 function loadMinesweeperHighScore(){
   try{
-    const raw = localStorage.getItem(MINESWEEPER_HIGH_KEY);
+    const raw = safeStorage.getItem(MINESWEEPER_HIGH_KEY);
     const parsed = parseInt(raw || '0', 10);
     return Number.isFinite(parsed) ? parsed : 0;
   } catch {
@@ -2973,12 +2973,12 @@ function loadMinesweeperHighScore(){
 }
 
 function saveMinesweeperHighScore(score){
-  try{ localStorage.setItem(MINESWEEPER_HIGH_KEY, String(score)); } catch {}
+  try{ safeStorage.setItem(MINESWEEPER_HIGH_KEY, String(score)); } catch {}
 }
 
 function loadGamesLeaderboardData(){
   try{
-    const raw = localStorage.getItem(GAMES_LEADER_KEY);
+    const raw = safeStorage.getItem(GAMES_LEADER_KEY);
     if(raw) return JSON.parse(raw);
   } catch {}
   return {
@@ -2989,7 +2989,7 @@ function loadGamesLeaderboardData(){
 }
 
 function saveGamesLeaderboardData(data){
-  try{ localStorage.setItem(GAMES_LEADER_KEY, JSON.stringify(data)); } catch {}
+  try{ safeStorage.setItem(GAMES_LEADER_KEY, JSON.stringify(data)); } catch {}
 }
 
 function recordGameScore(gameId, best, lastPlayed = null){
@@ -4743,7 +4743,7 @@ let dopeSkate = {
 
 function loadDopeSkateHighScore(){
   try{
-    const raw = localStorage.getItem(DOPE_SKATE_HIGH_KEY);
+    const raw = safeStorage.getItem(DOPE_SKATE_HIGH_KEY);
     const parsed = parseInt(raw || '0', 10);
     return Number.isFinite(parsed) ? parsed : 0;
   } catch {
@@ -4752,7 +4752,7 @@ function loadDopeSkateHighScore(){
 }
 
 function saveDopeSkateHighScore(score){
-  try{ localStorage.setItem(DOPE_SKATE_HIGH_KEY, String(score)); } catch {}
+  try{ safeStorage.setItem(DOPE_SKATE_HIGH_KEY, String(score)); } catch {}
 }
 
 function getDopeSkateDefaultData(){
@@ -4786,7 +4786,7 @@ function getDopeSkateDefaultData(){
 
 function loadDopeSkateData(){
   try{
-    const raw = localStorage.getItem(DOPE_SKATE_DATA_KEY);
+    const raw = safeStorage.getItem(DOPE_SKATE_DATA_KEY);
     if(raw){
       const parsed = JSON.parse(raw);
       if(parsed && parsed.owned && parsed.equipped) return normalizeDopeSkateData(parsed);
@@ -4797,7 +4797,7 @@ function loadDopeSkateData(){
 
 function saveDopeSkateData(data){
   try{
-    localStorage.setItem(DOPE_SKATE_DATA_KEY, JSON.stringify(data));
+    safeStorage.setItem(DOPE_SKATE_DATA_KEY, JSON.stringify(data));
   } catch {}
 }
 
@@ -7661,7 +7661,7 @@ function dopeSkateGetVolume(){
 
 function loadClothesCache(){
   try{
-    const raw = localStorage.getItem(CLOTHES_CACHE_KEY);
+    const raw = safeStorage.getItem(CLOTHES_CACHE_KEY);
     if(!raw) return null;
     const parsed = JSON.parse(raw);
     if(!parsed || !Array.isArray(parsed.items)) return null;
@@ -7674,7 +7674,7 @@ function loadClothesCache(){
 
 function saveClothesCache(items){
   try{
-    localStorage.setItem(CLOTHES_CACHE_KEY, JSON.stringify({ ts: Date.now(), items }));
+    safeStorage.setItem(CLOTHES_CACHE_KEY, JSON.stringify({ ts: Date.now(), items }));
   } catch {}
 }
 
@@ -7832,14 +7832,14 @@ function renderClothesItems(winEl, items){
 
 function loadDievInstagramCache(){
   try{
-    const parsed = JSON.parse(localStorage.getItem(DIEV_INSTAGRAM_CACHE_KEY) || 'null');
+    const parsed = JSON.parse(safeStorage.getItem(DIEV_INSTAGRAM_CACHE_KEY) || 'null');
     if(!parsed || !Array.isArray(parsed.items) || !parsed.ts || (Date.now() - parsed.ts) > CLOTHES_CACHE_TTL) return null;
     return parsed.items;
   } catch { return null; }
 }
 
 function saveDievInstagramCache(items){
-  try{ localStorage.setItem(DIEV_INSTAGRAM_CACHE_KEY, JSON.stringify({ ts:Date.now(), items })); } catch {}
+  try{ safeStorage.setItem(DIEV_INSTAGRAM_CACHE_KEY, JSON.stringify({ ts:Date.now(), items })); } catch {}
 }
 
 function applyDievInstagramState(winEl){
@@ -8488,15 +8488,15 @@ function arrangeIcons(parentId = null, containerEl = null){
 
 function resetIconPositions(){
   try{
-    localStorage.removeItem(`${ICON_POS_KEY}_${getCurrentOsThemeChoice()}`);
-    localStorage.removeItem(ICON_POS_KEY);
+    safeStorage.removeItem(`${ICON_POS_KEY}_${getCurrentOsThemeChoice()}`);
+    safeStorage.removeItem(ICON_POS_KEY);
   } catch {}
   arrangeIcons();
 }
 
 function loadAnimations(){
   try{
-    const raw = localStorage.getItem(ANIMATIONS_KEY);
+    const raw = safeStorage.getItem(ANIMATIONS_KEY);
     if(raw === null) return true;
     return raw === '1';
   } catch {
@@ -8506,13 +8506,13 @@ function loadAnimations(){
 
 function saveAnimations(){
   try{
-    localStorage.setItem(ANIMATIONS_KEY, state.animations ? '1' : '0');
+    safeStorage.setItem(ANIMATIONS_KEY, state.animations ? '1' : '0');
   } catch {}
 }
 
 function loadAppOpenAnim(){
   try{
-    const raw = localStorage.getItem(APP_OPEN_ANIM_KEY);
+    const raw = safeStorage.getItem(APP_OPEN_ANIM_KEY);
     if(raw === null) return true;
     return raw === '1';
   } catch {
@@ -8522,7 +8522,7 @@ function loadAppOpenAnim(){
 
 function saveAppOpenAnim(){
   try{
-    localStorage.setItem(APP_OPEN_ANIM_KEY, state.settings.appOpenAnim ? '1' : '0');
+    safeStorage.setItem(APP_OPEN_ANIM_KEY, state.settings.appOpenAnim ? '1' : '0');
   } catch {}
 }
 
@@ -8668,7 +8668,7 @@ function removeSettingsStorageForCurrentOs(){
     MOBILE_CONTROLS_KEY,
   ];
   keys.forEach(key => {
-    try{ localStorage.removeItem(key); } catch {}
+    try{ safeStorage.removeItem(key); } catch {}
   });
 }
 
@@ -8743,7 +8743,7 @@ function eraseAllSettings(){
   };
   state.settings.bliss98Accent = 'classic';
   state.settings.blissosAccent = 'multicolor';
-  try{ localStorage.setItem(BLISSOS_ACCENT_KEY, 'multicolor'); } catch {}
+  try{ safeStorage.setItem(BLISSOS_ACCENT_KEY, 'multicolor'); } catch {}
   saveOsProfiles();
   saveOsTheme();
 
@@ -8775,11 +8775,11 @@ function eraseAllSettings(){
 function eraseAllContentAndSettings(){
   try{
     const keys = [];
-    for(let i = 0; i < localStorage.length; i += 1){
-      const key = localStorage.key(i);
+    for(let i = 0; i < safeStorage.length; i += 1){
+      const key = safeStorage.key(i);
       if(key && key.indexOf('bliss98_') === 0) keys.push(key);
     }
-    keys.forEach(key => localStorage.removeItem(key));
+    keys.forEach(key => safeStorage.removeItem(key));
   } catch {}
   window.location.reload();
 }
@@ -8929,7 +8929,7 @@ function setBlissOSAqua(enabled){
 
 function loadScanlines(){
   try{
-    const raw = localStorage.getItem(SCANLINES_KEY);
+    const raw = safeStorage.getItem(SCANLINES_KEY);
     if(raw === null) return false;
     return raw === '1';
   } catch {
@@ -8939,7 +8939,7 @@ function loadScanlines(){
 
 function loadClockFormat(){
   try{
-    const raw = localStorage.getItem(CLOCK_KEY);
+    const raw = safeStorage.getItem(CLOCK_KEY);
     if(raw === null) return true;
     return raw === '1';
   } catch {
@@ -8949,13 +8949,13 @@ function loadClockFormat(){
 
 function saveClockFormat(){
   try{
-    localStorage.setItem(CLOCK_KEY, state.settings.clock24 ? '1' : '0');
+    safeStorage.setItem(CLOCK_KEY, state.settings.clock24 ? '1' : '0');
   } catch {}
 }
 
 function loadOldCrt(){
   try{
-    const raw = localStorage.getItem(OLDCRT_KEY);
+    const raw = safeStorage.getItem(OLDCRT_KEY);
     if(raw === null) return true;
     return raw === '1';
   } catch {
@@ -8965,7 +8965,7 @@ function loadOldCrt(){
 
 function saveOldCrt(){
   try{
-    localStorage.setItem(OLDCRT_KEY, state.settings.oldCrt ? '1' : '0');
+    safeStorage.setItem(OLDCRT_KEY, state.settings.oldCrt ? '1' : '0');
   } catch {}
 }
 
@@ -8975,7 +8975,7 @@ function areSystemSoundsEnabled(){
 
 function loadSystemSoundsEnabled(){
   try{
-    const raw = localStorage.getItem(SYSTEM_SOUNDS_ENABLED_KEY);
+    const raw = safeStorage.getItem(SYSTEM_SOUNDS_ENABLED_KEY);
     if(raw === null) return true;
     return raw === '1';
   } catch {
@@ -8985,13 +8985,13 @@ function loadSystemSoundsEnabled(){
 
 function saveSystemSoundsEnabled(){
   try{
-    localStorage.setItem(SYSTEM_SOUNDS_ENABLED_KEY, areSystemSoundsEnabled() ? '1' : '0');
+    safeStorage.setItem(SYSTEM_SOUNDS_ENABLED_KEY, areSystemSoundsEnabled() ? '1' : '0');
   } catch {}
 }
 
 function loadMasterVolume(){
   try{
-    const raw = localStorage.getItem(MASTER_VOL_KEY);
+    const raw = safeStorage.getItem(MASTER_VOL_KEY);
     if(raw === null) return 0.8;
     const val = parseFloat(raw);
     return Number.isFinite(val) ? clamp(val, 0, 1) : 0.8;
@@ -9002,13 +9002,13 @@ function loadMasterVolume(){
 
 function saveMasterVolume(){
   try{
-    localStorage.setItem(MASTER_VOL_KEY, String(state.settings.masterVolume));
+    safeStorage.setItem(MASTER_VOL_KEY, String(state.settings.masterVolume));
   } catch {}
 }
 
 function loadSystemVolume(){
   try{
-    const raw = localStorage.getItem(SYSTEM_VOL_KEY);
+    const raw = safeStorage.getItem(SYSTEM_VOL_KEY);
     if(raw === null) return 0.8;
     const val = parseFloat(raw);
     return Number.isFinite(val) ? clamp(val, 0, 1) : 0.8;
@@ -9019,7 +9019,7 @@ function loadSystemVolume(){
 
 function saveSystemVolume(){
   try{
-    localStorage.setItem(SYSTEM_VOL_KEY, String(state.settings.systemVolume));
+    safeStorage.setItem(SYSTEM_VOL_KEY, String(state.settings.systemVolume));
   } catch {}
 }
 
@@ -9205,7 +9205,7 @@ function setDockAutoHide(enabled){
 
 function loadDarkMode(){
   try{
-    const raw = localStorage.getItem(DARKMODE_KEY);
+    const raw = safeStorage.getItem(DARKMODE_KEY);
     if(raw === null) return false;
     return raw === '1';
   } catch {
@@ -9215,7 +9215,7 @@ function loadDarkMode(){
 
 function loadTitlebarTheme(){
   try{
-    const raw = localStorage.getItem(TITLEBAR_KEY);
+    const raw = safeStorage.getItem(TITLEBAR_KEY);
     if(raw === 'transparent') return 'blank';
     return raw || 'defaultBlue';
   } catch {
@@ -9225,7 +9225,7 @@ function loadTitlebarTheme(){
 
 function loadThemePreset(){
   try{
-    const raw = localStorage.getItem(THEME_PRESET_KEY);
+    const raw = safeStorage.getItem(THEME_PRESET_KEY);
     return raw || 'default';
   } catch {
     return 'default';
@@ -9234,31 +9234,31 @@ function loadThemePreset(){
 
 function saveScanlines(){
   try{
-    localStorage.setItem(SCANLINES_KEY, state.settings.scanlines ? '1' : '0');
+    safeStorage.setItem(SCANLINES_KEY, state.settings.scanlines ? '1' : '0');
   } catch {}
 }
 
 function saveDarkMode(){
   try{
-    localStorage.setItem(DARKMODE_KEY, state.settings.darkMode ? '1' : '0');
+    safeStorage.setItem(DARKMODE_KEY, state.settings.darkMode ? '1' : '0');
   } catch {}
 }
 
 function saveTitlebarTheme(){
   try{
-    localStorage.setItem(TITLEBAR_KEY, state.theme.titlebar);
+    safeStorage.setItem(TITLEBAR_KEY, state.theme.titlebar);
   } catch {}
 }
 
 function saveThemePreset(){
   try{
-    localStorage.setItem(THEME_PRESET_KEY, state.theme.preset);
+    safeStorage.setItem(THEME_PRESET_KEY, state.theme.preset);
   } catch {}
 }
 
 function loadTrash(){
   try{
-    const raw = localStorage.getItem(TRASH_KEY);
+    const raw = safeStorage.getItem(TRASH_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -9267,13 +9267,13 @@ function loadTrash(){
 
 function saveTrash(){
   try{
-    localStorage.setItem(TRASH_KEY, JSON.stringify(Array.from(state.trash)));
+    safeStorage.setItem(TRASH_KEY, JSON.stringify(Array.from(state.trash)));
   } catch {}
 }
 
 function loadDockItems(){
   try{
-    const raw = localStorage.getItem(DOCK_KEY);
+    const raw = safeStorage.getItem(DOCK_KEY);
     if(!raw) return null;
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : null;
@@ -9284,13 +9284,13 @@ function loadDockItems(){
 
 function saveDockItems(){
   try{
-    localStorage.setItem(DOCK_KEY, JSON.stringify(state.dockItems));
+    safeStorage.setItem(DOCK_KEY, JSON.stringify(state.dockItems));
   } catch {}
 }
 
 function loadIconLabels(){
   try{
-    const raw = localStorage.getItem(ICON_LABELS_KEY);
+    const raw = safeStorage.getItem(ICON_LABELS_KEY);
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
@@ -9299,13 +9299,13 @@ function loadIconLabels(){
 
 function saveIconLabels(){
   try{
-    localStorage.setItem(ICON_LABELS_KEY, JSON.stringify(state.iconLabels));
+    safeStorage.setItem(ICON_LABELS_KEY, JSON.stringify(state.iconLabels));
   } catch {}
 }
 
 function loadFolders(){
   try{
-    const raw = localStorage.getItem(FOLDER_KEY);
+    const raw = safeStorage.getItem(FOLDER_KEY);
     if(raw){
       const folders = JSON.parse(raw);
       if(!Array.isArray(folders.games)) folders.games = [];
@@ -9317,13 +9317,13 @@ function loadFolders(){
 
 function saveFolders(){
   try{
-    localStorage.setItem(FOLDER_KEY, JSON.stringify(state.folders));
+    safeStorage.setItem(FOLDER_KEY, JSON.stringify(state.folders));
   } catch {}
 }
 
 function loadWallpaper(){
   try{
-    const saved = localStorage.getItem(WALLPAPER_KEY);
+    const saved = safeStorage.getItem(WALLPAPER_KEY);
     return saved || 'classic';
   } catch {
     return 'classic';
@@ -9349,7 +9349,7 @@ let themeApplying = false;
 
 function loadGamesLayout(){
   try{
-    const raw = localStorage.getItem(GAMES_VIEW_KEY);
+    const raw = safeStorage.getItem(GAMES_VIEW_KEY);
     return raw || 'grid';
   } catch {
     return 'grid';
@@ -9358,13 +9358,13 @@ function loadGamesLayout(){
 
 function saveGamesLayout(){
   try{
-    localStorage.setItem(GAMES_VIEW_KEY, state.games.layout);
+    safeStorage.setItem(GAMES_VIEW_KEY, state.games.layout);
   } catch {}
 }
 
 function loadGamesBigIcons(){
   try{
-    const raw = localStorage.getItem(GAMES_BIG_KEY);
+    const raw = safeStorage.getItem(GAMES_BIG_KEY);
     return raw === '1';
   } catch {
     return false;
@@ -9373,13 +9373,13 @@ function loadGamesBigIcons(){
 
 function saveGamesBigIcons(){
   try{
-    localStorage.setItem(GAMES_BIG_KEY, state.games.bigIcons ? '1' : '0');
+    safeStorage.setItem(GAMES_BIG_KEY, state.games.bigIcons ? '1' : '0');
   } catch {}
 }
 
 function loadOsTheme(){
   try{
-    const raw = localStorage.getItem(OS_THEME_KEY);
+    const raw = safeStorage.getItem(OS_THEME_KEY);
     return normalizeOsThemeChoice(raw || 'bliss98');
   } catch {
     return 'bliss98';
@@ -9388,10 +9388,10 @@ function loadOsTheme(){
 
 function getSavedOsTheme(){
   try{
-    const raw = localStorage.getItem(OS_THEME_KEY);
+    const raw = safeStorage.getItem(OS_THEME_KEY);
     if(raw === 'blissos'){
       try{
-        const profilesRaw = localStorage.getItem(OS_PROFILE_KEY);
+        const profilesRaw = safeStorage.getItem(OS_PROFILE_KEY);
         if(profilesRaw){
           const parsed = JSON.parse(profilesRaw);
           if(parsed && parsed.blissos && parsed.blissos.blissosAqua){
@@ -9431,7 +9431,7 @@ function detectDefaultOSForFirstVisit(){
 
 function loadBlissosAccent(){
   try{
-    const raw = localStorage.getItem(BLISSOS_ACCENT_KEY);
+    const raw = safeStorage.getItem(BLISSOS_ACCENT_KEY);
     if(raw && Object.prototype.hasOwnProperty.call(BLISSOS_ACCENT_COLORS, raw)){
       return raw;
     }
@@ -9443,7 +9443,7 @@ function loadBlissosAccent(){
 
 function loadBliss98Accent(){
   try{
-    const raw = localStorage.getItem(BLISS98_ACCENT_KEY);
+    const raw = safeStorage.getItem(BLISS98_ACCENT_KEY);
     if(raw && Object.prototype.hasOwnProperty.call(BLISS98_ACCENT_COLORS, raw)){
       return raw;
     }
@@ -9455,7 +9455,7 @@ function loadBliss98Accent(){
 
 function saveBliss98Accent(){
   try{
-    localStorage.setItem(BLISS98_ACCENT_KEY, state.settings.bliss98Accent || 'classic');
+    safeStorage.setItem(BLISS98_ACCENT_KEY, state.settings.bliss98Accent || 'classic');
   } catch {}
 }
 
@@ -9627,7 +9627,7 @@ const BLISSOS_ACCENT_COLORS = {
 
 function saveOsTheme(){
   try{
-    localStorage.setItem(OS_THEME_KEY, getCurrentOsThemeChoice());
+    safeStorage.setItem(OS_THEME_KEY, getCurrentOsThemeChoice());
   } catch {}
 }
 
@@ -9706,7 +9706,7 @@ function getDefaultOsProfiles(){
 
 function loadOsProfiles(){
   try{
-    const raw = localStorage.getItem(OS_PROFILE_KEY);
+    const raw = safeStorage.getItem(OS_PROFILE_KEY);
     if(raw){
       const parsed = JSON.parse(raw);
       const defaults = getDefaultOsProfiles();
@@ -9728,7 +9728,7 @@ function loadOsProfiles(){
 
 function saveOsProfiles(){
   try{
-    localStorage.setItem(OS_PROFILE_KEY, JSON.stringify(state.settings.osProfiles || getDefaultOsProfiles()));
+    safeStorage.setItem(OS_PROFILE_KEY, JSON.stringify(state.settings.osProfiles || getDefaultOsProfiles()));
   } catch {}
 }
 
@@ -9878,7 +9878,7 @@ function setOsTheme(theme){
 
 function loadRetroGlow(){
   try{
-    const raw = localStorage.getItem(RETRO_KEY);
+    const raw = safeStorage.getItem(RETRO_KEY);
     return raw === '1';
   } catch {
     return false;
@@ -9887,7 +9887,7 @@ function loadRetroGlow(){
 
 function saveRetroGlow(){
   try{
-    localStorage.setItem(RETRO_KEY, state.settings.retroGlow ? '1' : '0');
+    safeStorage.setItem(RETRO_KEY, state.settings.retroGlow ? '1' : '0');
   } catch {}
 }
 
@@ -10064,7 +10064,7 @@ function applyWallpaper(id){
   }
   updateMatrixEffect();
   if(state.settings.theme !== 'blissos'){
-    try{ localStorage.setItem(WALLPAPER_KEY, wp.id); } catch {}
+    try{ safeStorage.setItem(WALLPAPER_KEY, wp.id); } catch {}
   }
   updateWallpaperButtons();
   renderCtxMenu();
@@ -10121,7 +10121,7 @@ function setThemePreset(id, opts={}){
 
 function loadCustomTheme(){
   try{
-    const raw = localStorage.getItem(THEME_CUSTOM_KEY);
+    const raw = safeStorage.getItem(THEME_CUSTOM_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -10130,7 +10130,7 @@ function loadCustomTheme(){
 
 function saveCustomTheme(data){
   try{
-    localStorage.setItem(THEME_CUSTOM_KEY, JSON.stringify(data));
+    safeStorage.setItem(THEME_CUSTOM_KEY, JSON.stringify(data));
   } catch {}
 }
 
@@ -14298,7 +14298,7 @@ function installLongPress(el, getTarget){
 
       function setLang(lang){
         state.lang = (lang === 'pt') ? 'pt' : 'en';
-        localStorage.setItem('bliss98_lang', state.lang);
+        safeStorage.setItem('bliss98_lang', state.lang);
         applyI18n();
         if(state.games.view === 'list' && state.windows.has('games')) renderGamesWindow();
       }
@@ -14379,7 +14379,7 @@ function installLongPress(el, getTarget){
       function setBlissosAccent(accent){
         state.settings.blissosAccent = accent;
         try {
-          localStorage.setItem(BLISSOS_ACCENT_KEY, accent);
+          safeStorage.setItem(BLISSOS_ACCENT_KEY, accent);
         } catch {}
         applyBlissosAccent(accent); // This function will apply the CSS variables
       }
@@ -17909,7 +17909,7 @@ function getDisplayTime(){
 
       function mpLoadState(){
         try{
-          const raw = localStorage.getItem(MP_STATE_KEY);
+          const raw = safeStorage.getItem(MP_STATE_KEY);
           if(raw){
             const s = JSON.parse(raw);
             if(typeof s.idx === 'number') mp.idx = s.idx;
@@ -17917,7 +17917,7 @@ function getDisplayTime(){
           }
         } catch {}
         try{
-          const rawImports = localStorage.getItem(MP_IMPORT_KEY);
+          const rawImports = safeStorage.getItem(MP_IMPORT_KEY);
           mp.importedNames = rawImports ? JSON.parse(rawImports) : [];
           state.mediaplayer.needsReimport = Array.isArray(mp.importedNames) && mp.importedNames.length > 0;
         } catch {
@@ -17927,7 +17927,7 @@ function getDisplayTime(){
       }
 
       function mpSaveState(){
-        try{ localStorage.setItem(MP_STATE_KEY, JSON.stringify({ idx: mp.idx, vol: mp.vol })); } catch {}
+        try{ safeStorage.setItem(MP_STATE_KEY, JSON.stringify({ idx: mp.idx, vol: mp.vol })); } catch {}
       }
 
       function mpResolveTitleFromSrc(src){
@@ -18165,7 +18165,7 @@ function getDisplayTime(){
         mp.imported = [...mp.imported, ...added];
         mp.importedNames = mp.imported.map(tr => tr.title);
         state.mediaplayer.needsReimport = false;
-        try{ localStorage.setItem(MP_IMPORT_KEY, JSON.stringify(mp.importedNames)); } catch {}
+        try{ safeStorage.setItem(MP_IMPORT_KEY, JSON.stringify(mp.importedNames)); } catch {}
 
         mpRebuildTracks();
         if(state.mediaplayer.shuffle) mpResetShuffleRuntime();
@@ -18881,7 +18881,7 @@ function getDisplayTime(){
 
       function setUser(name){
         state.user = name;
-        localStorage.setItem('bliss98_user', name);
+        safeStorage.setItem('bliss98_user', name);
         $('#who').textContent = name ? name : '';
       }
 
@@ -20006,7 +20006,7 @@ function renderIcons(){
 
       function getSavedWindowRect(appId){
         try{
-          const raw = localStorage.getItem(`bliss98_window_${appId}`);
+          const raw = safeStorage.getItem(`bliss98_window_${appId}`);
           if(!raw) return null;
           const parsed = JSON.parse(raw);
           if(!parsed) return null;
@@ -23316,7 +23316,7 @@ function renderBlissOSAppMenu(){
       syncLoginOsButtons();
 
       $('#clearProfile').addEventListener('click', ()=>{
-        localStorage.removeItem('bliss98_user');
+        safeStorage.removeItem('bliss98_user');
         $('#username').value = '';
         $('#username').focus();
       });
@@ -23839,7 +23839,7 @@ function renderBlissOSAppMenu(){
         if(!params) return;
         const autoGame = (params.get('autogame') || '').trim().toLowerCase();
         if(autoGame !== 'snake' && autoGame !== 'minesweeper') return;
-        const rawUser = (params.get('user') || localStorage.getItem('bliss98_user') || 'PLAYER').trim();
+        const rawUser = (params.get('user') || safeStorage.getItem('bliss98_user') || 'PLAYER').trim();
         const user = rawUser || 'PLAYER';
         setUser(user);
         if($('#username')) $('#username').value = user;
@@ -23852,10 +23852,10 @@ function renderBlissOSAppMenu(){
       }
 
       (function init(){
-        const savedLang = localStorage.getItem('bliss98_lang') || 'en';
+        const savedLang = safeStorage.getItem('bliss98_lang') || 'en';
         state.lang = (savedLang === 'pt') ? 'pt' : 'en';
 
-        const saved = localStorage.getItem('bliss98_user');
+        const saved = safeStorage.getItem('bliss98_user');
         if(saved){ setUser(saved); $('#username').value = saved; }
 
         let osThemeChoice = getSavedOsTheme();

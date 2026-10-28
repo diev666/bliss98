@@ -45,7 +45,7 @@
 
       function mpLoadState(){
         try{
-          const raw = localStorage.getItem(MP_STATE_KEY);
+          const raw = safeStorage.getItem(MP_STATE_KEY);
           if(raw){
             const s = JSON.parse(raw);
             if(typeof s.idx === 'number') mp.idx = s.idx;
@@ -53,7 +53,7 @@
           }
         } catch {}
         try{
-          const rawImports = localStorage.getItem(MP_IMPORT_KEY);
+          const rawImports = safeStorage.getItem(MP_IMPORT_KEY);
           mp.importedNames = rawImports ? JSON.parse(rawImports) : [];
           state.mediaplayer.needsReimport = Array.isArray(mp.importedNames) && mp.importedNames.length > 0;
         } catch {
@@ -63,7 +63,7 @@
       }
 
       function mpSaveState(){
-        try{ localStorage.setItem(MP_STATE_KEY, JSON.stringify({ idx: mp.idx, vol: mp.vol })); } catch {}
+        try{ safeStorage.setItem(MP_STATE_KEY, JSON.stringify({ idx: mp.idx, vol: mp.vol })); } catch {}
       }
 
       function mpResolveTitleFromSrc(src){
@@ -301,7 +301,7 @@
         mp.imported = [...mp.imported, ...added];
         mp.importedNames = mp.imported.map(tr => tr.title);
         state.mediaplayer.needsReimport = false;
-        try{ localStorage.setItem(MP_IMPORT_KEY, JSON.stringify(mp.importedNames)); } catch {}
+        try{ safeStorage.setItem(MP_IMPORT_KEY, JSON.stringify(mp.importedNames)); } catch {}
 
         mpRebuildTracks();
         if(state.mediaplayer.shuffle) mpResetShuffleRuntime();
