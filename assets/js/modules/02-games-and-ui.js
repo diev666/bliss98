@@ -7710,7 +7710,7 @@ function setMusicVolume(val){
   const els = mpEls();
   if(els){
     if(els.vol) els.vol.value = String(mp.vol);
-    if(els.audio) els.audio.volume = mp.vol;
+    mpSetOutputVolume(els);
   }
   debounceVolumeSave(()=> mpSaveState());
   updateSoundUI();

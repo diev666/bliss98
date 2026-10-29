@@ -9206,7 +9206,7 @@ function setMusicVolume(val){
   const els = mpEls();
   if(els){
     if(els.vol) els.vol.value = String(mp.vol);
-    if(els.audio) els.audio.volume = mp.vol;
+    mpSetOutputVolume(els);
   }
   debounceVolumeSave(()=> mpSaveState());
   updateSoundUI();
@@ -18084,6 +18084,29 @@ function getDisplayTime(){
         durationFailed: new Set(),
         durationHydrating: false,
       };
+      let mpWebAudio = { context:null, audio:null, source:null, gain:null };
+
+      function mpEnsureAudioContext(){
+        if(mpWebAudio.context) return mpWebAudio.context;
+        const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+        if(!AudioContextCtor) return null;
+        try{
+          mpWebAudio.context = new AudioContextCtor();
+          return mpWebAudio.context;
+        } catch {
+          return null;
+        }
+      }
+
+      function mpUnlockAudioContext(){
+        const context = mpWebAudio.context;
+        if(context && context.state === 'suspended') context.resume().catch(()=>{});
+      }
+
+      if(state.isMobile){
+        mpEnsureAudioContext();
+        document.addEventListener('pointerdown', mpUnlockAudioContext, true);
+      }
       const MP_FALLBACK_TRACKS = [
         '6 Years.flac',
         'Hard Enough.flac',
@@ -18454,7 +18477,7 @@ function getDisplayTime(){
           vol.value = String(mp.vol);
         }
         if(audio){
-          audio.volume = mp.vol;
+          mpSetOutputVolume(els);
         }
 
         if(msg){
@@ -18522,6 +18545,48 @@ function getDisplayTime(){
         if(els.vol){
           els.vol.value = String(mp.vol);
         }
+        mpSetOutputVolume(els);
+      }
+
+      function mpEnsureWebAudioOutput(els){
+        const audio = els && els.audio;
+        if(!audio) return false;
+        if(mpWebAudio.audio === audio && mpWebAudio.gain) return true;
+        if(!state.isMobile) return false;
+        if(audio.dataset.mpWebAudioAttempted === '1') return false;
+        audio.dataset.mpWebAudioAttempted = '1';
+        const context = mpEnsureAudioContext();
+        if(!context) return false;
+        try{
+          if(mpWebAudio.source) mpWebAudio.source.disconnect();
+          if(mpWebAudio.gain) mpWebAudio.gain.disconnect();
+          const source = context.createMediaElementSource(audio);
+          const gain = context.createGain();
+          gain.gain.value = mp.vol;
+          source.connect(gain);
+          gain.connect(context.destination);
+          mpWebAudio = { context, audio, source, gain };
+          audio.volume = 1;
+          if(context.state === 'suspended') context.resume().catch(()=>{});
+          return true;
+        } catch {
+          return false;
+        }
+      }
+
+      function mpSetOutputVolume(els){
+        if(!els || !els.audio) return;
+        if(mpEnsureWebAudioOutput(els)){
+          const { context, gain } = mpWebAudio;
+          const value = clamp(mp.vol, 0, 1);
+          if(context.state === 'running'){
+            gain.gain.setTargetAtTime(value, context.currentTime, 0.015);
+          } else {
+            gain.gain.value = value;
+          }
+          els.audio.volume = 1;
+          return;
+        }
         els.audio.volume = mp.vol;
       }
 
@@ -18542,7 +18607,7 @@ function getDisplayTime(){
         if(els.vol){
           els.vol.addEventListener('input', ()=>{
             mp.vol = Number(els.vol.value);
-            if(els.audio) els.audio.volume = mp.vol;
+            mpSetOutputVolume(els);
             debounceVolumeSave(()=> mpSaveState());
             updateSoundUI();
           });
@@ -18803,7 +18868,7 @@ function getDisplayTime(){
         mp.idx = clamp(i, 0, mp.tracks.length - 1);
         const cur = mp.tracks[mp.idx];
         audio.src = cur.src;
-        audio.volume = mp.vol;
+        mpSetOutputVolume(els);
         audio.currentTime = 0;
         if(opts.syncSelection !== false){
           state.mediaplayer.selected = new Set([mp.idx]);
@@ -18826,7 +18891,11 @@ function getDisplayTime(){
         const { audio } = els;
         if(mp.tracks.length === 0) return;
         try{
-          await audio.play();
+          const resumePromise = mpWebAudio.audio === audio && mpWebAudio.context.state === 'suspended'
+            ? mpWebAudio.context.resume().catch(()=>{})
+            : Promise.resolve();
+          const playPromise = audio.play();
+          await Promise.all([resumePromise, playPromise]);
           mp.playing = true;
         } catch {
           mp.playing = false;
@@ -18952,6 +19021,7 @@ function getDisplayTime(){
         mpBindAudioEventsOnce(audio);
         mpBindUiEventsOnce(win, els);
         mp.supportsFlac = !!audio.canPlayType('audio/flac');
+        mpEnsureWebAudioOutput(els);
         mpApplyVolume(els);
         mpUpdateTime();
         // Ensure tracks are available; redundant calls are deduplicated.
