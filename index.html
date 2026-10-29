@@ -12378,6 +12378,15 @@
         }
       }
 
+      /* Prevent iOS Safari from auto-zooming when a small-text editor receives focus. */
+      @media (hover:none) and (pointer:coarse){
+        input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
+        textarea,
+        select,
+        [contenteditable="true"]{
+          font-size:16px !important;
+        }
+      }
 </style>
   </head>
   <body>
