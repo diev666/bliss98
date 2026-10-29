@@ -282,7 +282,7 @@ function addGameToDesktop(gameId){
   }
   const iconFiles = {
     snake:'./assets/icons/snake.png', doom:'./assets/games/doom/doom.png',
-    'vice-city':'./assets/games/vc/vc.png', '8-ball-pool':'./assets/games/8ballpool.jpg',
+    'vice-city':'./assets/games/vc/vc.png', 'nz-portable':'./assets/games/nzp.png', '8-ball-pool':'./assets/games/8ballpool.jpg',
     'bad-piggies':'./assets/games/bad piggies.webp',
     'apple-shooter':'./assets/games/Apple shooter.png',
     'animator-vs-animation-game':'./assets/games/animator vs animation.png',
@@ -370,6 +370,17 @@ function openGamesContextMenu(win, x, y, gameId=null){
 }
 
 function renderGamesWindow(){
+  if(!document.documentElement.dataset.gameFullscreenStateBound){
+    document.documentElement.dataset.gameFullscreenStateBound = '1';
+    document.addEventListener('fullscreenchange', ()=>{
+      const activeShell = document.fullscreenElement?.classList.contains('doom-shell') ? document.fullscreenElement : null;
+      document.querySelectorAll('[data-game-fullscreen]').forEach(button=>{
+        const isActive = !!activeShell && button.closest('.doom-shell') === activeShell;
+        button.textContent = t(isActive ? 'games.fullscreen.exit' : 'games.fullscreen');
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+    });
+  }
   const win = document.getElementById('win_games');
   if(!win) return;
   closeGamesContextMenu();
@@ -402,6 +413,14 @@ function renderGamesWindow(){
   win.querySelector('[data-game-credits]')?.addEventListener('click', e=>{
     e.preventDefault();
     openGameCredits(e.currentTarget.dataset.gameCredits);
+  });
+  win.querySelector('[data-game-fullscreen]')?.addEventListener('click', async e=>{
+    const player = e.currentTarget.closest('.doom-shell');
+    if(!player) return;
+    try{
+      if(document.fullscreenElement === player) await document.exitFullscreen();
+      else if(!document.fullscreenElement) await player.requestFullscreen();
+    }catch(err){ console.warn('Game fullscreen is unavailable', err); }
   });
   const mobileGameView = isMobileGameMode() && (state.games.view === 'snake' || state.games.view === 'minesweeper');
   if(state.games.view === 'snake' || state.games.view === 'minesweeper'){
@@ -713,6 +732,7 @@ function initDopeSkateWindow(){
 function getGameNameForSort(id){
   const titleKeys = {
     'vice-city': 'games.viceCity',
+    'nz-portable': 'games.nzPortable',
     '8-ball-pool': 'games.eightBallPool',
     'age-of-war': 'games.ageOfWar',
     'age-of-war-2': 'games.ageOfWar2',
@@ -750,11 +770,12 @@ function sortGameIdsAlphabetically(ids){
 }
 
 function getGamesHubIds(){
-  return Array.from(new Set([...(state.folders.games || []), 'vice-city', '8-ball-pool', 'age-of-war', 'age-of-war-2', 'american-racing', 'animator-vs-animation-game', 'apple-shooter', 'bad-piggies', 'ducklife5', 'ed-edd-n-eddys-candy-machine-deluxe', 'papas-burgeria', 'papas-cheeseria', 'papas-sushiria', 'papas-pastaria']));
+  return Array.from(new Set([...(state.folders.games || []), 'vice-city', 'nz-portable', '8-ball-pool', 'age-of-war', 'age-of-war-2', 'american-racing', 'animator-vs-animation-game', 'apple-shooter', 'bad-piggies', 'ducklife5', 'ed-edd-n-eddys-candy-machine-deluxe', 'papas-burgeria', 'papas-cheeseria', 'papas-sushiria', 'papas-pastaria']));
 }
 
 // Keep source notes beside the game IDs so future Quenq embeds can reuse this in-app credits window.
 const GAME_CREDIT_INFO = {
+  'nz-portable': { descriptionKey:'games.credits.nzPortable', sourceUrl:'https://nzp.gay/', sourceLabel:'NZ Portable' },
   'vice-city': {
     descriptionKey:'games.credits.viceCity',
     sourceUrl:'https://quenq.com/apps/vice-city/',
@@ -1293,6 +1314,12 @@ function bindMobileOverlay(gameId, overlay){
 }
 
 function openGameFromHub(id){
+  if(id === 'nz-portable'){
+    state.games.view = 'nz-portable';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
   if(id === 'vice-city'){
     state.games.view = 'vice-city';
     state.games.selectedId = id;
@@ -8844,6 +8871,14 @@ function openIconById(id, opts = {}){
     }
     return;
   }
+  if(id === 'nz-portable'){
+    state.games.view = 'nz-portable';
+    state.games.selectedId = id;
+    if(isDesktopIcon && !state.windows.has('games')) openAppFromDesktopIcon('games', sourceEl);
+    else { openApp('games'); renderGamesWindow(); }
+    renderGamesWindow();
+    return;
+  }
   if(id === 'vice-city'){
     state.games.view = 'vice-city';
     state.games.selectedId = id;
@@ -11129,6 +11164,38 @@ function closeCtxMenu(){
   ctxState = { open:false, target:'desktop', appId:null, itemType:null, parentId:null, containerEl:null, dockId:null, selectedIds:[], lastX:0, lastY:0 };
 }
 
+function startDesktopIconRename(id, currentValue, onCommit, opts = {}){
+  const icon = Array.from(document.querySelectorAll('#iconGrid .icon')).find(el => el.dataset.appId === id);
+  const label = icon?.querySelector(':scope > span');
+  if(!label) return;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'icon-rename-input';
+  input.value = currentValue;
+  input.setAttribute('aria-label', t('dialog.rename.title'));
+  let finished = false;
+  const finish = commit=>{
+    if(finished) return;
+    finished = true;
+    const value = input.value;
+    if(commit) onCommit(value);
+    else if(input.isConnected) input.replaceWith(label);
+  };
+  input.addEventListener('pointerdown', e=>e.stopPropagation());
+  input.addEventListener('click', e=>e.stopPropagation());
+  input.addEventListener('dblclick', e=>e.stopPropagation());
+  input.addEventListener('keydown', e=>{
+    e.stopPropagation();
+    if(e.key === 'Enter'){ e.preventDefault(); finish(true); }
+    else if(e.key === 'Escape'){ e.preventDefault(); finish(false); }
+  });
+  input.addEventListener('blur', ()=>finish(true));
+  label.replaceWith(input);
+  input.focus({ preventScroll:true });
+  const selectLength = Number.isFinite(opts.selectLength) ? opts.selectLength : input.value.length;
+  input.setSelectionRange(0, Math.max(0, Math.min(selectLength, input.value.length)));
+}
+
 function handleCtxAction(action){
   if(action === 'refresh'){
     renderIcons();
@@ -11148,28 +11215,20 @@ function handleCtxAction(action){
     const isFsRename = fsItem && fsItem.type !== 'app' && fsItem.type !== 'virtual';
     if(isFsRename){
       const current = fsItem.name || '';
-      showInputDialog({
-        titleKey: 'dialog.rename.title',
-        descKey: 'dialog.rename.desc',
-        value: current,
-        confirmKey: 'dialog.rename.confirm',
-        onConfirm: (val)=>{
-          let next = String(val || '').trim();
-          if(!next) return;
-          if(fsItem.type === 'txt' && !next.toLowerCase().endsWith('.txt')){
-            next += '.txt';
-          }
-          const base = fsItem.type === 'txt' ? next.replace(/\.txt$/i, '') : next;
-          const unique = fsItem.type === 'txt'
-            ? makeUniqueName(fsItem.parentId, base, 'txt')
-            : makeUniqueName(fsItem.parentId, base);
-          upsertFsItem({ id: fsItem.id, name: unique }, { save: false, syncIconPos: false });
-          saveDesktopFs();
-          renderIcons();
-          refreshOpenFolderWindows();
-          refreshOpenTxtWindows(fsItem.id);
-        }
-      });
+      startDesktopIconRename(ctxState.appId, current, val=>{
+        let next = String(val || '').trim();
+        if(!next){ renderIcons(); return; }
+        if(fsItem.type === 'txt' && !next.toLowerCase().endsWith('.txt')) next += '.txt';
+        const base = fsItem.type === 'txt' ? next.replace(/\.txt$/i, '') : next;
+        const unique = fsItem.type === 'txt'
+          ? makeUniqueName(fsItem.parentId, base, 'txt')
+          : makeUniqueName(fsItem.parentId, base);
+        upsertFsItem({ id: fsItem.id, name: unique }, { save: false, syncIconPos: false });
+        saveDesktopFs();
+        renderIcons();
+        refreshOpenFolderWindows();
+        refreshOpenTxtWindows(fsItem.id);
+      }, { selectLength: fsItem.type === 'txt' ? current.replace(/\.txt$/i, '').length : current.length });
       return;
     }
     const app = getAppById(ctxState.appId);
@@ -11177,25 +11236,17 @@ function handleCtxAction(action){
     const key = app ? app.titleKey : (virtual ? virtual.titleKey : null);
     if(!key) return;
     const current = state.iconLabels[ctxState.appId] || t(key);
-    showInputDialog({
-      titleKey: 'dialog.rename.title',
-      descKey: 'dialog.rename.desc',
-      value: current,
-      confirmKey: 'dialog.rename.confirm',
-      onConfirm: (val)=>{
-        const next = String(val || '').trim();
-        if(next){
-          state.iconLabels[ctxState.appId] = next;
-        } else {
-          delete state.iconLabels[ctxState.appId];
-        }
-        saveIconLabels();
-        if(fsItem){
-          upsertFsItem({ id: fsItem.id, name: state.iconLabels[fsItem.id] || t(key) }, { save: false, syncIconPos: false });
-          saveDesktopFs();
-        }
-        renderIcons();
+    const iconId = ctxState.appId;
+    startDesktopIconRename(iconId, current, val=>{
+      const next = String(val || '').trim();
+      if(next) state.iconLabels[iconId] = next;
+      else delete state.iconLabels[iconId];
+      saveIconLabels();
+      if(fsItem){
+        upsertFsItem({ id: fsItem.id, name: state.iconLabels[fsItem.id] || t(key) }, { save: false, syncIconPos: false });
+        saveDesktopFs();
       }
+      renderIcons();
     });
   }
   if(action === 'crop' && ctxState.target === 'icon' && ctxState.appId){

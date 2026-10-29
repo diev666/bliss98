@@ -1070,7 +1070,7 @@ Eu sou o buffalo branco extinto`
                   <h2 data-i18n="games.doom">DOOM</h2>
                   <button class="btn bevel doom-touch-controls" type="button" data-doom-touch-controls aria-pressed="false" data-i18n="games.doom.touchControls">Touch Controls</button>
                   ${gameAudioControlsHtml()}
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="doom" data-i18n="games.doom.credits">Credits &amp; licenses</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="doom" data-i18n="games.doom.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" data-game-audio-frame src="./assets/games/doom/player/index.html" title="DOOM powered by Freedoom" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -1082,9 +1082,21 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.viceCity">GTA Vice City</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="vice-city" data-i18n="games.viceCity.credits">Credits &amp; licenses</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="vice-city" data-i18n="games.viceCity.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://vc.quenq.com/" title="GTA Vice City hosted by Quenq" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'nz-portable'){
+            return `
+              <div class="doom-shell nz-portable-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.nzPortable">NZ Portable</h2>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="nz-portable" data-i18n="games.nzPortable.credits">Credits &amp; Sources</button></div>
+                </div>
+                <iframe class="doom-player-frame" src="https://nzp.gay/" title="NZ Portable" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
             `;
           }
@@ -1094,7 +1106,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.eightBallPool">8 Ball Pool</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="8-ball-pool" data-i18n="games.eightBallPool.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="8-ball-pool" data-i18n="games.eightBallPool.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/8-ball-pool/" title="8 Ball Pool hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -1106,7 +1118,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.ageOfWar">Age of War</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="age-of-war" data-i18n="games.ageOfWar.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="age-of-war" data-i18n="games.ageOfWar.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/age-of-war/" title="Age of War hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -1118,7 +1130,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.ageOfWar2">Age of War 2</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="age-of-war-2" data-i18n="games.ageOfWar2.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="age-of-war-2" data-i18n="games.ageOfWar2.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/ageofwar2/" title="Age of War 2 hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -1130,7 +1142,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.americanRacing">American Racing</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="american-racing" data-i18n="games.americanRacing.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="american-racing" data-i18n="games.americanRacing.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/american-racing/" title="American Racing hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -1142,7 +1154,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.animatorVsAnimationGame">Animator vs Animation Game</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="animator-vs-animation-game" data-i18n="games.animatorVsAnimationGame.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="animator-vs-animation-game" data-i18n="games.animatorVsAnimationGame.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/animator-vs-animation-game/" title="Animator vs Animation Game hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -1154,7 +1166,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.appleShooter">Apple Shooter</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="apple-shooter" data-i18n="games.appleShooter.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="apple-shooter" data-i18n="games.appleShooter.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/apple-shooter/" title="Apple Shooter hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -1166,7 +1178,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.badPiggies">Bad Piggies</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="bad-piggies" data-i18n="games.badPiggies.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="bad-piggies" data-i18n="games.badPiggies.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/bad-piggies/" title="Bad Piggies hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -1178,7 +1190,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.duckLife5">DuckLife 5</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="ducklife5" data-i18n="games.duckLife5.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="ducklife5" data-i18n="games.duckLife5.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/ducklife5/" title="DuckLife 5 hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -1190,7 +1202,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.edEddNEddysCandyMachineDeluxe">Ed, Edd n Eddy’s Candy Machine Deluxe</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="ed-edd-n-eddys-candy-machine-deluxe" data-i18n="games.edEddNEddysCandyMachineDeluxe.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="ed-edd-n-eddys-candy-machine-deluxe" data-i18n="games.edEddNEddysCandyMachineDeluxe.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/ed-edd-n-eddys-candy-machine-deluxe/" title="Ed, Edd n Eddy’s Candy Machine Deluxe hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -1202,7 +1214,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.papasBurgeria">Papa’s Burgeria</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="papas-burgeria" data-i18n="games.papasBurgeria.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="papas-burgeria" data-i18n="games.papasBurgeria.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/papas-burgeria/" title="Papa’s Burgeria hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -1220,7 +1232,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="${game.titleKey}">${game.title}</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="${state.games.view}" data-i18n="${game.creditsKey}">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="${state.games.view}" data-i18n="${game.creditsKey}">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/${state.games.view}/" title="${game.title} hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -1285,6 +1297,16 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'vice-city', iconFile:'./assets/games/vc/vc.png' }, t('games.viceCity'), 64)}
                   </div>
                   <span data-i18n="games.viceCity">GTA Vice City</span>
+                </button>
+              `;
+            }
+            if(id === 'nz-portable'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="nz-portable">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'nz-portable', iconFile:'./assets/games/nzp.png' }, t('games.nzPortable'), 64)}
+                  </div>
+                  <span data-i18n="games.nzPortable">NZ Portable</span>
                 </button>
               `;
             }

@@ -439,7 +439,8 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
 
       const VIRTUAL_ICONS = [
         { id:'snake', titleKey:'games.snake', iconFile:'./assets/icons/snake.png' },
-        { id:'vice-city', titleKey:'games.viceCity', iconFile:'./assets/games/vc/vc.png' }
+        { id:'vice-city', titleKey:'games.viceCity', iconFile:'./assets/games/vc/vc.png' },
+        { id:'nz-portable', titleKey:'games.nzPortable', iconFile:'./assets/games/nzp.png' }
       ];
 
       function initSfx(){
@@ -1161,7 +1162,7 @@ function getDefaultIconLayout(){
   const height = area.height > (ICON_SIZE.h + 6) ? area.height : fallbackHeight;
   const metrics = getGridMetricsForSize(width, height);
   const isMobile = width <= 520;
-  const order = ['seeker','settings','games','vice-city','about','videos','mediaplayer','diev','art','contact','poetry','music','clothes'];
+  const order = ['seeker','settings','games','vice-city','nz-portable','about','videos','mediaplayer','diev','art','contact','poetry','music','clothes'];
   const available = APPS.filter(app => app.showOnDesktop !== false && app.id !== 'trash' && !state.trash.has(app.id) && !isInFolder(app.id));
   const virtualAvailable = VIRTUAL_ICONS.filter(icon =>
     icon.id !== 'trash' && !state.trash.has(icon.id) && !isInFolder(icon.id)

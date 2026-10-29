@@ -443,7 +443,8 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
 
       const VIRTUAL_ICONS = [
         { id:'snake', titleKey:'games.snake', iconFile:'./assets/icons/snake.png' },
-        { id:'vice-city', titleKey:'games.viceCity', iconFile:'./assets/games/vc/vc.png' }
+        { id:'vice-city', titleKey:'games.viceCity', iconFile:'./assets/games/vc/vc.png' },
+        { id:'nz-portable', titleKey:'games.nzPortable', iconFile:'./assets/games/nzp.png' }
       ];
 
       function initSfx(){
@@ -1165,7 +1166,7 @@ function getDefaultIconLayout(){
   const height = area.height > (ICON_SIZE.h + 6) ? area.height : fallbackHeight;
   const metrics = getGridMetricsForSize(width, height);
   const isMobile = width <= 520;
-  const order = ['seeker','settings','games','vice-city','about','videos','mediaplayer','diev','art','contact','poetry','music','clothes'];
+  const order = ['seeker','settings','games','vice-city','nz-portable','about','videos','mediaplayer','diev','art','contact','poetry','music','clothes'];
   const available = APPS.filter(app => app.showOnDesktop !== false && app.id !== 'trash' && !state.trash.has(app.id) && !isInFolder(app.id));
   const virtualAvailable = VIRTUAL_ICONS.filter(icon =>
     icon.id !== 'trash' && !state.trash.has(icon.id) && !isInFolder(icon.id)
@@ -1736,7 +1737,7 @@ function addGameToDesktop(gameId){
   }
   const iconFiles = {
     snake:'./assets/icons/snake.png', doom:'./assets/games/doom/doom.png',
-    'vice-city':'./assets/games/vc/vc.png', '8-ball-pool':'./assets/games/8ballpool.jpg',
+    'vice-city':'./assets/games/vc/vc.png', 'nz-portable':'./assets/games/nzp.png', '8-ball-pool':'./assets/games/8ballpool.jpg',
     'bad-piggies':'./assets/games/bad piggies.webp',
     'apple-shooter':'./assets/games/Apple shooter.png',
     'animator-vs-animation-game':'./assets/games/animator vs animation.png',
@@ -1824,6 +1825,17 @@ function openGamesContextMenu(win, x, y, gameId=null){
 }
 
 function renderGamesWindow(){
+  if(!document.documentElement.dataset.gameFullscreenStateBound){
+    document.documentElement.dataset.gameFullscreenStateBound = '1';
+    document.addEventListener('fullscreenchange', ()=>{
+      const activeShell = document.fullscreenElement?.classList.contains('doom-shell') ? document.fullscreenElement : null;
+      document.querySelectorAll('[data-game-fullscreen]').forEach(button=>{
+        const isActive = !!activeShell && button.closest('.doom-shell') === activeShell;
+        button.textContent = t(isActive ? 'games.fullscreen.exit' : 'games.fullscreen');
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+    });
+  }
   const win = document.getElementById('win_games');
   if(!win) return;
   closeGamesContextMenu();
@@ -1856,6 +1868,14 @@ function renderGamesWindow(){
   win.querySelector('[data-game-credits]')?.addEventListener('click', e=>{
     e.preventDefault();
     openGameCredits(e.currentTarget.dataset.gameCredits);
+  });
+  win.querySelector('[data-game-fullscreen]')?.addEventListener('click', async e=>{
+    const player = e.currentTarget.closest('.doom-shell');
+    if(!player) return;
+    try{
+      if(document.fullscreenElement === player) await document.exitFullscreen();
+      else if(!document.fullscreenElement) await player.requestFullscreen();
+    }catch(err){ console.warn('Game fullscreen is unavailable', err); }
   });
   const mobileGameView = isMobileGameMode() && (state.games.view === 'snake' || state.games.view === 'minesweeper');
   if(state.games.view === 'snake' || state.games.view === 'minesweeper'){
@@ -2167,6 +2187,7 @@ function initDopeSkateWindow(){
 function getGameNameForSort(id){
   const titleKeys = {
     'vice-city': 'games.viceCity',
+    'nz-portable': 'games.nzPortable',
     '8-ball-pool': 'games.eightBallPool',
     'age-of-war': 'games.ageOfWar',
     'age-of-war-2': 'games.ageOfWar2',
@@ -2204,11 +2225,12 @@ function sortGameIdsAlphabetically(ids){
 }
 
 function getGamesHubIds(){
-  return Array.from(new Set([...(state.folders.games || []), 'vice-city', '8-ball-pool', 'age-of-war', 'age-of-war-2', 'american-racing', 'animator-vs-animation-game', 'apple-shooter', 'bad-piggies', 'ducklife5', 'ed-edd-n-eddys-candy-machine-deluxe', 'papas-burgeria', 'papas-cheeseria', 'papas-sushiria', 'papas-pastaria']));
+  return Array.from(new Set([...(state.folders.games || []), 'vice-city', 'nz-portable', '8-ball-pool', 'age-of-war', 'age-of-war-2', 'american-racing', 'animator-vs-animation-game', 'apple-shooter', 'bad-piggies', 'ducklife5', 'ed-edd-n-eddys-candy-machine-deluxe', 'papas-burgeria', 'papas-cheeseria', 'papas-sushiria', 'papas-pastaria']));
 }
 
 // Keep source notes beside the game IDs so future Quenq embeds can reuse this in-app credits window.
 const GAME_CREDIT_INFO = {
+  'nz-portable': { descriptionKey:'games.credits.nzPortable', sourceUrl:'https://nzp.gay/', sourceLabel:'NZ Portable' },
   'vice-city': {
     descriptionKey:'games.credits.viceCity',
     sourceUrl:'https://quenq.com/apps/vice-city/',
@@ -2747,6 +2769,12 @@ function bindMobileOverlay(gameId, overlay){
 }
 
 function openGameFromHub(id){
+  if(id === 'nz-portable'){
+    state.games.view = 'nz-portable';
+    state.games.selectedId = id;
+    renderGamesWindow();
+    return;
+  }
   if(id === 'vice-city'){
     state.games.view = 'vice-city';
     state.games.selectedId = id;
@@ -10298,6 +10326,14 @@ function openIconById(id, opts = {}){
     }
     return;
   }
+  if(id === 'nz-portable'){
+    state.games.view = 'nz-portable';
+    state.games.selectedId = id;
+    if(isDesktopIcon && !state.windows.has('games')) openAppFromDesktopIcon('games', sourceEl);
+    else { openApp('games'); renderGamesWindow(); }
+    renderGamesWindow();
+    return;
+  }
   if(id === 'vice-city'){
     state.games.view = 'vice-city';
     state.games.selectedId = id;
@@ -12583,6 +12619,38 @@ function closeCtxMenu(){
   ctxState = { open:false, target:'desktop', appId:null, itemType:null, parentId:null, containerEl:null, dockId:null, selectedIds:[], lastX:0, lastY:0 };
 }
 
+function startDesktopIconRename(id, currentValue, onCommit, opts = {}){
+  const icon = Array.from(document.querySelectorAll('#iconGrid .icon')).find(el => el.dataset.appId === id);
+  const label = icon?.querySelector(':scope > span');
+  if(!label) return;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'icon-rename-input';
+  input.value = currentValue;
+  input.setAttribute('aria-label', t('dialog.rename.title'));
+  let finished = false;
+  const finish = commit=>{
+    if(finished) return;
+    finished = true;
+    const value = input.value;
+    if(commit) onCommit(value);
+    else if(input.isConnected) input.replaceWith(label);
+  };
+  input.addEventListener('pointerdown', e=>e.stopPropagation());
+  input.addEventListener('click', e=>e.stopPropagation());
+  input.addEventListener('dblclick', e=>e.stopPropagation());
+  input.addEventListener('keydown', e=>{
+    e.stopPropagation();
+    if(e.key === 'Enter'){ e.preventDefault(); finish(true); }
+    else if(e.key === 'Escape'){ e.preventDefault(); finish(false); }
+  });
+  input.addEventListener('blur', ()=>finish(true));
+  label.replaceWith(input);
+  input.focus({ preventScroll:true });
+  const selectLength = Number.isFinite(opts.selectLength) ? opts.selectLength : input.value.length;
+  input.setSelectionRange(0, Math.max(0, Math.min(selectLength, input.value.length)));
+}
+
 function handleCtxAction(action){
   if(action === 'refresh'){
     renderIcons();
@@ -12602,28 +12670,20 @@ function handleCtxAction(action){
     const isFsRename = fsItem && fsItem.type !== 'app' && fsItem.type !== 'virtual';
     if(isFsRename){
       const current = fsItem.name || '';
-      showInputDialog({
-        titleKey: 'dialog.rename.title',
-        descKey: 'dialog.rename.desc',
-        value: current,
-        confirmKey: 'dialog.rename.confirm',
-        onConfirm: (val)=>{
-          let next = String(val || '').trim();
-          if(!next) return;
-          if(fsItem.type === 'txt' && !next.toLowerCase().endsWith('.txt')){
-            next += '.txt';
-          }
-          const base = fsItem.type === 'txt' ? next.replace(/\.txt$/i, '') : next;
-          const unique = fsItem.type === 'txt'
-            ? makeUniqueName(fsItem.parentId, base, 'txt')
-            : makeUniqueName(fsItem.parentId, base);
-          upsertFsItem({ id: fsItem.id, name: unique }, { save: false, syncIconPos: false });
-          saveDesktopFs();
-          renderIcons();
-          refreshOpenFolderWindows();
-          refreshOpenTxtWindows(fsItem.id);
-        }
-      });
+      startDesktopIconRename(ctxState.appId, current, val=>{
+        let next = String(val || '').trim();
+        if(!next){ renderIcons(); return; }
+        if(fsItem.type === 'txt' && !next.toLowerCase().endsWith('.txt')) next += '.txt';
+        const base = fsItem.type === 'txt' ? next.replace(/\.txt$/i, '') : next;
+        const unique = fsItem.type === 'txt'
+          ? makeUniqueName(fsItem.parentId, base, 'txt')
+          : makeUniqueName(fsItem.parentId, base);
+        upsertFsItem({ id: fsItem.id, name: unique }, { save: false, syncIconPos: false });
+        saveDesktopFs();
+        renderIcons();
+        refreshOpenFolderWindows();
+        refreshOpenTxtWindows(fsItem.id);
+      }, { selectLength: fsItem.type === 'txt' ? current.replace(/\.txt$/i, '').length : current.length });
       return;
     }
     const app = getAppById(ctxState.appId);
@@ -12631,25 +12691,17 @@ function handleCtxAction(action){
     const key = app ? app.titleKey : (virtual ? virtual.titleKey : null);
     if(!key) return;
     const current = state.iconLabels[ctxState.appId] || t(key);
-    showInputDialog({
-      titleKey: 'dialog.rename.title',
-      descKey: 'dialog.rename.desc',
-      value: current,
-      confirmKey: 'dialog.rename.confirm',
-      onConfirm: (val)=>{
-        const next = String(val || '').trim();
-        if(next){
-          state.iconLabels[ctxState.appId] = next;
-        } else {
-          delete state.iconLabels[ctxState.appId];
-        }
-        saveIconLabels();
-        if(fsItem){
-          upsertFsItem({ id: fsItem.id, name: state.iconLabels[fsItem.id] || t(key) }, { save: false, syncIconPos: false });
-          saveDesktopFs();
-        }
-        renderIcons();
+    const iconId = ctxState.appId;
+    startDesktopIconRename(iconId, current, val=>{
+      const next = String(val || '').trim();
+      if(next) state.iconLabels[iconId] = next;
+      else delete state.iconLabels[iconId];
+      saveIconLabels();
+      if(fsItem){
+        upsertFsItem({ id: fsItem.id, name: state.iconLabels[fsItem.id] || t(key) }, { save: false, syncIconPos: false });
+        saveDesktopFs();
       }
+      renderIcons();
     });
   }
   if(action === 'crop' && ctxState.target === 'icon' && ctxState.appId){
@@ -12838,52 +12890,55 @@ function installLongPress(el, getTarget){
           'app.seeker.short': 'Seeker',
           'games.snake': 'Snake',
           'games.viceCity': 'GTA Vice City',
-          'games.viceCity.credits': 'Credits & licenses',
+          'games.nzPortable': 'NZ Portable',
+          'games.nzPortable.credits': 'Credits & Sources',
+          'games.credits.nzPortable': 'This Bliss entry embeds NZ Portable, hosted at nzp.gay. Visit the original page for game information.',
+          'games.viceCity.credits': 'Credits & Sources',
           'games.credits.title': 'Credits and project info',
           'games.credits.viceCity': 'This Bliss entry embeds GTA Vice City Web Edition from Quenq Apps, a browser-based port of the classic open-world game. Quenq hosts the playable version; visit its original page for details.',
           'games.eightBallPool': '8 Ball Pool',
-          'games.eightBallPool.credits': 'Credits & source',
+          'games.eightBallPool.credits': 'Credits & Sources',
           'games.credits.eightBallPool': 'This browser game is embedded from Quenq Arcade. Open the original Quenq page for the game and its project information.',
           'games.ageOfWar': 'Age of War',
-          'games.ageOfWar.credits': 'Credits & source',
+          'games.ageOfWar.credits': 'Credits & Sources',
           'games.credits.ageOfWar': 'This browser version of Age of War is embedded from Quenq Arcade. The original strategy game was created by Louissi; visit the Quenq page for the playable version and project details.',
           'games.ageOfWar2': 'Age of War 2',
-          'games.ageOfWar2.credits': 'Credits & source',
+          'games.ageOfWar2.credits': 'Credits & Sources',
           'games.credits.ageOfWar2': 'This Bliss entry embeds Age of War 2 from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
           'games.americanRacing': 'American Racing',
-          'games.americanRacing.credits': 'Credits & source',
+          'games.americanRacing.credits': 'Credits & Sources',
           'games.credits.americanRacing': 'This Bliss entry embeds American Racing from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
           'games.animatorVsAnimationGame': 'Animator vs Animation Game',
-          'games.animatorVsAnimationGame.credits': 'Credits & source',
+          'games.animatorVsAnimationGame.credits': 'Credits & Sources',
           'games.credits.animatorVsAnimationGame': 'This Bliss entry embeds Animator vs Animation Game from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
           'games.appleShooter': 'Apple Shooter',
-          'games.appleShooter.credits': 'Credits & source',
+          'games.appleShooter.credits': 'Credits & Sources',
           'games.credits.appleShooter': 'This Bliss entry embeds Apple Shooter from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
           'games.badPiggies': 'Bad Piggies',
-          'games.badPiggies.credits': 'Credits & source',
+          'games.badPiggies.credits': 'Credits & Sources',
           'games.credits.badPiggies': 'This Bliss entry embeds Bad Piggies from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
           'games.duckLife5': 'DuckLife 5',
-          'games.duckLife5.credits': 'Credits & source',
+          'games.duckLife5.credits': 'Credits & Sources',
           'games.credits.duckLife5': 'This Bliss entry embeds DuckLife 5, a classic Flash simulation game preserved by Quenq Arcade. Quenq hosts the playable version; visit its original page for more information.',
           'games.edEddNEddysCandyMachineDeluxe': 'Ed, Edd n Eddy’s Candy Machine Deluxe',
-          'games.edEddNEddysCandyMachineDeluxe.credits': 'Credits & source',
+          'games.edEddNEddysCandyMachineDeluxe.credits': 'Credits & Sources',
           'games.credits.edEddNEddysCandyMachineDeluxe': 'This Bliss entry embeds Ed, Edd n Eddy’s Candy Machine Deluxe from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
           'games.papasBurgeria': 'Papa’s Burgeria',
-          'games.papasBurgeria.credits': 'Credits & source',
+          'games.papasBurgeria.credits': 'Credits & Sources',
           'games.credits.papasBurgeria': 'This Bliss entry embeds Papa’s Burgeria, a 2010 simulation game developed by Flipline Studios and preserved by Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
           'games.papasCheeseria': 'Papa’s Cheeseria',
-          'games.papasCheeseria.credits': 'Credits & source',
+          'games.papasCheeseria.credits': 'Credits & Sources',
           'games.credits.papasCheeseria': 'This Bliss entry embeds Papa’s Cheeseria from Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
           'games.papasSushiria': 'Papa’s Sushiria',
-          'games.papasSushiria.credits': 'Credits & source',
+          'games.papasSushiria.credits': 'Credits & Sources',
           'games.credits.papasSushiria': 'This Bliss entry embeds Papa’s Sushiria, a 2016 simulation game developed by Flipline Studios and preserved by Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
           'games.papasPastaria': 'Papa’s Pastaria',
-          'games.papasPastaria.credits': 'Credits & source',
+          'games.papasPastaria.credits': 'Credits & Sources',
           'games.credits.papasPastaria': 'This Bliss entry embeds Papa’s Pastaria, a 2013 simulation game developed by Flipline Studios and preserved by Quenq Arcade. Visit the original Quenq page for the playable game and project information.',
           'games.credits.doom': 'This local Bliss build runs the Chocolate Doom engine compiled to WebAssembly with Freedoom’s free replacement game data. The upstream project and Freedoom are linked below; license files are included with the game.',
           'games.doom': 'DOOM',
           'games.doom.open': 'Open in browser',
-          'games.doom.credits': 'Credits & licenses',
+          'games.doom.credits': 'Credits & Sources',
           'games.doom.touchControls': 'Touch Controls',
           'games.minesweeper': 'Minesweeper',
           'games.dopeSkate': 'Dope Skate (beta)',
@@ -12905,6 +12960,8 @@ function installLongPress(el, getTarget){
           'games.audio': 'Game audio controls',
           'games.volume': 'Game volume',
           'games.back': 'Back',
+          'games.fullscreen': 'Fullscreen',
+          'games.fullscreen.exit': 'Exit Fullscreen',
           'games.empty': 'No games yet.',
           'games.tab.hub': 'Games',
           'games.tab.leaderboard': 'Leaderboard',
@@ -13566,52 +13623,55 @@ function installLongPress(el, getTarget){
           'app.seeker.short': 'Seeker',
           'games.snake': 'Snake',
           'games.viceCity': 'GTA Vice City',
-          'games.viceCity.credits': 'Créditos e licenças',
+          'games.nzPortable': 'NZ Portable',
+          'games.nzPortable.credits': 'Créditos e fontes',
+          'games.credits.nzPortable': 'Esta entrada do Bliss incorpora NZ Portable, hospedado em nzp.gay. Acesse a página original para informações sobre o jogo.',
+          'games.viceCity.credits': 'Créditos e fontes',
           'games.credits.title': 'Créditos e informações do projeto',
           'games.credits.viceCity': 'Esta versão do Bliss incorpora o GTA Vice City Web Edition do Quenq Apps, um port do clássico jogo de mundo aberto para navegador. O Quenq hospeda a versão jogável; visite a página original para saber mais.',
           'games.eightBallPool': '8 Ball Pool',
-          'games.eightBallPool.credits': 'Créditos e origem',
+          'games.eightBallPool.credits': 'Créditos e fontes',
           'games.credits.eightBallPool': 'Este jogo de navegador está incorporado do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
           'games.ageOfWar': 'Age of War',
-          'games.ageOfWar.credits': 'Créditos e origem',
+          'games.ageOfWar.credits': 'Créditos e fontes',
           'games.credits.ageOfWar': 'Esta versão de Age of War para navegador está incorporada do Quenq Arcade. O jogo de estratégia original foi criado por Louissi; acesse a página do Quenq para jogar e ver os detalhes do projeto.',
           'games.ageOfWar2': 'Age of War 2',
-          'games.ageOfWar2.credits': 'Créditos e origem',
+          'games.ageOfWar2.credits': 'Créditos e fontes',
           'games.credits.ageOfWar2': 'Esta entrada do Bliss incorpora Age of War 2 do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
           'games.americanRacing': 'American Racing',
-          'games.americanRacing.credits': 'Créditos e origem',
+          'games.americanRacing.credits': 'Créditos e fontes',
           'games.credits.americanRacing': 'Esta entrada do Bliss incorpora American Racing do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
           'games.animatorVsAnimationGame': 'Animator vs Animation Game',
-          'games.animatorVsAnimationGame.credits': 'Créditos e origem',
+          'games.animatorVsAnimationGame.credits': 'Créditos e fontes',
           'games.credits.animatorVsAnimationGame': 'Esta entrada do Bliss incorpora Animator vs Animation Game do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
           'games.appleShooter': 'Apple Shooter',
-          'games.appleShooter.credits': 'Créditos e origem',
+          'games.appleShooter.credits': 'Créditos e fontes',
           'games.credits.appleShooter': 'Esta entrada do Bliss incorpora Apple Shooter do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
           'games.badPiggies': 'Bad Piggies',
-          'games.badPiggies.credits': 'Créditos e origem',
+          'games.badPiggies.credits': 'Créditos e fontes',
           'games.credits.badPiggies': 'Esta entrada do Bliss incorpora Bad Piggies do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
           'games.duckLife5': 'DuckLife 5',
-          'games.duckLife5.credits': 'Créditos e origem',
+          'games.duckLife5.credits': 'Créditos e fontes',
           'games.credits.duckLife5': 'Esta entrada do Bliss incorpora DuckLife 5, um jogo clássico de simulação em Flash preservado pelo Quenq Arcade. O Quenq hospeda a versão jogável; acesse a página original para saber mais.',
           'games.edEddNEddysCandyMachineDeluxe': 'Ed, Edd n Eddy’s Candy Machine Deluxe',
-          'games.edEddNEddysCandyMachineDeluxe.credits': 'Créditos e origem',
+          'games.edEddNEddysCandyMachineDeluxe.credits': 'Créditos e fontes',
           'games.credits.edEddNEddysCandyMachineDeluxe': 'Esta entrada do Bliss incorpora Ed, Edd n Eddy’s Candy Machine Deluxe do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
           'games.papasBurgeria': 'Papa’s Burgeria',
-          'games.papasBurgeria.credits': 'Créditos e origem',
+          'games.papasBurgeria.credits': 'Créditos e fontes',
           'games.credits.papasBurgeria': 'Esta entrada do Bliss incorpora Papa’s Burgeria, um jogo de simulação de 2010 desenvolvido pela Flipline Studios e preservado pelo Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
           'games.papasCheeseria': 'Papa’s Cheeseria',
-          'games.papasCheeseria.credits': 'Créditos e origem',
+          'games.papasCheeseria.credits': 'Créditos e fontes',
           'games.credits.papasCheeseria': 'Esta entrada do Bliss incorpora Papa’s Cheeseria do Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
           'games.papasSushiria': 'Papa’s Sushiria',
-          'games.papasSushiria.credits': 'Créditos e origem',
+          'games.papasSushiria.credits': 'Créditos e fontes',
           'games.credits.papasSushiria': 'Esta entrada do Bliss incorpora Papa’s Sushiria, um jogo de simulação de 2016 desenvolvido pela Flipline Studios e preservado pelo Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
           'games.papasPastaria': 'Papa’s Pastaria',
-          'games.papasPastaria.credits': 'Créditos e origem',
+          'games.papasPastaria.credits': 'Créditos e fontes',
           'games.credits.papasPastaria': 'Esta entrada do Bliss incorpora Papa’s Pastaria, um jogo de simulação de 2013 desenvolvido pela Flipline Studios e preservado pelo Quenq Arcade. Acesse a página original do Quenq para jogar e ver as informações do projeto.',
           'games.credits.doom': 'Esta versão local do Bliss usa o motor Chocolate Doom compilado para WebAssembly junto aos dados gratuitos do Freedoom, que substituem os dados do jogo original. Os links do projeto de origem e do Freedoom estão abaixo; os arquivos de licença acompanham o jogo.',
           'games.doom': 'DOOM',
           'games.doom.open': 'Abrir no navegador',
-          'games.doom.credits': 'Créditos e licenças',
+          'games.doom.credits': 'Créditos e fontes',
           'games.doom.touchControls': 'Touch Controls',
           'games.minesweeper': 'Campo Minado',
           'games.dopeSkate': 'Dope Skate (beta)',
@@ -13633,6 +13693,8 @@ function installLongPress(el, getTarget){
           'games.audio': 'Controles de áudio do jogo',
           'games.volume': 'Volume do jogo',
           'games.back': 'Voltar',
+          'games.fullscreen': 'Tela cheia',
+          'games.fullscreen.exit': 'Sair da tela cheia',
           'games.empty': 'Sem jogos ainda.',
           'games.tab.hub': 'Jogos',
           'games.tab.leaderboard': 'Leaderboard',
@@ -16744,7 +16806,7 @@ Eu sou o buffalo branco extinto`
                   <h2 data-i18n="games.doom">DOOM</h2>
                   <button class="btn bevel doom-touch-controls" type="button" data-doom-touch-controls aria-pressed="false" data-i18n="games.doom.touchControls">Touch Controls</button>
                   ${gameAudioControlsHtml()}
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="doom" data-i18n="games.doom.credits">Credits &amp; licenses</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="doom" data-i18n="games.doom.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" data-game-audio-frame src="./assets/games/doom/player/index.html" title="DOOM powered by Freedoom" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -16756,9 +16818,21 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.viceCity">GTA Vice City</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="vice-city" data-i18n="games.viceCity.credits">Credits &amp; licenses</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="vice-city" data-i18n="games.viceCity.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://vc.quenq.com/" title="GTA Vice City hosted by Quenq" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
+              </div>
+            `;
+          }
+          if(state.games.view === 'nz-portable'){
+            return `
+              <div class="doom-shell nz-portable-shell">
+                <div class="sewer-skater-toolbar">
+                  <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
+                  <h2 data-i18n="games.nzPortable">NZ Portable</h2>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="nz-portable" data-i18n="games.nzPortable.credits">Credits &amp; Sources</button></div>
+                </div>
+                <iframe class="doom-player-frame" src="https://nzp.gay/" title="NZ Portable" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
             `;
           }
@@ -16768,7 +16842,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.eightBallPool">8 Ball Pool</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="8-ball-pool" data-i18n="games.eightBallPool.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="8-ball-pool" data-i18n="games.eightBallPool.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/8-ball-pool/" title="8 Ball Pool hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -16780,7 +16854,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.ageOfWar">Age of War</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="age-of-war" data-i18n="games.ageOfWar.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="age-of-war" data-i18n="games.ageOfWar.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/age-of-war/" title="Age of War hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -16792,7 +16866,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.ageOfWar2">Age of War 2</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="age-of-war-2" data-i18n="games.ageOfWar2.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="age-of-war-2" data-i18n="games.ageOfWar2.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/ageofwar2/" title="Age of War 2 hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -16804,7 +16878,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.americanRacing">American Racing</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="american-racing" data-i18n="games.americanRacing.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="american-racing" data-i18n="games.americanRacing.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/american-racing/" title="American Racing hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -16816,7 +16890,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.animatorVsAnimationGame">Animator vs Animation Game</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="animator-vs-animation-game" data-i18n="games.animatorVsAnimationGame.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="animator-vs-animation-game" data-i18n="games.animatorVsAnimationGame.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/animator-vs-animation-game/" title="Animator vs Animation Game hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -16828,7 +16902,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.appleShooter">Apple Shooter</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="apple-shooter" data-i18n="games.appleShooter.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="apple-shooter" data-i18n="games.appleShooter.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/apple-shooter/" title="Apple Shooter hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -16840,7 +16914,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.badPiggies">Bad Piggies</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="bad-piggies" data-i18n="games.badPiggies.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="bad-piggies" data-i18n="games.badPiggies.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/bad-piggies/" title="Bad Piggies hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -16852,7 +16926,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.duckLife5">DuckLife 5</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="ducklife5" data-i18n="games.duckLife5.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="ducklife5" data-i18n="games.duckLife5.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/ducklife5/" title="DuckLife 5 hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -16864,7 +16938,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.edEddNEddysCandyMachineDeluxe">Ed, Edd n Eddy’s Candy Machine Deluxe</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="ed-edd-n-eddys-candy-machine-deluxe" data-i18n="games.edEddNEddysCandyMachineDeluxe.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="ed-edd-n-eddys-candy-machine-deluxe" data-i18n="games.edEddNEddysCandyMachineDeluxe.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/ed-edd-n-eddys-candy-machine-deluxe/" title="Ed, Edd n Eddy’s Candy Machine Deluxe hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -16876,7 +16950,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="games.papasBurgeria">Papa’s Burgeria</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="papas-burgeria" data-i18n="games.papasBurgeria.credits">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="papas-burgeria" data-i18n="games.papasBurgeria.credits">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/papas-burgeria/" title="Papa’s Burgeria hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -16894,7 +16968,7 @@ Eu sou o buffalo branco extinto`
                 <div class="sewer-skater-toolbar">
                   <button class="btn bevel" type="button" data-games-action="back" data-i18n="games.back">Back</button>
                   <h2 data-i18n="${game.titleKey}">${game.title}</h2>
-                  <button class="btn bevel doom-open-link" type="button" data-game-credits="${state.games.view}" data-i18n="${game.creditsKey}">Credits &amp; source</button>
+                  <div class="game-player-actions"><button class="btn bevel game-fullscreen-toggle" type="button" data-game-fullscreen data-i18n="games.fullscreen">Fullscreen</button><button class="btn bevel doom-open-link" type="button" data-game-credits="${state.games.view}" data-i18n="${game.creditsKey}">Credits &amp; Sources</button></div>
                 </div>
                 <iframe class="doom-player-frame" src="https://static.quenq.com/games/${state.games.view}/" title="${game.title} hosted by Quenq Arcade" allow="autoplay; fullscreen; gamepad; pointer-lock" allowfullscreen></iframe>
               </div>
@@ -16959,6 +17033,16 @@ Eu sou o buffalo branco extinto`
                     ${getThemedIconHtml({ icon:'game', id:'vice-city', iconFile:'./assets/games/vc/vc.png' }, t('games.viceCity'), 64)}
                   </div>
                   <span data-i18n="games.viceCity">GTA Vice City</span>
+                </button>
+              `;
+            }
+            if(id === 'nz-portable'){
+              return `
+                <button class="games-item games-card" type="button" data-game-id="nz-portable">
+                  <div class="games-icon pixel">
+                    ${getThemedIconHtml({ icon:'game', id:'nz-portable', iconFile:'./assets/games/nzp.png' }, t('games.nzPortable'), 64)}
+                  </div>
+                  <span data-i18n="games.nzPortable">NZ Portable</span>
                 </button>
               `;
             }
