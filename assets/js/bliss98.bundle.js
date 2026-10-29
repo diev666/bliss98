@@ -20954,7 +20954,7 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
           : savedRectRaw;
         if(mobileMusic){
           const preferredWidth = Math.max(240, area.width - 32);
-          const preferredHeight = Math.max(280, Math.floor(area.height * 0.66));
+          const preferredHeight = Math.max(280, Math.floor(area.height * 0.72));
           if(savedRect){
             savedRect = normalizeWindowRect({
               ...savedRect,
@@ -20974,7 +20974,7 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
           rect = normalizeWindowRect(getMediaPlayerRect(), area, 16);
         } else if(mobileMusic && !savedRect){
           const width = Math.max(240, area.width - 32);
-          const height = Math.max(280, Math.floor(area.height * 0.66));
+          const height = Math.max(280, Math.floor(area.height * 0.72));
           rect = normalizeWindowRect({
             left: (area.width - width) / 2,
             top: (area.height - height) / 2,
