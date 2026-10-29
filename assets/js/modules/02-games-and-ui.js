@@ -7943,12 +7943,94 @@ function loadWallpaper(){
   }
 }
 
+const WALLPAPER_MODE_KEY = 'bliss98_wallpaper_mode';
+const WALLPAPER_MODES = new Set(['fill', 'blur', 'color']);
+let wallpaperMode = (()=>{
+  try{
+    const saved = safeStorage.getItem(WALLPAPER_MODE_KEY);
+    return WALLPAPER_MODES.has(saved) ? saved : 'fill';
+  } catch { return 'fill'; }
+})();
+
+function updateWallpaperModeButtons(root=document){
+  $$('[data-set-wallpaper-mode]', root).forEach(btn => {
+    const active = btn.dataset.setWallpaperMode === wallpaperMode;
+    btn.classList.toggle('pressed', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
+function extractWallpaperAverageColor(src){
+  return new Promise(resolve => {
+    if(!src || typeof Image === 'undefined') return resolve(null);
+    const image = new Image();
+    image.crossOrigin = 'Anonymous';
+    image.onload = ()=>{
+      try{
+        const canvas = document.createElement('canvas');
+        const size = 32;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d', { willReadFrequently:true });
+        if(!ctx) return resolve(null);
+        ctx.drawImage(image, 0, 0, size, size);
+        const pixels = ctx.getImageData(0, 0, size, size).data;
+        let red = 0, green = 0, blue = 0, count = 0;
+        for(let y = 0; y < size; y += 1){
+          for(let x = 0; x < size; x += 1){
+            if(x !== 0 && x !== size - 1 && y !== 0 && y !== size - 1) continue;
+            const i = (y * size + x) * 4;
+            if(pixels[i + 3] < 128) continue;
+            red += pixels[i];
+            green += pixels[i + 1];
+            blue += pixels[i + 2];
+            count += 1;
+          }
+        }
+        resolve(count
+          ? `rgb(${Math.round(red / count)}, ${Math.round(green / count)}, ${Math.round(blue / count)})`
+          : null);
+      } catch { resolve(null); }
+    };
+    image.onerror = ()=>resolve(null);
+    image.src = src;
+  });
+}
+
+function applyWallpaperDisplayMode(wp){
+  const desktop = $('#desktop');
+  if(!desktop) return;
+  const match = typeof wp.background === 'string' ? wp.background.match(/^url\((['"]?)(.*?)\1\)$/i) : null;
+  const imageSrc = match ? match[2] : '';
+  desktop.dataset.wallpaperMode = wallpaperMode;
+  desktop.dataset.wallpaperImage = imageSrc ? '1' : '0';
+  desktop.style.setProperty('--wallpaper-image', imageSrc ? `url("${imageSrc}")` : 'none');
+  if(wallpaperMode !== 'color' || !imageSrc) return;
+  desktop.style.setProperty('--wallpaper-average-color', '#20242b');
+  const requestId = String((Number(desktop.dataset.wallpaperColorRequest) || 0) + 1);
+  desktop.dataset.wallpaperColorRequest = requestId;
+  extractWallpaperAverageColor(imageSrc).then(color => {
+    if(color && desktop.isConnected && desktop.dataset.wallpaperColorRequest === requestId){
+      desktop.style.setProperty('--wallpaper-average-color', color);
+    }
+  });
+}
+
+function setWallpaperMode(mode){
+  if(!WALLPAPER_MODES.has(mode)) return;
+  wallpaperMode = mode;
+  try{ safeStorage.setItem(WALLPAPER_MODE_KEY, mode); } catch {}
+  applyWallpaperDisplayMode(WALLPAPERS.find(wp => wp.id === state.wallpaper) || WALLPAPERS[0]);
+  updateWallpaperModeButtons();
+}
+
       function updateWallpaperButtons(root=document){
         $$('[data-set-wallpaper]', root).forEach(btn => {
           const active = btn.dataset.setWallpaper === state.wallpaper;
           btn.classList.toggle('pressed', active);
           btn.setAttribute('aria-pressed', active ? 'true' : 'false');
         });
+        updateWallpaperModeButtons(root);
       }
 
       function updateOsThemeButtons(root=document){
@@ -8674,6 +8756,7 @@ function applyWallpaper(id){
       desktop.style.backgroundRepeat = wp.repeat || 'repeat';
       desktop.style.backgroundPosition = wp.position || 'top left';
     }
+    applyWallpaperDisplayMode(wp);
   }
   updateMatrixEffect();
   if(state.settings.theme !== 'blissos'){

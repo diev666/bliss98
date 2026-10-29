@@ -3294,7 +3294,43 @@
           linear-gradient(180deg, rgba(101,134,171,0.95) 0%, rgba(78,113,154,0.95) 100%);
       }
 
-      #desktop{ position:absolute; inset:0; background:var(--bg); }
+      #desktop{ position:absolute; inset:0; background:var(--bg); isolation:isolate; }
+      #desktop[data-wallpaper-image="1"][data-wallpaper-mode="fill"]{
+        background-size:cover !important;
+        background-position:center !important;
+        background-repeat:no-repeat !important;
+      }
+      #desktop[data-wallpaper-image="1"][data-wallpaper-mode="blur"]{
+        background-image:none !important;
+        background-color:#20242b;
+      }
+      #desktop[data-wallpaper-image="1"][data-wallpaper-mode="color"]{
+        background-image:none !important;
+        background-color:var(--wallpaper-average-color, #20242b) !important;
+      }
+      #desktop[data-wallpaper-image="1"][data-wallpaper-mode="blur"]::before,
+      #desktop[data-wallpaper-image="1"][data-wallpaper-mode="blur"]::after,
+      #desktop[data-wallpaper-image="1"][data-wallpaper-mode="color"]::after{
+        content:"";
+        position:absolute;
+        pointer-events:none;
+        background-image:var(--wallpaper-image);
+        background-position:center;
+        background-repeat:no-repeat;
+      }
+      #desktop[data-wallpaper-image="1"][data-wallpaper-mode="blur"]::before{
+        inset:-32px;
+        z-index:-2;
+        background-size:cover;
+        filter:blur(26px) brightness(.58);
+        transform:scale(1.04);
+      }
+      #desktop[data-wallpaper-image="1"][data-wallpaper-mode="blur"]::after,
+      #desktop[data-wallpaper-image="1"][data-wallpaper-mode="color"]::after{
+        inset:0;
+        z-index:-1;
+        background-size:contain;
+      }
       #desktop.wallpaper-matrix{
         background-color:#020202;
         background-image:
@@ -5616,6 +5652,16 @@
         opacity:0.92;
         filter:drop-shadow(0 5px 9px rgba(0,0,0,0.35));
       }
+      .wallpaper-mode-picker{
+        display:flex;
+        align-items:center;
+        flex-wrap:wrap;
+        gap:8px 12px;
+        margin:8px 0 12px;
+      }
+      .wallpaper-mode-label{font-size:12px;}
+      .wallpaper-mode-options{display:flex;flex-wrap:wrap;gap:6px;}
+      .wallpaper-mode-options .btn{padding:5px 10px;font-size:12px;}
       .wallpaper-swatch{
         width:18px;
         height:18px;
@@ -12701,6 +12747,6 @@
         });
       })();
     </script>
-    <script defer src="./assets/js/bliss98.bundle.js?v=20261029-mobile-music-list-icons"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20261029-wallpaper-edge-color"></script>
   </body>
 </html>

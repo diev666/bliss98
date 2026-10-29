@@ -4834,6 +4834,10 @@ function renderBlissOSAppMenu(){
         if(wpBtn && wpBtn.dataset && wpBtn.dataset.setWallpaper){
           applyWallpaper(wpBtn.dataset.setWallpaper);
         }
+        const wallpaperModeBtn = target.closest('[data-set-wallpaper-mode]');
+        if(wallpaperModeBtn && wallpaperModeBtn.dataset && wallpaperModeBtn.dataset.setWallpaperMode){
+          setWallpaperMode(wallpaperModeBtn.dataset.setWallpaperMode);
+        }
         const animBtn = target.closest('[data-set-animations]');
         if(animBtn && animBtn.dataset && animBtn.dataset.setAnimations){
           setAnimations(animBtn.dataset.setAnimations === 'on');

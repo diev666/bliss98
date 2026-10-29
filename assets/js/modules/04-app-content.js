@@ -1943,6 +1943,14 @@ Eu sou o buffalo branco extinto`
                 <div class="settings-block" id="settingsWallpaper">
                   <strong data-i18n="settings.wallpaperTab">Wallpaper</strong>
                   <p style="margin:6px 0 10px 0;" data-i18n="settings.wallpaperDesc">Choose a wallpaper for your desktop.</p>
+                  <div class="wallpaper-mode-picker">
+                    <strong class="wallpaper-mode-label" data-i18n="wallpaper.displayMode">Display mode</strong>
+                    <div class="wallpaper-mode-options" role="group" aria-label="Wallpaper display mode">
+                      <button class="btn bevel" type="button" data-set-wallpaper-mode="fill" data-i18n="wallpaper.mode.fill">Fill</button>
+                      <button class="btn bevel" type="button" data-set-wallpaper-mode="blur" data-i18n="wallpaper.mode.blur">Blur</button>
+                      <button class="btn bevel" type="button" data-set-wallpaper-mode="color" data-i18n="wallpaper.mode.color">Solid color</button>
+                    </div>
+                  </div>
                   <div class="wallpaper-slider-shell" data-wallpaper-slider>
                     <button class="btn bevel wallpaper-nav" type="button" data-wallpaper-nav="-1" aria-label="Previous wallpapers">◀</button>
                     <div class="wallpaper-strip-viewport bevel-in">
