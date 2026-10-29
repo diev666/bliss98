@@ -559,8 +559,8 @@ Eu sou o buffalo branco extinto`
   <div class="music-grid">
     ${MUSIC_LINKS.map(link => `
       <button class="music-item" type="button" data-music-id="${link.id}" data-music-link="${link.url}">
-        <div class="music-icon pixel">
-          <img class="pixel" src="${link.icon}" width="48" height="48" alt="${link.label}" style="display:block;" />
+        <div class="music-icon">
+          <img src="${link.icon}" width="64" height="64" alt="${link.label}" style="display:block;" />
         </div>
         <span class="music-label" style="font-weight:700;">${link.label}</span>
       </button>

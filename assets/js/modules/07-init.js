@@ -23,6 +23,7 @@
       (function init(){
         const savedLang = safeStorage.getItem('bliss98_lang') || 'en';
         state.lang = (savedLang === 'pt') ? 'pt' : 'en';
+        state.settings.largeDesktopIcons = loadLargeDesktopIcons();
 
         const saved = safeStorage.getItem('bliss98_user');
         if(saved){ setUser(saved); $('#username').value = saved; }

@@ -11125,6 +11125,7 @@ function renderCtxMenu(){
     items.push({ action:'arrange', label:t('ctx.arrange') });
     if(ctxState.parentId == null){
       items.push({ action:'grid', label:t('ctx.grid'), check:gridMark });
+      items.push({ action:'largeDesktopIcons', label:t('ctx.largeIcons'), check:state.settings.largeDesktopIcons !== false ? '✓' : '' });
       items.push({ action:'desktopIcons', label:t('ctx.showDesktopIcons'), check:(state.settings.showDesktopIcons !== false) ? '✓' : '' });
       items.push({ action:'wallpaper', label:t('ctx.wallpaper') });
       items.push({ sep:true });
@@ -11359,6 +11360,10 @@ function handleCtxAction(action){
   if(action === 'grid'){
     state.gridSnap = !state.gridSnap;
     saveGridSnap();
+    renderCtxMenu();
+  }
+  if(action === 'largeDesktopIcons'){
+    setLargeDesktopIcons(!(state.settings.largeDesktopIcons !== false));
     renderCtxMenu();
   }
   if(action === 'desktopIcons'){

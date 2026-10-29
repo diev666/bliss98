@@ -3373,9 +3373,9 @@
         border:1px solid transparent;
         cursor:default;
       }
-      .icon[data-app-id="settings"] img{
-        width:36px;
-        height:36px;
+      #iconGrid .desktop-icon-art,
+      #iconGrid .desktop-icon-art img{
+        image-rendering:auto !important;
       }
       .icon.selected{
         border:1px dotted rgba(255,255,255,0.9);
@@ -3767,6 +3767,11 @@
         display:flex;
         align-items:center;
         justify-content:center;
+      }
+      body[data-theme="blissos"][data-blissos-style="aqua"] #win_seeker .seeker-item-icon,
+      body[data-theme="blissos"][data-blissos-style="aqua"] #win_seeker .seeker-item-icon img,
+      body[data-theme="blissos"][data-blissos-style="aqua"] #win_seeker .seeker-item-icon svg{
+        image-rendering:auto !important;
       }
       .seeker-item-label{
         display:block;
@@ -6935,15 +6940,16 @@
         word-break:break-word;
       }
       .music-icon{
-        width:56px;
-        height:56px;
+        width:72px;
+        height:72px;
         display:flex;
         align-items:center;
         justify-content:center;
       }
       .music-icon img{
-        width:48px;
-        height:48px;
+        width:64px;
+        height:64px;
+        image-rendering:auto !important;
       }
       .music-small .music-item{padding:6px; gap:6px;}
       .music-small .music-icon{width:40px; height:40px;}
@@ -12705,6 +12711,6 @@
         });
       })();
     </script>
-    <script defer src="./assets/js/bliss98.bundle.js?v=20261028-mobile-zoom-lock"></script>
+    <script defer src="./assets/js/bliss98.bundle.js?v=20261029-large-icons-off-default"></script>
   </body>
 </html>

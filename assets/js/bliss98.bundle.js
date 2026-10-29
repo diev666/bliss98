@@ -102,6 +102,7 @@
           dockOpacity: 100,
           dockAutoHide: false,
           showDesktopIcons: true,
+          largeDesktopIcons: false,
           retroGlow: false,
           clock24: true,
           oldCrt: true,
@@ -180,6 +181,10 @@
       try{
         const onChange = (e) => {
           state.isMobile = !!(e && e.matches);
+          if(!hasSavedLargeDesktopIcons()){
+            state.settings.largeDesktopIcons = false;
+            if(typeof renderIcons === 'function') renderIcons();
+          }
           if(typeof tickClock === 'function') tickClock();
           if(typeof scheduleWindowRelayout === 'function') scheduleWindowRelayout();
           if(typeof renderBlissOSDock === 'function') renderBlissOSDock();
@@ -251,6 +256,7 @@
       const GAMES_VIEW_KEY = 'bliss98_games_view';
       const GAMES_BIG_KEY = 'bliss98_games_big';
       const DESKTOP_ICONS_KEY = 'bliss98_show_desktop_icons';
+      const DESKTOP_LARGE_ICONS_KEY = 'bliss98_large_desktop_icons';
 const RETRO_KEY = 'bliss98_retro_glow';
 const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
       function loadMobileControlsMode(){
@@ -805,6 +811,41 @@ function loadDesktopIconsVisible(){
   } catch {
     return true;
   }
+}
+
+function hasSavedLargeDesktopIcons(){
+  try{
+    return safeStorage.getItem(DESKTOP_LARGE_ICONS_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
+function loadLargeDesktopIcons(){
+  try{
+    const raw = safeStorage.getItem(DESKTOP_LARGE_ICONS_KEY);
+    if(raw === null) return false;
+    return raw === '1';
+  } catch {
+    return false;
+  }
+}
+
+function saveLargeDesktopIcons(){
+  try{
+    safeStorage.setItem(DESKTOP_LARGE_ICONS_KEY, state.settings.largeDesktopIcons ? '1' : '0');
+  } catch {}
+}
+
+function setLargeDesktopIcons(enabled){
+  const next = enabled !== false;
+  if(state.settings.largeDesktopIcons === next){
+    renderIcons();
+    return;
+  }
+  state.settings.largeDesktopIcons = next;
+  saveLargeDesktopIcons();
+  renderIcons();
 }
 
 function saveDesktopIconsVisible(){
@@ -12580,6 +12621,7 @@ function renderCtxMenu(){
     items.push({ action:'arrange', label:t('ctx.arrange') });
     if(ctxState.parentId == null){
       items.push({ action:'grid', label:t('ctx.grid'), check:gridMark });
+      items.push({ action:'largeDesktopIcons', label:t('ctx.largeIcons'), check:state.settings.largeDesktopIcons !== false ? '✓' : '' });
       items.push({ action:'desktopIcons', label:t('ctx.showDesktopIcons'), check:(state.settings.showDesktopIcons !== false) ? '✓' : '' });
       items.push({ action:'wallpaper', label:t('ctx.wallpaper') });
       items.push({ sep:true });
@@ -12814,6 +12856,10 @@ function handleCtxAction(action){
   if(action === 'grid'){
     state.gridSnap = !state.gridSnap;
     saveGridSnap();
+    renderCtxMenu();
+  }
+  if(action === 'largeDesktopIcons'){
+    setLargeDesktopIcons(!(state.settings.largeDesktopIcons !== false));
     renderCtxMenu();
   }
   if(action === 'desktopIcons'){
@@ -13199,6 +13245,7 @@ function installLongPress(el, getTarget){
           'ctx.duplicateTxt': 'Duplicate',
           'ctx.arrange': 'Arrange icons',
           'ctx.grid': 'Grid (snap)',
+          'ctx.largeIcons': 'Large icons',
           'ctx.showDesktopIcons': 'Show Desktop Icons',
           'ctx.wallpaper': 'Wallpaper',
           'ctx.settings': 'Settings',
@@ -13928,6 +13975,7 @@ function installLongPress(el, getTarget){
           'ctx.duplicateTxt': 'Duplicar',
           'ctx.arrange': 'Organizar Ícones',
           'ctx.grid': 'Grade (snap)',
+          'ctx.largeIcons': 'Ícones grandes',
           'ctx.showDesktopIcons': 'Mostrar ícones da Área de Trabalho',
           'ctx.wallpaper': 'Papel de Parede',
           'ctx.settings': 'Configurações',
@@ -14697,6 +14745,7 @@ function installLongPress(el, getTarget){
           if(appId === 'bliss'){
             items.push({ labelKey:'ctx.arrange', action:'global:arrange' });
             items.push({ labelKey:'ctx.grid', action:'global:grid', type:'checkbox', checked: !!state.gridSnap });
+            items.push({ labelKey:'ctx.largeIcons', action:'global:largeDesktopIcons', type:'checkbox', checked: state.settings.largeDesktopIcons !== false });
             items.push({ labelKey:'ctx.showDesktopIcons', action:'global:desktopIcons', type:'checkbox', checked: state.settings.showDesktopIcons !== false });
             items.push({ labelKey:'ctx.language', action:'global:language', right: state.lang.toUpperCase() });
           }
@@ -15142,6 +15191,10 @@ function installLongPress(el, getTarget){
         }
         if(action === 'global:desktopIcons'){
           setDesktopIconsVisible(!(state.settings.showDesktopIcons !== false));
+          return;
+        }
+        if(action === 'global:largeDesktopIcons'){
+          setLargeDesktopIcons(!(state.settings.largeDesktopIcons !== false));
           return;
         }
         if(action === 'global:language'){
@@ -16353,8 +16406,8 @@ Eu sou o buffalo branco extinto`
   <div class="music-grid">
     ${MUSIC_LINKS.map(link => `
       <button class="music-item" type="button" data-music-id="${link.id}" data-music-link="${link.url}">
-        <div class="music-icon pixel">
-          <img class="pixel" src="${link.icon}" width="48" height="48" alt="${link.label}" style="display:block;" />
+        <div class="music-icon">
+          <img src="${link.icon}" width="64" height="64" alt="${link.label}" style="display:block;" />
         </div>
         <span class="music-label" style="font-weight:700;">${link.label}</span>
       </button>
@@ -19159,9 +19212,11 @@ function renderIcons(){
     }
 
     const label = getFsItemLabel(item);
-    const iconHtml = getFsIconHtml(item, label, 32);
+    const iconSize = state.settings.largeDesktopIcons !== false ? 48 : 32;
+    const iconBoxSize = iconSize + 2;
+    const iconHtml = getFsIconHtml(item, label, iconSize);
     el.innerHTML = `
-      <div class="pixel" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;">${iconHtml}</div>
+      <div class="desktop-icon-art" style="width:${iconBoxSize}px;height:${iconBoxSize}px;display:flex;align-items:center;justify-content:center;">${iconHtml}</div>
       <span>${label}</span>
     `;
 
@@ -23997,6 +24052,7 @@ function renderBlissOSAppMenu(){
       (function init(){
         const savedLang = safeStorage.getItem('bliss98_lang') || 'en';
         state.lang = (savedLang === 'pt') ? 'pt' : 'en';
+        state.settings.largeDesktopIcons = loadLargeDesktopIcons();
 
         const saved = safeStorage.getItem('bliss98_user');
         if(saved){ setUser(saved); $('#username').value = saved; }

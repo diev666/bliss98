@@ -137,9 +137,11 @@ function renderIcons(){
     }
 
     const label = getFsItemLabel(item);
-    const iconHtml = getFsIconHtml(item, label, 32);
+    const iconSize = state.settings.largeDesktopIcons !== false ? 48 : 32;
+    const iconBoxSize = iconSize + 2;
+    const iconHtml = getFsIconHtml(item, label, iconSize);
     el.innerHTML = `
-      <div class="pixel" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;">${iconHtml}</div>
+      <div class="desktop-icon-art" style="width:${iconBoxSize}px;height:${iconBoxSize}px;display:flex;align-items:center;justify-content:center;">${iconHtml}</div>
       <span>${label}</span>
     `;
 

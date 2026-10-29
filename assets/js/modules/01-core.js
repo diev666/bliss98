@@ -98,6 +98,7 @@
           dockOpacity: 100,
           dockAutoHide: false,
           showDesktopIcons: true,
+          largeDesktopIcons: false,
           retroGlow: false,
           clock24: true,
           oldCrt: true,
@@ -176,6 +177,10 @@
       try{
         const onChange = (e) => {
           state.isMobile = !!(e && e.matches);
+          if(!hasSavedLargeDesktopIcons()){
+            state.settings.largeDesktopIcons = false;
+            if(typeof renderIcons === 'function') renderIcons();
+          }
           if(typeof tickClock === 'function') tickClock();
           if(typeof scheduleWindowRelayout === 'function') scheduleWindowRelayout();
           if(typeof renderBlissOSDock === 'function') renderBlissOSDock();
@@ -247,6 +252,7 @@
       const GAMES_VIEW_KEY = 'bliss98_games_view';
       const GAMES_BIG_KEY = 'bliss98_games_big';
       const DESKTOP_ICONS_KEY = 'bliss98_show_desktop_icons';
+      const DESKTOP_LARGE_ICONS_KEY = 'bliss98_large_desktop_icons';
 const RETRO_KEY = 'bliss98_retro_glow';
 const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
       function loadMobileControlsMode(){
@@ -801,6 +807,41 @@ function loadDesktopIconsVisible(){
   } catch {
     return true;
   }
+}
+
+function hasSavedLargeDesktopIcons(){
+  try{
+    return safeStorage.getItem(DESKTOP_LARGE_ICONS_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
+function loadLargeDesktopIcons(){
+  try{
+    const raw = safeStorage.getItem(DESKTOP_LARGE_ICONS_KEY);
+    if(raw === null) return false;
+    return raw === '1';
+  } catch {
+    return false;
+  }
+}
+
+function saveLargeDesktopIcons(){
+  try{
+    safeStorage.setItem(DESKTOP_LARGE_ICONS_KEY, state.settings.largeDesktopIcons ? '1' : '0');
+  } catch {}
+}
+
+function setLargeDesktopIcons(enabled){
+  const next = enabled !== false;
+  if(state.settings.largeDesktopIcons === next){
+    renderIcons();
+    return;
+  }
+  state.settings.largeDesktopIcons = next;
+  saveLargeDesktopIcons();
+  renderIcons();
 }
 
 function saveDesktopIconsVisible(){

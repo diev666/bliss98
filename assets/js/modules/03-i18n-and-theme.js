@@ -306,6 +306,7 @@
           'ctx.duplicateTxt': 'Duplicate',
           'ctx.arrange': 'Arrange icons',
           'ctx.grid': 'Grid (snap)',
+          'ctx.largeIcons': 'Large icons',
           'ctx.showDesktopIcons': 'Show Desktop Icons',
           'ctx.wallpaper': 'Wallpaper',
           'ctx.settings': 'Settings',
@@ -1035,6 +1036,7 @@
           'ctx.duplicateTxt': 'Duplicar',
           'ctx.arrange': 'Organizar Ícones',
           'ctx.grid': 'Grade (snap)',
+          'ctx.largeIcons': 'Ícones grandes',
           'ctx.showDesktopIcons': 'Mostrar ícones da Área de Trabalho',
           'ctx.wallpaper': 'Papel de Parede',
           'ctx.settings': 'Configurações',
@@ -1804,6 +1806,7 @@
           if(appId === 'bliss'){
             items.push({ labelKey:'ctx.arrange', action:'global:arrange' });
             items.push({ labelKey:'ctx.grid', action:'global:grid', type:'checkbox', checked: !!state.gridSnap });
+            items.push({ labelKey:'ctx.largeIcons', action:'global:largeDesktopIcons', type:'checkbox', checked: state.settings.largeDesktopIcons !== false });
             items.push({ labelKey:'ctx.showDesktopIcons', action:'global:desktopIcons', type:'checkbox', checked: state.settings.showDesktopIcons !== false });
             items.push({ labelKey:'ctx.language', action:'global:language', right: state.lang.toUpperCase() });
           }
@@ -2249,6 +2252,10 @@
         }
         if(action === 'global:desktopIcons'){
           setDesktopIconsVisible(!(state.settings.showDesktopIcons !== false));
+          return;
+        }
+        if(action === 'global:largeDesktopIcons'){
+          setLargeDesktopIcons(!(state.settings.largeDesktopIcons !== false));
           return;
         }
         if(action === 'global:language'){
