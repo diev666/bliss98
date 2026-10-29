@@ -252,7 +252,8 @@ function renderIcons(){
 	            const iconPosCache = loadIconPositions();
 	            ids.forEach(id => { ensureFsItemForApp(id, { save: false }); });
 
-            if(isOverTrashWindow(e.clientX, e.clientY) || isOverTrash(e.clientX, e.clientY)){
+            const draggingTrashIcon = ids.includes('trash');
+            if(!draggingTrashIcon && (isOverTrashWindow(e.clientX, e.clientY) || isOverTrash(e.clientX, e.clientY))){
               restoreGroupLayer();
               moveIconsToTrash(ids);
 	            } else if(isOverGamesWindow(e.clientX, e.clientY)){
