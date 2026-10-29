@@ -10423,12 +10423,12 @@ function getSiblingNames(parentId, excludeId){
   return lower;
 }
 
-function makeUniqueName(parentId, baseName, ext){
+function makeUniqueName(parentId, baseName, ext, excludeId){
   const suffix = ext ? `.${ext}` : '';
   const root = ext && baseName.toLowerCase().endsWith(suffix)
     ? baseName.slice(0, -suffix.length)
     : baseName;
-  const taken = getSiblingNames(parentId);
+  const taken = getSiblingNames(parentId, excludeId);
   const baseFull = `${root}${suffix}`;
   if(!taken.has(baseFull.toLowerCase())) return baseFull;
   let i = 2;
@@ -12623,18 +12623,34 @@ function startDesktopIconRename(id, currentValue, onCommit, opts = {}){
   const icon = Array.from(document.querySelectorAll('#iconGrid .icon')).find(el => el.dataset.appId === id);
   const label = icon?.querySelector(':scope > span');
   if(!label) return;
-  const input = document.createElement('input');
-  input.type = 'text';
+  const input = document.createElement('textarea');
+  input.rows = 1;
   input.className = 'icon-rename-input';
   input.value = currentValue;
   input.setAttribute('aria-label', t('dialog.rename.title'));
+  icon.classList.add('renaming');
+  const fitSize = ()=>{
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    const style = getComputedStyle(input);
+    if(context){
+      context.font = style.font || `${style.fontSize} ${style.fontFamily}`;
+      const textWidth = input.value.split(/\r?\n/).reduce((width, line)=>Math.max(width, context.measureText(line).width), 0);
+      input.style.width = `${Math.min(164, Math.max(56, Math.ceil(textWidth + 20)))}px`;
+    }
+    input.style.height = 'auto';
+    input.style.height = `${Math.max(input.scrollHeight, 26)}px`;
+  };
   let finished = false;
   const finish = commit=>{
     if(finished) return;
     finished = true;
-    const value = input.value;
+    const value = input.value.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
     if(commit) onCommit(value);
-    else if(input.isConnected) input.replaceWith(label);
+    else if(input.isConnected){
+      input.replaceWith(label);
+      icon.classList.remove('renaming');
+    }
   };
   input.addEventListener('pointerdown', e=>e.stopPropagation());
   input.addEventListener('click', e=>e.stopPropagation());
@@ -12644,8 +12660,10 @@ function startDesktopIconRename(id, currentValue, onCommit, opts = {}){
     if(e.key === 'Enter'){ e.preventDefault(); finish(true); }
     else if(e.key === 'Escape'){ e.preventDefault(); finish(false); }
   });
+  input.addEventListener('input', fitSize);
   input.addEventListener('blur', ()=>finish(true));
   label.replaceWith(input);
+  fitSize();
   input.focus({ preventScroll:true });
   const selectLength = Number.isFinite(opts.selectLength) ? opts.selectLength : input.value.length;
   input.setSelectionRange(0, Math.max(0, Math.min(selectLength, input.value.length)));
@@ -12676,8 +12694,8 @@ function handleCtxAction(action){
         if(fsItem.type === 'txt' && !next.toLowerCase().endsWith('.txt')) next += '.txt';
         const base = fsItem.type === 'txt' ? next.replace(/\.txt$/i, '') : next;
         const unique = fsItem.type === 'txt'
-          ? makeUniqueName(fsItem.parentId, base, 'txt')
-          : makeUniqueName(fsItem.parentId, base);
+          ? makeUniqueName(fsItem.parentId, base, 'txt', fsItem.id)
+          : makeUniqueName(fsItem.parentId, base, undefined, fsItem.id);
         upsertFsItem({ id: fsItem.id, name: unique }, { save: false, syncIconPos: false });
         saveDesktopFs();
         renderIcons();
