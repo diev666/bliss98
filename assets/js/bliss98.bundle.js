@@ -1828,12 +1828,17 @@ function renderGamesWindow(){
   if(!document.documentElement.dataset.gameFullscreenStateBound){
     document.documentElement.dataset.gameFullscreenStateBound = '1';
     document.addEventListener('fullscreenchange', ()=>{
-      const activeShell = document.fullscreenElement?.classList.contains('doom-shell') ? document.fullscreenElement : null;
+      const nativeShell = document.fullscreenElement?.classList.contains('doom-shell') ? document.fullscreenElement : null;
+      const fallbackShell = document.body.classList.contains('game-mobile-fullscreen')
+        ? document.querySelector('#win_games .doom-shell')
+        : null;
+      const activeShell = nativeShell || fallbackShell;
       document.querySelectorAll('[data-game-fullscreen]').forEach(button=>{
         const isActive = !!activeShell && button.closest('.doom-shell') === activeShell;
         button.textContent = t(isActive ? 'games.fullscreen.exit' : 'games.fullscreen');
         button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
       });
+      if(!activeShell) unlockGameOrientation();
     });
   }
   const win = document.getElementById('win_games');
@@ -1870,12 +1875,36 @@ function renderGamesWindow(){
     openGameCredits(e.currentTarget.dataset.gameCredits);
   });
   win.querySelector('[data-game-fullscreen]')?.addEventListener('click', async e=>{
+    const button = e.currentTarget;
     const player = e.currentTarget.closest('.doom-shell');
     if(!player) return;
-    try{
-      if(document.fullscreenElement === player) await document.exitFullscreen();
-      else if(!document.fullscreenElement) await player.requestFullscreen();
-    }catch(err){ console.warn('Game fullscreen is unavailable', err); }
+    const fallbackActive = document.body.classList.contains('game-mobile-fullscreen');
+    if(document.fullscreenElement === player || fallbackActive){
+      document.body.classList.remove('game-mobile-fullscreen');
+      button.textContent = t('games.fullscreen');
+      button.setAttribute('aria-pressed', 'false');
+      if(document.fullscreenElement === player){
+        try{ await document.exitFullscreen(); }catch{}
+      }
+      unlockGameOrientation();
+      return;
+    }
+
+    let enteredNativeFullscreen = false;
+    if(typeof player.requestFullscreen === 'function' && !document.fullscreenElement){
+      try{
+        await player.requestFullscreen({ navigationUI:'hide' });
+        enteredNativeFullscreen = document.fullscreenElement === player;
+      }catch{}
+    }
+    if(isMobileGameMode()){
+      if(!enteredNativeFullscreen){
+        document.body.classList.add('game-mobile-fullscreen');
+        button.textContent = t('games.fullscreen.exit');
+        button.setAttribute('aria-pressed', 'true');
+      }
+      await lockGameOrientationPortrait();
+    }
   });
   const mobileGameView = isMobileGameMode() && (state.games.view === 'snake' || state.games.view === 'minesweeper');
   if(state.games.view === 'snake' || state.games.view === 'minesweeper'){
@@ -2337,6 +2366,17 @@ const MOBILE_GAME_DEBUG = new URLSearchParams(window.location.search).get('mobil
 const MOBILE_GAME_MQ = window.matchMedia('(max-width: 520px)');
 const MOBILE_GAME_COARSE = window.matchMedia('(pointer: coarse)');
 const MOBILE_TOUCH_PRIORITY_WINDOW_MS = 320;
+function lockGameOrientationPortrait(){
+  const orientation = window.screen && window.screen.orientation;
+  if(!orientation || typeof orientation.lock !== 'function') return Promise.resolve(false);
+  return orientation.lock('portrait').then(()=>true).catch(()=>false);
+}
+function unlockGameOrientation(){
+  const orientation = window.screen && window.screen.orientation;
+  if(orientation && typeof orientation.unlock === 'function'){
+    try{ orientation.unlock(); }catch{}
+  }
+}
 const mobileOverlayResetters = new Set();
 let mobileOverlayCleanupBound = false;
 const mobileTouchPointers = new Set();
