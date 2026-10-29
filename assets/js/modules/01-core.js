@@ -272,7 +272,7 @@ const MOBILE_CONTROLS_KEY = 'bliss98_mobile_controls_mode';
 
       const SFX = {
         boot: {
-          src: './assets/audio/boot.mp3',
+          src: './assets/audio/boot-quieter.mp3',
           audio: null,
           played: false,
           pending: false,
