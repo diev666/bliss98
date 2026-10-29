@@ -1784,6 +1784,7 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
           rememberSeekerRecent({ kind:'app', id:appId });
         }
         const deferReveal = !!opts.deferReveal;
+        const mobileMusic = appId === 'music' && state.isMobile;
 
         if(state.windows.has(appId)){
           const w = state.windows.get(appId);
@@ -1803,9 +1804,20 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
         const area = $('#desktopArea').getBoundingClientRect();
         const mobileDopeSkate = appId === 'dope-skate' && typeof isMobileGameMode === 'function' && isMobileGameMode();
         const savedRectRaw = (appId === 'about' || appId === 'dope-skate') ? null : getSavedWindowRect(appId);
-        const savedRect = (appId === 'seeker' && savedRectRaw)
+        let savedRect = (appId === 'seeker' && savedRectRaw)
           ? applySeekerMinimumRect(savedRectRaw, area)
           : savedRectRaw;
+        if(mobileMusic){
+          const preferredWidth = Math.max(240, area.width - 32);
+          const preferredHeight = Math.max(280, Math.floor(area.height * 0.66));
+          if(savedRect){
+            savedRect = normalizeWindowRect({
+              ...savedRect,
+              width: Math.max(savedRect.width, preferredWidth),
+              height: Math.max(savedRect.height, preferredHeight),
+            }, area, 16);
+          }
+        }
         if(mobileDopeSkate){
           rect = normalizeWindowRect({
             left: 0,
@@ -1815,6 +1827,15 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
           }, area, 0);
         } else if(appId === 'mediaplayer'){
           rect = normalizeWindowRect(getMediaPlayerRect(), area, 16);
+        } else if(mobileMusic && !savedRect){
+          const width = Math.max(240, area.width - 32);
+          const height = Math.max(280, Math.floor(area.height * 0.66));
+          rect = normalizeWindowRect({
+            left: (area.width - width) / 2,
+            top: (area.height - height) / 2,
+            width,
+            height,
+          }, area, 16);
         } else if(appId === 'seeker' && !savedRect){
           rect = normalizeWindowRect(getSeekerRect(area), area, 16);
         } else if(savedRect){
@@ -1838,7 +1859,7 @@ function animateAppOpenFromIcon(iconEl, targetRect, onDone, appId){
           height: rect.height,
           z: ++state.zTop,
           savedRect: Boolean(savedRect),
-          userSized: appId === 'mediaplayer',
+          userSized: appId === 'mediaplayer' || mobileMusic,
           autoFitObserver: null,
           lastFitKey: '',
           lastFitW: 0,
@@ -2146,6 +2167,7 @@ function toggleFitWindow(appId) {
         const appId = wstate.id;
         const el = document.createElement('div');
         el.className = 'window';
+        if(appId === 'music' && state.isMobile) el.classList.add('music-mobile-window');
         if(wstate.kind) el.classList.add(`win-${wstate.kind}`);
         el.id = `win_${appId}`;
         el.style.left = wstate.left + 'px';
